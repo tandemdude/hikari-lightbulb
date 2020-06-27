@@ -1,6 +1,6 @@
 from hikari.models import messages
 
-from handler.handler import commands
+from handler import commands
 
 
 class Context:

@@ -1,17 +1,38 @@
+# -*- coding: utf-8 -*-
+# Copyright © Thomm.o 2020
+#
+# This file is part of Hikari Command Handler.
+#
+# Hikari Command Handler is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Hikari Command Handler is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Hikari Command Handler. If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 import typing
 import re
 
-from hikari import Bot
+import hikari
 from hikari.events import message
-from hikari.models import messages
 
 from handler import commands
 from handler import context
 from handler import errors
 from handler import stringview
 
+if typing.TYPE_CHECKING:
+    from hikari.models import messages
 
-class BotWithHandler(Bot):
+
+class BotWithHandler(hikari.Bot):
     def __init__(self, *, prefix: str, ignore_bots=True, **kwargs) -> None:
         super().__init__(**kwargs)
         self.event_dispatcher.subscribe(message.MessageCreateEvent, self.handle)
@@ -60,7 +81,7 @@ class BotWithHandler(Bot):
     async def default_command_error(self, event: errors.CommandErrorEvent):
         raise event.error
 
-    def run(self):
+    def run(self) -> None:
         if errors.CommandErrorEvent not in self.event_dispatcher._listeners:
             self.event_dispatcher.subscribe(
                 errors.CommandErrorEvent, self.default_command_error

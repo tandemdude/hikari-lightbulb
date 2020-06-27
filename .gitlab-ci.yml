@@ -1,16 +1,20 @@
 stages:
   - test
 
+.reactive-job:
+  rules:
+    - if: "$CI_PIPELINE_SOURCE == 'push'"
+    - if: "$CI_PIPELINE_SOURCE == 'merge_request_event'"
+
 .cpython:3.8.2:
   before_script:
     - pip install nox 'virtualenv<20.0.19'
   image: python:3.8.2
 
 black:
-  extends: .cpython:3.8.2
+  extends: 
+    - .cpython:3.8.2
+    - .reactive-job
   script:
     - nox -s format
   stage: test
-  only:
-    - master
-    - development

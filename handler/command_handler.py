@@ -8,15 +8,15 @@ from hikari.models import messages
 from handler import commands
 from handler import context
 from handler import errors
-
-ARGUMENT_REGEX = re.compile(r"(\".+\"|[^\s]+)")
+from handler import stringview
 
 
 class BotWithHandler(Bot):
-    def __init__(self, prefix: str, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, *, prefix: str, ignore_bots=True, **kwargs) -> None:
+        super().__init__(**kwargs)
         self.event_dispatcher.subscribe(message.MessageCreateEvent, self.handle)
         self.prefix = prefix
+        self.ignore_bots = ignore_bots
         self.commands: typing.MutableMapping[str, commands.Command] = {}
 
     def command(self):
@@ -32,12 +32,19 @@ class BotWithHandler(Bot):
         return decorate
 
     def resolve_arguments(self, message: messages.Message) -> typing.List[str]:
-        return ARGUMENT_REGEX.findall(message.content)
+        string_view = stringview.StringView(message.content)
+        return string_view.deconstruct_str()
 
     async def handle(self, event: message.MessageCreateEvent) -> None:
+        if self.ignore_bots and event.message.author.is_bot:
+            return
+
+        if not event.message.content:
+            return
+
         args = self.resolve_arguments(event.message)
         # Check if the message was actually a command invocation
-        if not args or not args[0].startswith(self.prefix):
+        if not args[0].startswith(self.prefix):
             return
 
         invoked_with = args[0].replace(self.prefix, "")

@@ -3,8 +3,7 @@ import re
 from hikari.models import messages
 
 from .commands import Command
-from . import context
-
+from handler.handler import context
 
 ARGUMENT_REGEX = re.compile(r"(\".+\"|[^\s]+)")
 

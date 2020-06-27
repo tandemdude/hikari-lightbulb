@@ -1,6 +1,7 @@
 from hikari.models import messages
 
-from . import commands
+from handler.handler import commands
+
 
 class Context:
     def __init__(self, message: messages.Message, prefix: str, invoked_with: str, command: commands.Command):

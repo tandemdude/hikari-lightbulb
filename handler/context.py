@@ -15,3 +15,6 @@ class Context:
         self.prefix: str = prefix
         self.invoked_with: str = invoked_with
         self.command: commands.Command = command
+
+    async def reply(self, *args, **kwargs) -> messages.Message:
+        return await self.message.reply(*args, **kwargs)

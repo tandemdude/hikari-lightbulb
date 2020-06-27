@@ -5,6 +5,7 @@ __pycache__/
 # Virtual environments
 .venv*/
 venv*/
+.nox/
 
 # PyCharm/IntelliJ-generated files
 *.iml
@@ -27,3 +28,6 @@ pip-wheel-metadata/
 *.so 
 *.o 
 *.pyd
+
+# Test file
+bot_test.py

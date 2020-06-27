@@ -1,0 +1,16 @@
+stages:
+  - test
+
+.cpython:3.8.2:
+  before_script:
+    - pip install nox 'virtualenv<20.0.19'
+  image: python:3.8.2
+
+black:
+  extends: .cpython:3.8.2
+  script:
+    - nox -s format
+  stage: test
+  only:
+    - master
+    - development

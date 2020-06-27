@@ -13,3 +13,4 @@ black:
   stage: test
   only:
     - master
+    - development

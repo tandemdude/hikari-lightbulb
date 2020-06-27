@@ -43,5 +43,7 @@ class BotWithHandler(Bot):
             return
         invoked_command = self.commands[invoked_with]
 
-        command_context = context.Context(event.message, self.prefix, invoked_with, invoked_command)
+        command_context = context.Context(
+            event.message, self.prefix, invoked_with, invoked_command
+        )
         await invoked_command(command_context, *args[1:])

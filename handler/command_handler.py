@@ -56,13 +56,16 @@ class BotWithHandler(hikari.Bot):
     async def _default_command_error(self, event: errors.CommandErrorEvent):
         raise event.error
 
-    def command(self, allow_extra_arguments=True):
+    def command(
+        self, *, allow_extra_arguments: bool = True, name: typing.Optional[str] = None
+    ) -> typing.Callable:
         """
         A decorator that registers a callable as a command for the handler.
 
         Args:
-            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if a command is run
+            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if the command is run
                 with more arguments than it requires. Defaults to True.
+            name (:obj:`str`): Optional name of the command. Defaults to the name of the function if not specified.
 
         Example:
 
@@ -82,20 +85,25 @@ class BotWithHandler(hikari.Bot):
         def decorate(func: typing.Callable):
             nonlocal registered_commands
             nonlocal allow_extra_arguments
-            if not registered_commands.get(func.__name__):
-                registered_commands[func.__name__] = commands.Command(
-                    func, allow_extra_arguments
+            nonlocal name
+            name = func.__name__ if name is None else name
+            if not registered_commands.get(name):
+                registered_commands[name] = commands.Command(
+                    func, allow_extra_arguments, name
                 )
 
         return decorate
 
-    def group(self, allow_extra_arguments=True):
+    def group(
+        self, *, allow_extra_arguments: bool = True, name: typing.Optional[str] = None
+    ) -> typing.Callable:
         """
         A decorator that registers a callable as a command group for the handler.
 
         Args:
-            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if a command is run
+            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if the command is run
                 with more arguments than it requires. Defaults to True.
+            name (:obj:`str`): Optional name of the command. Defaults to the name of the function if not specified.
 
         Example:
 
@@ -115,22 +123,31 @@ class BotWithHandler(hikari.Bot):
         def decorate(func: typing.Callable):
             nonlocal registered_commands
             nonlocal allow_extra_arguments
-            if not registered_commands.get(func.__name__):
-                registered_commands[func.__name__] = commands.Group(
-                    func, allow_extra_arguments
+            nonlocal name
+            name = func.__name__ if name is None else name
+            if not registered_commands.get(name):
+                registered_commands[name] = commands.Group(
+                    func, allow_extra_arguments, name
                 )
-                return registered_commands.get(func.__name__)
+                return registered_commands.get(name)
 
         return decorate
 
-    def add_command(self, func: typing.Callable, allow_extra_arguments=True) -> None:
+    def add_command(
+        self,
+        func: typing.Callable,
+        *,
+        allow_extra_arguments=True,
+        name: typing.Optional[str] = None
+    ) -> None:
         """
         Adds a command to the bot. Similar to the ``command`` decorator.
 
         Args:
             func (:obj:`typing.Callable`): The function to add as a command.
-            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if a command is run
+            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if the command is run
                 with more arguments than it requires. Defaults to True.
+            name (:obj:`str`): Optional name of the command. Defaults to the name of the function if not specified.
 
         Returns:
             ``None``
@@ -142,15 +159,43 @@ class BotWithHandler(hikari.Bot):
                 bot = handler.Bot(token="token_here", prefix="!")
 
                 async def ping(ctx):
-                    await ctx.reploy("Pong!")
+                    await ctx.reply("Pong!")
 
                 bot.add_command(ping)
 
         See Also:
             :meth:`.command_handler.BotWithHandler.command`
         """
-        if not self.commands.get(func.__name__):
-            self.commands[func.__name__] = commands.Command(func, allow_extra_arguments)
+        name = func.__name__ if name is None else name
+        if not self.commands.get(name):
+            self.commands[name] = commands.Command(func, allow_extra_arguments, name)
+
+    def add_group(
+        self,
+        func: typing.Callable,
+        *,
+        allow_extra_arguments=True,
+        name: typing.Optional[str] = None
+    ) -> None:
+        """
+        Adds a command group to the bot. Similar to the ``group`` decorator.
+
+        Args:
+            func (:obj:`typing.Callable`): The function to add as a command group.
+            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if the command is run
+                with more arguments than it requires. Defaults to True.
+            name (:obj:`str`): Optional name of the command group. Defaults to the name of the function if not specified.
+
+        Returns:
+            ``None``
+
+        See Also:
+            :meth:`.command_handler.BotWithHandler.group`
+            :meth:`.command_handler.BotWithHandler.add_command`
+        """
+        name = func.__name__ if name is None else name
+        if not self.commands.get(name):
+            self.commands[name] = commands.Group(func, allow_extra_arguments, name)
 
     def get_command(self, name: str) -> typing.Optional[commands.Command]:
         """

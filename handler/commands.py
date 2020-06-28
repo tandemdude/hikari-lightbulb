@@ -60,7 +60,9 @@ class Command:
 
     def add_check(
         self,
-        check: typing.Callable[[context.Context], typing.Coroutine[None, None, bool]],
+        check: typing.Callable[
+            [context.Context], typing.Coroutine[None, typing.Any, bool]
+        ],
     ) -> None:
         """
         Add a check to an instance of :obj:`.commands.Command`. The check passed must

@@ -15,8 +15,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Hikari Command Handler. If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
 import typing
-import logging
 import inspect
 
 
@@ -49,3 +49,86 @@ class Command:
 
     async def __call__(self, *args, **kwargs) -> None:
         await self.callback(*args)
+
+
+class Group(Command):
+    """
+    A command group. This is invoked the same way as a normal command, however it has support
+    for subcommands which can be registered to the group and invoked as separate commands.
+
+    Args:
+        *args: The args passed to :obj:`.commands.Command` in its constructor
+    """
+
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.subcommands: typing.MutableMapping[str, Command] = {}
+
+    def resolve_subcommand(
+        self, args: typing.List[str]
+    ) -> typing.Tuple[typing.Union[Command, Group], typing.List[str]]:
+        """
+        Resolve the subcommand that should be called from the list of arguments provided. If
+        not subcommand is found it returns itself to be invoked instead.
+
+        Args:
+            args (List[ :obj:`str` ]): Arguments to resolve subcommand from
+
+        Returns:
+            Tuple[ Union[ :obj:`.commands.Command`, :obj:`.commands.Group` ], List[ :obj:`str` ] ] Containing the command
+            to be invoked, followed by a list of the arguments for the command to be invoked with.
+        """
+        if len(args) == 1:
+            return (self, args[1:])
+        else:
+            subcommand = self.subcommands.get(args[1])
+            return (
+                (subcommand, args[2:]) if subcommand is not None else (self, args[1:])
+            )
+
+    def command(self, allow_extra_arguments=True):
+        """
+        A decorator that registers a callable as a subcommand for the command group.
+
+        Args:
+            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if a command is run
+                with more arguments than it requires. Defaults to True.
+
+        Example:
+
+            .. code-block:: python
+
+                bot = handler.Bot(token="token_here", prefix="!")
+
+                @bot.group()
+                async def foo(ctx):
+                    await ctx.reply("Invoked foo")
+
+                @foo.command()
+                async def bar(ctx):
+                    await ctx.reply("Invoked foo bar")
+        """
+        registered_commands = self.subcommands
+
+        def decorate(func: typing.Callable):
+            nonlocal registered_commands
+            nonlocal allow_extra_arguments
+            if not registered_commands.get(func.__name__):
+                registered_commands[func.__name__] = Command(
+                    func, allow_extra_arguments
+                )
+                return registered_commands[func.__name__]
+
+        return decorate
+
+    def get_subcommand(self, name: str) -> typing.Optional[Command]:
+        """
+        Get a command object for a subcommand of the group from it's registered name.
+
+        Args:
+            name (:obj:`str`): The name of the command to get the object for.
+
+        Returns:
+            Optional[ :obj:`.commands.Command` ] command object registered to that name.
+        """
+        return self.subcommands.get(name)

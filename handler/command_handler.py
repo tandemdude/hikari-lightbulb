@@ -49,7 +49,9 @@ class BotWithHandler(hikari.Bot):
         self.event_dispatcher.subscribe(message.MessageCreateEvent, self.handle)
         self.prefix = prefix
         self.ignore_bots = ignore_bots
-        self.commands: typing.MutableMapping[str, commands.Command] = {}
+        self.commands: typing.MutableMapping[
+            str, typing.Union[commands.Command, commands.Group]
+        ] = {}
 
     async def _default_command_error(self, event: errors.CommandErrorEvent):
         raise event.error
@@ -84,6 +86,40 @@ class BotWithHandler(hikari.Bot):
                 registered_commands[func.__name__] = commands.Command(
                     func, allow_extra_arguments
                 )
+
+        return decorate
+
+    def group(self, allow_extra_arguments=True):
+        """
+        A decorator that registers a callable as a command group for the handler.
+
+        Args:
+            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if a command is run
+                with more arguments than it requires. Defaults to True.
+
+        Example:
+
+            .. code-block:: python
+
+                bot = handler.Bot(token="token_here", prefix="!")
+
+                @bot.group()
+                async def foo(ctx):
+                    await ctx.reply("Bar")
+
+        See Also:
+            :meth:`.commands.Group.command` for how to add subcommands to a group.
+        """
+        registered_commands = self.commands
+
+        def decorate(func: typing.Callable):
+            nonlocal registered_commands
+            nonlocal allow_extra_arguments
+            if not registered_commands.get(func.__name__):
+                registered_commands[func.__name__] = commands.Group(
+                    func, allow_extra_arguments
+                )
+                return registered_commands.get(func.__name__)
 
         return decorate
 
@@ -165,10 +201,10 @@ class BotWithHandler(hikari.Bot):
         context: context.Context,
         args: typing.List[str],
     ) -> None:
-        if not command._has_max_args and len(args[1:]) >= command._min_args:
-            await command(context, *args[1:])
+        if not command._has_max_args and len(args) >= command._min_args:
+            await command(context, *args)
 
-        elif len(args[1:]) < command._max_args:
+        elif len(args) < command._max_args:
             self.event_dispatcher.dispatch(
                 errors.CommandErrorEvent(
                     errors.NotEnoughArguments(context.invoked_with), context.message
@@ -176,7 +212,7 @@ class BotWithHandler(hikari.Bot):
             )
             return
 
-        elif len(args[1:]) > command._max_args and not command.allow_extra_arguments:
+        elif len(args) > command._max_args and not command.allow_extra_arguments:
             self.event_dispatcher.dispatch(
                 errors.CommandErrorEvent(
                     errors.TooManyArguments(context.invoked_with), context.message
@@ -188,7 +224,7 @@ class BotWithHandler(hikari.Bot):
             await command(context)
 
         else:
-            await command(context, *args[1 : command._max_args + 1])
+            await command(context, *args[: command._max_args + 1])
 
     async def handle(self, event: message.MessageCreateEvent) -> None:
         """
@@ -221,11 +257,15 @@ class BotWithHandler(hikari.Bot):
             )
             return
         invoked_command = self.commands[invoked_with]
+        if isinstance(invoked_command, commands.Command):
+            new_args = args[1:]
+        if isinstance(invoked_command, commands.Group):
+            invoked_command, new_args = invoked_command.resolve_subcommand(args)
 
         command_context = context.Context(
             event.message, self.prefix, invoked_with, invoked_command
         )
-        await self._invoke_command(invoked_command, command_context, args)
+        await self._invoke_command(invoked_command, command_context, new_args)
 
     def run(self) -> None:
         if errors.CommandErrorEvent not in self.event_dispatcher._listeners:

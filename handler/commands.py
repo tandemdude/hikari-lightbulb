@@ -28,21 +28,26 @@ class Command:
 
     Args:
         callable (:obj:`typing.Callable`): The callable object linked to the command.
+        allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if the command is run
+                with more arguments than it requires. Defaults to True.
+        name (:obj:`str`): Optional name of the command. Defaults to the name of the function if not specified.
     """
 
-    def __init__(self, callable: typing.Callable, allow_extra_arguments: bool) -> None:
-        self.callback = callable
-        self.allow_extra_arguments = allow_extra_arguments
-        self.name = callable.__name__
+    def __init__(
+        self, callable: typing.Callable, allow_extra_arguments: bool, name: str
+    ) -> None:
+        self.callback: typing.Callable = callable
+        self.allow_extra_arguments: bool = allow_extra_arguments
+        self.name: str = callable.__name__ if name is None else name
         self.help: typing.Optional[str] = inspect.getdoc(callable)
         signature = inspect.signature(callable)
-        self._has_max_args = (
+        self._has_max_args: bool = (
             False
             if any(arg.kind == 2 for arg in signature.parameters.values())
             else True
         )
-        self._max_args = len(signature.parameters) - 1
-        self._min_args = -1
+        self._max_args: int = len(signature.parameters) - 1
+        self._min_args: int = -1
         for arg in signature.parameters.values():
             if arg.default == inspect.Parameter.empty:
                 self._min_args += 1
@@ -58,10 +63,11 @@ class Group(Command):
 
     Args:
         *args: The args passed to :obj:`.commands.Command` in its constructor
+        **kwargs: The kwargs passed to :obj:`.commands.Command` in its constructor
     """
 
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.subcommands: typing.MutableMapping[str, Command] = {}
 
     def resolve_subcommand(
@@ -86,13 +92,16 @@ class Group(Command):
                 (subcommand, args[2:]) if subcommand is not None else (self, args[1:])
             )
 
-    def command(self, allow_extra_arguments=True):
+    def command(
+        self, *, allow_extra_arguments: bool = True, name: typing.Optional[str] = None
+    ):
         """
         A decorator that registers a callable as a subcommand for the command group.
 
         Args:
-            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if a command is run
+            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if the command is run
                 with more arguments than it requires. Defaults to True.
+            name (:obj:`str`): Optional name of the command. Defaults to the name of the function if not specified.
 
         Example:
 
@@ -113,11 +122,11 @@ class Group(Command):
         def decorate(func: typing.Callable):
             nonlocal registered_commands
             nonlocal allow_extra_arguments
-            if not registered_commands.get(func.__name__):
-                registered_commands[func.__name__] = Command(
-                    func, allow_extra_arguments
-                )
-                return registered_commands[func.__name__]
+            nonlocal name
+            name = func.__name__ if name is None else name
+            if not registered_commands.get(name):
+                registered_commands[name] = Command(func, allow_extra_arguments, name)
+                return registered_commands[name]
 
         return decorate
 

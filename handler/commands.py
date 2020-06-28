@@ -44,7 +44,7 @@ class Command:
         self._max_args = len(signature.parameters) - 1
         self._min_args = -1
         for arg in signature.parameters.values():
-            if arg.default != inspect.Parameter.empty:
+            if arg.default == inspect.Parameter.empty:
                 self._min_args += 1
 
     async def __call__(self, *args, **kwargs) -> None:

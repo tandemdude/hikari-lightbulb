@@ -59,7 +59,8 @@ class BotWithHandler(hikari.Bot):
         A decorator that registers a callable as a command for the handler.
 
         Args:
-            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if a command is run with more arguments than it requires. Defaults to True.
+            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if a command is run
+                with more arguments than it requires. Defaults to True.
 
         Example:
 
@@ -70,6 +71,9 @@ class BotWithHandler(hikari.Bot):
                 @bot.command()
                 async def ping(ctx):
                     await ctx.reply("Pong!")
+
+        See Also:
+            :meth:`.command_handler.BotWithHandler.add_command`
         """
         registered_commands = self.commands
 
@@ -82,6 +86,60 @@ class BotWithHandler(hikari.Bot):
                 )
 
         return decorate
+
+    def add_command(self, func: typing.Callable, allow_extra_arguments=True) -> None:
+        """
+        Adds a command to the bot. Similar to the ``command`` decorator.
+
+        Args:
+            func (:obj:`typing.Callable`): The function to add as a command.
+            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if a command is run
+                with more arguments than it requires. Defaults to True.
+
+        Returns:
+            ``None``
+
+        Example:
+
+            .. code-block:: python
+
+                bot = handler.Bot(token="token_here", prefix="!")
+
+                async def ping(ctx):
+                    await ctx.reploy("Pong!")
+
+                bot.add_command(ping)
+
+        See Also:
+            :meth:`.command_handler.BotWithHandler.command`
+        """
+        if not self.commands.get(func.__name__):
+            self.commands[func.__name__] = commands.Command(func, allow_extra_arguments)
+
+    def get_command(self, name: str) -> typing.Optional[commands.Command]:
+        """
+        Get a command object from it's registered name.
+
+        Args:
+            name (:obj:`str`): The name of the command to get the object for.
+
+        Returns:
+            Optional[ :obj:`.commands.Command` ] command object registered to that name.
+        """
+        return self.commands.get(name)
+
+    def remove_command(self, name: str) -> typing.Optional[str]:
+        """
+        Remove a command from the bot and return its name or ``None`` if no command was removed.
+
+        Args:
+            name (:obj:`str`): The name of the command to remove.
+
+        Returns:
+            Optional[ :obj:`str` ] name of the command that was removed.
+        """
+        command = self.commands.pop(name)
+        return command.name if command is not None else None
 
     def resolve_arguments(self, message: messages.Message) -> typing.List[str]:
         """
@@ -101,20 +159,47 @@ class BotWithHandler(hikari.Bot):
         string_view = stringview.StringView(message.content)
         return string_view.deconstruct_str()
 
+    async def _invoke_command(
+        self,
+        command: commands.Command,
+        context: context.Context,
+        args: typing.List[str],
+    ) -> None:
+        if not command._has_max_args and len(args[1:]) >= command._min_args:
+            await command(context, *args[1:])
+
+        elif len(args[1:]) < command._max_args:
+            self.event_dispatcher.dispatch(
+                errors.CommandErrorEvent(
+                    errors.NotEnoughArguments(context.invoked_with), context.message
+                )
+            )
+            return
+
+        elif len(args[1:]) > command._max_args and not command.allow_extra_arguments:
+            self.event_dispatcher.dispatch(
+                errors.CommandErrorEvent(
+                    errors.TooManyArguments(context.invoked_with), context.message
+                )
+            )
+            return
+
+        elif command._max_args == 0:
+            await command(context)
+
+        else:
+            await command(context, *args[1 : command._max_args + 1])
+
     async def handle(self, event: message.MessageCreateEvent) -> None:
         """
         The message listener that deals with validating the invocation messages. If invocation message
-        is valid then it will invoke the relevant command. This will raise a ``CommandNotFound`` if the command
-        attempted to be invoked does not exist.
+        is valid then it will invoke the relevant command.
 
         Args:
             event (:obj:`hikari.events.message.MessageCreateEvent`): The message create event containing a possible command invocation.
 
         Returns:
             ``None``
-
-        Raises:
-            :obj:`.errors.CommandNotFound`
         """
         if self.ignore_bots and event.message.author.is_bot:
             return
@@ -140,33 +225,7 @@ class BotWithHandler(hikari.Bot):
         command_context = context.Context(
             event.message, self.prefix, invoked_with, invoked_command
         )
-
-        if not invoked_command._has_max_args:
-            await invoked_command(command_context, *args[1:])
-        else:
-            if len(args[1:]) < invoked_command._max_args:
-                self.event_dispatcher.dispatch(
-                    errors.CommandErrorEvent(
-                        errors.NotEnoughArguments(invoked_with), event.message
-                    )
-                )
-                return
-            elif (
-                len(args[1:]) > invoked_command._max_args
-                and not invoked_command.allow_extra_arguments
-            ):
-                self.event_dispatcher.dispatch(
-                    errors.CommandErrorEvent(
-                        errors.TooManyArguments(invoked_with), event.message
-                    )
-                )
-                return
-            if invoked_command._max_args == 0:
-                await invoked_command(command_context)
-            else:
-                await invoked_command(
-                    command_context, *args[1 : invoked_command._max_args + 1]
-                )
+        await self._invoke_command(invoked_command, command_context, args)
 
     def run(self) -> None:
         if errors.CommandErrorEvent not in self.event_dispatcher._listeners:

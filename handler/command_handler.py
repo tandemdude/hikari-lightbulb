@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import typing
 import functools
+import collections
+import asyncio
 
 import hikari
 from hikari.events import message
@@ -32,8 +34,10 @@ if typing.TYPE_CHECKING:
     from hikari.models import messages
 
 
-async def _return_prefix(_, __, *, prefix: str) -> str:
-    return prefix
+async def _return_prefix(
+    _, __, *, prefixes: typing.Union[str, typing.List[str], typing.Tuple[str]]
+) -> typing.Union[str, typing.List[str], typing.Tuple[str]]:
+    return prefixes
 
 
 class BotWithHandler(hikari.Bot):
@@ -52,7 +56,14 @@ class BotWithHandler(hikari.Bot):
     def __init__(
         self,
         *,
-        prefix: typing.Union[str, typing.Callable[[BotWithHandler, messages.Message], typing.Coroutine[None, typing.Any, str]]],
+        prefix: typing.Union[
+            str,
+            typing.Iterable[str],
+            typing.Callable[
+                [BotWithHandler, messages.Message],
+                typing.Coroutine[None, typing.Any, str],
+            ],
+        ],
         ignore_bots: bool = True,
         owner_ids: typing.Iterable[int] = (),
         **kwargs,
@@ -61,7 +72,11 @@ class BotWithHandler(hikari.Bot):
         self.event_dispatcher.subscribe(message.MessageCreateEvent, self.handle)
 
         if isinstance(prefix, str):
-            self.get_prefix = functools.partial(_return_prefix, prefix=prefix)
+            self.get_prefix = functools.partial(_return_prefix, prefixes=[prefix])
+        elif isinstance(prefix, collections.abc.Iterable):
+            self.get_prefix = functools.partial(_return_prefix, prefixes=prefix)
+        else:
+            self.get_prefix = prefix
 
         self.ignore_bots: bool = ignore_bots
         self.owner_ids: typing.Iterable[int] = owner_ids
@@ -356,10 +371,23 @@ class BotWithHandler(hikari.Bot):
         if not event.message.content:
             return
 
-        prefix = await self.get_prefix(self, event.message)
         args = self.resolve_arguments(event.message)
-        # Check if the message was actually a command invocation
-        if not args[0].startswith(prefix):
+
+        if asyncio.iscoroutine(self.get_prefix):
+            prefixes = await self.get_prefix(self, event.message)
+        else:
+            prefixes = self.get_prefix(self, event.message)
+
+        if isinstance(prefixes, str):
+            prefixes = [prefixes]
+
+        prefix = None
+        for p in prefixes:
+            if args[0].startswith(p):
+                prefix = p
+                break
+
+        if prefix is None:
             return
 
         invoked_with = args[0].replace(prefix, "")

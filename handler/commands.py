@@ -59,11 +59,14 @@ class Group(Command):
     Args:
         *args: The args passed to :obj:`.commands.Command` in its constructor
     """
+
     def __init__(self, *args):
         super().__init__(*args)
         self.subcommands: typing.MutableMapping[str, Command] = {}
 
-    def resolve_subcommand(self, args: typing.List[str]) -> typing.Tuple[typing.Union[Command, Group], typing.List[str]]:
+    def resolve_subcommand(
+        self, args: typing.List[str]
+    ) -> typing.Tuple[typing.Union[Command, Group], typing.List[str]]:
         """
         Resolve the subcommand that should be called from the list of arguments provided. If
         not subcommand is found it returns itself to be invoked instead.
@@ -79,7 +82,9 @@ class Group(Command):
             return (self, args[1:])
         else:
             subcommand = self.subcommands.get(args[1])
-            return (subcommand, args[2:]) if subcommand is not None else (self, args[1:])
+            return (
+                (subcommand, args[2:]) if subcommand is not None else (self, args[1:])
+            )
 
     def command(self, allow_extra_arguments=True):
         """

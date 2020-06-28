@@ -49,7 +49,9 @@ class BotWithHandler(hikari.Bot):
         self.event_dispatcher.subscribe(message.MessageCreateEvent, self.handle)
         self.prefix = prefix
         self.ignore_bots = ignore_bots
-        self.commands: typing.MutableMapping[str, typing.Union[commands.Command, commands.Group]] = {}
+        self.commands: typing.MutableMapping[
+            str, typing.Union[commands.Command, commands.Group]
+        ] = {}
 
     async def _default_command_error(self, event: errors.CommandErrorEvent):
         raise event.error
@@ -222,7 +224,7 @@ class BotWithHandler(hikari.Bot):
             await command(context)
 
         else:
-            await command(context, *args[:command._max_args + 1])
+            await command(context, *args[: command._max_args + 1])
 
     async def handle(self, event: message.MessageCreateEvent) -> None:
         """

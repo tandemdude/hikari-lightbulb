@@ -17,6 +17,8 @@
 # along with Hikari Command Handler. If not, see <https://www.gnu.org/licenses/>.
 from hikari.events import base
 
+from handler import context
+
 
 class CommandErrorEvent(base.Event):
     """
@@ -98,3 +100,40 @@ class UnclosedQuotes(CommandError):
 
     def __init__(self, text: str) -> None:
         self.text = text
+
+
+class CheckFailure(CommandError):
+    """
+    Base error that is raised when a check fails for a command. Anything raised by a check
+    should inherit from this class.
+
+    Args:
+        context (:obj:`.context.Context`): The context that caused the check to fail.
+    """
+
+    def __init__(self, context: context.Context) -> None:
+        self.context = context
+
+
+class OnlyInGuild(CheckFailure):
+    """
+    Error raised when a command marked as guild only is attempted to be invoked in DMs.
+    """
+
+    pass
+
+
+class OnlyInDM(CheckFailure):
+    """
+    Error raised when a command marked as DM only is attempted to be invoked in a guild.
+    """
+
+    pass
+
+
+class NotOwner(CheckFailure):
+    """
+    Error raised when a command marked as owner only is attempted to be invoked by another user.
+    """
+
+    pass

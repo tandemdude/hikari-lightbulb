@@ -17,3 +17,4 @@
 # along with Hikari Command Handler. If not, see <https://www.gnu.org/licenses/>.
 from handler.command_handler import BotWithHandler as Bot
 from handler import errors
+from handler.checks import guild_only, dm_only, owner_only

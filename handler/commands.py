@@ -62,6 +62,27 @@ class Command:
         self,
         check: typing.Callable[[context.Context], typing.Coroutine[None, None, bool]],
     ) -> None:
+        """
+        Add a check to an instance of :obj:`.commands.Command`. The check passed must
+        be an awaitable function taking a single argument which will be an instance of :obj:`.context.Context`.
+        It must also either return a boolean denoting whether or not the check passed,
+        or raise an instance of :obj:`.errors.CheckFailure` or a subclass.
+
+        Args:
+            check (Callable[ [ :obj:`.context.Context` ], Coroutine[ ``None``, ``None``, :obj:`bool` ] ]): Check to add to the command
+
+        Returns:
+            ``None``
+
+        Example:
+
+            .. code-block:: python
+
+                async def author_name_startswith_foo(ctx):
+                    return ctx.author.username.startswith("foo")
+
+                bot.get_command("foo").add_check(author_name_startswith)
+        """
         self.checks.append(check)
 
 

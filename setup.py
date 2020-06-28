@@ -15,7 +15,7 @@ def parse_requirements_file(path):
 
 setup(
     name="handler",
-    version="0.0.4",
+    version="0.0.5",
     description="A simple to use command handler for Hikari",
     long_description=long_description(),
     long_description_content_type="text/markdown",

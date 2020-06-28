@@ -1,5 +1,11 @@
 stages:
   - test
+  - deploy
+
+.reactive-job:
+  rules:
+    - if: "$CI_PIPELINE_SOURCE == 'push'"
+    - if: "$CI_PIPELINE_SOURCE == 'merge_request_event'"
 
 .cpython:3.8.2:
   before_script:
@@ -7,10 +13,22 @@ stages:
   image: python:3.8.2
 
 black:
-  extends: .cpython:3.8.2
+  extends: 
+    - .cpython:3.8.2
+    - .reactive-job
   script:
     - nox -s format
   stage: test
+
+pages:
+  extends:
+    - .cpython:3.8.2
+  script:
+    - nox -s sphinx
+    - mv docs/build public
+  stage: deploy
+  artifacts:
+    paths:
+      - public
   only:
     - master
-    - development

@@ -16,3 +16,4 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Hikari Command Handler. If not, see <https://www.gnu.org/licenses/>.
 from handler.command_handler import BotWithHandler as Bot
+from handler import errors

@@ -29,6 +29,7 @@ class Command:
     Args:
         callable (:obj:`typing.Callable`): The callable object linked to the command.
     """
+
     def __init__(self, callable: typing.Callable) -> None:
         self.callback = callable
         self.name = callable.__name__

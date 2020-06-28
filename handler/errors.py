@@ -58,7 +58,6 @@ class CommandNotFound(CommandError):
         invoked_with (:obj:`str`): The command string that was attempted to be invoked.
     """
 
-
     def __init__(self, invoked_with: str) -> None:
         self.invoked_with = invoked_with
 

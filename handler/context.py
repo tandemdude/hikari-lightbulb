@@ -35,6 +35,7 @@ class Context:
         invoked_with (:obj:`str`): The name or alias used to invoke a command.
         command (:obj:`.commands.Command`): The command that was invoked.
     """
+
     def __init__(
         self,
         message: messages.Message,

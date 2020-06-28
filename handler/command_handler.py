@@ -124,7 +124,9 @@ class BotWithHandler(hikari.Bot):
         invoked_with = args[0].replace(self.prefix, "")
         if invoked_with not in self.commands:
             self.event_dispatcher.dispatch(
-                errors.CommandErrorEvent(errors.CommandNotFound(invoked_with), event.message)
+                errors.CommandErrorEvent(
+                    errors.CommandNotFound(invoked_with), event.message
+                )
             )
             return
         invoked_command = self.commands[invoked_with]

@@ -18,3 +18,16 @@ black:
   script:
     - nox -s format
   stage: test
+
+pages:
+  extends:
+    - .cpython:3.8.2
+  script:
+    - nox -s sphinx
+    - mv docs/build public
+  stage: deploy
+  artifacts:
+    paths:
+      - public
+  only:
+    - master

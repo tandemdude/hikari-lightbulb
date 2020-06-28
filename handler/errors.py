@@ -19,20 +19,57 @@ from hikari.events import base
 
 
 class CommandErrorEvent(base.Event):
-    """Event type to subscribe to for the processing of all command errors raised by the handler"""
+    """
+    Event type to subscribe to for the processing of all command errors raised by the handler.
 
-    def __init__(self, error):
+    Args:
+        error (:obj:`.errors.CommandError`): An instance or subclass of ``CommandError``. The error that was raised.
+        message (:obj:`hikari.models.messages.Message`): The message that caused the exception to be raised.
+
+    Example:
+
+        .. code-block:: python
+
+            from handler.errors import CommandErrorEvent
+
+            bot = handler.Bot(token="token_here", prefix="!")
+
+            @bot.listen(CommandErrorEvent)
+            async def handle_command_error(error):
+
+    """
+
+    def __init__(self, error, message) -> None:
         self.error = error
+        self.message = message
 
 
 class CommandError(Exception):
-    """Base exception for the command handler"""
+    """Base exception for the command handler."""
 
     pass
 
 
 class CommandNotFound(CommandError):
-    """Exception raised when a command when attempted to be invoked but one with that name could not be found"""
+    """
+    Exception raised when a command when attempted to be invoked but one with that name could not be found.
 
-    def __init__(self, invoked_with: str):
+    Args:
+        invoked_with (:obj:`str`): The command string that was attempted to be invoked.
+    """
+
+
+    def __init__(self, invoked_with: str) -> None:
         self.invoked_with = invoked_with
+
+
+class UnclosedQuotes(CommandError):
+    """
+    Error raised when no closing quote is found for a quoted argument.
+
+    Args:
+        text (:obj:`str`): The text that caused the error to be raised.
+    """
+
+    def __init__(self, text: str) -> None:
+        self.text = text

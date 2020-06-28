@@ -29,5 +29,8 @@ pip-wheel-metadata/
 *.o 
 *.pyd
 
+# Documentation
+.docs/build/
+
 # Test file
 bot_test.py

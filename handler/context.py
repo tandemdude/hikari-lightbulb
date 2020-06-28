@@ -26,6 +26,15 @@ if typing.TYPE_CHECKING:
 
 
 class Context:
+    """
+    The context a command was invoked under.
+
+    Args:
+        message (:obj:`hikari.models.messages.Message`): The message the context was created from.
+        prefix (:obj:`str`): The prefix used in the context.
+        invoked_with (:obj:`str`): The name or alias used to invoke a command.
+        command (:obj:`.commands.Command`): The command that was invoked.
+    """
     def __init__(
         self,
         message: messages.Message,
@@ -39,4 +48,12 @@ class Context:
         self.command: commands.Command = command
 
     async def reply(self, *args, **kwargs) -> messages.Message:
+        """
+        Alias for ctx.message.reply(...).
+        Replies to the message in the current context.
+
+        Args:
+            *args: The positional arguments :meth:`hikari.models.messages.Message.reply` is invoked with
+            **kwargs: The keyword arguments :meth:`hikari.models.messages.Message.reply` is invoked with
+        """
         return await self.message.reply(*args, **kwargs)

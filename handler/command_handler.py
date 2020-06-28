@@ -20,7 +20,7 @@ from __future__ import annotations
 import typing
 import functools
 import collections
-import asyncio
+import inspect
 
 import hikari
 from hikari.events import message
@@ -46,8 +46,16 @@ class BotWithHandler(hikari.Bot):
     This should be instantiated instead of the superclass if you want to be able to use 
     the command handler implementation provided.
 
+    The prefix argument will accept any of the following:
+
+    - A single string, eg ``'!'``
+
+    - An iterable (such as a list) of strings, eg ``['!', '?']``
+
+    - A function or coroutine that takes **only** two arguments, ``bot`` and ``message``, and that returns a single string or iterable of strings.
+
     Args:
-        prefix (:obj:`str`): The bot's command prefix.
+        prefix: The bot's command prefix, iterable of prefixes, or callable that returns a prefix or iterable of prefixes.
         ignore_bots (:obj:`bool`): Whether or not the bot should ignore its commands when invoked by other bots. Defaults to ``True``.
         owner_ids (List[ :obj:`int` ]): IDs that the bot should treat as owning the bot.
         **kwargs: Other parameters passed to the :class:`hikari.impl.bot.BotAppImpl` constructor.
@@ -57,11 +65,15 @@ class BotWithHandler(hikari.Bot):
         self,
         *,
         prefix: typing.Union[
-            str,
             typing.Iterable[str],
             typing.Callable[
                 [BotWithHandler, messages.Message],
-                typing.Coroutine[None, typing.Any, str],
+                typing.Union[
+                    typing.Callable[
+                        [BotWithHandler, messages.Message], typing.Iterable[str],
+                    ],
+                    typing.Coroutine[None, typing.Any, typing.Iterable[str]],
+                ],
             ],
         ],
         ignore_bots: bool = True,
@@ -373,10 +385,9 @@ class BotWithHandler(hikari.Bot):
 
         args = self.resolve_arguments(event.message)
 
-        if asyncio.iscoroutine(self.get_prefix):
-            prefixes = await self.get_prefix(self, event.message)
-        else:
-            prefixes = self.get_prefix(self, event.message)
+        prefixes = self.get_prefix(self, event.message)
+        if inspect.iscoroutine(prefixes):
+            prefixes = await prefixes
 
         if isinstance(prefixes, str):
             prefixes = [prefixes]

@@ -23,6 +23,7 @@ Docs: `View Here <https://tandemdude.gitlab.io/hikari-command-handler/index.html
 .. toctree::
     :maxdepth: 2
 
+    getting-started
     api-reference
 
 * :ref:`genindex`

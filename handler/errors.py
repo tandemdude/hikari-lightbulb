@@ -36,6 +36,7 @@ class CommandErrorEvent(base.Event):
 
             @bot.listen(CommandErrorEvent)
             async def handle_command_error(error):
+                ...
 
     """
 
@@ -56,6 +57,31 @@ class CommandNotFound(CommandError):
 
     Args:
         invoked_with (:obj:`str`): The command string that was attempted to be invoked.
+    """
+
+    def __init__(self, invoked_with: str) -> None:
+        self.invoked_with = invoked_with
+
+
+class NotEnoughArguments(CommandError):
+    """
+    Exception raised when a command is run without a sufficient number of arguments.
+
+    Args:
+        invoked_with (:obj:`str`): The command string that was attempted to be invoked
+    """
+
+    def __init__(self, invoked_with: str) -> None:
+        self.invoked_with = invoked_with
+
+
+class TooManyArguments(CommandError):
+    """
+    Exception raised when a command is run with too many arguments, and the command has been
+    defined to not accept any extra arguments when invoked.
+
+    Args:
+        invoked_with (:obj:`str`): The command string that was attempted to be invoked
     """
 
     def __init__(self, invoked_with: str) -> None:

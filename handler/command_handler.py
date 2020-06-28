@@ -54,9 +54,12 @@ class BotWithHandler(hikari.Bot):
     async def _default_command_error(self, event: errors.CommandErrorEvent):
         raise event.error
 
-    def command(self):
+    def command(self, allow_extra_arguments=True):
         """
         A decorator that registers a callable as a command for the handler.
+
+        Args:
+            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if a command is run with more arguments than it requires. Defaults to True.
 
         Example:
 
@@ -72,8 +75,11 @@ class BotWithHandler(hikari.Bot):
 
         def decorate(func: typing.Callable):
             nonlocal registered_commands
+            nonlocal allow_extra_arguments
             if not registered_commands.get(func.__name__):
-                registered_commands[func.__name__] = commands.Command(func)
+                registered_commands[func.__name__] = commands.Command(
+                    func, allow_extra_arguments
+                )
 
         return decorate
 
@@ -134,7 +140,33 @@ class BotWithHandler(hikari.Bot):
         command_context = context.Context(
             event.message, self.prefix, invoked_with, invoked_command
         )
-        await invoked_command(command_context, *args[1:])
+
+        if not invoked_command._has_max_args:
+            await invoked_command(command_context, *args[1:])
+        else:
+            if len(args[1:]) < invoked_command._max_args:
+                self.event_dispatcher.dispatch(
+                    errors.CommandErrorEvent(
+                        errors.NotEnoughArguments(invoked_with), event.message
+                    )
+                )
+                return
+            elif (
+                len(args[1:]) > invoked_command._max_args
+                and not invoked_command.allow_extra_arguments
+            ):
+                self.event_dispatcher.dispatch(
+                    errors.CommandErrorEvent(
+                        errors.TooManyArguments(invoked_with), event.message
+                    )
+                )
+                return
+            if invoked_command._max_args == 0:
+                await invoked_command(command_context)
+            else:
+                await invoked_command(
+                    command_context, *args[1 : invoked_command._max_args + 1]
+                )
 
     def run(self) -> None:
         if errors.CommandErrorEvent not in self.event_dispatcher._listeners:

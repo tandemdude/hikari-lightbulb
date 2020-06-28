@@ -40,21 +40,46 @@ class BotWithHandler(hikari.Bot):
 
     Args:
         prefix (:obj:`str`): The bot's command prefix.
-        ignore_bots (:obj:`bool`): Whether or not the bot should ignore its commands when invoked by other bots. Defaults to `True`
+        ignore_bots (:obj:`bool`): Whether or not the bot should ignore its commands when invoked by other bots. Defaults to ``True``.
+        owner_ids (List[ :obj:`int` ]): IDs that the bot should treat as owning the bot.
         **kwargs: Other parameters passed to the :class:`hikari.impl.bot.BotAppImpl` constructor.
     """
 
-    def __init__(self, *, prefix: str, ignore_bots=True, **kwargs) -> None:
+    def __init__(
+        self,
+        *,
+        prefix: str,
+        ignore_bots: bool = True,
+        owner_ids: typing.Iterable[int] = (),
+        **kwargs,
+    ) -> None:
         super().__init__(**kwargs)
         self.event_dispatcher.subscribe(message.MessageCreateEvent, self.handle)
-        self.prefix = prefix
-        self.ignore_bots = ignore_bots
+        self.prefix: str = prefix
+        self.ignore_bots: bool = ignore_bots
+        self.owner_ids: typing.Iterable[int] = owner_ids
         self.commands: typing.MutableMapping[
             str, typing.Union[commands.Command, commands.Group]
         ] = {}
 
-    async def _default_command_error(self, event: errors.CommandErrorEvent):
+    async def _default_command_error(self, event: errors.CommandErrorEvent) -> None:
         raise event.error
+
+    async def fetch_owner_ids(self) -> None:
+        """
+        Fetches the IDs of the bot's owner(s) from the API and stores them in
+        :attr:`.command_handler.BotWithHandler.owner_ids`
+
+        Returns:
+            ``None``
+        """
+        # TODO - add way to flush the owner_id cache
+        application = await self.rest.fetch_application()
+        self.owner_ids = []
+        if application.owner is not None:
+            self.owner_ids.append(application.owner.id)
+        if application.team is not None:
+            self.owner_ids.extend([member_id for member_id in application.team.members])
 
     def command(
         self, *, allow_extra_arguments: bool = True, name: typing.Optional[str] = None
@@ -91,6 +116,7 @@ class BotWithHandler(hikari.Bot):
                 registered_commands[name] = commands.Command(
                     func, allow_extra_arguments, name
                 )
+                return registered_commands[name]
 
         return decorate
 
@@ -138,7 +164,7 @@ class BotWithHandler(hikari.Bot):
         func: typing.Callable,
         *,
         allow_extra_arguments=True,
-        name: typing.Optional[str] = None
+        name: typing.Optional[str] = None,
     ) -> None:
         """
         Adds a command to the bot. Similar to the ``command`` decorator.
@@ -175,7 +201,7 @@ class BotWithHandler(hikari.Bot):
         func: typing.Callable,
         *,
         allow_extra_arguments=True,
-        name: typing.Optional[str] = None
+        name: typing.Optional[str] = None,
     ) -> None:
         """
         Adds a command group to the bot. Similar to the ``group`` decorator.
@@ -240,12 +266,47 @@ class BotWithHandler(hikari.Bot):
         string_view = stringview.StringView(message.content)
         return string_view.deconstruct_str()
 
+    async def _evaluate_checks(
+        self, command: commands.Command, context: context.Context
+    ):
+        for check in command.checks:
+            try:
+                check_pass = await check(context)
+                if not check_pass:
+                    raise errors.CheckFailure(
+                        f"Check {check.__name__} failed for command {context.invoked_with}"
+                    )
+            except errors.OnlyInGuild as e:
+                self.event_dispatcher.dispatch(
+                    errors.CommandErrorEvent(e, context.message)
+                )
+                return False
+            except errors.OnlyInDM as e:
+                self.event_dispatcher.dispatch(
+                    errors.CommandErrorEvent(e, context.message)
+                )
+                return False
+            except errors.NotOwner as e:
+                self.event_dispatcher.dispatch(
+                    errors.CommandErrorEvent(e, context.message)
+                )
+                return False
+            except errors.CheckFailure as e:
+                self.event_dispatcher.dispatch(
+                    errors.CommandErrorEvent(e, context.message)
+                )
+                return False
+        return True
+
     async def _invoke_command(
         self,
         command: commands.Command,
         context: context.Context,
         args: typing.List[str],
     ) -> None:
+        if not await self._evaluate_checks(command, context):
+            return
+
         if not command._has_max_args and len(args) >= command._min_args:
             await command(context, *args)
 
@@ -308,7 +369,7 @@ class BotWithHandler(hikari.Bot):
             invoked_command, new_args = invoked_command.resolve_subcommand(args)
 
         command_context = context.Context(
-            event.message, self.prefix, invoked_with, invoked_command
+            self, event.message, self.prefix, invoked_with, invoked_command
         )
         await self._invoke_command(invoked_command, command_context, new_args)
 

@@ -21,8 +21,10 @@ import typing
 
 if typing.TYPE_CHECKING:
     from hikari.models import messages
+    from hikari.models import users
 
     from handler import commands
+    from handler import command_handler
 
 
 class Context:
@@ -30,6 +32,7 @@ class Context:
     The context a command was invoked under.
 
     Args:
+        bot (:obj:`.command_handler.BotWithHandler`): The bot instance that received the command.
         message (:obj:`hikari.models.messages.Message`): The message the context was created from.
         prefix (:obj:`str`): The prefix used in the context.
         invoked_with (:obj:`str`): The name or alias used to invoke a command.
@@ -38,12 +41,15 @@ class Context:
 
     def __init__(
         self,
+        bot: command_handler.BotWithHandler,
         message: messages.Message,
         prefix: str,
         invoked_with: str,
         command: commands.Command,
     ) -> None:
+        self.bot = bot
         self.message: messages.Message = message
+        self.author: users.User = message.author
         self.prefix: str = prefix
         self.invoked_with: str = invoked_with
         self.command: commands.Command = command

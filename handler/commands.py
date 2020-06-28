@@ -19,6 +19,8 @@ from __future__ import annotations
 import typing
 import inspect
 
+from handler import context
+
 
 class Command:
     """
@@ -37,6 +39,7 @@ class Command:
         self, callable: typing.Callable, allow_extra_arguments: bool, name: str
     ) -> None:
         self.callback: typing.Callable = callable
+        self.checks = []
         self.allow_extra_arguments: bool = allow_extra_arguments
         self.name: str = callable.__name__ if name is None else name
         self.help: typing.Optional[str] = inspect.getdoc(callable)
@@ -54,6 +57,12 @@ class Command:
 
     async def __call__(self, *args, **kwargs) -> None:
         await self.callback(*args)
+
+    def add_check(
+        self,
+        check: typing.Callable[[context.Context], typing.Coroutine[None, None, bool]],
+    ) -> None:
+        self.checks.append(check)
 
 
 class Group(Command):

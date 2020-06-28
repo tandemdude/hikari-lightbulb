@@ -14,6 +14,17 @@ Commands
 
 .. automodule:: handler.commands
     :members:
+    :show-inheritance:
+
+----
+
+Checks
+======
+
+Note that all check decorators **must** be above the command decorator otherwise your code will not work.
+
+.. automodule:: handler.checks
+    :members:
 
 ----
 
@@ -30,6 +41,8 @@ Errors
 
 .. automodule:: handler.errors
     :members:
+    :show-inheritance:
+    :member-order: bysource
 
 ----
 

@@ -18,7 +18,9 @@
 from __future__ import annotations
 
 import typing
-import re
+import functools
+import collections
+import inspect
 
 import hikari
 from hikari.events import message
@@ -32,14 +34,28 @@ if typing.TYPE_CHECKING:
     from hikari.models import messages
 
 
+async def _return_prefix(
+    _, __, *, prefixes: typing.Union[str, typing.List[str], typing.Tuple[str]]
+) -> typing.Union[str, typing.List[str], typing.Tuple[str]]:
+    return prefixes
+
+
 class BotWithHandler(hikari.Bot):
     """
     A subclassed implementation of :class:`hikari.impl.bot.BotAppImpl` which contains a command handler.
     This should be instantiated instead of the superclass if you want to be able to use 
     the command handler implementation provided.
 
+    The prefix argument will accept any of the following:
+
+    - A single string, eg ``'!'``
+
+    - An iterable (such as a list) of strings, eg ``['!', '?']``
+
+    - A function or coroutine that takes **only** two arguments, ``bot`` and ``message``, and that returns a single string or iterable of strings.
+
     Args:
-        prefix (:obj:`str`): The bot's command prefix.
+        prefix: The bot's command prefix, iterable of prefixes, or callable that returns a prefix or iterable of prefixes.
         ignore_bots (:obj:`bool`): Whether or not the bot should ignore its commands when invoked by other bots. Defaults to ``True``.
         owner_ids (List[ :obj:`int` ]): IDs that the bot should treat as owning the bot.
         **kwargs: Other parameters passed to the :class:`hikari.impl.bot.BotAppImpl` constructor.
@@ -48,14 +64,32 @@ class BotWithHandler(hikari.Bot):
     def __init__(
         self,
         *,
-        prefix: str,
+        prefix: typing.Union[
+            typing.Iterable[str],
+            typing.Callable[
+                [BotWithHandler, messages.Message],
+                typing.Union[
+                    typing.Callable[
+                        [BotWithHandler, messages.Message], typing.Iterable[str],
+                    ],
+                    typing.Coroutine[None, typing.Any, typing.Iterable[str]],
+                ],
+            ],
+        ],
         ignore_bots: bool = True,
         owner_ids: typing.Iterable[int] = (),
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
         self.event_dispatcher.subscribe(message.MessageCreateEvent, self.handle)
-        self.prefix: str = prefix
+
+        if isinstance(prefix, str):
+            self.get_prefix = functools.partial(_return_prefix, prefixes=[prefix])
+        elif isinstance(prefix, collections.abc.Iterable):
+            self.get_prefix = functools.partial(_return_prefix, prefixes=prefix)
+        else:
+            self.get_prefix = prefix
+
         self.ignore_bots: bool = ignore_bots
         self.owner_ids: typing.Iterable[int] = owner_ids
         self.commands: typing.MutableMapping[
@@ -350,11 +384,24 @@ class BotWithHandler(hikari.Bot):
             return
 
         args = self.resolve_arguments(event.message)
-        # Check if the message was actually a command invocation
-        if not args[0].startswith(self.prefix):
+
+        prefixes = self.get_prefix(self, event.message)
+        if inspect.iscoroutine(prefixes):
+            prefixes = await prefixes
+
+        if isinstance(prefixes, str):
+            prefixes = [prefixes]
+
+        prefix = None
+        for p in prefixes:
+            if args[0].startswith(p):
+                prefix = p
+                break
+
+        if prefix is None:
             return
 
-        invoked_with = args[0].replace(self.prefix, "")
+        invoked_with = args[0].replace(prefix, "")
         if invoked_with not in self.commands:
             self.event_dispatcher.dispatch(
                 errors.CommandErrorEvent(
@@ -362,6 +409,7 @@ class BotWithHandler(hikari.Bot):
                 )
             )
             return
+
         invoked_command = self.commands[invoked_with]
         if isinstance(invoked_command, commands.Command):
             new_args = args[1:]
@@ -369,7 +417,7 @@ class BotWithHandler(hikari.Bot):
             invoked_command, new_args = invoked_command.resolve_subcommand(args)
 
         command_context = context.Context(
-            self, event.message, self.prefix, invoked_with, invoked_command
+            self, event.message, prefix, invoked_with, invoked_command
         )
         await self._invoke_command(invoked_command, command_context, new_args)
 

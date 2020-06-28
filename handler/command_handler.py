@@ -18,7 +18,7 @@
 from __future__ import annotations
 
 import typing
-import re
+import functools
 
 import hikari
 from hikari.events import message
@@ -30,6 +30,10 @@ from handler import stringview
 
 if typing.TYPE_CHECKING:
     from hikari.models import messages
+
+
+async def _return_prefix(_, __, *, prefix: str) -> str:
+    return prefix
 
 
 class BotWithHandler(hikari.Bot):
@@ -48,14 +52,17 @@ class BotWithHandler(hikari.Bot):
     def __init__(
         self,
         *,
-        prefix: str,
+        prefix: typing.Union[str, typing.Callable[[BotWithHandler, messages.Message], typing.Coroutine[None, typing.Any, str]]],
         ignore_bots: bool = True,
         owner_ids: typing.Iterable[int] = (),
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
         self.event_dispatcher.subscribe(message.MessageCreateEvent, self.handle)
-        self.prefix: str = prefix
+
+        if isinstance(prefix, str):
+            self.get_prefix = functools.partial(_return_prefix, prefix=prefix)
+
         self.ignore_bots: bool = ignore_bots
         self.owner_ids: typing.Iterable[int] = owner_ids
         self.commands: typing.MutableMapping[
@@ -349,12 +356,13 @@ class BotWithHandler(hikari.Bot):
         if not event.message.content:
             return
 
+        prefix = await self.get_prefix(self, event.message)
         args = self.resolve_arguments(event.message)
         # Check if the message was actually a command invocation
-        if not args[0].startswith(self.prefix):
+        if not args[0].startswith(prefix):
             return
 
-        invoked_with = args[0].replace(self.prefix, "")
+        invoked_with = args[0].replace(prefix, "")
         if invoked_with not in self.commands:
             self.event_dispatcher.dispatch(
                 errors.CommandErrorEvent(
@@ -362,6 +370,7 @@ class BotWithHandler(hikari.Bot):
                 )
             )
             return
+
         invoked_command = self.commands[invoked_with]
         if isinstance(invoked_command, commands.Command):
             new_args = args[1:]
@@ -369,7 +378,7 @@ class BotWithHandler(hikari.Bot):
             invoked_command, new_args = invoked_command.resolve_subcommand(args)
 
         command_context = context.Context(
-            self, event.message, self.prefix, invoked_with, invoked_command
+            self, event.message, prefix, invoked_with, invoked_command
         )
         await self._invoke_command(invoked_command, command_context, new_args)
 

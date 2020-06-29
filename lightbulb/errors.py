@@ -49,21 +49,25 @@ class CommandErrorEvent(base.Event):
 
 class ExtensionError(Exception):
     """Base exception for errors incurred during the loading and unloading of extensions."""
+
     pass
 
 
 class ExtensionAlreadyLoaded(ExtensionError):
     """Exception raised when an extension already loaded is attempted to be loaded."""
+
     pass
 
 
 class ExtensionNotLoaded(ExtensionError):
     """Exception raised when an extension not already loaded is attempted to be unloaded."""
+
     pass
 
 
 class ExtensionMissingLoad(ExtensionError):
     """Exception raised when an extension is attempted to be loaded but does not contain a load function"""
+
     pass
 
 

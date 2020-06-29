@@ -371,7 +371,9 @@ class BotWithHandler(hikari.Bot):
             attributes = []
             for item in dir(module):
                 item = getattr(module, item)
-                if isinstance(item, commands.Command) or isinstance(item, plugins.Plugin):
+                if isinstance(item, commands.Command) or isinstance(
+                    item, plugins.Plugin
+                ):
                     attributes.append(item)
             self.extensions[extension] = attributes
 

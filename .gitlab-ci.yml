@@ -1,5 +1,6 @@
 stages:
   - test
+  - build
   - deploy
 
 .reactive-job:
@@ -26,9 +27,22 @@ pages:
   script:
     - nox -s sphinx
     - mv docs/build public
-  stage: deploy
+  stage: build
   artifacts:
     paths:
       - public
+  only:
+    - master
+
+pypi:
+  environment:
+    name: prod
+    url: https://tandemdude.gitlab.io/lightbulb
+  extends:
+    - .cpython:3.8.2
+  script:
+    - pip install -U twine
+    - python setup.py sdist bdist_wheel
+    - twine upload --repository-url https://test.pypi.org/legacy/ --skip-existing dist/*
   only:
     - master

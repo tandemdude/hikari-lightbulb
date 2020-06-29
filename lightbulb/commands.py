@@ -20,6 +20,7 @@ import typing
 import inspect
 
 from lightbulb import context
+from lightbulb import plugins
 
 
 class Command:
@@ -36,19 +37,29 @@ class Command:
     """
 
     def __init__(
-        self, callable: typing.Callable, allow_extra_arguments: bool, name: str
+        self,
+        callable: typing.Callable,
+        allow_extra_arguments: bool,
+        name: str,
+        *,
+        plugin: plugins.Plugin = None
     ) -> None:
         self.callback: typing.Callable = callable
-        self.checks = []
+        self.plugin: typing.Optional[plugins.Plugin] = plugin
+        self.checks: typing.List[
+            typing.Callable[[context.Context], typing.Coroutine[None, typing.Any, bool]]
+        ] = []
         self.allow_extra_arguments: bool = allow_extra_arguments
         self.name: str = callable.__name__ if name is None else name
         self.help: typing.Optional[str] = inspect.getdoc(callable)
+
         signature = inspect.signature(callable)
         self._has_max_args: bool = (
             False
             if any(arg.kind == 2 for arg in signature.parameters.values())
             else True
         )
+
         self._max_args: int = len(signature.parameters) - 1
         self._min_args: int = -1
         for arg in signature.parameters.values():

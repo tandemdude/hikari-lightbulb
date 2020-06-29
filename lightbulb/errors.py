@@ -47,8 +47,32 @@ class CommandErrorEvent(base.Event):
         self.message = message
 
 
+class ExtensionError(Exception):
+    """Base exception for errors incurred during the loading and unloading of extensions."""
+
+    pass
+
+
+class ExtensionAlreadyLoaded(ExtensionError):
+    """Exception raised when an extension already loaded is attempted to be loaded."""
+
+    pass
+
+
+class ExtensionNotLoaded(ExtensionError):
+    """Exception raised when an extension not already loaded is attempted to be unloaded."""
+
+    pass
+
+
+class ExtensionMissingLoad(ExtensionError):
+    """Exception raised when an extension is attempted to be loaded but does not contain a load function"""
+
+    pass
+
+
 class CommandError(Exception):
-    """Base exception for the command handler."""
+    """Base exception for errors incurred during handling od commands."""
 
     pass
 

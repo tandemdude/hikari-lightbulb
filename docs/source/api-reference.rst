@@ -18,6 +18,14 @@ Commands
 
 ----
 
+Plugins
+=======
+
+.. automodule:: lightbulb.plugins
+    :members:
+
+----
+
 Checks
 ======
 

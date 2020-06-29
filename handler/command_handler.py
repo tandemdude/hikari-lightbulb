@@ -282,12 +282,15 @@ class BotWithHandler(hikari.Bot):
         command = self.commands.pop(name)
         return command.name if command is not None else None
 
-    def resolve_arguments(self, message: messages.Message) -> typing.List[str]:
+    def resolve_arguments(
+        self, message: messages.Message, prefix: str
+    ) -> typing.List[str]:
         """
         Resolves the arguments that a command was invoked with from the message containing the invocation.
 
         Args:
             message (:obj:`hikari.models.messages.Message`): The message to resolve the arguments for.
+            prefix (:obj:`str`): The prefix the command was executed with.
 
         Returns:
             List[ :obj:`str` ] List of the arguments the command was invoked with.
@@ -297,7 +300,7 @@ class BotWithHandler(hikari.Bot):
             be used to validate if the message was intended to invoke a command and if the command
             they attempted to invoke is actually valid.
         """
-        string_view = stringview.StringView(message.content)
+        string_view = stringview.StringView(message.content[len(prefix) :])
         return string_view.deconstruct_str()
 
     async def _evaluate_checks(
@@ -383,8 +386,6 @@ class BotWithHandler(hikari.Bot):
         if not event.message.content:
             return
 
-        args = self.resolve_arguments(event.message)
-
         prefixes = self.get_prefix(self, event.message)
         if inspect.iscoroutine(prefixes):
             prefixes = await prefixes
@@ -392,16 +393,19 @@ class BotWithHandler(hikari.Bot):
         if isinstance(prefixes, str):
             prefixes = [prefixes]
 
+        content = event.message.content
         prefix = None
         for p in prefixes:
-            if args[0].startswith(p):
+            if content.startswith(p):
                 prefix = p
                 break
 
         if prefix is None:
             return
 
-        invoked_with = args[0].replace(prefix, "")
+        args = self.resolve_arguments(event.message, prefix)
+
+        invoked_with = args[0]
         if invoked_with not in self.commands:
             self.event_dispatcher.dispatch(
                 errors.CommandErrorEvent(

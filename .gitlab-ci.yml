@@ -42,6 +42,7 @@ pypi:
     - .cpython:3.8.2
   script:
     - pip install -U twine
+    - pip install -r requirements.txt
     - python setup.py sdist bdist_wheel
     - twine upload --repository-url https://test.pypi.org/legacy/ --skip-existing dist/*
   stage: deploy

@@ -1,6 +1,5 @@
 stages:
   - test
-  - build
   - deploy
 
 .reactive-job:
@@ -27,7 +26,7 @@ pages:
   script:
     - nox -s sphinx
     - mv docs/build public
-  stage: build
+  stage: deploy
   artifacts:
     paths:
       - public

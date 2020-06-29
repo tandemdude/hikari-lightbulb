@@ -39,6 +39,7 @@ setup(
     author_email="tandemdude1@gmail.com",
     url="https://gitlab.com/tandemdude/lightbulb",
     packages=["lightbulb"],
+    license="LGPL-3.0-ONLY",
     install_requires=parse_requirements_file("requirements.txt"),
     python_requires=">=3.8.0,<3.10",
     classifiers=[

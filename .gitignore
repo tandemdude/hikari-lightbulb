@@ -32,5 +32,6 @@ pip-wheel-metadata/
 # Documentation
 .docs/build/
 
-# Test file
+# Test files
 bot_test.py
+extension_test.py

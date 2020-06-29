@@ -29,6 +29,7 @@ from lightbulb import commands
 from lightbulb import context
 from lightbulb import errors
 from lightbulb import stringview
+from lightbulb import plugins
 
 if typing.TYPE_CHECKING:
     from hikari.models import messages
@@ -92,6 +93,9 @@ class BotWithHandler(hikari.Bot):
 
         self.ignore_bots: bool = ignore_bots
         self.owner_ids: typing.Iterable[int] = owner_ids
+
+        self.extensions = {}
+        self.plugins: typing.MutableMapping[str, plugins.Plugin] = {}
         self.commands: typing.MutableMapping[
             str, typing.Union[commands.Command, commands.Group]
         ] = {}
@@ -257,9 +261,22 @@ class BotWithHandler(hikari.Bot):
         if not self.commands.get(name):
             self.commands[name] = commands.Group(func, allow_extra_arguments, name)
 
+    def add_plugin(self, plugin: plugins.Plugin) -> None:
+        """
+        Add a :obj:`.plugins.Plugin` to the bot including all of the plugin commands.
+
+        Args:
+            plugin (:obj:`.plugins.Plugin`): Plugin to add to the bot.
+
+        Returns:
+            ``None``
+        """
+        self.plugins[plugin.name] = plugin
+        self.commands.update(plugin.commands)
+
     def get_command(self, name: str) -> typing.Optional[commands.Command]:
         """
-        Get a command object from it's registered name.
+        Get a command object from its registered name.
 
         Args:
             name (:obj:`str`): The name of the command to get the object for.
@@ -268,6 +285,18 @@ class BotWithHandler(hikari.Bot):
             Optional[ :obj:`.commands.Command` ] command object registered to that name.
         """
         return self.commands.get(name)
+
+    def get_plugin(self, name: str) -> typing.Optional[plugins.Plugin]:
+        """
+        Get a plugin object from its registered name.
+
+        Args:
+             name (:obj:`str`): The name of the plugin to get the object for.
+
+        Returns:
+            Optional[ :obj:`.commands.Command` ] plugin object registered to that name.
+        """
+        return self.plugins.get(name)
 
     def remove_command(self, name: str) -> typing.Optional[str]:
         """
@@ -281,6 +310,77 @@ class BotWithHandler(hikari.Bot):
         """
         command = self.commands.pop(name)
         return command.name if command is not None else None
+
+    def remove_plugin(self, name: str) -> typing.Optional[str]:
+        """
+        Remove a plugin from the bot and return its name or ``None`` if no plugin was removed.
+
+        Args:
+            name (:obj:`str`): The name of the plugin to remove.
+
+        Returns:
+            Optional[ :obj:`str` ] name of the plugin that was removed.
+        """
+        plugin = self.plugins.pop(name)
+        if plugin is not None:
+            for k in plugin.commands.keys():
+                self.commands.pop(k)
+        return plugin.name if plugin is not None else None
+
+    def load_extension(self, extension: str) -> None:
+        """
+        Load an external extension into the bot. Extension name follows the format ``<directory>.<filename>``
+        The extension **must** contain a function ``load`` which takes a single argument which will be the
+        bot instance you are loading the extension into.
+
+        Args:
+            extension (:obj:`str`): The name of the extension to load.
+
+        Returns:
+            ``None``
+
+        Raises:
+            ExtensionAlreadyLoaded: If the extension has already been loaded.
+            ExtensionMissingLoad: If the extension to be loaded does not contain a ``load`` function.
+
+        Example:
+            This method is useful when wanting to split your bot up into multiple files.
+            An example extension is seen below  - ``example.py`` and would be loaded by calling
+            the following: ``bot.load_extension("example")``
+
+            .. code-block:: python
+
+                from lightbulb import plugins
+
+                class MyPlugin(plugins.Plugin):
+                    ...
+
+                def load(bot):
+                    bot.add_plugin(MyPlugin())
+
+        """
+        if extension in self.extensions:
+            raise errors.ExtensionAlreadyLoaded(f"{extension} is already loaded.")
+
+        module = __import__(extension)
+
+        if "load" not in dir(module):
+            raise errors.ExtensionMissingLoad(f"{extension} is missing a load function")
+        else:
+            module.load(self)
+            attributes = []
+            for item in dir(module):
+                item = getattr(module, item)
+                if isinstance(item, commands.Command) or isinstance(item, plugins.Plugin):
+                    attributes.append(item)
+            self.extensions[extension] = attributes
+
+    def unload_extension(self, extension: str) -> None:
+        """
+        **NOT IMPLEMENTED YET**
+        Watch this space
+        """
+        raise NotImplementedError
 
     def resolve_arguments(
         self, message: messages.Message, prefix: str
@@ -347,7 +447,7 @@ class BotWithHandler(hikari.Bot):
         if not command._has_max_args and len(args) >= command._min_args:
             await command(context, *args)
 
-        elif len(args) < command._max_args:
+        elif len(args) < command._min_args:
             self.event_dispatcher.dispatch(
                 errors.CommandErrorEvent(
                     errors.NotEnoughArguments(context.invoked_with), context.message

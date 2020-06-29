@@ -37,11 +37,18 @@ class Command:
     """
 
     def __init__(
-        self, callable: typing.Callable, allow_extra_arguments: bool, name: str, *, plugin: plugins.Plugin=None
+        self,
+        callable: typing.Callable,
+        allow_extra_arguments: bool,
+        name: str,
+        *,
+        plugin: plugins.Plugin = None
     ) -> None:
         self.callback: typing.Callable = callable
         self.plugin: typing.Optional[plugins.Plugin] = plugin
-        self.checks: typing.List[typing.Callable[[context.Context], typing.Coroutine[None, typing.Any, bool]]] = []
+        self.checks: typing.List[
+            typing.Callable[[context.Context], typing.Coroutine[None, typing.Any, bool]]
+        ] = []
         self.allow_extra_arguments: bool = allow_extra_arguments
         self.name: str = callable.__name__ if name is None else name
         self.help: typing.Optional[str] = inspect.getdoc(callable)

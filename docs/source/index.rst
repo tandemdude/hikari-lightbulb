@@ -20,6 +20,15 @@ Repository: `View on GitLab <https://gitlab.com/tandemdude/lightbulb>`_
 
 Docs: `View Here <https://tandemdude.gitlab.io/lightbulb>`_
 
+
+**Contributors:**
+
+- `thomm.o#8637 (creator) <https://gitlab.com/tandemdude>`_
+
+- `davfsa#7026 <https://gitlab.com/davfsa>`_
+
+**Index:**
+
 .. toctree::
     :maxdepth: 2
 

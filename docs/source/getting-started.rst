@@ -4,7 +4,7 @@ Getting Started
 
 Lightbulb can be installed using Python's pip provided that you already have git installed:
 
-``$ pip install lightbulb``
+``$ pip install hikari-lightbulb``
 
 .. note::
     This library is dependent on Hikari and so naturally will only be available for Python

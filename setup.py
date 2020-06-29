@@ -30,7 +30,7 @@ def parse_requirements_file(path):
 
 
 setup(
-    name="lightbulb",
+    name="hikari-lightbulb",
     version="0.0.5",
     description="A simple to use command handler for Hikari",
     long_description=long_description(),

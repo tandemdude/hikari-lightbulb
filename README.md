@@ -3,7 +3,7 @@
 
 ## Installation
 
-`$ pip install lightbulb`
+`$ pip install hikari-lightbulb`
 
 ## Usage
 

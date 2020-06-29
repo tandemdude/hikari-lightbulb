@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from setuptools import setup
+from lightbulb import __version__ as lightbulb_version
 
 
 def long_description():
@@ -31,7 +32,7 @@ def parse_requirements_file(path):
 
 setup(
     name="hikari-lightbulb",
-    version="0.0.5",
+    version=lightbulb_version,
     description="A simple to use command handler for Hikari",
     long_description=long_description(),
     long_description_content_type="text/markdown",

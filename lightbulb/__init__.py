@@ -19,4 +19,4 @@ from lightbulb.command_handler import BotWithHandler as Bot
 from lightbulb import errors
 from lightbulb.checks import guild_only, dm_only, owner_only
 
-__version__ = "0.0.5"
+__version__ = "0.0.6"

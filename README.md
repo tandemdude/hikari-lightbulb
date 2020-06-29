@@ -1,13 +1,16 @@
 # Simple command handler for hikari
 **By yours truly (thomm.o)**
 
-This is not installable through pip or anything at the moment so just download the project and dump the `handler` directory in the same place as your bot file.
+## Installation
 
-Usage:
+`$ pip install hikari-lightbulb`
+
+## Usage
+
 ```python
-import handler
+import lightbulb
 
-bot = handler.Bot(token="token_here", prefix="test.")
+bot = lightbulb.Bot(token="token_here", prefix="test.")
 
 @bot.command()
 async def ping(ctx):
@@ -16,6 +19,4 @@ async def ping(ctx):
 bot.run()
 ```
 
-TODO:
-- Help command
-- Other stuff to make it coolerer
+[Documentation](https://tandemdude.gitlab.io/lightbulb)

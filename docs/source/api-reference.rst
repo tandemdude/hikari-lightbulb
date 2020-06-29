@@ -4,7 +4,7 @@ API Reference
 
 Command Handler
 ===============
-.. automodule:: handler.command_handler
+.. automodule:: lightbulb.command_handler
     :members:
 
 ----
@@ -12,7 +12,7 @@ Command Handler
 Commands
 ========
 
-.. automodule:: handler.commands
+.. automodule:: lightbulb.commands
     :members:
     :show-inheritance:
 
@@ -23,7 +23,7 @@ Checks
 
 Note that all check decorators **must** be above the command decorator otherwise your code will not work.
 
-.. automodule:: handler.checks
+.. automodule:: lightbulb.checks
     :members:
 
 ----
@@ -31,7 +31,7 @@ Note that all check decorators **must** be above the command decorator otherwise
 Context
 =======
 
-.. automodule:: handler.context
+.. automodule:: lightbulb.context
     :members:
 
 ----
@@ -39,7 +39,7 @@ Context
 Errors
 ======
 
-.. automodule:: handler.errors
+.. automodule:: lightbulb.errors
     :members:
     :show-inheritance:
     :member-order: bysource
@@ -49,6 +49,6 @@ Errors
 Stringview
 ==========
 
-.. automodule:: handler.stringview
+.. automodule:: lightbulb.stringview
     :members:
 

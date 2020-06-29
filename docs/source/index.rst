@@ -7,18 +7,18 @@
 
 ----
 
-Hikari Command Handler
-======================
+Lightbulb
+=========
 
-Hikari Command Handler is a python library designed for use with the python library `Hikari <https://gitlab.com/nekokatt/hikari>`_
+Lightbulb is a command handler library designed for use with `Hikari <https://gitlab.com/nekokatt/hikari>`_
 
 It aims to provide an easy to use interface for building commands with your bot.
 
 This library is currently unfinished but you can help speed up the development by contributing and submitting merge requests to the repository. It is working in its current state but I'd love to see more functionality added further down the line!
 
-Repository: `View on GitLab <https://gitlab.com/tandemdude/hikari-command-handler>`_
+Repository: `View on GitLab <https://gitlab.com/tandemdude/lightbulb>`_
 
-Docs: `View Here <https://tandemdude.gitlab.io/hikari-command-handler/index.html>`_
+Docs: `View Here <https://tandemdude.gitlab.io/lightbulb>`_
 
 .. toctree::
     :maxdepth: 2

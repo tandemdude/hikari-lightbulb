@@ -18,7 +18,7 @@
 import nox
 import os
 
-PATH_TO_PROJECT = os.path.join(".", "handler")
+PATH_TO_PROJECT = os.path.join(".", "lightbulb")
 
 
 @nox.session(python=["3.8"])

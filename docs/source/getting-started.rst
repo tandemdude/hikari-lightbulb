@@ -2,9 +2,9 @@
 Getting Started
 ===============
 
-Hikari Command Handler can be installed using Python's pip provided that you already have git installed:
+Lightbulb can be installed using Python's pip provided that you already have git installed:
 
-``$ pip install git+https://gitlab.com/tandemdude/hikari-command-handler.git``
+``$ pip install hikari-lightbulb``
 
 .. note::
     This library is dependent on Hikari and so naturally will only be available for Python
@@ -18,14 +18,14 @@ Your first bot can be written in just a few lines of code:
 ::
 
     # Import the command handler
-    import handler
+    import lightbulb
 
     # Instantiate a Bot instance
-    bot = handler.Bot(token="your_token_here", prefix="your_prefix_here")
+    bot = lightbulb.Bot(token="your_token_here", prefix="your_prefix_here")
 
     # Define a command using the bot.command decorator
     # Note that all commands must have the argument ctx which will be an instance
-    # of the handler.context.Context class.
+    # of the lightbulb.context.Context class.
     @bot.command()
     async def ping(ctx):
         # Send a message to the channel the command was used in

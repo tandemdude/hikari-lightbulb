@@ -362,12 +362,19 @@ class BotWithHandler(hikari.Bot):
         if extension in self.extensions:
             raise errors.ExtensionAlreadyLoaded(f"{extension} is already loaded.")
 
+        paths = extension.split(".")
         module = __import__(extension)
 
-        if "load" not in dir(module):
+        submodule = None
+        for path in paths[1:]:
+            submodule = getattr(module if submodule is None else submodule, path)
+
+        load_location = module if submodule is None else submodule
+
+        if not hasattr(load_location, "load"):
             raise errors.ExtensionMissingLoad(f"{extension} is missing a load function")
         else:
-            module.load(self)
+            load_location.load(self)
             attributes = []
             for item in dir(module):
                 item = getattr(module, item)

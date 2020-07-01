@@ -119,8 +119,7 @@ class BotWithHandler(hikari.Bot):
         if application.team is not None:
             self.owner_ids.extend([member_id for member_id in application.team.members])
 
-    def command(
-        self, **kwargs) -> typing.Callable:
+    def command(self, **kwargs) -> typing.Callable:
         """
         A decorator that registers a callable as a command for the handler.
 
@@ -145,14 +144,19 @@ class BotWithHandler(hikari.Bot):
         def decorate(func: typing.Callable):
             nonlocal commands
             name = kwargs.get("name", func.__name__)
-            commands[name] = commands.Command(func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []))
+            commands[name] = commands.Command(
+                func,
+                name,
+                kwargs.get("allow_extra_arguments", True),
+                kwargs.get("aliases", []),
+            )
             for alias in kwargs.get("aliases", []):
                 commands[alias] = commands[name]
             return commands[name]
+
         return decorate
 
-    def group(
-        self, **kwargs) -> typing.Callable:
+    def group(self, **kwargs) -> typing.Callable:
         """
         A decorator that registers a callable as a command group for the handler.
 
@@ -177,7 +181,12 @@ class BotWithHandler(hikari.Bot):
         def decorate(func: typing.Callable):
             nonlocal commands
             name = kwargs.get("name", func.__name__)
-            commands[name] = commands.Group(func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []))
+            commands[name] = commands.Group(
+                func,
+                name,
+                kwargs.get("allow_extra_arguments", True),
+                kwargs.get("aliases", []),
+            )
             for alias in kwargs.get("aliases", []):
                 commands[alias] = commands[name]
             return commands[name]
@@ -213,7 +222,12 @@ class BotWithHandler(hikari.Bot):
         """
         if not isinstance(func, commands.Command):
             name = kwargs.get("name", func.__name__)
-            self.commands[name] = commands.Command(func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []))
+            self.commands[name] = commands.Command(
+                func,
+                name,
+                kwargs.get("allow_extra_arguments", True),
+                kwargs.get("aliases", []),
+            )
             for alias in kwargs.get("aliases", []):
                 self.commands[alias] = self.commands[name]
         else:
@@ -241,7 +255,12 @@ class BotWithHandler(hikari.Bot):
             :meth:`.command_handler.BotWithHandler.add_command`
         """
         name = kwargs.get("name", func.__name__)
-        self.commands[name] = commands.Group(func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []))
+        self.commands[name] = commands.Group(
+            func,
+            name,
+            kwargs.get("allow_extra_arguments", True),
+            kwargs.get("aliases", []),
+        )
         for alias in kwargs.get("aliases", []):
             self.commands[alias] = self.commands[name]
         return self.commands[name]

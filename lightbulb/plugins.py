@@ -59,7 +59,9 @@ class Plugin:
         ] = {}
 
         for name, member in inspect.getmembers(type(self)):
-            if isinstance(member, commands.Command) or isinstance(member, commands.Group):
+            if isinstance(member, commands.Command) or isinstance(
+                member, commands.Group
+            ):
                 member._pass_self = True
                 member._min_args -= 1
                 member._max_args -= 1

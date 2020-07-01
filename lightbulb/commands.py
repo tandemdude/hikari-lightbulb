@@ -63,7 +63,14 @@ class Command(Invokable):
         callback: The coroutine to register as the command's callback.
         name (:obj:`str`): The name to register the command to.
     """
-    def __init__(self, callback: typing.Callable, name: str, allow_extra_arguments: bool, aliases: typing.Iterable[str]) -> None:
+
+    def __init__(
+        self,
+        callback: typing.Callable,
+        name: str,
+        allow_extra_arguments: bool,
+        aliases: typing.Iterable[str],
+    ) -> None:
         self._callback = callback
         self._name = name
         self._allow_extra_arguments = allow_extra_arguments
@@ -145,11 +152,14 @@ class Group(Command):
     Keyword Args:
         **kwargs: The kwargs passed to :obj:`.commands.Command` in its constructor
     """
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.subcommands = {}
 
-    def _resolve_subcommand(self, args) -> typing.Tuple[typing.Union[Command, Group], typing.Iterable[str]]:
+    def _resolve_subcommand(
+        self, args
+    ) -> typing.Tuple[typing.Union[Command, Group], typing.Iterable[str]]:
         if len(args) == 1:
             return self, ()
         else:
@@ -197,10 +207,16 @@ class Group(Command):
         def decorate(func):
             nonlocal subcommands
             name = kwargs.get("name", func.__name__)
-            subcommands[name] = Command(func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []))
+            subcommands[name] = Command(
+                func,
+                name,
+                kwargs.get("allow_extra_arguments", True),
+                kwargs.get("aliases", []),
+            )
             for alias in kwargs.get("aliases", []):
                 subcommands[alias] = subcommands[name]
             return subcommands[name]
+
         return decorate
 
 
@@ -214,9 +230,16 @@ def command(**kwargs):
             more arguments than it takes. Defaults to True - will not raise an error.
         aliases (Iterable[ :obj:`str` ]): Iterable of aliases which will also invoke the command.
     """
+
     def decorate(func):
         name = kwargs.get("name", func.__name__)
-        return Command(func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []))
+        return Command(
+            func,
+            name,
+            kwargs.get("allow_extra_arguments", True),
+            kwargs.get("aliases", []),
+        )
+
     return decorate
 
 
@@ -230,7 +253,14 @@ def group(**kwargs):
             more arguments than it takes. Defaults to True - will not raise an error.
         aliases (Optional[ Iterable[ :obj:`str` ] ]): Iterable of aliases which will also invoke the command.
     """
+
     def decorate(func):
         name = kwargs.get("name", func.__name__)
-        return Group(func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []))
+        return Group(
+            func,
+            name,
+            kwargs.get("allow_extra_arguments", True),
+            kwargs.get("aliases", []),
+        )
+
     return decorate

@@ -41,16 +41,20 @@ class Command:
         callable: typing.Callable,
         allow_extra_arguments: bool,
         name: str,
+        aliases: typing.Iterable[str],
         *,
         plugin: plugins.Plugin = None
     ) -> None:
         self.callback: typing.Callable = callable
+        self.allow_extra_arguments: bool = allow_extra_arguments
+        self.name: str = callable.__name__ if name is None else name
+        self.aliases = aliases
         self.plugin: typing.Optional[plugins.Plugin] = plugin
+
         self.checks: typing.List[
             typing.Callable[[context.Context], typing.Coroutine[None, typing.Any, bool]]
         ] = []
-        self.allow_extra_arguments: bool = allow_extra_arguments
-        self.name: str = callable.__name__ if name is None else name
+
         self.help: typing.Optional[str] = inspect.getdoc(callable)
 
         signature = inspect.signature(callable)
@@ -136,7 +140,11 @@ class Group(Command):
             )
 
     def command(
-        self, *, allow_extra_arguments: bool = True, name: typing.Optional[str] = None
+        self,
+        *,
+        allow_extra_arguments: bool = True,
+        name: typing.Optional[str] = None,
+        aliases: typing.Optional[typing.Iterable[str]] = None
     ):
         """
         A decorator that registers a callable as a subcommand for the command group.
@@ -145,6 +153,7 @@ class Group(Command):
             allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if the command is run
                 with more arguments than it requires. Defaults to True.
             name (:obj:`str`): Optional name of the command. Defaults to the name of the function if not specified.
+            aliases (Optional[ Iterable[ :obj:`str` ] ]): An iterable of aliases which can also invoke the command.
 
         Example:
 
@@ -166,9 +175,15 @@ class Group(Command):
             nonlocal registered_commands
             nonlocal allow_extra_arguments
             nonlocal name
+            nonlocal aliases
             name = func.__name__ if name is None else name
+            aliases = [] if aliases is None else aliases
             if not registered_commands.get(name):
-                registered_commands[name] = Command(func, allow_extra_arguments, name)
+                registered_commands[name] = Command(
+                    func, allow_extra_arguments, name, aliases
+                )
+                for alias in aliases:
+                    registered_commands[alias] = registered_commands[name]
                 return registered_commands[name]
 
         return decorate

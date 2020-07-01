@@ -120,7 +120,11 @@ class BotWithHandler(hikari.Bot):
             self.owner_ids.extend([member_id for member_id in application.team.members])
 
     def command(
-        self, *, allow_extra_arguments: bool = True, name: typing.Optional[str] = None
+        self,
+        *,
+        allow_extra_arguments: bool = True,
+        name: typing.Optional[str] = None,
+        aliases: typing.Optional[typing.Iterable[str]] = None,
     ) -> typing.Callable:
         """
         A decorator that registers a callable as a command for the handler.
@@ -129,6 +133,7 @@ class BotWithHandler(hikari.Bot):
             allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if the command is run
                 with more arguments than it requires. Defaults to True.
             name (:obj:`str`): Optional name of the command. Defaults to the name of the function if not specified.
+            aliases (Optional[ Iterable[ :obj:`str` ] ]): An iterable of aliases which can also invoke the command.
 
         Example:
 
@@ -143,23 +148,26 @@ class BotWithHandler(hikari.Bot):
         See Also:
             :meth:`.command_handler.BotWithHandler.add_command`
         """
-        registered_commands = self.commands
 
         def decorate(func: typing.Callable):
-            nonlocal registered_commands
             nonlocal allow_extra_arguments
             nonlocal name
-            name = func.__name__ if name is None else name
-            if not registered_commands.get(name):
-                registered_commands[name] = commands.Command(
-                    func, allow_extra_arguments, name
-                )
-                return registered_commands[name]
+            nonlocal aliases
+            return self.add_command(
+                func,
+                allow_extra_arguments=allow_extra_arguments,
+                name=name,
+                aliases=aliases,
+            )
 
         return decorate
 
     def group(
-        self, *, allow_extra_arguments: bool = True, name: typing.Optional[str] = None
+        self,
+        *,
+        allow_extra_arguments: bool = True,
+        name: typing.Optional[str] = None,
+        aliases: typing.Optional[typing.Iterable[str]] = None,
     ) -> typing.Callable:
         """
         A decorator that registers a callable as a command group for the handler.
@@ -168,6 +176,7 @@ class BotWithHandler(hikari.Bot):
             allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if the command is run
                 with more arguments than it requires. Defaults to True.
             name (:obj:`str`): Optional name of the command. Defaults to the name of the function if not specified.
+            aliases (Optional[ Iterable[ :obj:`str` ] ]): An iterable of aliases which can also invoke the command.
 
         Example:
 
@@ -182,18 +191,17 @@ class BotWithHandler(hikari.Bot):
         See Also:
             :meth:`.commands.Group.command` for how to add subcommands to a group.
         """
-        registered_commands = self.commands
 
         def decorate(func: typing.Callable):
-            nonlocal registered_commands
             nonlocal allow_extra_arguments
             nonlocal name
-            name = func.__name__ if name is None else name
-            if not registered_commands.get(name):
-                registered_commands[name] = commands.Group(
-                    func, allow_extra_arguments, name
-                )
-                return registered_commands.get(name)
+            nonlocal aliases
+            return self.add_group(
+                func,
+                allow_extra_arguments=allow_extra_arguments,
+                name=name,
+                aliases=aliases,
+            )
 
         return decorate
 
@@ -203,7 +211,8 @@ class BotWithHandler(hikari.Bot):
         *,
         allow_extra_arguments=True,
         name: typing.Optional[str] = None,
-    ) -> None:
+        aliases: typing.Optional[typing.Iterable[str]] = None,
+    ) -> commands.Command:
         """
         Adds a command to the bot. Similar to the ``command`` decorator.
 
@@ -212,9 +221,10 @@ class BotWithHandler(hikari.Bot):
             allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if the command is run
                 with more arguments than it requires. Defaults to True.
             name (:obj:`str`): Optional name of the command. Defaults to the name of the function if not specified.
+            aliases (Optional[ Iterable[ :obj:`str` ] ]): An iterable of aliases which can also invoke the command.
 
         Returns:
-            ``None``
+            :obj:`commands.Command` that was added to the bot.
 
         Example:
 
@@ -231,8 +241,14 @@ class BotWithHandler(hikari.Bot):
             :meth:`.command_handler.BotWithHandler.command`
         """
         name = func.__name__ if name is None else name
+        aliases = [] if aliases is None else aliases
         if not self.commands.get(name):
-            self.commands[name] = commands.Command(func, allow_extra_arguments, name)
+            self.commands[name] = commands.Command(
+                func, allow_extra_arguments, name, aliases
+            )
+            for alias in aliases:
+                self.commands[alias] = self.commands[name]
+            return self.commands[name]
 
     def add_group(
         self,
@@ -240,7 +256,8 @@ class BotWithHandler(hikari.Bot):
         *,
         allow_extra_arguments=True,
         name: typing.Optional[str] = None,
-    ) -> None:
+        aliases: typing.Optional[typing.Iterable[str]] = None,
+    ) -> commands.Group:
         """
         Adds a command group to the bot. Similar to the ``group`` decorator.
 
@@ -249,17 +266,24 @@ class BotWithHandler(hikari.Bot):
             allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if the command is run
                 with more arguments than it requires. Defaults to True.
             name (:obj:`str`): Optional name of the command group. Defaults to the name of the function if not specified.
+            aliases (Optional[ Iterable[ :obj:`str` ] ]): An iterable of aliases which can also invoke the command.
 
         Returns:
-            ``None``
+            :obj:`commands.Group` that was added to the bot.
 
         See Also:
             :meth:`.command_handler.BotWithHandler.group`
             :meth:`.command_handler.BotWithHandler.add_command`
         """
         name = func.__name__ if name is None else name
+        aliases = [] if aliases is None else aliases
         if not self.commands.get(name):
-            self.commands[name] = commands.Group(func, allow_extra_arguments, name)
+            self.commands[name] = commands.Group(
+                func, allow_extra_arguments, name, aliases
+            )
+            for alias in aliases:
+                self.commands[alias] = self.commands[name]
+            return self.commands[name]
 
     def add_plugin(self, plugin: plugins.Plugin) -> None:
         """

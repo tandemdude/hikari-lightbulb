@@ -27,6 +27,10 @@ Docs: `View Here <https://tandemdude.gitlab.io/lightbulb>`_
 
 - `davfsa#7026 <https://gitlab.com/davfsa>`_
 
+- `nekoka#8788 <https://gitlab.com/nekokatt>`_
+
+- `Forbidden#0001 <https://gitlab.com/Forbidden-A>`_
+
 **Index:**
 
 .. toctree::

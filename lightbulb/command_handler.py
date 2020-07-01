@@ -139,20 +139,20 @@ class BotWithHandler(hikari.Bot):
         See Also:
             :meth:`.command_handler.BotWithHandler.add_command`
         """
-        commands = self.commands
+        registered_commands = self.commands
 
         def decorate(func: typing.Callable):
-            nonlocal commands
+            nonlocal registered_commands
             name = kwargs.get("name", func.__name__)
-            commands[name] = commands.Command(
+            registered_commands[name] = commands.Command(
                 func,
                 name,
                 kwargs.get("allow_extra_arguments", True),
                 kwargs.get("aliases", []),
             )
             for alias in kwargs.get("aliases", []):
-                commands[alias] = commands[name]
-            return commands[name]
+                registered_commands[alias] = registered_commands[name]
+            return registered_commands[name]
 
         return decorate
 
@@ -176,20 +176,20 @@ class BotWithHandler(hikari.Bot):
         See Also:
             :meth:`.commands.Group.command` for how to add subcommands to a group.
         """
-        commands = self.commands
+        registered_commands = self.commands
 
         def decorate(func: typing.Callable):
-            nonlocal commands
+            nonlocal registered_commands
             name = kwargs.get("name", func.__name__)
-            commands[name] = commands.Group(
+            registered_commands[name] = commands.Group(
                 func,
                 name,
                 kwargs.get("allow_extra_arguments", True),
                 kwargs.get("aliases", []),
             )
             for alias in kwargs.get("aliases", []):
-                commands[alias] = commands[name]
-            return commands[name]
+                registered_commands[alias] = registered_commands[name]
+            return registered_commands[name]
 
         return decorate
 

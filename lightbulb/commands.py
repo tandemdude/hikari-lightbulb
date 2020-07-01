@@ -16,48 +16,62 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
-import typing
+import abc
 import inspect
-
-from lightbulb import context
-from lightbulb import plugins
+import typing
 
 
-class Command:
+class Invokable(abc.ABC):
+    @property
+    @abc.abstractmethod
+    def name(self) -> str:
+        ...
+
+    @abc.abstractmethod
+    def invoke(self, *args, **kwargs):
+        ...
+
+    def __get__(self, instance, owner):
+        descriptor = _InvokableDescriptor(instance, self)
+        instance.__dict__[self.name] = descriptor
+        return descriptor
+
+
+class _InvokableDescriptor(Invokable):
+    def __init__(self, instance, invokable):
+        self.__instance = instance
+        self.__invokable = invokable
+
+    @property
+    def name(self):
+        return
+
+    def __getattr__(self, item):
+        return getattr(self.__instance, item)
+
+    def invoke(self, *args, **kwargs):
+        return self.__invokable.invoke(self.__instance, *args, **kwargs)
+
+
+class Command(Invokable):
     """
-    A command that can be invoked by a user. When invoked, the :attr:`.commands.Command.callback` will be called
-    with a set argument ``ctx``, and instance of the :class:`.context.Context` class, and any other arguments supplied
-    by the user.
+    A command that can be invoked by a user. When invoked, the callback
+    will be called with a set argument ctx, an instance of the :obj:`.context.Context`
+    class, and any other arguments supplied by the user.
 
     Args:
-        callable (:obj:`typing.Callable`): The callable object linked to the command.
-        allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if the command is run
-                with more arguments than it requires. Defaults to True.
-        name (:obj:`str`): Optional name of the command. Defaults to the name of the function if not specified.
+        callback: The coroutine to register as the command's callback.
+        name (:obj:`str`): The name to register the command to.
     """
+    def __init__(self, callback: typing.Callable, name: str, allow_extra_arguments: bool, aliases: typing.Iterable[str]) -> None:
+        self._callback = callback
+        self._name = name
+        self._allow_extra_arguments = allow_extra_arguments
+        self._aliases = aliases
+        self._checks = []
+        self._pass_self = False
 
-    def __init__(
-        self,
-        callable: typing.Callable,
-        allow_extra_arguments: bool,
-        name: str,
-        aliases: typing.Iterable[str],
-        *,
-        plugin: plugins.Plugin = None
-    ) -> None:
-        self.callback: typing.Callable = callable
-        self.allow_extra_arguments: bool = allow_extra_arguments
-        self.name: str = callable.__name__ if name is None else name
-        self.aliases = aliases
-        self.plugin: typing.Optional[plugins.Plugin] = plugin
-
-        self.checks: typing.List[
-            typing.Callable[[context.Context], typing.Coroutine[None, typing.Any, bool]]
-        ] = []
-
-        self.help: typing.Optional[str] = inspect.getdoc(callable)
-
-        signature = inspect.signature(callable)
+        signature = inspect.signature(callback)
         self._has_max_args: bool = (
             False
             if any(arg.kind == 2 for arg in signature.parameters.values())
@@ -70,23 +84,40 @@ class Command:
             if arg.default == inspect.Parameter.empty:
                 self._min_args += 1
 
-    async def __call__(self, *args, **kwargs) -> None:
-        await self.callback(*args)
-
-    def add_check(
-        self,
-        check: typing.Callable[
-            [context.Context], typing.Coroutine[None, typing.Any, bool]
-        ],
-    ) -> None:
+    @property
+    def name(self) -> str:
         """
-        Add a check to an instance of :obj:`.commands.Command`. The check passed must
+        The registered name of the command
+
+        Returns:
+            :obj:`str`: Name of the command
+        """
+        return self._name
+
+    def invoke(self, *args, **kwargs):
+        """
+        Invoke the command with given args and kwargs.
+
+        Args:
+            *args: The positional arguments to invoke the command with.
+
+        Keyword Args:
+            **kwargs: The keyword arguments to invoke the command with.
+
+        """
+        if self._pass_self:
+            return self._callback(self, *args, **kwargs)
+        return self._callback(*args, **kwargs)
+
+    def add_check(self, check_func) -> None:
+        """
+        Add a check to an instance of :obj:`.commands.Command` or a subclass. The check passed must
         be an awaitable function taking a single argument which will be an instance of :obj:`.context.Context`.
         It must also either return a boolean denoting whether or not the check passed,
         or raise an instance of :obj:`.errors.CheckFailure` or a subclass.
 
         Args:
-            check (Callable[ [ :obj:`.context.Context` ], Coroutine[ ``None``, ``None``, :obj:`bool` ] ]): Check to add to the command
+            check_func (Callable[ [ :obj:`.context.Context` ], Coroutine[ ``None``, ``None``, :obj:`bool` ] ]): Check to add to the command
 
         Returns:
             ``None``
@@ -98,9 +129,9 @@ class Command:
                 async def author_name_startswith_foo(ctx):
                     return ctx.author.username.startswith("foo")
 
-                bot.get_command("foo").add_check(author_name_startswith)
+                bot.get_command("foo").add_check(author_name_startswith_foo)
         """
-        self.checks.append(check)
+        self._checks.append(check_func)
 
 
 class Group(Command):
@@ -110,46 +141,38 @@ class Group(Command):
 
     Args:
         *args: The args passed to :obj:`.commands.Command` in its constructor
+
+    Keyword Args:
         **kwargs: The kwargs passed to :obj:`.commands.Command` in its constructor
     """
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.subcommands: typing.MutableMapping[str, Command] = {}
+        self.subcommands = {}
 
-    def resolve_subcommand(
-        self, args: typing.List[str]
-    ) -> typing.Tuple[typing.Union[Command, Group], typing.List[str]]:
-        """
-        Resolve the subcommand that should be called from the list of arguments provided. If
-        not subcommand is found it returns itself to be invoked instead.
-
-        Args:
-            args (List[ :obj:`str` ]): Arguments to resolve subcommand from
-
-        Returns:
-            Tuple[ Union[ :obj:`.commands.Command`, :obj:`.commands.Group` ], List[ :obj:`str` ] ] Containing the command
-            to be invoked, followed by a list of the arguments for the command to be invoked with.
-        """
+    def _resolve_subcommand(self, args) -> typing.Tuple[typing.Union[Command, Group], typing.Iterable[str]]:
         if len(args) == 1:
-            return (self, args[1:])
+            return self, ()
         else:
             subcommand = self.subcommands.get(args[1])
-            return (
-                (subcommand, args[2:]) if subcommand is not None else (self, args[1:])
-            )
+            return (self, args[1:]) if subcommand is None else (subcommand, args[2:])
 
-    def command(
-        self,
-        *,
-        allow_extra_arguments: bool = True,
-        name: typing.Optional[str] = None,
-        aliases: typing.Optional[typing.Iterable[str]] = None
-    ):
+    def get_subcommand(self, name: str) -> Command:
+        """
+        Get a command object for a subcommand of the group from it's registered name.
+
+        Args:
+            name (:obj:`str`): The name of the command to get the object for.
+
+        Returns:
+            Optional[ :obj:`.commands.Command` ]: command object registered to that name.
+        """
+        return self.subcommands.get(name)
+
+    def command(self, **kwargs):
         """
         A decorator that registers a callable as a subcommand for the command group.
 
-        Args:
+        Keyword Args:
             allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if the command is run
                 with more arguments than it requires. Defaults to True.
             name (:obj:`str`): Optional name of the command. Defaults to the name of the function if not specified.
@@ -169,33 +192,45 @@ class Group(Command):
                 async def bar(ctx):
                     await ctx.reply("Invoked foo bar")
         """
-        registered_commands = self.subcommands
+        subcommands = self.subcommands
 
-        def decorate(func: typing.Callable):
-            nonlocal registered_commands
-            nonlocal allow_extra_arguments
-            nonlocal name
-            nonlocal aliases
-            name = func.__name__ if name is None else name
-            aliases = [] if aliases is None else aliases
-            if not registered_commands.get(name):
-                registered_commands[name] = Command(
-                    func, allow_extra_arguments, name, aliases
-                )
-                for alias in aliases:
-                    registered_commands[alias] = registered_commands[name]
-                return registered_commands[name]
-
+        def decorate(func):
+            nonlocal subcommands
+            name = kwargs.get("name", func.__name__)
+            subcommands[name] = Command(func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []))
+            for alias in kwargs.get("aliases", []):
+                subcommands[alias] = subcommands[name]
+            return subcommands[name]
         return decorate
 
-    def get_subcommand(self, name: str) -> typing.Optional[Command]:
-        """
-        Get a command object for a subcommand of the group from it's registered name.
 
-        Args:
-            name (:obj:`str`): The name of the command to get the object for.
+def command(**kwargs):
+    """
+    A decorator to convert a coroutine into a :obj:`.commands.Command` object.
 
-        Returns:
-            Optional[ :obj:`.commands.Command` ] command object registered to that name.
-        """
-        return self.subcommands.get(name)
+    Keyword Args:
+        name (Optional[ :obj:`str` ]): Name to register the command to. Defaults to the name of the coroutine.
+        allow_extra_arguments (Optional[ :obj:`bool` ]): Whether or not the command should error when run with
+            more arguments than it takes. Defaults to True - will not raise an error.
+        aliases (Iterable[ :obj:`str` ]): Iterable of aliases which will also invoke the command.
+    """
+    def decorate(func):
+        name = kwargs.get("name", func.__name__)
+        return Command(func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []))
+    return decorate
+
+
+def group(**kwargs):
+    """
+    A decorator to convert a coroutine into a :obj:`.commands.Group` object.
+
+    Keyword Args:
+        name (Optional[ :obj:`str` ]): Name to register the command to. Defaults to the name of the coroutine.
+        allow_extra_arguments (Optional[ :obj:`bool` ]): Whether or not the command should error when run with
+            more arguments than it takes. Defaults to True - will not raise an error.
+        aliases (Optional[ Iterable[ :obj:`str` ] ]): Iterable of aliases which will also invoke the command.
+    """
+    def decorate(func):
+        name = kwargs.get("name", func.__name__)
+        return Group(func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []))
+    return decorate

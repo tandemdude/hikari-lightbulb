@@ -119,21 +119,12 @@ class BotWithHandler(hikari.Bot):
         if application.team is not None:
             self.owner_ids.extend([member_id for member_id in application.team.members])
 
-    def command(
-        self,
-        *,
-        allow_extra_arguments: bool = True,
-        name: typing.Optional[str] = None,
-        aliases: typing.Optional[typing.Iterable[str]] = None,
-    ) -> typing.Callable:
+    def command(self, **kwargs) -> typing.Callable:
         """
         A decorator that registers a callable as a command for the handler.
 
-        Args:
-            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if the command is run
-                with more arguments than it requires. Defaults to True.
-            name (:obj:`str`): Optional name of the command. Defaults to the name of the function if not specified.
-            aliases (Optional[ Iterable[ :obj:`str` ] ]): An iterable of aliases which can also invoke the command.
+        Keyword Args:
+            **kwargs: See :obj:`.commands.command` for valid kwargs.
 
         Example:
 
@@ -148,35 +139,29 @@ class BotWithHandler(hikari.Bot):
         See Also:
             :meth:`.command_handler.BotWithHandler.add_command`
         """
+        commands = self.commands
 
         def decorate(func: typing.Callable):
-            nonlocal allow_extra_arguments
-            nonlocal name
-            nonlocal aliases
-            return self.add_command(
+            nonlocal commands
+            name = kwargs.get("name", func.__name__)
+            commands[name] = commands.Command(
                 func,
-                allow_extra_arguments=allow_extra_arguments,
-                name=name,
-                aliases=aliases,
+                name,
+                kwargs.get("allow_extra_arguments", True),
+                kwargs.get("aliases", []),
             )
+            for alias in kwargs.get("aliases", []):
+                commands[alias] = commands[name]
+            return commands[name]
 
         return decorate
 
-    def group(
-        self,
-        *,
-        allow_extra_arguments: bool = True,
-        name: typing.Optional[str] = None,
-        aliases: typing.Optional[typing.Iterable[str]] = None,
-    ) -> typing.Callable:
+    def group(self, **kwargs) -> typing.Callable:
         """
         A decorator that registers a callable as a command group for the handler.
 
-        Args:
-            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if the command is run
-                with more arguments than it requires. Defaults to True.
-            name (:obj:`str`): Optional name of the command. Defaults to the name of the function if not specified.
-            aliases (Optional[ Iterable[ :obj:`str` ] ]): An iterable of aliases which can also invoke the command.
+        Keyword Args:
+            **kwargs: See :obj:`.commands.group` for valid kwargs.
 
         Example:
 
@@ -191,37 +176,32 @@ class BotWithHandler(hikari.Bot):
         See Also:
             :meth:`.commands.Group.command` for how to add subcommands to a group.
         """
+        commands = self.commands
 
         def decorate(func: typing.Callable):
-            nonlocal allow_extra_arguments
-            nonlocal name
-            nonlocal aliases
-            return self.add_group(
+            nonlocal commands
+            name = kwargs.get("name", func.__name__)
+            commands[name] = commands.Group(
                 func,
-                allow_extra_arguments=allow_extra_arguments,
-                name=name,
-                aliases=aliases,
+                name,
+                kwargs.get("allow_extra_arguments", True),
+                kwargs.get("aliases", []),
             )
+            for alias in kwargs.get("aliases", []):
+                commands[alias] = commands[name]
+            return commands[name]
 
         return decorate
 
-    def add_command(
-        self,
-        func: typing.Callable,
-        *,
-        allow_extra_arguments=True,
-        name: typing.Optional[str] = None,
-        aliases: typing.Optional[typing.Iterable[str]] = None,
-    ) -> commands.Command:
+    def add_command(self, func: typing.Callable, **kwargs) -> commands.Command:
         """
         Adds a command to the bot. Similar to the ``command`` decorator.
 
         Args:
             func (:obj:`typing.Callable`): The function to add as a command.
-            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if the command is run
-                with more arguments than it requires. Defaults to True.
-            name (:obj:`str`): Optional name of the command. Defaults to the name of the function if not specified.
-            aliases (Optional[ Iterable[ :obj:`str` ] ]): An iterable of aliases which can also invoke the command.
+
+        Keyword Args:
+            **kwargs: See :obj:`.commands.command` for valid kwargs.
 
         Returns:
             :obj:`commands.Command` that was added to the bot.
@@ -240,33 +220,32 @@ class BotWithHandler(hikari.Bot):
         See Also:
             :meth:`.command_handler.BotWithHandler.command`
         """
-        name = func.__name__ if name is None else name
-        aliases = [] if aliases is None else aliases
-        if not self.commands.get(name):
+        if not isinstance(func, commands.Command):
+            name = kwargs.get("name", func.__name__)
             self.commands[name] = commands.Command(
-                func, allow_extra_arguments, name, aliases
+                func,
+                name,
+                kwargs.get("allow_extra_arguments", True),
+                kwargs.get("aliases", []),
             )
-            for alias in aliases:
+            for alias in kwargs.get("aliases", []):
                 self.commands[alias] = self.commands[name]
-            return self.commands[name]
+        else:
+            name = func.name
+            self.commands[name] = func
+            for alias in func._aliases:
+                self.commands[alias] = func
+        return self.commands[name]
 
-    def add_group(
-        self,
-        func: typing.Callable,
-        *,
-        allow_extra_arguments=True,
-        name: typing.Optional[str] = None,
-        aliases: typing.Optional[typing.Iterable[str]] = None,
-    ) -> commands.Group:
+    def add_group(self, func: typing.Callable, **kwargs) -> commands.Group:
         """
         Adds a command group to the bot. Similar to the ``group`` decorator.
 
         Args:
             func (:obj:`typing.Callable`): The function to add as a command group.
-            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if the command is run
-                with more arguments than it requires. Defaults to True.
-            name (:obj:`str`): Optional name of the command group. Defaults to the name of the function if not specified.
-            aliases (Optional[ Iterable[ :obj:`str` ] ]): An iterable of aliases which can also invoke the command.
+
+        Keyword Args:
+            **kwargs: See :obj:`.commands.group` for valid kwargs.
 
         Returns:
             :obj:`commands.Group` that was added to the bot.
@@ -275,15 +254,16 @@ class BotWithHandler(hikari.Bot):
             :meth:`.command_handler.BotWithHandler.group`
             :meth:`.command_handler.BotWithHandler.add_command`
         """
-        name = func.__name__ if name is None else name
-        aliases = [] if aliases is None else aliases
-        if not self.commands.get(name):
-            self.commands[name] = commands.Group(
-                func, allow_extra_arguments, name, aliases
-            )
-            for alias in aliases:
-                self.commands[alias] = self.commands[name]
-            return self.commands[name]
+        name = kwargs.get("name", func.__name__)
+        self.commands[name] = commands.Group(
+            func,
+            name,
+            kwargs.get("allow_extra_arguments", True),
+            kwargs.get("aliases", []),
+        )
+        for alias in kwargs.get("aliases", []):
+            self.commands[alias] = self.commands[name]
+        return self.commands[name]
 
     def add_plugin(self, plugin: plugins.Plugin) -> None:
         """
@@ -439,7 +419,7 @@ class BotWithHandler(hikari.Bot):
     async def _evaluate_checks(
         self, command: commands.Command, context: context.Context
     ):
-        for check in command.checks:
+        for check in command._checks:
             try:
                 check_pass = await check(context)
                 if not check_pass:
@@ -478,7 +458,7 @@ class BotWithHandler(hikari.Bot):
             return
 
         if not command._has_max_args and len(args) >= command._min_args:
-            await command(context, *args)
+            await command.invoke(context, *args)
 
         elif len(args) < command._min_args:
             self.event_dispatcher.dispatch(
@@ -488,7 +468,7 @@ class BotWithHandler(hikari.Bot):
             )
             return
 
-        elif len(args) > command._max_args and not command.allow_extra_arguments:
+        elif len(args) > command._max_args and not command._allow_extra_arguments:
             self.event_dispatcher.dispatch(
                 errors.CommandErrorEvent(
                     errors.TooManyArguments(context.invoked_with), context.message
@@ -497,10 +477,10 @@ class BotWithHandler(hikari.Bot):
             return
 
         elif command._max_args == 0:
-            await command(context)
+            await command.invoke(context)
 
         else:
-            await command(context, *args[: command._max_args + 1])
+            await command.invoke(context, *args[: command._max_args + 1])
 
     async def handle(self, event: message.MessageCreateEvent) -> None:
         """
@@ -548,10 +528,10 @@ class BotWithHandler(hikari.Bot):
             return
 
         invoked_command = self.commands[invoked_with]
+        if isinstance(invoked_command, commands.Group):
+            invoked_command, new_args = invoked_command._resolve_subcommand(args)
         if isinstance(invoked_command, commands.Command):
             new_args = args[1:]
-        if isinstance(invoked_command, commands.Group):
-            invoked_command, new_args = invoked_command.resolve_subcommand(args)
 
         command_context = context.Context(
             self, event.message, prefix, invoked_with, invoked_command

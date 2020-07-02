@@ -61,11 +61,7 @@ class Plugin:
         # we use type(self) since it will prevent the descriptor __get__ being
         # invoked to convert the command to a bound instance.
         for name, member in inspect.getmembers(type(self)):
-            if isinstance(member, commands.Command) or isinstance(
-                member, commands.Group
-            ):
-                member._pass_self = True
-                member._min_args -= 1
-                member._max_args -= 1
-                # using self here to now get the bound command.
-                self.commands[member.name] = getattr(self, name)
+            if isinstance(member, commands.Command):
+                if not member.is_subcommand:
+                    # using self here to now get the bound command.
+                    self.commands[member.name] = getattr(self, name)

@@ -101,9 +101,6 @@ class BotWithHandler(hikari.Bot):
             str, typing.Union[commands.Command, commands.Group]
         ] = {}
 
-    async def _default_command_error(self, event: errors.CommandErrorEvent) -> None:
-        raise event.error
-
     async def fetch_owner_ids(self) -> None:
         """
         Fetches the IDs of the bot's owner(s) from the API and stores them in
@@ -464,25 +461,13 @@ class BotWithHandler(hikari.Bot):
                         f"Check {check.__name__} failed for command {context.invoked_with}"
                     )
             except errors.OnlyInGuild as e:
-                self.event_dispatcher.dispatch(
-                    errors.CommandErrorEvent(e, context.message)
-                )
-                return False
+                raise errors.CommandErrorEvent(e, context.message)
             except errors.OnlyInDM as e:
-                self.event_dispatcher.dispatch(
-                    errors.CommandErrorEvent(e, context.message)
-                )
-                return False
+                raise errors.CommandErrorEvent(e, context.message)
             except errors.NotOwner as e:
-                self.event_dispatcher.dispatch(
-                    errors.CommandErrorEvent(e, context.message)
-                )
-                return False
+                raise errors.CommandErrorEvent(e, context.message)
             except errors.CheckFailure as e:
-                self.event_dispatcher.dispatch(
-                    errors.CommandErrorEvent(e, context.message)
-                )
-                return False
+                raise errors.CommandErrorEvent(e, context.message)
         return True
 
     async def _invoke_command(
@@ -491,33 +476,29 @@ class BotWithHandler(hikari.Bot):
         context: context.Context,
         args: typing.List[str],
     ) -> None:
-        if not await self._evaluate_checks(command, context):
-            return
+        try:
+            if not await self._evaluate_checks(command, context):
+                return
 
-        if not command._has_max_args and len(args) >= command._min_args:
-            await command.invoke(context, *args)
+            if not command._has_max_args and len(args) >= command._min_args:
+                await command.invoke(context, *args)
 
-        elif len(args) < command._min_args:
-            self.event_dispatcher.dispatch(
-                errors.CommandErrorEvent(
-                    errors.NotEnoughArguments(context.invoked_with), context.message
-                )
-            )
-            return
+            elif len(args) < command._min_args:
+                raise errors.NotEnoughArguments(context.invoked_with)
 
-        elif len(args) > command._max_args and not command._allow_extra_arguments:
-            self.event_dispatcher.dispatch(
-                errors.CommandErrorEvent(
-                    errors.TooManyArguments(context.invoked_with), context.message
-                )
-            )
-            return
+            elif len(args) > command._max_args and not command._allow_extra_arguments:
+                raise errors.TooManyArguments(context.invoked_with)
 
-        elif command._max_args == 0:
-            await command.invoke(context)
+            elif command._max_args == 0:
+                await command.invoke(context)
 
-        else:
-            await command.invoke(context, *args[: command._max_args + 1])
+            else:
+                await command.invoke(context, *args[: command._max_args + 1])
+        except errors.CommandError as ex:
+            if self.get_listeners(errors.CommandErrorEvent, polymorphic=True):
+                await self.dispatch(errors.CommandErrorEvent(ex, context.message))
+            else:
+                raise
 
     async def handle(self, event: message.MessageCreateEvent) -> None:
         """
@@ -557,27 +538,19 @@ class BotWithHandler(hikari.Bot):
 
         invoked_with = args[0]
         if invoked_with not in self.commands:
-            self.event_dispatcher.dispatch(
-                errors.CommandErrorEvent(
-                    errors.CommandNotFound(invoked_with), event.message
-                )
-            )
-            return
+            raise errors.CommandNotFound(invoked_with)
 
         invoked_command = self.commands[invoked_with]
-        try:
-           invoked_command, new_args = invoked_command._resolve_subcommand(args)
-        except AttributeError:
-           new_args = args[1:]
+
+        if isinstance(invoked_command, commands.Group):
+            try:
+                invoked_command, new_args = invoked_command._resolve_subcommand(args)
+            except AttributeError:
+                new_args = args[1:]
+        else:
+            new_args = args[1:]
 
         command_context = context.Context(
             self, event.message, prefix, invoked_with, invoked_command
         )
         await self._invoke_command(invoked_command, command_context, new_args)
-
-    def run(self) -> None:
-        if errors.CommandErrorEvent not in self.event_dispatcher._listeners:
-            self.event_dispatcher.subscribe(
-                errors.CommandErrorEvent, self._default_command_error
-            )
-        super().run()

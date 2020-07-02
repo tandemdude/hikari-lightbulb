@@ -71,6 +71,12 @@ class ExtensionMissingLoad(ExtensionError):
     pass
 
 
+class ExtensionMissingUnload(ExtensionError):
+    """Exception raised when an extension is attempted to be unloaded but does not contain an unload function"""
+
+    pass
+
+
 class CommandError(Exception):
     """Base exception for errors incurred during handling od commands."""
 

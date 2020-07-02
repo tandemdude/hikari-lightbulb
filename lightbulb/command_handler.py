@@ -21,6 +21,7 @@ import typing
 import functools
 import collections
 import inspect
+import sys
 
 import hikari
 from hikari.events import message
@@ -94,7 +95,7 @@ class BotWithHandler(hikari.Bot):
         self.ignore_bots: bool = ignore_bots
         self.owner_ids: typing.Iterable[int] = owner_ids
 
-        self.extensions = {}
+        self.extensions = []
         self.plugins: typing.MutableMapping[str, plugins.Plugin] = {}
         self.commands: typing.MutableMapping[
             str, typing.Union[commands.Command, commands.Group]
@@ -379,21 +380,57 @@ class BotWithHandler(hikari.Bot):
             raise errors.ExtensionMissingLoad(f"{extension} is missing a load function")
         else:
             load_location.load(self)
-            attributes = []
-            for item in dir(module):
-                item = getattr(module, item)
-                if isinstance(item, commands.Command) or isinstance(
-                    item, plugins.Plugin
-                ):
-                    attributes.append(item)
-            self.extensions[extension] = attributes
+            self.extensions.append(extension)
 
     def unload_extension(self, extension: str) -> None:
         """
-        **NOT IMPLEMENTED YET**
-        Watch this space
+        Unload an external extension from the bot. This method relies on a function, ``unload``
+        existing in the extension which the bot will use to remove all commands and/or plugins
+        from the bot.
+
+        Args:
+            extension (:obj:`str`): The name of the extension to unload.
+
+        Returns:
+            ``None``
+
+        Raises:
+            ExtensionNotLoaded: If the extension has not been loaded.
+            ExtensionMissingUnload: If the extension does not contain an ``unload`` function.
+
+        Example:
+
+            .. code-block:: python
+
+                from lightbulb import plugins
+
+                class MyPlugin(plugins.Plugin):
+                    ...
+
+                def load(bot):
+                    bot.add_plugin(MyPlugin())
+
+                def unload(bot):
+                    bot.remove_plugin("MyPlugin")
         """
-        raise NotImplementedError
+        if extension not in self.extensions:
+            raise errors.ExtensionNotLoaded(f"{extension} is not loaded.")
+
+        paths = extension.split(".")
+        module = __import__(extension)
+
+        submodule = None
+        for path in paths[1:]:
+            submodule = getattr(module if submodule is None else submodule, path)
+
+        unload_location = module if submodule is None else submodule
+
+        if not hasattr(unload_location, "unload"):
+            raise errors.ExtensionMissingUnload(f"{extension} is missing an unload function")
+        else:
+            unload_location.unload(self)
+            self.extensions.remove(extension)
+            del sys.modules[extension]
 
     def resolve_arguments(
         self, message: messages.Message, prefix: str
@@ -528,10 +565,10 @@ class BotWithHandler(hikari.Bot):
             return
 
         invoked_command = self.commands[invoked_with]
-        if isinstance(invoked_command, commands.Group):
-            invoked_command, new_args = invoked_command._resolve_subcommand(args)
-        if isinstance(invoked_command, commands.Command):
-            new_args = args[1:]
+        try:
+           invoked_command, new_args = invoked_command._resolve_subcommand(args)
+        except AttributeError:
+           new_args = args[1:]
 
         command_context = context.Context(
             self, event.message, prefix, invoked_with, invoked_command

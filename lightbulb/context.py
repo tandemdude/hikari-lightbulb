@@ -37,6 +37,9 @@ class Context:
         prefix (:obj:`str`): The prefix used in the context.
         invoked_with (:obj:`str`): The name or alias used to invoke a command.
         command (:obj:`.commands.Command`): The command that was invoked.
+
+    Note:
+        For information on types for the various properties see :obj:`hikari.models.messages.Message`.
     """
 
     def __init__(
@@ -55,16 +58,27 @@ class Context:
         self.command: commands.Command = command
 
     guild_id = property(lambda self: self.message.guild_id)
+    """Optional ID of the guild the command was invoked in."""
     channel_id = property(lambda self: self.message.channel_id)
+    """ID of the channel the command was invoked in."""
     content = property(lambda self: self.message.content)
+    """Raw content of the invocation message."""
     member = property(lambda self: self.message.member)
+    """Optional member corresponding to the context author."""
     message_id = property(lambda self: self.message.id)
+    """ID of the message that invoked the command."""
     timestamp = property(lambda self: self.message.timestamp)
+    """The timestamp the context message was sent at."""
     edited_timestamp = property(lambda self: self.message.edited_timestamp)
+    """Optional timestamp of the previous edit of the context message."""
     user_mentions = property(lambda self: self.message.user_mentions)
+    """The users mentioned in the context message."""
     role_mentions = property(lambda self: self.message.role_mentions)
+    """The roles mentioned in the context message."""
     channel_mentions = property(lambda self: self.message.channel_mentions)
+    """The channels mentioned in the context message."""
     attachments = property(lambda self: self.message.attachments)
+    """The attachments to the context message."""
 
     async def reply(self, *args, **kwargs) -> messages.Message:
         """

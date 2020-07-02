@@ -420,6 +420,29 @@ class BotWithHandler(hikari.Bot):
             self.extensions.remove(extension)
             del sys.modules[extension]
 
+    def reload_extension(self, extension: str) -> None:
+        """
+        Reload a bot extension. This method is atomic and so the bot will
+        revert to the previous loaded state if the extension encounters a problem
+        during unloading or loading.
+
+        Args:
+            extension (:obj:`str`): The name of the extension to be reloaded.
+
+        Returns:
+            ``None``
+        """
+        old = sys.modules[extension]
+        try:
+            self.unload_extension(extension)
+            self.load_extension(extension)
+        except Exception as e:
+            sys.modules[extension] = old
+            self.load_extension(extension)
+            raise e
+        else:
+            del old
+
     def resolve_arguments(
         self, message: messages.Message, prefix: str
     ) -> typing.List[str]:

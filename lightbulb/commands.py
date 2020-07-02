@@ -38,7 +38,9 @@ def _bind_prototype(instance: typing.Any, command_template: _CommandT):
             self._delegates_to = command_template
             self.__dict__.update(command_template.__dict__.copy())
 
-        def invoke(self, *args, **kwargs) -> typing.Coroutine[None, typing.Any, typing.Any]:
+        def invoke(
+            self, *args, **kwargs
+        ) -> typing.Coroutine[None, typing.Any, typing.Any]:
             return self._callback(instance, *args, **kwargs)
 
     prototype = BoundCommand()
@@ -50,7 +52,9 @@ def _bind_prototype(instance: typing.Any, command_template: _CommandT):
     if isinstance(prototype, Group):
         prototype.subcommands = {}
         for subcommand_name, subcommand in command_template.subcommands.items():
-            for name, member in inspect.getmembers(instance, lambda m: isinstance(m, _BoundCommandMarker)):
+            for name, member in inspect.getmembers(
+                instance, lambda m: isinstance(m, _BoundCommandMarker)
+            ):
                 if member.delegates_to is subcommand:
                     # This will bind the instance to a bound method, and replace the parent. This completes the
                     # prototype, detatching it entirely from the class-bound implementation it was created from. This
@@ -91,7 +95,10 @@ class Command:
         self.parent = parent
 
         signature = inspect.signature(callback)
-        self._has_max_args = not any(a.kind == inspect.Parameter.VAR_POSITIONAL for a in signature.parameters.values())
+        self._has_max_args = not any(
+            a.kind == inspect.Parameter.VAR_POSITIONAL
+            for a in signature.parameters.values()
+        )
 
         self._max_args: int = 0
         self._min_args: int = -1
@@ -109,7 +116,9 @@ class Command:
             if has_self and i > 1 or i > 0:
                 self._max_args += 1
 
-    def __get__(self: _CommandT, instance: typing.Any, owner: typing.Type[typing.Any]) -> _CommandT:
+    def __get__(
+        self: _CommandT, instance: typing.Any, owner: typing.Type[typing.Any]
+    ) -> _CommandT:
         return _bind_prototype(instance, self)
 
     def __set_name__(self, owner, name):

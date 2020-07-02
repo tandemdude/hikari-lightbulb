@@ -423,7 +423,9 @@ class BotWithHandler(hikari.Bot):
         unload_location = module if submodule is None else submodule
 
         if not hasattr(unload_location, "unload"):
-            raise errors.ExtensionMissingUnload(f"{extension} is missing an unload function")
+            raise errors.ExtensionMissingUnload(
+                f"{extension} is missing an unload function"
+            )
         else:
             unload_location.unload(self)
             self.extensions.remove(extension)

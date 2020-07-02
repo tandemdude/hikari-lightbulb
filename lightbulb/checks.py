@@ -22,13 +22,13 @@ from lightbulb import errors
 
 async def _guild_only(ctx: context.Context) -> bool:
     if ctx.message.guild_id is None:
-        raise errors.OnlyInGuild(ctx)
+        raise errors.OnlyInGuild("This command can only be used in a guild")
     return True
 
 
 async def _dm_only(ctx: context.Context) -> bool:
     if ctx.message.guild_id is not None:
-        raise errors.OnlyInDM(ctx)
+        raise errors.OnlyInDM("This command can only be used in DMs")
     return True
 
 
@@ -37,7 +37,7 @@ async def _owner_only(ctx: context.Context) -> bool:
         await ctx.bot.fetch_owner_ids()
 
     if ctx.message.author.id not in ctx.bot.owner_ids:
-        raise errors.NotOwner(ctx)
+        raise errors.NotOwner("You are not the owner of this bot")
     return True
 
 

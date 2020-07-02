@@ -21,6 +21,7 @@ import typing
 import functools
 import collections
 import inspect
+import sys
 
 import hikari
 from hikari.events import message
@@ -94,14 +95,11 @@ class BotWithHandler(hikari.Bot):
         self.ignore_bots: bool = ignore_bots
         self.owner_ids: typing.Iterable[int] = owner_ids
 
-        self.extensions = {}
+        self.extensions = []
         self.plugins: typing.MutableMapping[str, plugins.Plugin] = {}
         self.commands: typing.MutableMapping[
             str, typing.Union[commands.Command, commands.Group]
         ] = {}
-
-    async def _default_command_error(self, event: errors.CommandErrorEvent) -> None:
-        raise event.error
 
     async def fetch_owner_ids(self) -> None:
         """
@@ -379,21 +377,59 @@ class BotWithHandler(hikari.Bot):
             raise errors.ExtensionMissingLoad(f"{extension} is missing a load function")
         else:
             load_location.load(self)
-            attributes = []
-            for item in dir(module):
-                item = getattr(module, item)
-                if isinstance(item, commands.Command) or isinstance(
-                    item, plugins.Plugin
-                ):
-                    attributes.append(item)
-            self.extensions[extension] = attributes
+            self.extensions.append(extension)
 
     def unload_extension(self, extension: str) -> None:
         """
-        **NOT IMPLEMENTED YET**
-        Watch this space
+        Unload an external extension from the bot. This method relies on a function, ``unload``
+        existing in the extension which the bot will use to remove all commands and/or plugins
+        from the bot.
+
+        Args:
+            extension (:obj:`str`): The name of the extension to unload.
+
+        Returns:
+            ``None``
+
+        Raises:
+            ExtensionNotLoaded: If the extension has not been loaded.
+            ExtensionMissingUnload: If the extension does not contain an ``unload`` function.
+
+        Example:
+
+            .. code-block:: python
+
+                from lightbulb import plugins
+
+                class MyPlugin(plugins.Plugin):
+                    ...
+
+                def load(bot):
+                    bot.add_plugin(MyPlugin())
+
+                def unload(bot):
+                    bot.remove_plugin("MyPlugin")
         """
-        raise NotImplementedError
+        if extension not in self.extensions:
+            raise errors.ExtensionNotLoaded(f"{extension} is not loaded.")
+
+        paths = extension.split(".")
+        module = __import__(extension)
+
+        submodule = None
+        for path in paths[1:]:
+            submodule = getattr(module if submodule is None else submodule, path)
+
+        unload_location = module if submodule is None else submodule
+
+        if not hasattr(unload_location, "unload"):
+            raise errors.ExtensionMissingUnload(
+                f"{extension} is missing an unload function"
+            )
+        else:
+            unload_location.unload(self)
+            self.extensions.remove(extension)
+            del sys.modules[extension]
 
     def resolve_arguments(
         self, message: messages.Message, prefix: str
@@ -419,33 +455,27 @@ class BotWithHandler(hikari.Bot):
     async def _evaluate_checks(
         self, command: commands.Command, context: context.Context
     ):
+        failed_checks = []
+
         for check in command._checks:
             try:
-                check_pass = await check(context)
-                if not check_pass:
-                    raise errors.CheckFailure(
-                        f"Check {check.__name__} failed for command {context.invoked_with}"
+                if not await check(context):
+                    failed_checks.append(
+                        errors.CheckFailure(
+                            f"Check {check.__name__} failed for command {context.invoked_with}"
+                        )
                     )
-            except errors.OnlyInGuild as e:
-                self.event_dispatcher.dispatch(
-                    errors.CommandErrorEvent(e, context.message)
-                )
-                return False
-            except errors.OnlyInDM as e:
-                self.event_dispatcher.dispatch(
-                    errors.CommandErrorEvent(e, context.message)
-                )
-                return False
-            except errors.NotOwner as e:
-                self.event_dispatcher.dispatch(
-                    errors.CommandErrorEvent(e, context.message)
-                )
-                return False
-            except errors.CheckFailure as e:
-                self.event_dispatcher.dispatch(
-                    errors.CommandErrorEvent(e, context.message)
-                )
-                return False
+            except Exception as ex:
+                error = errors.CheckFailure(str(ex))
+                error.__cause__ = ex
+                failed_checks.append(ex)
+
+        if len(failed_checks) > 1:
+            raise errors.CheckFailure(
+                "Multiple checks failed: " + ", ".join(str(ex) for ex in failed_checks)
+            )
+        elif failed_checks:
+            raise failed_checks[0]
         return True
 
     async def _invoke_command(
@@ -454,33 +484,29 @@ class BotWithHandler(hikari.Bot):
         context: context.Context,
         args: typing.List[str],
     ) -> None:
-        if not await self._evaluate_checks(command, context):
-            return
+        try:
+            if not await self._evaluate_checks(command, context):
+                return
 
-        if not command._has_max_args and len(args) >= command._min_args:
-            await command.invoke(context, *args)
+            if not command._has_max_args and len(args) >= command._min_args:
+                await command.invoke(context, *args)
 
-        elif len(args) < command._min_args:
-            self.event_dispatcher.dispatch(
-                errors.CommandErrorEvent(
-                    errors.NotEnoughArguments(context.invoked_with), context.message
-                )
-            )
-            return
+            elif len(args) < command._min_args:
+                raise errors.NotEnoughArguments(context.invoked_with)
 
-        elif len(args) > command._max_args and not command._allow_extra_arguments:
-            self.event_dispatcher.dispatch(
-                errors.CommandErrorEvent(
-                    errors.TooManyArguments(context.invoked_with), context.message
-                )
-            )
-            return
+            elif len(args) > command._max_args and not command._allow_extra_arguments:
+                raise errors.TooManyArguments(context.invoked_with)
 
-        elif command._max_args == 0:
-            await command.invoke(context)
+            elif command._max_args == 0:
+                await command.invoke(context)
 
-        else:
-            await command.invoke(context, *args[: command._max_args + 1])
+            else:
+                await command.invoke(context, *args[: command._max_args + 1])
+        except errors.CommandError as ex:
+            if self.get_listeners(errors.CommandErrorEvent, polymorphic=True):
+                await self.dispatch(errors.CommandErrorEvent(ex, context.message))
+            else:
+                raise
 
     async def handle(self, event: message.MessageCreateEvent) -> None:
         """
@@ -520,27 +546,19 @@ class BotWithHandler(hikari.Bot):
 
         invoked_with = args[0]
         if invoked_with not in self.commands:
-            self.event_dispatcher.dispatch(
-                errors.CommandErrorEvent(
-                    errors.CommandNotFound(invoked_with), event.message
-                )
-            )
-            return
+            raise errors.CommandNotFound(invoked_with)
 
         invoked_command = self.commands[invoked_with]
+
         if isinstance(invoked_command, commands.Group):
-            invoked_command, new_args = invoked_command._resolve_subcommand(args)
-        if isinstance(invoked_command, commands.Command):
+            try:
+                invoked_command, new_args = invoked_command._resolve_subcommand(args)
+            except AttributeError:
+                new_args = args[1:]
+        else:
             new_args = args[1:]
 
         command_context = context.Context(
             self, event.message, prefix, invoked_with, invoked_command
         )
         await self._invoke_command(invoked_command, command_context, new_args)
-
-    def run(self) -> None:
-        if errors.CommandErrorEvent not in self.event_dispatcher._listeners:
-            self.event_dispatcher.subscribe(
-                errors.CommandErrorEvent, self._default_command_error
-            )
-        super().run()

@@ -54,6 +54,18 @@ class Context:
         self.invoked_with: str = invoked_with
         self.command: commands.Command = command
 
+    guild_id = property(lambda self: self.message.guild_id)
+    channel_id = property(lambda self: self.message.channel_id)
+    content = property(lambda self: self.message.content)
+    member = property(lambda self: self.message.member)
+    message_id = property(lambda self: self.message.id)
+    timestamp = property(lambda self: self.message.timestamp)
+    edited_timestamp = property(lambda self: self.message.edited_timestamp)
+    user_mentions = property(lambda self: self.message.user_mentions)
+    role_mentions = property(lambda self: self.message.role_mentions)
+    channel_mentions = property(lambda self: self.message.channel_mentions)
+    attachments = property(lambda self: self.message.attachments)
+
     async def reply(self, *args, **kwargs) -> messages.Message:
         """
         Alias for ctx.message.reply(...).

@@ -44,6 +44,7 @@ class CommandErrorEvent(base.Event):
 
     def __init__(self, error, message) -> None:
         self.error = error
+        self.traceback = error.__traceback__
         self.message = message
 
 
@@ -67,6 +68,12 @@ class ExtensionNotLoaded(ExtensionError):
 
 class ExtensionMissingLoad(ExtensionError):
     """Exception raised when an extension is attempted to be loaded but does not contain a load function"""
+
+    pass
+
+
+class ExtensionMissingUnload(ExtensionError):
+    """Exception raised when an extension is attempted to be unloaded but does not contain an unload function"""
 
     pass
 
@@ -130,13 +137,9 @@ class CheckFailure(CommandError):
     """
     Base error that is raised when a check fails for a command. Anything raised by a check
     should inherit from this class.
-
-    Args:
-        context (:obj:`.context.Context`): The context that caused the check to fail.
     """
 
-    def __init__(self, context: context.Context) -> None:
-        self.context = context
+    pass
 
 
 class OnlyInGuild(CheckFailure):

@@ -22,6 +22,7 @@ import functools
 import collections
 import inspect
 import sys
+import importlib
 
 import hikari
 from hikari.events import message
@@ -365,18 +366,12 @@ class BotWithHandler(hikari.Bot):
             raise errors.ExtensionAlreadyLoaded(f"{extension} is already loaded.")
 
         paths = extension.split(".")
-        module = __import__(extension)
+        module = importlib.import_module(extension)
 
-        submodule = None
-        for path in paths[1:]:
-            submodule = getattr(module if submodule is None else submodule, path)
-
-        load_location = module if submodule is None else submodule
-
-        if not hasattr(load_location, "load"):
+        if not hasattr(module, "load"):
             raise errors.ExtensionMissingLoad(f"{extension} is missing a load function")
         else:
-            load_location.load(self)
+            module.load(self)
             self.extensions.append(extension)
 
     def unload_extension(self, extension: str) -> None:
@@ -414,22 +409,39 @@ class BotWithHandler(hikari.Bot):
             raise errors.ExtensionNotLoaded(f"{extension} is not loaded.")
 
         paths = extension.split(".")
-        module = __import__(extension)
+        module = importlib.import_module(extension)
 
-        submodule = None
-        for path in paths[1:]:
-            submodule = getattr(module if submodule is None else submodule, path)
-
-        unload_location = module if submodule is None else submodule
-
-        if not hasattr(unload_location, "unload"):
+        if not hasattr(module, "unload"):
             raise errors.ExtensionMissingUnload(
                 f"{extension} is missing an unload function"
             )
         else:
-            unload_location.unload(self)
+            module.unload(self)
             self.extensions.remove(extension)
             del sys.modules[extension]
+
+    def reload_extension(self, extension: str) -> None:
+        """
+        Reload a bot extension. This method is atomic and so the bot will
+        revert to the previous loaded state if the extension encounters a problem
+        during unloading or loading.
+
+        Args:
+            extension (:obj:`str`): The name of the extension to be reloaded.
+
+        Returns:
+            ``None``
+        """
+        old = sys.modules[extension]
+        try:
+            self.unload_extension(extension)
+            self.load_extension(extension)
+        except Exception as e:
+            sys.modules[extension] = old
+            self.load_extension(extension)
+            raise e
+        else:
+            del old
 
     def resolve_arguments(
         self, message: messages.Message, prefix: str

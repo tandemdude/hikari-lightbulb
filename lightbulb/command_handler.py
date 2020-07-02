@@ -460,14 +460,20 @@ class BotWithHandler(hikari.Bot):
         for check in command._checks:
             try:
                 if not await check(context):
-                    failed_checks.append(errors.CheckFailure(f"Check {check.__name__} failed for command {context.invoked_with}"))
+                    failed_checks.append(
+                        errors.CheckFailure(
+                            f"Check {check.__name__} failed for command {context.invoked_with}"
+                        )
+                    )
             except Exception as ex:
                 error = errors.CheckFailure(str(ex))
                 error.__cause__ = ex
                 failed_checks.append(ex)
 
         if len(failed_checks) > 1:
-            raise errors.CheckFailure("Multiple checks failed: " + ", ".join(str(ex) for ex in failed_checks))
+            raise errors.CheckFailure(
+                "Multiple checks failed: " + ", ".join(str(ex) for ex in failed_checks)
+            )
         elif failed_checks:
             raise failed_checks[0]
         return True

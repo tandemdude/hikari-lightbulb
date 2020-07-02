@@ -47,7 +47,10 @@ class _InvokableDescriptor(Invokable):
         return
 
     def __getattr__(self, item):
-        return getattr(self.__instance, item)
+        if hasattr(self.__instance, item):
+            return getattr(self.__instance, item)
+        else:
+            return getattr(self.__invokable, item)
 
     def invoke(self, *args, **kwargs):
         return self.__invokable.invoke(self.__instance, *args, **kwargs)
@@ -113,7 +116,7 @@ class Command(Invokable):
 
         """
         if self._pass_self:
-            return self._callback(self, *args, **kwargs)
+           return self._callback(self, *args, **kwargs)
         return self._callback(*args, **kwargs)
 
     def add_check(self, check_func) -> None:

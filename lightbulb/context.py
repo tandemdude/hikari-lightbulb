@@ -58,7 +58,7 @@ class Context:
     channel_id = property(lambda self: self.message.channel_id)
     content = property(lambda self: self.message.content)
     member = property(lambda self: self.message.member)
-    message_id = property(lambda self: self.message.message_id)
+    message_id = property(lambda self: self.message.id)
     timestamp = property(lambda self: self.message.timestamp)
     edited_timestamp = property(lambda self: self.message.edited_timestamp)
     user_mentions = property(lambda self: self.message.user_mentions)

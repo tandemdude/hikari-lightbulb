@@ -15,7 +15,7 @@ stages:
 
 black:
   extends: 
-    - .cpython:3.8.2
+    - .cpython:3.8
     - .reactive-job
   script:
     - nox -s format
@@ -23,12 +23,13 @@ black:
 
 pages:
   extends:
-    - .cpython:3.8.2
+    - .cpython:3.8
   script:
     - nox -s sphinx
     - mv docs/build public
   stage: build
   artifacts:
+    expire_in: 2 days
     paths:
       - public
   only:

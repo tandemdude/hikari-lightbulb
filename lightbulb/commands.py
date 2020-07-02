@@ -16,47 +16,54 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
-import abc
 import inspect
 import typing
 
 
-class Invokable(abc.ABC):
-    @property
-    @abc.abstractmethod
-    def name(self) -> str:
-        ...
-
-    @abc.abstractmethod
-    def invoke(self, *args, **kwargs):
-        ...
-
-    def __get__(self, instance, owner):
-        descriptor = _InvokableDescriptor(instance, self)
-        instance.__dict__[self.name] = descriptor
-        return descriptor
+_CommandT = typing.TypeVar("_CommandT", bound="Command")
 
 
-class _InvokableDescriptor(Invokable):
-    def __init__(self, instance, invokable):
-        self.__instance = instance
-        self.__invokable = invokable
-
-    @property
-    def name(self):
-        return
-
-    def __getattr__(self, item):
-        if hasattr(self.__instance, item):
-            return getattr(self.__instance, item)
-        else:
-            return getattr(self.__invokable, item)
-
-    def invoke(self, *args, **kwargs):
-        return self.__invokable.invoke(self.__instance, *args, **kwargs)
+class _BoundCommandMarker:
+    def __init__(self, delegates_to: _CommandT) -> None:
+        self.delegates_to = delegates_to
 
 
-class Command(Invokable):
+def _bind_prototype(instance: typing.Any, command_template: _CommandT):
+    # Create a prototype of the command which is bound to the given instance.
+
+    class BoundCommand(type(command_template), _BoundCommandMarker):
+        def __init__(self) -> None:
+            _BoundCommandMarker.__init__(self, command_template)
+            # Do not init the super class, simply delegate to it using the __dict__
+            self._delegates_to = command_template
+            self.__dict__.update(command_template.__dict__.copy())
+
+        def invoke(self, *args, **kwargs) -> typing.Coroutine[None, typing.Any, typing.Any]:
+            return self._callback(instance, *args, **kwargs)
+
+    prototype = BoundCommand()
+
+    # This will cache this for a later call!
+    instance.__dict__[command_template.method_name] = prototype
+
+    # Bind each subcommand to a descriptor for this specific instance.
+    if isinstance(prototype, Group):
+        prototype.subcommands = {}
+        for subcommand_name, subcommand in command_template.subcommands.items():
+            for name, member in inspect.getmembers(instance, lambda m: isinstance(m, _BoundCommandMarker)):
+                if member.delegates_to is subcommand:
+                    # This will bind the instance to a bound method, and replace the parent. This completes the
+                    # prototype, detatching it entirely from the class-bound implementation it was created from. This
+                    # means adding the same plugin twice would attempt to add two unique copies of the command that
+                    # hopefully are not aware of eachother by design, reducing weird side effects from shared attributes
+                    # hopefully!
+                    member.parent = prototype
+                    prototype.subcommands[subcommand_name] = member
+
+    return typing.cast(_CommandT, prototype)
+
+
+class Command:
     """
     A command that can be invoked by a user. When invoked, the callback
     will be called with a set argument ctx, an instance of the :obj:`.context.Context`
@@ -73,26 +80,40 @@ class Command(Invokable):
         name: str,
         allow_extra_arguments: bool,
         aliases: typing.Iterable[str],
+        parent: typing.Optional[typing.Any] = None,
     ) -> None:
         self._callback = callback
         self._name = name
         self._allow_extra_arguments = allow_extra_arguments
         self._aliases = aliases
         self._checks = []
-        self._pass_self = False
+        self.method_name: typing.Optional[str] = None
+        self.parent = parent
 
         signature = inspect.signature(callback)
-        self._has_max_args: bool = (
-            False
-            if any(arg.kind == 2 for arg in signature.parameters.values())
-            else True
-        )
+        self._has_max_args = not any(a.kind == inspect.Parameter.VAR_POSITIONAL for a in signature.parameters.values())
 
-        self._max_args: int = len(signature.parameters) - 1
+        self._max_args: int = 0
         self._min_args: int = -1
-        for arg in signature.parameters.values():
-            if arg.default == inspect.Parameter.empty:
+
+        has_self = False
+
+        for i, (name, param) in enumerate(signature.parameters.items()):
+            if name == "self" and i == 0:
+                has_self = True
+                continue
+            if param.default == inspect.Parameter.empty:
                 self._min_args += 1
+
+            # Skip the context, also skip counting self if it was present...
+            if has_self and i > 1 or i > 0:
+                self._max_args += 1
+
+    def __get__(self: _CommandT, instance: typing.Any, owner: typing.Type[typing.Any]) -> _CommandT:
+        return _bind_prototype(instance, self)
+
+    def __set_name__(self, owner, name):
+        self.method_name = name
 
     @property
     def name(self) -> str:
@@ -103,6 +124,15 @@ class Command(Invokable):
             :obj:`str`: Name of the command
         """
         return self._name
+
+    @property
+    def is_subcommand(self) -> bool:
+        """
+        Returns:
+            :obj:`True` if this object is a subcommand with a parent group,
+            or :obj:`False` otherwise.
+        """
+        return self.parent is not None
 
     def invoke(self, *args, **kwargs):
         """
@@ -115,8 +145,6 @@ class Command(Invokable):
             **kwargs: The keyword arguments to invoke the command with.
 
         """
-        if self._pass_self:
-           return self._callback(self, *args, **kwargs)
         return self._callback(*args, **kwargs)
 
     def add_check(self, check_func) -> None:
@@ -163,11 +191,19 @@ class Group(Command):
     def _resolve_subcommand(
         self, args
     ) -> typing.Tuple[typing.Union[Command, Group], typing.Iterable[str]]:
-        if len(args) == 1:
-            return self, ()
-        else:
-            subcommand = self.subcommands.get(args[1])
-            return (self, args[1:]) if subcommand is None else (subcommand, args[2:])
+        this = self
+
+        args.pop(0)
+
+        while isinstance(this, Group) and args:
+            try:
+                this = this.subcommands[args[0]]
+            except KeyError:
+                break
+            else:
+                args = args[1:]
+
+        return this, args
 
     def get_subcommand(self, name: str) -> Command:
         """
@@ -210,17 +246,23 @@ class Group(Command):
         def decorate(func):
             nonlocal subcommands
             name = kwargs.get("name", func.__name__)
-            subcommands[name] = Command(
+            cls = kwargs.pop("cls", Command)
+            subcommands[name] = cls(
                 func,
                 name,
                 kwargs.get("allow_extra_arguments", True),
                 kwargs.get("aliases", []),
+                parent=self,
             )
             for alias in kwargs.get("aliases", []):
                 subcommands[alias] = subcommands[name]
             return subcommands[name]
 
         return decorate
+
+    def group(self, **kwargs):
+        kwargs["cls"] = type(self)
+        return self.command(**kwargs)
 
 
 def command(**kwargs):

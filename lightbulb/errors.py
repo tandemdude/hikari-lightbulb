@@ -44,6 +44,7 @@ class CommandErrorEvent(base.Event):
 
     def __init__(self, error, message) -> None:
         self.error = error
+        self.traceback = error.__traceback__
         self.message = message
 
 

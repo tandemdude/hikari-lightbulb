@@ -8,14 +8,14 @@ stages:
     - if: "$CI_PIPELINE_SOURCE == 'push'"
     - if: "$CI_PIPELINE_SOURCE == 'merge_request_event'"
 
-.cpython:3.8.2:
+.cpython:3.8:
   before_script:
     - pip install nox 'virtualenv<20.0.19'
-  image: python:3.8.2
+  image: python:3.8
 
 black:
   extends: 
-    - .cpython:3.8.2
+    - .cpython:3.8
     - .reactive-job
   script:
     - nox -s format
@@ -23,23 +23,25 @@ black:
 
 pages:
   extends:
-    - .cpython:3.8.2
+    - .cpython:3.8
   script:
     - nox -s sphinx
     - mv docs/build public
   stage: build
   artifacts:
+    expire_in: 2 days
     paths:
       - public
-  only:
-    - master
+  rules:
+    - if: "$CI_PIPELINE_SOURCE == 'push' && $CI_COMMIT_REF_NAME == 'master'"
+    - if: "$CI_PIPELINE_SOURCE == 'schedule' && $CI_COMMIT_REF_NAME == 'master'"
 
 pypi:
   environment:
     name: prod
     url: https://tandemdude.gitlab.io/lightbulb
   extends:
-    - .cpython:3.8.2
+    - .cpython:3.8
   script:
     - pip install -U twine
     - pip install -r requirements.txt

@@ -137,13 +137,9 @@ class CheckFailure(CommandError):
     """
     Base error that is raised when a check fails for a command. Anything raised by a check
     should inherit from this class.
-
-    Args:
-        context (:obj:`.context.Context`): The context that caused the check to fail.
     """
 
-    def __init__(self, context: context.Context) -> None:
-        self.context = context
+    pass
 
 
 class OnlyInGuild(CheckFailure):

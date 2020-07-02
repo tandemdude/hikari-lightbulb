@@ -455,21 +455,21 @@ class BotWithHandler(hikari.Bot):
     async def _evaluate_checks(
         self, command: commands.Command, context: context.Context
     ):
+        failed_checks = []
+
         for check in command._checks:
             try:
-                check_pass = await check(context)
-                if not check_pass:
-                    raise errors.CheckFailure(
-                        f"Check {check.__name__} failed for command {context.invoked_with}"
-                    )
-            except errors.OnlyInGuild as e:
-                raise errors.CommandErrorEvent(e, context.message)
-            except errors.OnlyInDM as e:
-                raise errors.CommandErrorEvent(e, context.message)
-            except errors.NotOwner as e:
-                raise errors.CommandErrorEvent(e, context.message)
-            except errors.CheckFailure as e:
-                raise errors.CommandErrorEvent(e, context.message)
+                if not await check(context):
+                    failed_checks.append(errors.CheckFailure(f"Check {check.__name__} failed for command {context.invoked_with}"))
+            except Exception as ex:
+                error = errors.CheckFailure(str(ex))
+                error.__cause__ = ex
+                failed_checks.append(ex)
+
+        if len(failed_checks) > 1:
+            raise errors.CheckFailure("Multiple checks failed: " + ", ".join(str(ex) for ex in failed_checks))
+        elif failed_checks:
+            raise failed_checks[0]
         return True
 
     async def _invoke_command(

@@ -20,4 +20,4 @@ from lightbulb import errors
 from lightbulb import plugins
 from lightbulb.checks import guild_only, dm_only, owner_only
 
-__version__ = "0.0.10"
+__version__ = "0.0.11"

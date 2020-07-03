@@ -21,6 +21,14 @@ black:
     - nox -s format
   stage: test
 
+pytest:
+  extends:
+    - .cpython:3.8
+    - .reactive-job
+  script:
+    - nox -s test
+  stage: test
+
 pages:
   extends:
     - .cpython:3.8

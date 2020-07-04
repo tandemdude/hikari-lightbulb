@@ -81,3 +81,21 @@ async def test_owner_only_fails(ctx):
     with pytest.raises(errors.NotOwner) as exc_info:
         await checks._owner_only(ctx)
     assert exc_info.type is errors.NotOwner
+
+
+def test_add_check_called_with_guild_only():
+    deco = checks.guild_only()
+    fake_command = deco(mock.Mock(spec_set=commands.Command))
+    fake_command.add_check.assert_called_with(checks._guild_only)
+
+
+def test_add_check_called_with_dm_only():
+    deco = checks.dm_only()
+    fake_command = deco(mock.Mock(spec_set=commands.Command))
+    fake_command.add_check.assert_called_with(checks._dm_only)
+
+
+def test_add_check_called_with_owner_only():
+    deco = checks.owner_only()
+    fake_command = deco(mock.Mock(spec_set=commands.Command))
+    fake_command.add_check.assert_called_with(checks._owner_only)

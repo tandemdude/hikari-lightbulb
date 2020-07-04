@@ -137,9 +137,10 @@ class Command:
     @property
     def is_subcommand(self) -> bool:
         """
+        Whether or not the object is a subcommand with a parent group
+
         Returns:
-            :obj:`True` if this object is a subcommand with a parent group,
-            or :obj:`False` otherwise.
+            Union[ :obj:`True`, :obj:`False` ]: If this object is a subcommand with a parent group.
         """
         return self.parent is not None
 
@@ -270,6 +271,15 @@ class Group(Command):
         return decorate
 
     def group(self, **kwargs):
+        """
+        A decorator that registers a callable as a subgroup for the command group.
+
+        Keyword Args:
+            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if the command is run
+                with more arguments than it requires. Defaults to True.
+            name (:obj:`str`): Optional name of the command. Defaults to the name of the function if not specified.
+            aliases (Optional[ Iterable[ :obj:`str` ] ]): An iterable of aliases which can also invoke the command.
+        """
         kwargs["cls"] = type(self)
         return self.command(**kwargs)
 

@@ -26,7 +26,9 @@ from lightbulb import command_handler
 from lightbulb import errors
 
 
-async def get_help_text(object: typing.Union[commands.Command, commands.Group, plugins.Plugin]) -> str:
+async def get_help_text(
+    object: typing.Union[commands.Command, commands.Group, plugins.Plugin]
+) -> str:
     """
     Get the help text for a command, group or plugin, extracted from its docstring.
 
@@ -42,12 +44,14 @@ async def get_help_text(object: typing.Union[commands.Command, commands.Group, p
         return inspect.getdoc(object._callback) or "No help text provided."
     else:
         doc = inspect.getdoc(object)
-        return doc if doc != inspect.getdoc(plugins.Plugin) else "No help text provided."
+        return (
+            doc if doc != inspect.getdoc(plugins.Plugin) else "No help text provided."
+        )
 
 
 @commands.command(name="help")
 async def help_cmd(ctx):
-    obj = ctx.message.content[len(f"{ctx.prefix}{ctx.invoked_with}"):].strip().split()
+    obj = ctx.message.content[len(f"{ctx.prefix}{ctx.invoked_with}") :].strip().split()
     await ctx.bot._help_impl.resolve_help_obj(ctx, obj)
 
 
@@ -59,11 +63,16 @@ class HelpCommand:
     Args:
         bot (:obj:`~.command_handler.BotWithHandler`): Bot instance to add the help command class to.
     """
+
     def __init__(self, bot: command_handler.BotWithHandler) -> None:
         self.bot = bot
         self.bot.add_command(help_cmd)
 
-    async def filter_commands(self, context: context.Context, command_list: typing.List[typing.Union[commands.Command, commands.Group]]) -> typing.List[typing.Union[commands.Command, commands.Group]]:
+    async def filter_commands(
+        self,
+        context: context.Context,
+        command_list: typing.List[typing.Union[commands.Command, commands.Group]],
+    ) -> typing.List[typing.Union[commands.Command, commands.Group]]:
         """
         Filter a list of :obj:`~.commands.Command` and :obj:`~.commands.Group`, removing any commands that cannot
         be run under the given context by running all checks for each command in turn.
@@ -84,7 +93,9 @@ class HelpCommand:
                 pass
         return filtered_commands
 
-    async def get_command_signature(self, command: typing.Union[commands.Command, commands.Group]) -> str:
+    async def get_command_signature(
+        self, command: typing.Union[commands.Command, commands.Group]
+    ) -> str:
         pass
 
     async def resolve_help_obj(self, context, obj):
@@ -96,11 +107,17 @@ class HelpCommand:
     async def send_help_overview(self, context: context.Context) -> None:
         await context.reply("This would be the help overview")
 
-    async def send_plugin_help(self, context: context.Context, plugin: plugins.Plugin) -> None:
+    async def send_plugin_help(
+        self, context: context.Context, plugin: plugins.Plugin
+    ) -> None:
         pass
 
-    async def send_command_help(self, context: context.Context, command: commands.Command) -> None:
+    async def send_command_help(
+        self, context: context.Context, command: commands.Command
+    ) -> None:
         pass
 
-    async def send_group_help(self, context: context.Context, group: commands.Group) -> None:
+    async def send_group_help(
+        self, context: context.Context, group: commands.Group
+    ) -> None:
         pass

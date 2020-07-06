@@ -201,7 +201,9 @@ class Command:
         for check in self._checks:
             result = await check(context)
             if result is False:
-                raise errors.CheckFailure(f"Check {check.__name__} failed for command {self.name}")
+                raise errors.CheckFailure(
+                    f"Check {check.__name__} failed for command {self.name}"
+                )
         return True
 
 

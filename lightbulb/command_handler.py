@@ -85,7 +85,7 @@ class BotWithHandler(hikari.Bot):
         insensitive_commands: bool = False,
         ignore_bots: bool = True,
         owner_ids: typing.Iterable[int] = (),
-        help_class = help.HelpCommand,
+        help_class=help.HelpCommand,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)

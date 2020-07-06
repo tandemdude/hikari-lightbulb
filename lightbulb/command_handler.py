@@ -33,6 +33,7 @@ from lightbulb import context
 from lightbulb import errors
 from lightbulb import stringview
 from lightbulb import plugins
+from lightbulb import help
 
 if typing.TYPE_CHECKING:
     from hikari.models import messages
@@ -84,6 +85,7 @@ class BotWithHandler(hikari.Bot):
         insensitive_commands: bool = False,
         ignore_bots: bool = True,
         owner_ids: typing.Iterable[int] = (),
+        help_class = help.HelpCommand,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
@@ -104,6 +106,8 @@ class BotWithHandler(hikari.Bot):
         self.commands: typing.MutableMapping[
             str, typing.Union[commands.Command, commands.Group]
         ] = {} if not self.insensitive_commands else CIMultiDict()
+
+        self._help_impl = help_class(self)
 
     async def fetch_owner_ids(self) -> None:
         """

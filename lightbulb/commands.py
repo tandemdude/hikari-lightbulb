@@ -20,6 +20,9 @@ import inspect
 import typing
 from multidict import CIMultiDict
 
+from lightbulb import context
+from lightbulb import errors
+
 _CommandT = typing.TypeVar("_CommandT", bound="Command")
 
 
@@ -180,6 +183,26 @@ class Command:
                 bot.get_command("foo").add_check(author_name_startswith_foo)
         """
         self._checks.append(check_func)
+
+    async def is_runnable(self, context: context.Context) -> bool:
+        """
+        Run all the checks for the command to determine whether or not it is
+        runnable in the given context.
+
+        Args:
+            context (:obj:`~.context.Context`): The context to evaluate the checks with.
+
+        Returns:
+            :obj:`bool`: If the command is runnable in the context given.
+
+        Raises:
+            :obj:`~.errors.CheckFailure`: If the command is not runnable in the context given.
+        """
+        for check in self._checks:
+            result = await check(context)
+            if result is False:
+                raise errors.CheckFailure(f"Check {check.__name__} failed for command {self.name}")
+        return True
 
 
 class Group(Command):

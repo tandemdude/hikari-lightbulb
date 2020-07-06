@@ -15,9 +15,24 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-from lightbulb.command_handler import BotWithHandler as Bot
-from lightbulb import errors
-from lightbulb import plugins
-from lightbulb.checks import guild_only, dm_only, owner_only
+import pytest
 
-__version__ = "0.0.13"
+from lightbulb import stringview
+from lightbulb import errors
+
+
+def test_stringview_splits_normal_args():
+    sv = stringview.StringView("I am thommo")
+    assert sv.deconstruct_str() == ["I", "am", "thommo"]
+
+
+def test_stringview_splits_quoted_args():
+    sv = stringview.StringView('I "am thommo"')
+    assert sv.deconstruct_str() == ["I", "am thommo"]
+
+
+def test_stringview_raises_UnclosedQuotes():
+    sv = stringview.StringView('I "am thommo')
+    with pytest.raises(errors.UnclosedQuotes) as exc_info:
+        sv.deconstruct_str()
+    assert exc_info.type is errors.UnclosedQuotes

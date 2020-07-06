@@ -22,6 +22,13 @@ PATH_TO_PROJECT = os.path.join(".", "lightbulb")
 
 
 @nox.session(python=["3.8"])
+def test(session):
+    session.run("pip" ,"install", "-Ur", "test_requirements.txt")
+    session.run("pip", "install", "-Ur", "requirements.txt")
+    session.run("python", "-m", "pytest", "tests", "--testdox")
+
+
+@nox.session(python=["3.8"])
 def format_fix(session):
     session.run("pip", "install", "-U", "black")
     session.run("python", "-m", "black", PATH_TO_PROJECT)

@@ -26,6 +26,7 @@ import importlib
 
 import hikari
 from hikari.events import message
+from multidict import CIMultiDict
 
 from lightbulb import commands
 from lightbulb import context
@@ -46,7 +47,7 @@ async def _return_prefix(
 class BotWithHandler(hikari.Bot):
     """
     A subclassed implementation of :class:`hikari.impl.bot.BotAppImpl` which contains a command handler.
-    This should be instantiated instead of the superclass if you want to be able to use 
+    This should be instantiated instead of the superclass if you want to be able to use
     the command handler implementation provided.
 
     The prefix argument will accept any of the following:
@@ -59,6 +60,7 @@ class BotWithHandler(hikari.Bot):
 
     Args:
         prefix: The bot's command prefix, iterable of prefixes, or callable that returns a prefix or iterable of prefixes.
+        insensitive_commands (:obj:`bool`): Whether or not commands should be case insensitive. Defaults to ``False``.
         ignore_bots (:obj:`bool`): Whether or not the bot should ignore its commands when invoked by other bots. Defaults to ``True``.
         owner_ids (List[ :obj:`int` ]): IDs that the bot should treat as owning the bot.
         **kwargs: Other parameters passed to the :class:`hikari.impl.bot.BotAppImpl` constructor.
@@ -79,6 +81,7 @@ class BotWithHandler(hikari.Bot):
                 ],
             ],
         ],
+        insensitive_commands: bool = False,
         ignore_bots: bool = True,
         owner_ids: typing.Iterable[int] = (),
         **kwargs,
@@ -95,12 +98,12 @@ class BotWithHandler(hikari.Bot):
 
         self.ignore_bots: bool = ignore_bots
         self.owner_ids: typing.Iterable[int] = owner_ids
-
+        self.insensitive_commands = insensitive_commands
         self.extensions = []
         self.plugins: typing.MutableMapping[str, plugins.Plugin] = {}
         self.commands: typing.MutableMapping[
             str, typing.Union[commands.Command, commands.Group]
-        ] = {}
+        ] = {} if not self.insensitive_commands else CIMultiDict()
 
     async def fetch_owner_ids(self) -> None:
         """
@@ -185,6 +188,7 @@ class BotWithHandler(hikari.Bot):
                 name,
                 kwargs.get("allow_extra_arguments", True),
                 kwargs.get("aliases", []),
+                insensitive_commands=kwargs.get("insensitive_commands", False),
             )
             for alias in kwargs.get("aliases", []):
                 registered_commands[alias] = registered_commands[name]
@@ -259,6 +263,7 @@ class BotWithHandler(hikari.Bot):
             name,
             kwargs.get("allow_extra_arguments", True),
             kwargs.get("aliases", []),
+            insensitive_commands=kwargs.get("insensitive_commands", False),
         )
         for alias in kwargs.get("aliases", []):
             self.commands[alias] = self.commands[name]
@@ -365,7 +370,6 @@ class BotWithHandler(hikari.Bot):
         if extension in self.extensions:
             raise errors.ExtensionAlreadyLoaded(f"{extension} is already loaded.")
 
-        paths = extension.split(".")
         module = importlib.import_module(extension)
 
         if not hasattr(module, "load"):
@@ -408,7 +412,6 @@ class BotWithHandler(hikari.Bot):
         if extension not in self.extensions:
             raise errors.ExtensionNotLoaded(f"{extension} is not loaded.")
 
-        paths = extension.split(".")
         module = importlib.import_module(extension)
 
         if not hasattr(module, "unload"):
@@ -544,10 +547,9 @@ class BotWithHandler(hikari.Bot):
         if isinstance(prefixes, str):
             prefixes = [prefixes]
 
-        content = event.message.content
         prefix = None
         for p in prefixes:
-            if content.startswith(p):
+            if event.message.content.startswith(p):
                 prefix = p
                 break
 
@@ -556,7 +558,7 @@ class BotWithHandler(hikari.Bot):
 
         args = self.resolve_arguments(event.message, prefix)
 
-        invoked_with = args[0]
+        invoked_with = args[0].casefold() if self.insensitive_commands else args[0]
         if invoked_with not in self.commands:
             raise errors.CommandNotFound(invoked_with)
 

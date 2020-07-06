@@ -18,7 +18,7 @@
 from __future__ import annotations
 import inspect
 import typing
-
+from multidict import CIMultiDict
 
 _CommandT = typing.TypeVar("_CommandT", bound="Command")
 
@@ -191,12 +191,14 @@ class Group(Command):
         *args: The args passed to :obj:`.commands.Command` in its constructor
 
     Keyword Args:
+        insensitive_commands (:obj:`bool`): Whether or not this group's subcommands should be case insensitive. Defaults to ``False``.
         **kwargs: The kwargs passed to :obj:`.commands.Command` in its constructor
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, insensitive_commands: bool = False, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.subcommands = {}
+        self.insensitive_commands = insensitive_commands
+        self.subcommands = {} if not self.insensitive_commands else CIMultiDict()
 
     def _resolve_subcommand(
         self, args
@@ -204,10 +206,10 @@ class Group(Command):
         this = self
 
         args.pop(0)
-
         while isinstance(this, Group) and args:
+            invoked_with = args[0].casefold() if this.insensitive_commands else args[0]
             try:
-                this = this.subcommands[args[0]]
+                this = this.subcommands[invoked_with]
             except KeyError:
                 break
             else:
@@ -325,6 +327,7 @@ def group(**kwargs):
             name,
             kwargs.get("allow_extra_arguments", True),
             kwargs.get("aliases", []),
+            insensitive_commands=kwargs.get("insensitive_commands", False),
         )
 
     return decorate

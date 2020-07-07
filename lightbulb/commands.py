@@ -23,6 +23,7 @@ from multidict import CIMultiDict
 from lightbulb import context
 from lightbulb import errors
 
+
 _CommandT = typing.TypeVar("_CommandT", bound="Command")
 
 
@@ -68,6 +69,31 @@ def _bind_prototype(instance: typing.Any, command_template: _CommandT):
                     prototype.subcommands[subcommand_name] = member
 
     return typing.cast(_CommandT, prototype)
+
+
+class SignatureInspector:
+    def __init__(self, command: Command) -> None:
+        self.command = command
+        self.has_self = isinstance(command, _BoundCommandMarker)
+        self.args = {}
+        for index, (name, arg) in enumerate(inspect.signature(command._callback).parameters.items()):
+            self.args[name] = self.parse_arg(index, arg)
+        self.max_args = sum(not arg["ignore"] for arg in self.args.values())
+        self.min_args = sum(not arg["ignore"] and arg["required"] for arg in self.args.values())
+
+    def parse_arg(self, index, arg):
+        details = {}
+        if index == 0:
+            details["ignore"] = True
+        elif index == 1 and self.has_self:
+            details["ignore"] = True
+        else:
+            details["ignore"] = False
+
+        details["argtype"] = arg.kind
+        details["annotation"] = arg.annotation
+        details["required"] = arg.default is arg.empty
+        return details
 
 
 class Command:

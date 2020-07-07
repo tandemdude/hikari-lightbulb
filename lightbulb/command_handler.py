@@ -45,6 +45,17 @@ async def _return_prefix(
     return prefixes
 
 
+class _CommandCollection(dict):
+    def __setitem__(self, key, command):
+        command._inspect_args()
+        super().__setitem__(key, command)
+
+    def update(self, items):
+        for command in items:
+            items[command]._inspect_args()
+        super().update(items)
+
+
 class BotWithHandler(hikari.Bot):
     """
     A subclassed implementation of :class:`hikari.impl.bot.BotAppImpl` which contains a command handler.
@@ -105,7 +116,7 @@ class BotWithHandler(hikari.Bot):
         self.plugins: typing.MutableMapping[str, plugins.Plugin] = {}
         self.commands: typing.MutableMapping[
             str, typing.Union[commands.Command, commands.Group]
-        ] = {} if not self.insensitive_commands else CIMultiDict()
+        ] = _CommandCollection() if not self.insensitive_commands else CIMultiDict()
 
         self._help_impl = help_class(self)
 
@@ -507,20 +518,26 @@ class BotWithHandler(hikari.Bot):
             if not await self._evaluate_checks(command, context):
                 return
 
-            if not command._has_max_args and len(args) >= command._min_args:
+            if (
+                not command.arg_details.has_max_args
+                and len(args) >= command.arg_details.min_args
+            ):
                 await command.invoke(context, *args)
 
-            elif len(args) < command._min_args:
+            elif len(args) < command.arg_details.min_args:
                 raise errors.NotEnoughArguments(context.invoked_with)
 
-            elif len(args) > command._max_args and not command._allow_extra_arguments:
+            elif (
+                len(args) > command.arg_details.max_args
+                and not command._allow_extra_arguments
+            ):
                 raise errors.TooManyArguments(context.invoked_with)
 
-            elif command._max_args == 0:
+            elif command.arg_details.max_args == 0:
                 await command.invoke(context)
 
             else:
-                await command.invoke(context, *args[: command._max_args + 1])
+                await command.invoke(context, *args[: command.arg_details.max_args + 1])
         except errors.CommandError as ex:
             if self.get_listeners(errors.CommandErrorEvent, polymorphic=True):
                 await self.dispatch(errors.CommandErrorEvent(ex, context.message))

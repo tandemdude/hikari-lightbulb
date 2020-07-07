@@ -76,10 +76,18 @@ class SignatureInspector:
         self.command = command
         self.has_self = isinstance(command, _BoundCommandMarker)
         self.args = {}
-        for index, (name, arg) in enumerate(inspect.signature(command._callback).parameters.items()):
+        for index, (name, arg) in enumerate(
+            inspect.signature(command._callback).parameters.items()
+        ):
             self.args[name] = self.parse_arg(index, arg)
         self.max_args = sum(not arg["ignore"] for arg in self.args.values())
-        self.min_args = sum(not arg["ignore"] and arg["required"] for arg in self.args.values())
+        self.min_args = sum(
+            not arg["ignore"] and arg["required"] for arg in self.args.values()
+        )
+        self.has_max_args = not any(
+            a.kind == inspect.Parameter.VAR_POSITIONAL
+            for a in inspect.signature(command._callback).parameters.values()
+        )
 
     def parse_arg(self, index, arg):
         details = {}
@@ -123,27 +131,27 @@ class Command:
         self.method_name: typing.Optional[str] = None
         self.parent = parent
 
-        signature = inspect.signature(callback)
-        self._has_max_args = not any(
-            a.kind == inspect.Parameter.VAR_POSITIONAL
-            for a in signature.parameters.values()
-        )
+        # signature = inspect.signature(callback)
+        # self._has_max_args = not any(
+        #     a.kind == inspect.Parameter.VAR_POSITIONAL
+        #     for a in signature.parameters.values()
+        # )
 
-        self._max_args: int = 0
-        self._min_args: int = -1
+        # self._max_args: int = 0
+        # self._min_args: int = -1
 
-        has_self = False
+        # has_self = False
 
-        for i, (name, param) in enumerate(signature.parameters.items()):
-            if name == "self" and i == 0:
-                has_self = True
-                continue
-            if param.default == inspect.Parameter.empty:
-                self._min_args += 1
+        # for i, (name, param) in enumerate(signature.parameters.items()):
+        #     if name == "self" and i == 0:
+        #         has_self = True
+        #         continue
+        #     if param.default == inspect.Parameter.empty:
+        #         self._min_args += 1
 
-            # Skip the context, also skip counting self if it was present...
-            if has_self and i > 1 or i > 0:
-                self._max_args += 1
+        #     # Skip the context, also skip counting self if it was present...
+        #     if has_self and i > 1 or i > 0:
+        #         self._max_args += 1
 
     def __get__(
         self: _CommandT, instance: typing.Any, owner: typing.Type[typing.Any]
@@ -152,6 +160,9 @@ class Command:
 
     def __set_name__(self, owner, name):
         self.method_name = name
+
+    def _inspect_args(self):
+        self.arg_details = SignatureInspector(self)
 
     @property
     def name(self) -> str:

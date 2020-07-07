@@ -96,7 +96,15 @@ class HelpCommand:
     async def get_command_signature(
         self, command: typing.Union[commands.Command, commands.Group]
     ) -> str:
-        pass
+        signature = inspect.signature(command._callback)
+        items = [command.name]
+        num_args = len(signature.parameters) - command._max_args
+        for name, param in list(signature.parameters.items())[num_args:]:
+            if param.default is param.empty:
+                items.append(f"<{name}>")
+            else:
+                items.append(f"[{name}={param.default}]")
+        return " ".join(items)
 
     async def resolve_help_obj(self, context, obj):
         if not obj:

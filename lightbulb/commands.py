@@ -80,6 +80,7 @@ class SignatureInspector:
     Args:
         command (:obj:`~.commands.Command`): The command to inspect the arguments of.
     """
+
     def __init__(self, command: Command) -> None:
         self.command = command
         self.has_self = isinstance(command, _BoundCommandMarker)
@@ -108,7 +109,9 @@ class SignatureInspector:
 
         details["argtype"] = arg.kind
         details["annotation"] = arg.annotation
-        details["required"] = (arg.default is arg.empty) or (arg.kind == 3) # var positional
+        details["required"] = (arg.default is arg.empty) or (
+            arg.kind == 3
+        )  # var positional
         return details
 
 

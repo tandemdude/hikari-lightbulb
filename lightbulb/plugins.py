@@ -39,7 +39,7 @@ class Plugin:
         .. code-block:: python
 
             import lightbulb
-            from lightbulb import plugins
+            from lightbulb import plugins, commands
 
             bot = lightbulb.Bot(token="token_here", prefix="!")
 

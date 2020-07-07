@@ -54,6 +54,14 @@ Errors
 
 ----
 
+Help
+====
+
+.. automodule:: lightbulb.help
+    :members:
+
+----
+
 Stringview
 ==========
 

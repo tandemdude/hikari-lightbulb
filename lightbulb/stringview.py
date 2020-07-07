@@ -94,10 +94,10 @@ class StringView:
         while waiting for a closing quotation mark.
 
         Returns:
-            List[ :obj:`str` ] The arguments extracted from the string.
+            List[ :obj:`str` ]: The arguments extracted from the string.
 
         Raises:
-            :obj:`.errors.UnclosedQuotes`
+            :obj:`~.errors.UnclosedQuotes`
         """
         finished = False
         args_list = []

@@ -18,6 +18,7 @@
 from __future__ import annotations
 import inspect
 import typing
+import functools
 from multidict import CIMultiDict
 
 from lightbulb import context
@@ -72,6 +73,13 @@ def _bind_prototype(instance: typing.Any, command_template: _CommandT):
 
 
 class SignatureInspector:
+    """
+    Contains information about the arguments that a command takes when
+    it is invoked.
+
+    Args:
+        command (:obj:`~.commands.Command`): The command to inspect the arguments of.
+    """
     def __init__(self, command: Command) -> None:
         self.command = command
         self.has_self = isinstance(command, _BoundCommandMarker)
@@ -100,14 +108,14 @@ class SignatureInspector:
 
         details["argtype"] = arg.kind
         details["annotation"] = arg.annotation
-        details["required"] = arg.default is arg.empty
+        details["required"] = (arg.default is arg.empty) or (arg.kind == 3) # var positional
         return details
 
 
 class Command:
     """
     A command that can be invoked by a user. When invoked, the callback
-    will be called with a set argument ctx, an instance of the :obj:`.context.Context`
+    will be called with a set argument ctx, an instance of the :obj:`~.context.Context`
     class, and any other arguments supplied by the user.
 
     Args:
@@ -131,28 +139,6 @@ class Command:
         self.method_name: typing.Optional[str] = None
         self.parent = parent
 
-        # signature = inspect.signature(callback)
-        # self._has_max_args = not any(
-        #     a.kind == inspect.Parameter.VAR_POSITIONAL
-        #     for a in signature.parameters.values()
-        # )
-
-        # self._max_args: int = 0
-        # self._min_args: int = -1
-
-        # has_self = False
-
-        # for i, (name, param) in enumerate(signature.parameters.items()):
-        #     if name == "self" and i == 0:
-        #         has_self = True
-        #         continue
-        #     if param.default == inspect.Parameter.empty:
-        #         self._min_args += 1
-
-        #     # Skip the context, also skip counting self if it was present...
-        #     if has_self and i > 1 or i > 0:
-        #         self._max_args += 1
-
     def __get__(
         self: _CommandT, instance: typing.Any, owner: typing.Type[typing.Any]
     ) -> _CommandT:
@@ -161,8 +147,15 @@ class Command:
     def __set_name__(self, owner, name):
         self.method_name = name
 
-    def _inspect_args(self):
-        self.arg_details = SignatureInspector(self)
+    @functools.cached_property
+    def arg_details(self):
+        """
+        An inspection of the arguments that a command takes.
+
+        Returns:
+            :obj:`~.commands.SignatureInspector`: Details about the command's arguments.
+        """
+        return SignatureInspector(self)
 
     @property
     def name(self) -> str:
@@ -199,13 +192,13 @@ class Command:
 
     def add_check(self, check_func) -> None:
         """
-        Add a check to an instance of :obj:`.commands.Command` or a subclass. The check passed must
-        be an awaitable function taking a single argument which will be an instance of :obj:`.context.Context`.
+        Add a check to an instance of :obj:`~.commands.Command` or a subclass. The check passed must
+        be an awaitable function taking a single argument which will be an instance of :obj:`~.context.Context`.
         It must also either return a boolean denoting whether or not the check passed,
-        or raise an instance of :obj:`.errors.CheckFailure` or a subclass.
+        or raise an instance of :obj:`~.errors.CheckFailure` or a subclass.
 
         Args:
-            check_func (Callable[ [ :obj:`.context.Context` ], Coroutine[ ``None``, ``None``, :obj:`bool` ] ]): Check to add to the command
+            check_func (Callable[ [ :obj:`~.context.Context` ], Coroutine[ ``None``, ``None``, :obj:`bool` ] ]): Check to add to the command
 
         Returns:
             ``None``
@@ -250,11 +243,11 @@ class Group(Command):
     for subcommands which can be registered to the group and invoked as separate commands.
 
     Args:
-        *args: The args passed to :obj:`.commands.Command` in its constructor
+        *args: The args passed to :obj:`~.commands.Command` in its constructor
 
     Keyword Args:
         insensitive_commands (:obj:`bool`): Whether or not this group's subcommands should be case insensitive. Defaults to ``False``.
-        **kwargs: The kwargs passed to :obj:`.commands.Command` in its constructor
+        **kwargs: The kwargs passed to :obj:`~.commands.Command` in its constructor
     """
 
     def __init__(self, *args, insensitive_commands: bool = False, **kwargs) -> None:
@@ -287,7 +280,7 @@ class Group(Command):
             name (:obj:`str`): The name of the command to get the object for.
 
         Returns:
-            Optional[ :obj:`.commands.Command` ]: command object registered to that name.
+            Optional[ :obj:`~.commands.Command` ]: command object registered to that name.
         """
         return self.subcommands.get(name)
 
@@ -350,7 +343,7 @@ class Group(Command):
 
 def command(**kwargs):
     """
-    A decorator to convert a coroutine into a :obj:`.commands.Command` object.
+    A decorator to convert a coroutine into a :obj:`~.commands.Command` object.
 
     Keyword Args:
         name (Optional[ :obj:`str` ]): Name to register the command to. Defaults to the name of the coroutine.
@@ -373,7 +366,7 @@ def command(**kwargs):
 
 def group(**kwargs):
     """
-    A decorator to convert a coroutine into a :obj:`.commands.Group` object.
+    A decorator to convert a coroutine into a :obj:`~.commands.Group` object.
 
     Keyword Args:
         name (Optional[ :obj:`str` ]): Name to register the command to. Defaults to the name of the coroutine.

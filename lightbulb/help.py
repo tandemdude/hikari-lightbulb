@@ -19,16 +19,16 @@ from __future__ import annotations
 import typing
 import inspect
 
-from lightbulb import context
 from lightbulb import commands
 from lightbulb import plugins
 from lightbulb import command_handler
 from lightbulb import errors
 
+if not typing.TYPE_CHECKING:
+    from lightbulb import context
 
-def get_help_text(
-    object: typing.Union[commands.Command, commands.Group, plugins.Plugin]
-) -> str:
+
+def get_help_text(object: typing.Union[commands.Command, plugins.Plugin]) -> str:
     """
     Get the help text for a command, group or plugin, extracted from its docstring.
 
@@ -46,6 +46,37 @@ def get_help_text(
     else:
         doc = inspect.getdoc(object)
         return doc if doc != inspect.getdoc(plugins.Plugin) else ""
+
+
+def get_command_signature(command: commands.Command) -> str:
+    """
+    Get the command signature (usage) for a command or command group.
+    The signature is returned in the format:
+    ``<command name> <required arg> [optional arg]``
+
+    Args:
+        command (:obj:`~.commands.Command`): The command or group to get the signature for.
+
+    Returns:
+        :obj:`str`: Signature for the command.
+    """
+    signature = inspect.signature(command._callback)
+
+    command_qualname = []
+    cmd = command
+    while cmd is not None:
+        command_qualname.append(cmd.name)
+        cmd = cmd.parent
+    command_qualname = " ".join(command_qualname[::-1])
+
+    items = [command_qualname]
+    num_args = len(signature.parameters) - command.arg_details.max_args
+    for name, param in list(signature.parameters.items())[num_args:]:
+        if param.default is param.empty:
+            items.append(f"<{name}>")
+        else:
+            items.append(f"[{name}={param.default}]")
+    return " ".join(items)
 
 
 @commands.command(name="help")
@@ -74,7 +105,7 @@ class HelpCommand:
             self.bot.add_command(_help_cmd)
 
     async def filter_commands(
-        self, context: context.Context, command_list: typing.List[commands.Command],
+        self, context: context.Context, command_list: typing.Iterable[commands.Command],
     ) -> typing.List[commands.Command]:
         """
         Filter a list of :obj:`~.commands.Command` and :obj:`~.commands.Group`, removing any commands that cannot
@@ -96,23 +127,23 @@ class HelpCommand:
                 pass
         return list(filtered_commands)
 
-    def get_command_signature(
-        self, command: typing.Union[commands.Command, commands.Group]
-    ) -> str:
-        signature = inspect.signature(command._callback)
-        items = [command.name]
-        num_args = len(signature.parameters) - command.arg_details.max_args
-        for name, param in list(signature.parameters.items())[num_args:]:
-            if param.default is param.empty:
-                items.append(f"<{name}>")
-            else:
-                items.append(f"[{name}={param.default}]")
-        return " ".join(items)
+    async def resolve_help_obj(
+        self, context: context.Context, obj: typing.List[str]
+    ) -> None:
+        """
+        Resolve the object to send help information for from the
+        arguments passed to the help command.
 
-    async def resolve_help_obj(self, context, obj):
+        Args:
+            context (:obj:`~.context.Context`): Context to send the help to.
+            obj (List[ :obj:`str` ]): Arguments supplied to the help command.
+
+        Returns:
+            ``None``
+        """
         if not obj:
             await self.send_help_overview(context)
-        if len(obj) == 1:
+        elif len(obj) == 1:
             command = self.bot.get_command(obj[0])
             if isinstance(command, commands.Group):
                 await self.send_group_help(context, command)
@@ -123,12 +154,48 @@ class HelpCommand:
                 if plugin is not None:
                     await self.send_plugin_help(context, plugin)
                 else:
-                    await self.entity_not_found(context, obj[0])
+                    await self.object_not_found(context, obj[0])
+        else:
+            command = self.bot.get_command(obj[0])
 
-    async def entity_not_found(self, context, name):
+            next_obj = 1
+            while isinstance(command, commands.Group):
+                try:
+                    command = command.get_subcommand(obj[next_obj])
+                    next_obj += 1
+                except IndexError:
+                    break
+
+            if isinstance(command, commands.Group):
+                await self.send_group_help(context, command)
+            elif isinstance(command, commands.Command):
+                await self.send_command_help(context, command)
+            else:
+                await self.object_not_found(context, " ".join(obj))
+
+    async def object_not_found(self, context: context.Context, name: str) -> None:
+        """
+        Method called when help is requested for an object that does not exist.
+
+        Args:
+            context (:obj:`~.context.Context`): Context to send the error message to.
+            name (:obj:`str`): The name of the object that help was requested for.
+
+        Returns:
+            ``None``
+        """
         await context.reply(f"`{name}` is not a valid command, group or category.")
 
     async def send_help_overview(self, context: context.Context) -> None:
+        """
+        Method called when the help command is run without any arguments.
+
+        Args:
+            context (:obj:`~.context.Context`): Context to send the help to.
+
+        Returns:
+            ``None``
+        """
         plugin_commands = [
             [plugin.name, await self.filter_commands(context, plugin.commands.values())]
             for plugin in self.bot.plugins.values()
@@ -147,7 +214,7 @@ class HelpCommand:
             if not commands:
                 continue
             help_text.append(f"**{plugin}**")
-            for c in commands:
+            for c in sorted(commands, key=lambda c: c.name):
                 short_help = get_help_text(c).split("\n")[0]
                 help_text.append(f"• `{c.name}` - {short_help}")
         help_text.append(
@@ -158,20 +225,64 @@ class HelpCommand:
     async def send_plugin_help(
         self, context: context.Context, plugin: plugins.Plugin
     ) -> None:
-        await context.reply("This would be plugin help.")
+        """
+        Method called when the help command is run with an argument that
+        resolves into the name of a plugin.
+
+        Args:
+            context (:obj:`~.context.Context`): Context to send the help to.
+            plugin (:obj:`~.plugins.Plugin`): Plugin object to send help for.
+
+        Returns:
+            ``None``
+        """
+        help_text = [
+            f"**Help for category `{plugin.name}`**",
+            get_help_text(plugin) or "No help text provided.",
+            f"Commands:\n{', '.join(f'`{c.name}`' for c in sorted(set(plugin.commands.values()), key=lambda c: c.name)) or 'No commands in the category'}",
+        ]
+        await context.reply("\n".join(help_text))
 
     async def send_command_help(
         self, context: context.Context, command: commands.Command
     ) -> None:
+        """
+        Method called when the help command is run with an argument that
+        resolves into the name of a registered command.
+
+        Args:
+            context (:obj:`~.context.Context`): Context to send the help to.
+            command (:obj:`~.commands.Command`): Command object to send help for.
+
+        Returns:
+            ``None``
+        """
         help_text = [
             f"**Help for command `{command.name}`**",
-            "Usage:",
-            f"```{context.prefix}{self.get_command_signature(command)}```",
-            get_help_text(command),
+            f"Usage:\n```{context.prefix}{get_command_signature(command)}```",
+            get_help_text(command) or "No help text provided.",
         ]
         await context.reply("\n".join(help_text))
 
     async def send_group_help(
         self, context: context.Context, group: commands.Group
     ) -> None:
-        await context.reply("This would be group help.")
+        """
+        Method called when the help command is run with an argument that
+        resolves into the name of a registered command group.
+
+        Args:
+            context (:obj:`~.context.Context`): Context to send the help to.
+            command (:obj:`~.commands.Group`): Group object to send help for.
+
+        Returns:
+            ``None``
+        """
+        help_text = [
+            f"**Help for command group `{group.name}`**",
+            "Usage:",
+            f"```{context.prefix}{get_command_signature(group)}```",
+            get_help_text(group) or "No help text provided.",
+            f"Subcommands:\n{', '.join(f'`{c.name}`' for c in sorted(set(group.subcommands.values()), key=lambda c: c.name)) or 'No subcommands in the group'}",
+        ]
+        await context.reply("\n".join(help_text))

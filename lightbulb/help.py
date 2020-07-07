@@ -209,7 +209,7 @@ class HelpCommand:
         )
         plugin_commands.append(["Uncategorised", uncategorised_commands])
 
-        help_text = ["__**Bot help**__\n"]
+        help_text = [">>> __**Bot help**__\n"]
         for plugin, commands in plugin_commands:
             if not commands:
                 continue
@@ -237,7 +237,7 @@ class HelpCommand:
             ``None``
         """
         help_text = [
-            f"**Help for category `{plugin.name}`**",
+            f">>> **Help for category `{plugin.name}`**",
             get_help_text(plugin) or "No help text provided.",
             f"Commands:\n{', '.join(f'`{c.name}`' for c in sorted(set(plugin.commands.values()), key=lambda c: c.name)) or 'No commands in the category'}",
         ]
@@ -258,7 +258,7 @@ class HelpCommand:
             ``None``
         """
         help_text = [
-            f"**Help for command `{command.name}`**",
+            f">>> **Help for command `{command.name}`**",
             f"Usage:\n```{context.prefix}{get_command_signature(command)}```",
             get_help_text(command) or "No help text provided.",
         ]
@@ -279,7 +279,7 @@ class HelpCommand:
             ``None``
         """
         help_text = [
-            f"**Help for command group `{group.name}`**",
+            f">>> **Help for command group `{group.name}`**",
             "Usage:",
             f"```{context.prefix}{get_command_signature(group)}```",
             get_help_text(group) or "No help text provided.",

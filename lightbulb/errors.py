@@ -25,7 +25,7 @@ class CommandErrorEvent(base.Event):
     Event type to subscribe to for the processing of all command errors raised by the handler.
 
     Args:
-        error (:obj:`.errors.CommandError`): An instance or subclass of ``CommandError``. The error that was raised.
+        error (:obj:`~.errors.CommandError`): An instance or subclass of ``CommandError``. The error that was raised.
         message (:obj:`hikari.models.messages.Message`): The message that caused the exception to be raised.
 
     Example:

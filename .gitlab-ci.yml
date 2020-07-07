@@ -54,13 +54,8 @@ pypi:
     - pip install -r requirements.txt
     - python setup.py sdist bdist_wheel
     - twine upload --skip-existing dist/*
-    - ver=`grep -oP "__version__ = [\"\']\K(.*)(?=[\"\'])" lightbulb/__init__.py`
-    - >-
-        curl 
-        -X POST 
-        -H 'Content-Type: application/json' 
-        -d '{"embeds": [{"title": "Lightbulb v$ver released to PyPi.", "description": "Install with:\n```pip install -U hikari-lighbulb==$ver```"}]}'
-        $RELEASE_WEBHOOK
+    - pip install -U requests
+    - python release_webhook.py
   stage: deploy
   only:
     - master

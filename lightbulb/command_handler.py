@@ -26,12 +26,14 @@ import importlib
 
 import hikari
 from hikari.events import message
+from multidict import CIMultiDict
 
 from lightbulb import commands
 from lightbulb import context
 from lightbulb import errors
 from lightbulb import stringview
 from lightbulb import plugins
+from lightbulb import help
 
 if typing.TYPE_CHECKING:
     from hikari.models import messages
@@ -46,7 +48,7 @@ async def _return_prefix(
 class BotWithHandler(hikari.Bot):
     """
     A subclassed implementation of :class:`hikari.impl.bot.BotAppImpl` which contains a command handler.
-    This should be instantiated instead of the superclass if you want to be able to use 
+    This should be instantiated instead of the superclass if you want to be able to use
     the command handler implementation provided.
 
     The prefix argument will accept any of the following:
@@ -59,6 +61,7 @@ class BotWithHandler(hikari.Bot):
 
     Args:
         prefix: The bot's command prefix, iterable of prefixes, or callable that returns a prefix or iterable of prefixes.
+        insensitive_commands (:obj:`bool`): Whether or not commands should be case insensitive. Defaults to ``False``.
         ignore_bots (:obj:`bool`): Whether or not the bot should ignore its commands when invoked by other bots. Defaults to ``True``.
         owner_ids (List[ :obj:`int` ]): IDs that the bot should treat as owning the bot.
         **kwargs: Other parameters passed to the :class:`hikari.impl.bot.BotAppImpl` constructor.
@@ -79,8 +82,10 @@ class BotWithHandler(hikari.Bot):
                 ],
             ],
         ],
+        insensitive_commands: bool = False,
         ignore_bots: bool = True,
         owner_ids: typing.Iterable[int] = (),
+        help_class=help.HelpCommand,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
@@ -95,17 +100,19 @@ class BotWithHandler(hikari.Bot):
 
         self.ignore_bots: bool = ignore_bots
         self.owner_ids: typing.Iterable[int] = owner_ids
-
+        self.insensitive_commands = insensitive_commands
         self.extensions = []
         self.plugins: typing.MutableMapping[str, plugins.Plugin] = {}
         self.commands: typing.MutableMapping[
             str, typing.Union[commands.Command, commands.Group]
-        ] = {}
+        ] = dict() if not self.insensitive_commands else CIMultiDict()
+
+        self._help_impl = help_class(self)
 
     async def fetch_owner_ids(self) -> None:
         """
         Fetches the IDs of the bot's owner(s) from the API and stores them in
-        :attr:`.command_handler.BotWithHandler.owner_ids`
+        :attr:`~.command_handler.BotWithHandler.owner_ids`
 
         Returns:
             ``None``
@@ -123,7 +130,7 @@ class BotWithHandler(hikari.Bot):
         A decorator that registers a callable as a command for the handler.
 
         Keyword Args:
-            **kwargs: See :obj:`.commands.command` for valid kwargs.
+            **kwargs: See :obj:`~.commands.command` for valid kwargs.
 
         Example:
 
@@ -136,7 +143,7 @@ class BotWithHandler(hikari.Bot):
                     await ctx.reply("Pong!")
 
         See Also:
-            :meth:`.command_handler.BotWithHandler.add_command`
+            :meth:`~.command_handler.BotWithHandler.add_command`
         """
         registered_commands = self.commands
 
@@ -160,7 +167,7 @@ class BotWithHandler(hikari.Bot):
         A decorator that registers a callable as a command group for the handler.
 
         Keyword Args:
-            **kwargs: See :obj:`.commands.group` for valid kwargs.
+            **kwargs: See :obj:`~.commands.group` for valid kwargs.
 
         Example:
 
@@ -173,7 +180,7 @@ class BotWithHandler(hikari.Bot):
                     await ctx.reply("Bar")
 
         See Also:
-            :meth:`.commands.Group.command` for how to add subcommands to a group.
+            :meth:`~.commands.Group.command` for how to add subcommands to a group.
         """
         registered_commands = self.commands
 
@@ -185,6 +192,7 @@ class BotWithHandler(hikari.Bot):
                 name,
                 kwargs.get("allow_extra_arguments", True),
                 kwargs.get("aliases", []),
+                insensitive_commands=kwargs.get("insensitive_commands", False),
             )
             for alias in kwargs.get("aliases", []):
                 registered_commands[alias] = registered_commands[name]
@@ -200,10 +208,10 @@ class BotWithHandler(hikari.Bot):
             func (:obj:`typing.Callable`): The function to add as a command.
 
         Keyword Args:
-            **kwargs: See :obj:`.commands.command` for valid kwargs.
+            **kwargs: See :obj:`~.commands.command` for valid kwargs.
 
         Returns:
-            :obj:`commands.Command` that was added to the bot.
+            :obj:`~.commands.Command`: Command added to the bot.
 
         Example:
 
@@ -217,7 +225,7 @@ class BotWithHandler(hikari.Bot):
                 bot.add_command(ping)
 
         See Also:
-            :meth:`.command_handler.BotWithHandler.command`
+            :meth:`~.command_handler.BotWithHandler.command`
         """
         if not isinstance(func, commands.Command):
             name = kwargs.get("name", func.__name__)
@@ -244,14 +252,14 @@ class BotWithHandler(hikari.Bot):
             func (:obj:`typing.Callable`): The function to add as a command group.
 
         Keyword Args:
-            **kwargs: See :obj:`.commands.group` for valid kwargs.
+            **kwargs: See :obj:`~.commands.group` for valid kwargs.
 
         Returns:
-            :obj:`commands.Group` that was added to the bot.
+            :obj:`~.commands.Group`: Group added to the bot.
 
         See Also:
-            :meth:`.command_handler.BotWithHandler.group`
-            :meth:`.command_handler.BotWithHandler.add_command`
+            :meth:`~.command_handler.BotWithHandler.group`
+            :meth:`~.command_handler.BotWithHandler.add_command`
         """
         name = kwargs.get("name", func.__name__)
         self.commands[name] = commands.Group(
@@ -259,6 +267,7 @@ class BotWithHandler(hikari.Bot):
             name,
             kwargs.get("allow_extra_arguments", True),
             kwargs.get("aliases", []),
+            insensitive_commands=kwargs.get("insensitive_commands", False),
         )
         for alias in kwargs.get("aliases", []):
             self.commands[alias] = self.commands[name]
@@ -266,10 +275,10 @@ class BotWithHandler(hikari.Bot):
 
     def add_plugin(self, plugin: plugins.Plugin) -> None:
         """
-        Add a :obj:`.plugins.Plugin` to the bot including all of the plugin commands.
+        Add a :obj:`~.plugins.Plugin` to the bot including all of the plugin commands.
 
         Args:
-            plugin (:obj:`.plugins.Plugin`): Plugin to add to the bot.
+            plugin (:obj:`~.plugins.Plugin`): Plugin to add to the bot.
 
         Returns:
             ``None``
@@ -285,7 +294,7 @@ class BotWithHandler(hikari.Bot):
             name (:obj:`str`): The name of the command to get the object for.
 
         Returns:
-            Optional[ :obj:`.commands.Command` ] command object registered to that name.
+            Optional[ :obj:`~.commands.Command` ]: Command object registered to that name.
         """
         return self.commands.get(name)
 
@@ -297,7 +306,7 @@ class BotWithHandler(hikari.Bot):
              name (:obj:`str`): The name of the plugin to get the object for.
 
         Returns:
-            Optional[ :obj:`.commands.Command` ] plugin object registered to that name.
+            Optional[ :obj:`~.commands.Command` ]: Plugin object registered to that name.
         """
         return self.plugins.get(name)
 
@@ -309,7 +318,7 @@ class BotWithHandler(hikari.Bot):
             name (:obj:`str`): The name of the command to remove.
 
         Returns:
-            Optional[ :obj:`str` ] name of the command that was removed.
+            Optional[ :obj:`str` ]: Name of the command that was removed.
         """
         command = self.commands.pop(name)
         return command.name if command is not None else None
@@ -322,7 +331,7 @@ class BotWithHandler(hikari.Bot):
             name (:obj:`str`): The name of the plugin to remove.
 
         Returns:
-            Optional[ :obj:`str` ] name of the plugin that was removed.
+            Optional[ :obj:`str` ]: Name of the plugin that was removed.
         """
         plugin = self.plugins.pop(name)
         if plugin is not None:
@@ -343,8 +352,8 @@ class BotWithHandler(hikari.Bot):
             ``None``
 
         Raises:
-            ExtensionAlreadyLoaded: If the extension has already been loaded.
-            ExtensionMissingLoad: If the extension to be loaded does not contain a ``load`` function.
+            :obj:`~.errors.ExtensionAlreadyLoaded`: If the extension has already been loaded.
+            :obj:`~.errors.ExtensionMissingLoad`: If the extension to be loaded does not contain a ``load`` function.
 
         Example:
             This method is useful when wanting to split your bot up into multiple files.
@@ -360,12 +369,10 @@ class BotWithHandler(hikari.Bot):
 
                 def load(bot):
                     bot.add_plugin(MyPlugin())
-
         """
         if extension in self.extensions:
             raise errors.ExtensionAlreadyLoaded(f"{extension} is already loaded.")
 
-        paths = extension.split(".")
         module = importlib.import_module(extension)
 
         if not hasattr(module, "load"):
@@ -387,8 +394,8 @@ class BotWithHandler(hikari.Bot):
             ``None``
 
         Raises:
-            ExtensionNotLoaded: If the extension has not been loaded.
-            ExtensionMissingUnload: If the extension does not contain an ``unload`` function.
+            :obj:`~.errors.ExtensionNotLoaded`: If the extension has not been loaded.
+            :obj:`~.errors.ExtensionMissingUnload`: If the extension does not contain an ``unload`` function.
 
         Example:
 
@@ -408,7 +415,6 @@ class BotWithHandler(hikari.Bot):
         if extension not in self.extensions:
             raise errors.ExtensionNotLoaded(f"{extension} is not loaded.")
 
-        paths = extension.split(".")
         module = importlib.import_module(extension)
 
         if not hasattr(module, "unload"):
@@ -454,7 +460,7 @@ class BotWithHandler(hikari.Bot):
             prefix (:obj:`str`): The prefix the command was executed with.
 
         Returns:
-            List[ :obj:`str` ] List of the arguments the command was invoked with.
+            List[ :obj:`str` ]: List of the arguments the command was invoked with.
 
         Note:
             The first item in the list will always contain the prefix+command string which can
@@ -500,20 +506,26 @@ class BotWithHandler(hikari.Bot):
             if not await self._evaluate_checks(command, context):
                 return
 
-            if not command._has_max_args and len(args) >= command._min_args:
+            if (
+                not command.arg_details.has_max_args
+                and len(args) >= command.arg_details.min_args
+            ):
                 await command.invoke(context, *args)
 
-            elif len(args) < command._min_args:
+            elif len(args) < command.arg_details.min_args:
                 raise errors.NotEnoughArguments(context.invoked_with)
 
-            elif len(args) > command._max_args and not command._allow_extra_arguments:
+            elif (
+                len(args) > command.arg_details.max_args
+                and not command._allow_extra_arguments
+            ):
                 raise errors.TooManyArguments(context.invoked_with)
 
-            elif command._max_args == 0:
+            elif command.arg_details.max_args == 0:
                 await command.invoke(context)
 
             else:
-                await command.invoke(context, *args[: command._max_args + 1])
+                await command.invoke(context, *args[: command.arg_details.max_args + 1])
         except errors.CommandError as ex:
             if self.get_listeners(errors.CommandErrorEvent, polymorphic=True):
                 await self.dispatch(errors.CommandErrorEvent(ex, context.message))
@@ -544,10 +556,9 @@ class BotWithHandler(hikari.Bot):
         if isinstance(prefixes, str):
             prefixes = [prefixes]
 
-        content = event.message.content
         prefix = None
         for p in prefixes:
-            if content.startswith(p):
+            if event.message.content.startswith(p):
                 prefix = p
                 break
 
@@ -556,7 +567,7 @@ class BotWithHandler(hikari.Bot):
 
         args = self.resolve_arguments(event.message, prefix)
 
-        invoked_with = args[0]
+        invoked_with = args[0].casefold() if self.insensitive_commands else args[0]
         if invoked_with not in self.commands:
             raise errors.CommandNotFound(invoked_with)
 

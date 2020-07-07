@@ -59,7 +59,7 @@ class StringView:
         buff = []
         while self.index < len(self.text):
             char = self.text[self.index]
-            if char == " " and self.expect_quote is None:
+            if (char == " " or char == "\n") and self.expect_quote is None:
                 self.index += 1
                 return "".join(buff)
             elif not self.expect_quote and char in _quotes:
@@ -94,10 +94,10 @@ class StringView:
         while waiting for a closing quotation mark.
 
         Returns:
-            List[ :obj:`str` ] The arguments extracted from the string.
+            List[ :obj:`str` ]: The arguments extracted from the string.
 
         Raises:
-            :obj:`.errors.UnclosedQuotes`
+            :obj:`~.errors.UnclosedQuotes`
         """
         finished = False
         args_list = []

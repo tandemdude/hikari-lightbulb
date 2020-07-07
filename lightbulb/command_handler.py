@@ -64,6 +64,8 @@ class BotWithHandler(hikari.Bot):
         insensitive_commands (:obj:`bool`): Whether or not commands should be case insensitive. Defaults to ``False``.
         ignore_bots (:obj:`bool`): Whether or not the bot should ignore its commands when invoked by other bots. Defaults to ``True``.
         owner_ids (List[ :obj:`int` ]): IDs that the bot should treat as owning the bot.
+        help_class (:obj:`~.help.HelpCommand`): The **uninstantiated** class the bot should use for it's help command. Defaults
+            to :obj:`~.help.HelpCommand`. Any class passed should always be this class or subclass of this class.
         **kwargs: Other parameters passed to the :class:`hikari.impl.bot.BotAppImpl` constructor.
     """
 

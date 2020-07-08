@@ -19,7 +19,7 @@ import mock
 import pytest
 import datetime
 
-from hikari.models import messages, users, guilds
+from hikari.models import messages, guilds
 from lightbulb import Bot
 from lightbulb import context
 from lightbulb import commands

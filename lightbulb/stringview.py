@@ -90,8 +90,9 @@ class StringView:
         a list of all of its arguments. Arguments are defined as words separated by whitespace,
         or as words enclosed in quotation marks.
 
-        Raises ``UnclosedQuotes`` when the :class:`.stringviewer.StringViewer` encounters an EOF 
-        while waiting for a closing quotation mark.
+        Raises:
+            :obj:`~.errors.UnclosedQuotes`: When an unexpected EOF is encountered
+
 
         Returns:
             List[ :obj:`str` ]: The arguments extracted from the string.

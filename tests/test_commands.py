@@ -64,6 +64,24 @@ def test_Command_add_check_adds_callable_to_list(dummy_command, dummy_function):
     assert dummy_command._checks == [dummy_function]
 
 
+def test_Command_args_before_asterisk_return(dummy_command):
+    args_num, name = dummy_command.arg_details._args_and_name_before_asterisk()
+    assert args_num == 0
+
+
+def test_Command_args_before_asterisk_raise_error():
+    # Check if _args_before_asterisk raises TypeError after having more than 1 arg after asterisk
+
+    def dummy_function(a, b, *, c, d):
+        pass
+
+    with pytest.raises(TypeError) as error:
+        dummy_cmd = commands.Command(dummy_function, "dummy", True, [])
+        dummy_cmd.arg_details._args_and_name_before_asterisk()
+
+    assert error.type is TypeError
+
+
 def test_Group_get_subcommand_returns_None(dummy_group):
     assert dummy_group.get_subcommand("foo") is None
 

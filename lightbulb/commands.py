@@ -95,6 +95,7 @@ class SignatureInspector:
         )
         self.has_max_args = not any(
             a.kind == inspect.Parameter.VAR_POSITIONAL
+            or (a.kind == inspect.Parameter.KEYWORD_ONLY and a.default is a.empty)
             for a in inspect.signature(command._callback).parameters.values()
         )
 
@@ -113,6 +114,41 @@ class SignatureInspector:
             arg.kind == 3
         )  # var positional
         return details
+
+    def _args_and_name_before_asterisk(self):
+        args_num = 0
+        param_name = None
+
+        for idx, arg in enumerate(self.args.values()):
+
+            if arg["argtype"] == inspect.Parameter.KEYWORD_ONLY and arg["required"]:
+                args_num = idx
+                param_name = list(self.args.keys())[idx]
+                break
+
+            # If last arg is *arg, -1 from args_num to concatenate inputs correctly
+            if (
+                idx + 1 == len(self.args)
+                and arg["argtype"] == inspect.Parameter.VAR_POSITIONAL
+            ):
+                args_num -= 1
+
+        # args_num will be 0 when it didn't encounter any *arg or *, arg
+        # args_num will be -1 when it didn't encounter any *, arg but found *arg at the end
+        if args_num in (0, -1):
+            args_num += len(self.args)
+
+        # Check if number or *, args is bigger than 1 and throw error if yes
+        if len(self.args) - args_num > 1:
+            raise TypeError(
+                f"Number of arguments after * (asterisk) symbol in command {self.command._callback.__name__} has to be smaller or equal 1."
+            )
+
+        args_num -= 1  # because of the ctx arg
+
+        if self.has_self:
+            args_num -= 1  # because of the self arg if exists
+        return args_num, param_name
 
 
 class Command:
@@ -141,6 +177,14 @@ class Command:
         self._checks = []
         self.method_name: typing.Optional[str] = None
         self.parent = parent
+
+        signature = inspect.signature(callback)
+        self._has_max_args = not any(
+            a.kind == inspect.Parameter.VAR_POSITIONAL
+            or a.kind == inspect.Parameter.KEYWORD_ONLY
+            and a.default == inspect.Parameter.empty
+            for a in signature.parameters.values()
+        )
 
     def __get__(
         self: _CommandT, instance: typing.Any, owner: typing.Type[typing.Any]

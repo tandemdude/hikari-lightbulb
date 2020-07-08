@@ -57,12 +57,14 @@ class BotWithHandler(hikari.Bot):
 
     - An iterable (such as a list) of strings, eg ``['!', '?']``
 
-    - A function or coroutine that takes **only** two arguments, ``bot`` and ``message``, and that returns a single string or iterable of strings.
+    - A function or coroutine that takes **only** two arguments, ``bot`` and ``message``,
+    and that returns a single string or iterable of strings.
 
     Args:
-        prefix: The bot's command prefix, iterable of prefixes, or callable that returns a prefix or iterable of prefixes.
-        insensitive_commands (:obj:`bool`): Whether or not commands should be case insensitive. Defaults to ``False``.
-        ignore_bots (:obj:`bool`): Whether or not the bot should ignore its commands when invoked by other bots. Defaults to ``True``.
+        prefix: The bot's command prefix, iterable of prefixes, or callable that returns
+        a prefix or iterable of prefixes.
+        ignore_bots (:obj:`bool`): Ignore other bot's messages invoking your bot's commands if True (default), else not.
+        invoked by other bots. Defaults to ``True``.
         owner_ids (List[ :obj:`int` ]): IDs that the bot should treat as owning the bot.
         help_class (:obj:`~.help.HelpCommand`): The **uninstantiated** class the bot should use for it's help command. Defaults
             to :obj:`~.help.HelpCommand`. Any class passed should always be this class or subclass of this class.
@@ -508,11 +510,23 @@ class BotWithHandler(hikari.Bot):
             if not await self._evaluate_checks(command, context):
                 return
 
+            (
+                before_asterisk,
+                param_name,
+            ) = command.arg_details._args_and_name_before_asterisk()
+            args = self._concatenate_args(args, command)
+
             if (
                 not command.arg_details.has_max_args
                 and len(args) >= command.arg_details.min_args
             ):
-                await command.invoke(context, *args)
+                if param_name is not None:
+                    await command.invoke(
+                        context, *args[:before_asterisk], **{f"{param_name}": args[-1]},
+                    )
+
+                else:
+                    await command.invoke(context, *args)
 
             elif len(args) < command.arg_details.min_args:
                 raise errors.NotEnoughArguments(context.invoked_with)
@@ -527,12 +541,39 @@ class BotWithHandler(hikari.Bot):
                 await command.invoke(context)
 
             else:
-                await command.invoke(context, *args[: command.arg_details.max_args + 1])
+
+                if param_name is not None:
+                    await command.invoke(
+                        context, *args[:before_asterisk], **{f"{param_name}": args[-1]},
+                    )
+
+                else:
+                    await command.invoke(context, *args[:before_asterisk])
         except errors.CommandError as ex:
             if self.get_listeners(errors.CommandErrorEvent, polymorphic=True):
                 await self.dispatch(errors.CommandErrorEvent(ex, context.message))
             else:
                 raise
+
+    def _concatenate_args(self, args: typing.List[str], command: commands.Command):
+        # Concatenates arguments for last argument (after asterisk sign)
+        new_args = args
+        (
+            before_asterisk,
+            param_name,
+        ) = command.arg_details._args_and_name_before_asterisk()
+
+        if (
+            before_asterisk < len(args)
+            and not command.arg_details.has_max_args
+            and param_name is not None
+        ):
+            new_args = [
+                *args[:before_asterisk],
+                " ".join(args[before_asterisk:]),
+            ]
+
+        return new_args
 
     async def handle(self, event: message.MessageCreateEvent) -> None:
         """
@@ -540,7 +581,12 @@ class BotWithHandler(hikari.Bot):
         is valid then it will invoke the relevant command.
 
         Args:
-            event (:obj:`hikari.events.message.MessageCreateEvent`): The message create event containing a possible command invocation.
+            event (:obj:`hikari.events.message.MessageCreateEvent`): The message create event containing
+            a possible command invocation.
+
+        Raises:
+            TypeError
+            Error raised when function's signature has more than 1 argument required after asterisk symbol.
 
         Returns:
             ``None``

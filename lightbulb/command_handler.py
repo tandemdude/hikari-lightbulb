@@ -62,7 +62,7 @@ class BotWithHandler(hikari.Bot):
 
     Args:
         prefix: The bot's command prefix, iterable of prefixes, or callable that returns
-        a prefix or iterable of prefixes.
+            a prefix or iterable of prefixes.
         ignore_bots (:obj:`bool`): Ignore other bot's messages invoking your bot's commands if True (default), else not.
         invoked by other bots. Defaults to ``True``.
         owner_ids (List[ :obj:`int` ]): IDs that the bot should treat as owning the bot.

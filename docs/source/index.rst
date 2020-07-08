@@ -31,6 +31,8 @@ Docs: `View Here <https://tandemdude.gitlab.io/lightbulb>`_
 
 - `Forbidden#0001 <https://gitlab.com/Forbidden-A>`_
 
+- `Dec0Ded#2693 <https://gitlab.com/dec0ded>`_
+
 **Index:**
 
 .. toctree::

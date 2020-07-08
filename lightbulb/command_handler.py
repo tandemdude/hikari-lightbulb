@@ -57,8 +57,7 @@ class BotWithHandler(hikari.Bot):
 
     - An iterable (such as a list) of strings, eg ``['!', '?']``
 
-    - A function or coroutine that takes **only** two arguments, ``bot`` and ``message``,
-    and that returns a single string or iterable of strings.
+    - A function or coroutine that takes **only** two arguments, ``bot`` and ``message``, and that returns a single string or iterable of strings.
 
     Args:
         prefix: The bot's command prefix, iterable of prefixes, or callable that returns
@@ -74,18 +73,7 @@ class BotWithHandler(hikari.Bot):
     def __init__(
         self,
         *,
-        prefix: typing.Union[
-            typing.Iterable[str],
-            typing.Callable[
-                [BotWithHandler, messages.Message],
-                typing.Union[
-                    typing.Callable[
-                        [BotWithHandler, messages.Message], typing.Iterable[str],
-                    ],
-                    typing.Coroutine[None, typing.Any, typing.Iterable[str]],
-                ],
-            ],
-        ],
+        prefix,
         insensitive_commands: bool = False,
         ignore_bots: bool = True,
         owner_ids: typing.Iterable[int] = (),

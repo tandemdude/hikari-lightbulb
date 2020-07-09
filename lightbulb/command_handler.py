@@ -23,6 +23,7 @@ import collections
 import inspect
 import sys
 import importlib
+import logging
 
 import hikari
 from hikari.events import message
@@ -33,10 +34,12 @@ from lightbulb import context
 from lightbulb import errors
 from lightbulb import stringview
 from lightbulb import plugins
-from lightbulb import help
+from lightbulb import help as help_command
 
 if typing.TYPE_CHECKING:
     from hikari.models import messages
+
+_LOGGER = logging.getLogger("lightbulb")
 
 
 async def _return_prefix(
@@ -57,8 +60,7 @@ class BotWithHandler(hikari.Bot):
 
     - An iterable (such as a list) of strings, eg ``['!', '?']``
 
-    - A function or coroutine that takes **only** two arguments, ``bot`` and ``message``,
-    and that returns a single string or iterable of strings.
+    - A function or coroutine that takes **only** two arguments, ``bot`` and ``message``, and that returns a single string or iterable of strings.
 
     Args:
         prefix: The bot's command prefix, iterable of prefixes, or callable that returns
@@ -74,22 +76,11 @@ class BotWithHandler(hikari.Bot):
     def __init__(
         self,
         *,
-        prefix: typing.Union[
-            typing.Iterable[str],
-            typing.Callable[
-                [BotWithHandler, messages.Message],
-                typing.Union[
-                    typing.Callable[
-                        [BotWithHandler, messages.Message], typing.Iterable[str],
-                    ],
-                    typing.Coroutine[None, typing.Any, typing.Iterable[str]],
-                ],
-            ],
-        ],
+        prefix,
         insensitive_commands: bool = False,
         ignore_bots: bool = True,
         owner_ids: typing.Iterable[int] = (),
-        help_class=help.HelpCommand,
+        help_class=help_command.HelpCommand,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
@@ -149,20 +140,9 @@ class BotWithHandler(hikari.Bot):
         See Also:
             :meth:`~.command_handler.BotWithHandler.add_command`
         """
-        registered_commands = self.commands
 
         def decorate(func: typing.Callable):
-            nonlocal registered_commands
-            name = kwargs.get("name", func.__name__)
-            registered_commands[name] = commands.Command(
-                func,
-                name,
-                kwargs.get("allow_extra_arguments", True),
-                kwargs.get("aliases", []),
-            )
-            for alias in kwargs.get("aliases", []):
-                registered_commands[alias] = registered_commands[name]
-            return registered_commands[name]
+            return self.add_command(func, **kwargs)
 
         return decorate
 
@@ -186,30 +166,20 @@ class BotWithHandler(hikari.Bot):
         See Also:
             :meth:`~.commands.Group.command` for how to add subcommands to a group.
         """
-        registered_commands = self.commands
 
         def decorate(func: typing.Callable):
-            nonlocal registered_commands
-            name = kwargs.get("name", func.__name__)
-            registered_commands[name] = commands.Group(
-                func,
-                name,
-                kwargs.get("allow_extra_arguments", True),
-                kwargs.get("aliases", []),
-                insensitive_commands=kwargs.get("insensitive_commands", False),
-            )
-            for alias in kwargs.get("aliases", []):
-                registered_commands[alias] = registered_commands[name]
-            return registered_commands[name]
+            return self.add_group(func, **kwargs)
 
         return decorate
 
-    def add_command(self, func: typing.Callable, **kwargs) -> commands.Command:
+    def add_command(
+        self, func: typing.Union[typing.Callable, commands.Command], **kwargs
+    ) -> commands.Command:
         """
         Adds a command to the bot. Similar to the ``command`` decorator.
 
         Args:
-            func (:obj:`typing.Callable`): The function to add as a command.
+            func (:obj:`typing.Callable`): The function or command object to register as a command.
 
         Keyword Args:
             **kwargs: See :obj:`~.commands.command` for valid kwargs.
@@ -217,9 +187,15 @@ class BotWithHandler(hikari.Bot):
         Returns:
             :obj:`~.commands.Command`: Command added to the bot.
 
+        Raises:
+            :obj:`AttributeError`: If the name or an alias of the command being added conflicts with
+                an existing command.
+
         Example:
 
             .. code-block:: python
+
+                import lightbulb
 
                 bot = lightbulb.Bot(token="token_here", prefix="!")
 
@@ -233,27 +209,34 @@ class BotWithHandler(hikari.Bot):
         """
         if not isinstance(func, commands.Command):
             name = kwargs.get("name", func.__name__)
-            self.commands[name] = commands.Command(
+            cls = kwargs.get("cls", commands.Command)
+            func = cls(
                 func,
                 name,
                 kwargs.get("allow_extra_arguments", True),
                 kwargs.get("aliases", []),
             )
-            for alias in kwargs.get("aliases", []):
-                self.commands[alias] = self.commands[name]
-        else:
-            name = func.name
-            self.commands[name] = func
-            for alias in func._aliases:
-                self.commands[alias] = func
-        return self.commands[name]
 
-    def add_group(self, func: typing.Callable, **kwargs) -> commands.Group:
+        if set(self.commands.keys()).intersection({func.name, *func._aliases}):
+            raise AttributeError(
+                f"Command {func.name} has name or alias already registered."
+            )
+
+        self.commands[func.name] = func
+        for alias in func._aliases:
+            self.commands[alias] = func
+        _LOGGER.debug("new command registered: %s", func.name)
+        return self.commands[func.name]
+
+    def add_group(
+        self, func: typing.Union[typing.Callable, commands.Group], **kwargs
+    ) -> commands.Group:
         """
         Adds a command group to the bot. Similar to the ``group`` decorator.
 
         Args:
-            func (:obj:`typing.Callable`): The function to add as a command group.
+            func (Union[ :obj:`typing.Callable`, :obj:`~.commands.Group` ]): The function or group object
+                to register as a command group.
 
         Keyword Args:
             **kwargs: See :obj:`~.commands.group` for valid kwargs.
@@ -261,21 +244,35 @@ class BotWithHandler(hikari.Bot):
         Returns:
             :obj:`~.commands.Group`: Group added to the bot.
 
+        Raises:
+            :obj:`AttributeError`: If the name or an alias of the group being added conflicts with
+                an existing command.
+
         See Also:
             :meth:`~.command_handler.BotWithHandler.group`
             :meth:`~.command_handler.BotWithHandler.add_command`
         """
-        name = kwargs.get("name", func.__name__)
-        self.commands[name] = commands.Group(
-            func,
-            name,
-            kwargs.get("allow_extra_arguments", True),
-            kwargs.get("aliases", []),
-            insensitive_commands=kwargs.get("insensitive_commands", False),
-        )
-        for alias in kwargs.get("aliases", []):
-            self.commands[alias] = self.commands[name]
-        return self.commands[name]
+        if not isinstance(func, commands.Group):
+            name = kwargs.get("name", func.__name__)
+            cls = kwargs.get("cls", commands.Group)
+            func = cls(
+                func,
+                name,
+                kwargs.get("allow_extra_arguments", True),
+                kwargs.get("aliases", []),
+                insensitive_commands=kwargs.get("insensitive_commands", False),
+            )
+
+        if set(self.commands.keys()).intersection({func.name, *func._aliases}):
+            raise AttributeError(
+                f"Command {func.name} has name or alias already registered."
+            )
+
+        self.commands[func.name] = func
+        for alias in func._aliases:
+            self.commands[alias] = func
+        _LOGGER.debug("new group registered: %s", func.name)
+        return self.commands[func.name]
 
     def add_plugin(self, plugin: plugins.Plugin) -> None:
         """
@@ -287,8 +284,16 @@ class BotWithHandler(hikari.Bot):
         Returns:
             ``None``
         """
+        if plugin.name in self.plugins:
+            raise AttributeError(f"A plugin named {plugin.name} is already registered.")
+
         self.plugins[plugin.name] = plugin
-        self.commands.update(plugin.commands)
+        for command in plugin.commands.values():
+            if isinstance(command, commands.Group):
+                self.add_group(command)
+            else:
+                self.add_command(command)
+        _LOGGER.debug("new plugin registered: %s", plugin.name)
 
     def get_command(self, name: str) -> typing.Optional[commands.Command]:
         """
@@ -325,6 +330,12 @@ class BotWithHandler(hikari.Bot):
             Optional[ :obj:`str` ]: Name of the command that was removed.
         """
         command = self.commands.pop(name)
+        if command is not None:
+            keys_to_remove = [command.name, *command._aliases]
+            keys_to_remove.remove(name)
+            for key in keys_to_remove:
+                self.commands.pop(key)
+            _LOGGER.debug("command removed: %s", command.name)
         return command.name if command is not None else None
 
     def remove_plugin(self, name: str) -> typing.Optional[str]:
@@ -341,6 +352,7 @@ class BotWithHandler(hikari.Bot):
         if plugin is not None:
             for k in plugin.commands.keys():
                 self.commands.pop(k)
+            _LOGGER.debug("plugin removed: %s", plugin.name)
         return plugin.name if plugin is not None else None
 
     def load_extension(self, extension: str) -> None:
@@ -384,6 +396,7 @@ class BotWithHandler(hikari.Bot):
         else:
             module.load(self)
             self.extensions.append(extension)
+            _LOGGER.debug("new extension loaded: %s", extension)
 
     def unload_extension(self, extension: str) -> None:
         """
@@ -429,6 +442,7 @@ class BotWithHandler(hikari.Bot):
             module.unload(self)
             self.extensions.remove(extension)
             del sys.modules[extension]
+            _LOGGER.debug("extension unloaded: %s", extension)
 
     def reload_extension(self, extension: str) -> None:
         """
@@ -442,6 +456,7 @@ class BotWithHandler(hikari.Bot):
         Returns:
             ``None``
         """
+        _LOGGER.debug("reloading extension: %s", extension)
         old = sys.modules[extension]
         try:
             self.unload_extension(extension)

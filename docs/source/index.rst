@@ -4,6 +4,7 @@
    contain the root `toctree` directive.
 
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+.. image:: https://img.shields.io/pypi/v/hikari-lightbulb.svg
 
 ----
 
@@ -36,9 +37,10 @@ Docs: `View Here <https://tandemdude.gitlab.io/lightbulb>`_
 **Index:**
 
 .. toctree::
-    :maxdepth: 2
+   :maxdepth: 2
 
-    getting-started
-    api-reference
+   getting-started
+   api-reference
+   custom-help
 
 * :ref:`genindex`

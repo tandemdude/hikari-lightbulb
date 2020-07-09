@@ -397,11 +397,14 @@ def command(**kwargs):
         allow_extra_arguments (Optional[ :obj:`bool` ]): Whether or not the command should error when run with
             more arguments than it takes. Defaults to True - will not raise an error.
         aliases (Iterable[ :obj:`str` ]): Iterable of aliases which will also invoke the command.
+        cls (:obj:`~.commands.Command`): The class to use to instantiate the command object from. Defaults
+            to :obj:`~.commands.Command`.
     """
 
     def decorate(func):
         name = kwargs.get("name", func.__name__)
-        return Command(
+        cls = kwargs.get("cls", Command)
+        return cls(
             func,
             name,
             kwargs.get("allow_extra_arguments", True),
@@ -420,11 +423,14 @@ def group(**kwargs):
         allow_extra_arguments (Optional[ :obj:`bool` ]): Whether or not the command should error when run with
             more arguments than it takes. Defaults to True - will not raise an error.
         aliases (Optional[ Iterable[ :obj:`str` ] ]): Iterable of aliases which will also invoke the command.
+        cls (:obj:`~.commands.Command`): The class to use to instantiate the group object from. Defaults
+            to :obj:`~.commands.Group`.
     """
 
     def decorate(func):
         name = kwargs.get("name", func.__name__)
-        return Group(
+        cls = kwargs.get("cls", Group)
+        return cls(
             func,
             name,
             kwargs.get("allow_extra_arguments", True),

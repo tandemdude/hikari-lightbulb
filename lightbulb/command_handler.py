@@ -313,6 +313,11 @@ class BotWithHandler(hikari.Bot):
             Optional[ :obj:`str` ]: Name of the command that was removed.
         """
         command = self.commands.pop(name)
+        if command is not None:
+            keys_to_remove = [command.name, *command._aliases]
+            keys_to_remove.remove(name)
+            for key in keys_to_remove:
+                self.commands.pop(key)
         return command.name if command is not None else None
 
     def remove_plugin(self, name: str) -> typing.Optional[str]:

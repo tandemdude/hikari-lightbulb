@@ -80,7 +80,7 @@ def get_command_signature(command: commands.Command) -> str:
 
 
 async def filter_commands(
-        context: context.Context, command_list: typing.Iterable[commands.Command],
+    context: context.Context, command_list: typing.Iterable[commands.Command],
 ) -> typing.List[commands.Command]:
     """
     Filter a list of :obj:`~.commands.Command` and :obj:`~.commands.Group`, removing any commands that cannot

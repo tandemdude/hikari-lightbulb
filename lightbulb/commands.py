@@ -360,7 +360,7 @@ class Group(Command):
         def decorate(func):
             nonlocal subcommands
             name = kwargs.get("name", func.__name__)
-            cls = kwargs.pop("cls", Command)
+            cls = kwargs.get("cls", Command)
             subcommands[name] = cls(
                 func,
                 name,

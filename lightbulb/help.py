@@ -79,6 +79,30 @@ def get_command_signature(command: commands.Command) -> str:
     return " ".join(items)
 
 
+async def filter_commands(
+        context: context.Context, command_list: typing.Iterable[commands.Command],
+) -> typing.List[commands.Command]:
+    """
+    Filter a list of :obj:`~.commands.Command` and :obj:`~.commands.Group`, removing any commands that cannot
+    be run under the given context by running all checks for each command in turn.
+
+    Args:
+        context (:obj:`~.context.Context`): The context to filter the commands under.
+        command_list (List[ :obj:`~.commands.Command` ]): List of commands to filter.
+
+    Returns:
+        List[ :obj:`~.commands.Command` ]: List containing filtered commands.
+    """
+    filtered_commands = set()
+    for command in command_list:
+        try:
+            await command.is_runnable(context)
+            filtered_commands.add(command)
+        except errors.CheckFailure:
+            pass
+    return list(filtered_commands)
+
+
 @commands.command(name="help")
 async def _help_cmd(ctx):
     """
@@ -103,29 +127,6 @@ class HelpCommand:
         self.bot = bot
         if self.bot.get_command("help") is None:
             self.bot.add_command(_help_cmd)
-
-    async def filter_commands(
-        self, context: context.Context, command_list: typing.Iterable[commands.Command],
-    ) -> typing.List[commands.Command]:
-        """
-        Filter a list of :obj:`~.commands.Command` and :obj:`~.commands.Group`, removing any commands that cannot
-        be run under the given context by running all checks for each command in turn.
-
-        Args:
-            context (:obj:`~.context.Context`): The context to filter the commands under.
-            command_list (List[ :obj:`~.commands.Command` ]): List of commands to filter.
-
-        Returns:
-            List[ :obj:`~.commands.Command` ]: List containing filtered commands.
-        """
-        filtered_commands = set()
-        for command in command_list:
-            try:
-                await command.is_runnable(context)
-                filtered_commands.add(command)
-            except errors.CheckFailure:
-                pass
-        return list(filtered_commands)
 
     async def resolve_help_obj(
         self, context: context.Context, obj: typing.List[str]
@@ -197,17 +198,17 @@ class HelpCommand:
             ``None``
         """
         plugin_commands = [
-            [plugin.name, await self.filter_commands(context, plugin.commands.values())]
+            [plugin.name, await filter_commands(context, plugin.commands.values())]
             for plugin in self.bot.plugins.values()
         ]
         all_plugin_commands = []
         for _, cmds in plugin_commands:
             all_plugin_commands.extend(cmds)
-        uncategorised_commands = await self.filter_commands(
+        uncategorised_commands = await filter_commands(
             context,
             list(set(self.bot.commands.values()).difference(set(all_plugin_commands))),
         )
-        plugin_commands.append(["Uncategorised", uncategorised_commands])
+        plugin_commands.insert(0, ["Uncategorised", uncategorised_commands])
 
         help_text = [">>> __**Bot help**__\n"]
         for plugin, commands in plugin_commands:

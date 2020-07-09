@@ -40,7 +40,6 @@ if typing.TYPE_CHECKING:
     from hikari.models import messages
 
 _LOGGER = logging.getLogger("lightbulb")
-_LOGGER.setLevel(logging.INFO)
 
 
 async def _return_prefix(
@@ -226,7 +225,7 @@ class BotWithHandler(hikari.Bot):
         self.commands[func.name] = func
         for alias in func._aliases:
             self.commands[alias] = func
-        _LOGGER.info("new command registered: %s", func.name)
+        _LOGGER.debug("new command registered: %s", func.name)
         return self.commands[func.name]
 
     def add_group(
@@ -272,7 +271,7 @@ class BotWithHandler(hikari.Bot):
         self.commands[func.name] = func
         for alias in func._aliases:
             self.commands[alias] = func
-        _LOGGER.info("new group registered: %s", func.name)
+        _LOGGER.debug("new group registered: %s", func.name)
         return self.commands[func.name]
 
     def add_plugin(self, plugin: plugins.Plugin) -> None:
@@ -294,7 +293,7 @@ class BotWithHandler(hikari.Bot):
                 self.add_group(command)
             else:
                 self.add_command(command)
-        _LOGGER.info("new plugin registered: %s", plugin.name)
+        _LOGGER.debug("new plugin registered: %s", plugin.name)
 
     def get_command(self, name: str) -> typing.Optional[commands.Command]:
         """
@@ -336,7 +335,7 @@ class BotWithHandler(hikari.Bot):
             keys_to_remove.remove(name)
             for key in keys_to_remove:
                 self.commands.pop(key)
-            _LOGGER.info("command removed: %s", command.name)
+            _LOGGER.debug("command removed: %s", command.name)
         return command.name if command is not None else None
 
     def remove_plugin(self, name: str) -> typing.Optional[str]:
@@ -353,7 +352,7 @@ class BotWithHandler(hikari.Bot):
         if plugin is not None:
             for k in plugin.commands.keys():
                 self.commands.pop(k)
-            _LOGGER.info("plugin removed: %s", plugin.name)
+            _LOGGER.debug("plugin removed: %s", plugin.name)
         return plugin.name if plugin is not None else None
 
     def load_extension(self, extension: str) -> None:
@@ -397,7 +396,7 @@ class BotWithHandler(hikari.Bot):
         else:
             module.load(self)
             self.extensions.append(extension)
-            _LOGGER.info("new extension loaded: %s", extension)
+            _LOGGER.debug("new extension loaded: %s", extension)
 
     def unload_extension(self, extension: str) -> None:
         """
@@ -443,7 +442,7 @@ class BotWithHandler(hikari.Bot):
             module.unload(self)
             self.extensions.remove(extension)
             del sys.modules[extension]
-            _LOGGER.info("extension unloaded: %s", extension)
+            _LOGGER.debug("extension unloaded: %s", extension)
 
     def reload_extension(self, extension: str) -> None:
         """
@@ -457,7 +456,7 @@ class BotWithHandler(hikari.Bot):
         Returns:
             ``None``
         """
-        _LOGGER.info("reloading extension: %s", extension)
+        _LOGGER.debug("reloading extension: %s", extension)
         old = sys.modules[extension]
         try:
             self.unload_extension(extension)

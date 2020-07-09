@@ -137,20 +137,9 @@ class BotWithHandler(hikari.Bot):
         See Also:
             :meth:`~.command_handler.BotWithHandler.add_command`
         """
-        registered_commands = self.commands
 
         def decorate(func: typing.Callable):
-            nonlocal registered_commands
-            name = kwargs.get("name", func.__name__)
-            registered_commands[name] = commands.Command(
-                func,
-                name,
-                kwargs.get("allow_extra_arguments", True),
-                kwargs.get("aliases", []),
-            )
-            for alias in kwargs.get("aliases", []):
-                registered_commands[alias] = registered_commands[name]
-            return registered_commands[name]
+            return self.add_command(func, **kwargs)
 
         return decorate
 
@@ -174,21 +163,9 @@ class BotWithHandler(hikari.Bot):
         See Also:
             :meth:`~.commands.Group.command` for how to add subcommands to a group.
         """
-        registered_commands = self.commands
 
         def decorate(func: typing.Callable):
-            nonlocal registered_commands
-            name = kwargs.get("name", func.__name__)
-            registered_commands[name] = commands.Group(
-                func,
-                name,
-                kwargs.get("allow_extra_arguments", True),
-                kwargs.get("aliases", []),
-                insensitive_commands=kwargs.get("insensitive_commands", False),
-            )
-            for alias in kwargs.get("aliases", []):
-                registered_commands[alias] = registered_commands[name]
-            return registered_commands[name]
+            return self.add_group(func, **kwargs)
 
         return decorate
 
@@ -197,7 +174,7 @@ class BotWithHandler(hikari.Bot):
         Adds a command to the bot. Similar to the ``command`` decorator.
 
         Args:
-            func (:obj:`typing.Callable`): The function to add as a command.
+            func (:obj:`typing.Callable`): The function or command object to register as a command.
 
         Keyword Args:
             **kwargs: See :obj:`~.commands.command` for valid kwargs.
@@ -205,9 +182,15 @@ class BotWithHandler(hikari.Bot):
         Returns:
             :obj:`~.commands.Command`: Command added to the bot.
 
+        Raises:
+            :obj:`AttributeError`: If the name or an alias of the command being added conflicts with
+                an existing command.
+
         Example:
 
             .. code-block:: python
+
+                import lightbulb
 
                 bot = lightbulb.Bot(token="token_here", prefix="!")
 
@@ -221,27 +204,32 @@ class BotWithHandler(hikari.Bot):
         """
         if not isinstance(func, commands.Command):
             name = kwargs.get("name", func.__name__)
-            self.commands[name] = commands.Command(
+            func = commands.Command(
                 func,
                 name,
                 kwargs.get("allow_extra_arguments", True),
                 kwargs.get("aliases", []),
             )
-            for alias in kwargs.get("aliases", []):
-                self.commands[alias] = self.commands[name]
-        else:
-            name = func.name
-            self.commands[name] = func
-            for alias in func._aliases:
-                self.commands[alias] = func
-        return self.commands[name]
 
-    def add_group(self, func: typing.Callable, **kwargs) -> commands.Group:
+        if set(self.commands.keys()).intersection({func.name, *func._aliases}):
+            raise AttributeError(
+                f"Command {func.name} has name or alias already registered."
+            )
+
+        self.commands[func.name] = func
+        for alias in func._aliases:
+            self.commands[alias] = func
+        return self.commands[func.name]
+
+    def add_group(
+        self, func: typing.Union[typing.Callable, commands.Group], **kwargs
+    ) -> commands.Group:
         """
         Adds a command group to the bot. Similar to the ``group`` decorator.
 
         Args:
-            func (:obj:`typing.Callable`): The function to add as a command group.
+            func (Union[ :obj:`typing.Callable`, :obj:`~.commands.Group` ]): The function or group object
+                to register as a command group.
 
         Keyword Args:
             **kwargs: See :obj:`~.commands.group` for valid kwargs.
@@ -249,21 +237,33 @@ class BotWithHandler(hikari.Bot):
         Returns:
             :obj:`~.commands.Group`: Group added to the bot.
 
+        Raises:
+            :obj:`AttributeError`: If the name or an alias of the group being added conflicts with
+                an existing command.
+
         See Also:
             :meth:`~.command_handler.BotWithHandler.group`
             :meth:`~.command_handler.BotWithHandler.add_command`
         """
-        name = kwargs.get("name", func.__name__)
-        self.commands[name] = commands.Group(
-            func,
-            name,
-            kwargs.get("allow_extra_arguments", True),
-            kwargs.get("aliases", []),
-            insensitive_commands=kwargs.get("insensitive_commands", False),
-        )
-        for alias in kwargs.get("aliases", []):
-            self.commands[alias] = self.commands[name]
-        return self.commands[name]
+        if not isinstance(func, commands.Group):
+            name = kwargs.get("name", func.__name__)
+            func = commands.Group(
+                func,
+                name,
+                kwargs.get("allow_extra_arguments", True),
+                kwargs.get("aliases", []),
+                insensitive_commands=kwargs.get("insensitive_commands", False),
+            )
+
+        if set(self.commands.keys()).intersection({func.name, *func._aliases}):
+            raise AttributeError(
+                f"Command {func.name} has name or alias already registered."
+            )
+
+        self.commands[func.name] = func
+        for alias in func._aliases:
+            self.commands[alias] = func
+        return self.commands[func.name]
 
     def add_plugin(self, plugin: plugins.Plugin) -> None:
         """

@@ -65,5 +65,3 @@ class Plugin:
                 if not member.is_subcommand:
                     # using self here to now get the bound command.
                     self.commands[member.name] = getattr(self, name)
-                    for alias in member._aliases:
-                        self.commands[alias] = self.commands[member._name]

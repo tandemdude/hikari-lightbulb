@@ -72,9 +72,11 @@ class StringView:
                 return "".join(buff)
             elif char == "\\":
                 self.index += 1
-                buff.append(self.text[self.index])
-                self.index += 1
-                continue
+                if self.index < len(self.text):
+                    buff.append(self.text[self.index])
+                    self.index += 1
+                    continue
+                raise errors.PrematureEOF()
             else:
                 buff.append(char)
                 self.index += 1

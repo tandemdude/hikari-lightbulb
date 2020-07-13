@@ -19,7 +19,7 @@ sys.setrecursionlimit(1500)
 
 # -- Project information -----------------------------------------------------
 
-project = "Hikari-Command-Handler"
+project = "Lightbulb"
 copyright = "2020, tandemdude"
 author = "tandemdude"
 

@@ -41,8 +41,7 @@ class NavButton:
         self,
         emoji: typing.Union[str, hikari.models.emojis.Emoji],
         callback: typing.Callable[
-            [hikari.events.message.MessageReactionAddEvent],
-            typing.Coroutine[typing.Any, typing.Any, None],
+            [hikari.events.message.MessageReactionAddEvent], typing.Coroutine[typing.Any, typing.Any, None],
         ],
     ) -> None:
         self.emoji = emoji
@@ -81,14 +80,12 @@ class Navigator(abc.ABC, typing.Generic[T]):
         pages: typing.Sequence[T],
         *,
         buttons: typing.Optional[typing.Sequence[NavButton]] = None,
-        timeout: float = 120
+        timeout: float = 120,
     ) -> None:
         if not pages:
             raise AttributeError("You cannot pass fewer than 1 page to the navigator.")
         self.pages: typing.Sequence[T] = pages
-        self.buttons: typing.Sequence[
-            NavButton
-        ] = buttons if buttons is not None else self.create_default_buttons()
+        self.buttons: typing.Sequence[NavButton] = buttons if buttons is not None else self.create_default_buttons()
         self._timeout: float = timeout
         self.current_page_index: int = 0
         self._context: typing.Optional[Context] = None
@@ -105,15 +102,11 @@ class Navigator(abc.ABC, typing.Generic[T]):
 
     def create_default_buttons(self) -> typing.Sequence[NavButton]:
         buttons = (
-            NavButton(
-                "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}", self._first
-            ),
+            NavButton("\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}", self._first),
             NavButton("\N{BLACK LEFT-POINTING TRIANGLE}", self._prev),
             NavButton("\N{BLACK SQUARE FOR STOP}", self._stop),
             NavButton("\N{BLACK RIGHT-POINTING TRIANGLE}", self._next),
-            NavButton(
-                "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}", self._last
-            ),
+            NavButton("\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}", self._last),
         )
         return buttons
 
@@ -139,9 +132,7 @@ class Navigator(abc.ABC, typing.Generic[T]):
         await self._msg.delete()
         self._msg = None
 
-    async def _process_reaction_add(
-        self, event: hikari.events.message.MessageReactionAddEvent
-    ) -> None:
+    async def _process_reaction_add(self, event: hikari.events.message.MessageReactionAddEvent) -> None:
         if (
             event.user_id != self._context.message.author.id
             or event.channel_id != self._context.channel_id
@@ -155,9 +146,7 @@ class Navigator(abc.ABC, typing.Generic[T]):
                 if self._msg is not None:
                     await self._edit_msg(self._msg, self.pages[self.current_page_index])
                     try:
-                        await self._msg.remove_reaction(
-                            button.emoji, user=self._context.author
-                        )
+                        await self._msg.remove_reaction(button.emoji, user=self._context.author)
                     except hikari.errors.Forbidden:
                         pass
                 break
@@ -242,9 +231,7 @@ class StringNavigator(Navigator[str]):
 
     """
 
-    async def _edit_msg(
-        self, message: hikari.models.messages.Message, page: str
-    ) -> None:
+    async def _edit_msg(self, message: hikari.models.messages.Message, page: str) -> None:
         await message.edit(page)
 
     async def _send_initial_msg(self, page: str) -> hikari.models.messages.Message:
@@ -268,12 +255,8 @@ class EmbedNavigator(Navigator[hikari.models.embeds.Embed]):
         See :obj:`~.utils.nav.StringNavigator` for the default buttons supplied by the navigator.
     """
 
-    async def _edit_msg(
-        self, message: hikari.models.messages.Message, page: hikari.models.embeds.Embed
-    ) -> None:
+    async def _edit_msg(self, message: hikari.models.messages.Message, page: hikari.models.embeds.Embed) -> None:
         await message.edit(embed=page)
 
-    async def _send_initial_msg(
-        self, page: hikari.models.embeds.Embed
-    ) -> hikari.models.messages.Message:
+    async def _send_initial_msg(self, page: hikari.models.embeds.Embed) -> hikari.models.messages.Message:
         return await self._context.reply(embed=page)

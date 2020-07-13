@@ -19,11 +19,17 @@ import nox
 import os
 
 PATH_TO_PROJECT = os.path.join(".", "lightbulb")
+SCRIPT_PATHS = [
+    PATH_TO_PROJECT,
+    "noxfile.py",
+    "release_webhook.py",
+    "docs/source/conf.py",
+]
 
 
 @nox.session(python=["3.8"])
 def test(session):
-    session.run("pip" ,"install", "-Ur", "test_requirements.txt")
+    session.run("pip", "install", "-Ur", "test_requirements.txt")
     session.run("pip", "install", "-Ur", "requirements.txt")
     session.run("python", "-m", "pytest", "tests", "--testdox")
 
@@ -31,13 +37,14 @@ def test(session):
 @nox.session(python=["3.8"])
 def format_fix(session):
     session.run("pip", "install", "-U", "black")
-    session.run("python", "-m", "black", PATH_TO_PROJECT)
+    session.run("python", "-m", "black", *SCRIPT_PATHS)
 
 
+# noinspection PyShadowingBuiltins
 @nox.session(python=["3.8"])
 def format(session):
     session.run("pip", "install", "-U", "black")
-    session.run("python", "-m", "black", PATH_TO_PROJECT, "--check")
+    session.run("python", "-m", "black", *SCRIPT_PATHS, "--check")
 
 
 @nox.session(python=["3.8"])
@@ -45,4 +52,3 @@ def sphinx(session):
     session.run("pip", "install", "sphinx", "sphinx_rtd_theme")
     session.run("pip", "install", "-r", "requirements.txt")
     session.run("python", "-m", "sphinx.cmd.build", "docs/source", "docs/build", "-b", "html")
-

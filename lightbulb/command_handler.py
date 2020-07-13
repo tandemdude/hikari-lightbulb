@@ -65,8 +65,10 @@ class BotWithHandler(hikari.Bot):
     Args:
         prefix: The bot's command prefix, iterable of prefixes, or callable that returns
             a prefix or iterable of prefixes.
+        insensitive_commands (:obj:`bool`): Whether or not commands should be case-insensitive or not.
+            Defaults to False (commands are case-sensitive).
         ignore_bots (:obj:`bool`): Ignore other bot's messages invoking your bot's commands if True (default), else not.
-        invoked by other bots. Defaults to ``True``.
+            invoked by other bots. Defaults to ``True``.
         owner_ids (List[ :obj:`int` ]): IDs that the bot should treat as owning the bot.
         help_class (:obj:`~.help.HelpCommand`): The **uninstantiated** class the bot should use for it's help command. Defaults
             to :obj:`~.help.HelpCommand`. Any class passed should always be this class or subclass of this class.
@@ -172,9 +174,7 @@ class BotWithHandler(hikari.Bot):
 
         return decorate
 
-    def add_command(
-        self, func: typing.Union[typing.Callable, commands.Command], **kwargs
-    ) -> commands.Command:
+    def add_command(self, func: typing.Union[typing.Callable, commands.Command], **kwargs) -> commands.Command:
         """
         Adds a command to the bot. Similar to the ``command`` decorator.
 
@@ -210,17 +210,10 @@ class BotWithHandler(hikari.Bot):
         if not isinstance(func, commands.Command):
             name = kwargs.get("name", func.__name__)
             cls = kwargs.get("cls", commands.Command)
-            func = cls(
-                func,
-                name,
-                kwargs.get("allow_extra_arguments", True),
-                kwargs.get("aliases", []),
-            )
+            func = cls(func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []),)
 
         if set(self.commands.keys()).intersection({func.name, *func._aliases}):
-            raise AttributeError(
-                f"Command {func.name} has name or alias already registered."
-            )
+            raise AttributeError(f"Command {func.name} has name or alias already registered.")
 
         self.commands[func.name] = func
         for alias in func._aliases:
@@ -228,9 +221,7 @@ class BotWithHandler(hikari.Bot):
         _LOGGER.debug("new command registered: %s", func.name)
         return self.commands[func.name]
 
-    def add_group(
-        self, func: typing.Union[typing.Callable, commands.Group], **kwargs
-    ) -> commands.Group:
+    def add_group(self, func: typing.Union[typing.Callable, commands.Group], **kwargs) -> commands.Group:
         """
         Adds a command group to the bot. Similar to the ``group`` decorator.
 
@@ -264,9 +255,7 @@ class BotWithHandler(hikari.Bot):
             )
 
         if set(self.commands.keys()).intersection({func.name, *func._aliases}):
-            raise AttributeError(
-                f"Command {func.name} has name or alias already registered."
-            )
+            raise AttributeError(f"Command {func.name} has name or alias already registered.")
 
         self.commands[func.name] = func
         for alias in func._aliases:
@@ -293,6 +282,13 @@ class BotWithHandler(hikari.Bot):
                 self.add_group(command)
             else:
                 self.add_command(command)
+
+        for event_type, listeners in plugin.listeners.items():
+            for listener in listeners:
+                callback = listener.__get__(plugin, type(plugin))
+                self.subscribe(listener.event_type, callback)
+                _LOGGER.debug("new listener registered: %s (%s)", callback.__name__, listener.event_type.__name__)
+
         _LOGGER.debug("new plugin registered: %s", plugin.name)
 
     def get_command(self, name: str) -> typing.Optional[commands.Command]:
@@ -351,7 +347,14 @@ class BotWithHandler(hikari.Bot):
         plugin = self.plugins.pop(name)
         if plugin is not None:
             for k in plugin.commands.keys():
-                self.commands.pop(k)
+                self.remove_command(k)
+
+            for event_type, listeners in plugin.listeners.items():
+                for listener in listeners:
+                    callback = listener.__get__(plugin, type(plugin))
+                    self.unsubscribe(listener.event_type, callback)
+                    _LOGGER.debug("listener removed: %s (%s)", callback.__name__, listener.event_type.__name__)
+
             _LOGGER.debug("plugin removed: %s", plugin.name)
         return plugin.name if plugin is not None else None
 
@@ -435,9 +438,7 @@ class BotWithHandler(hikari.Bot):
         module = importlib.import_module(extension)
 
         if not hasattr(module, "unload"):
-            raise errors.ExtensionMissingUnload(
-                f"{extension} is missing an unload function"
-            )
+            raise errors.ExtensionMissingUnload(f"{extension} is missing an unload function")
         else:
             module.unload(self)
             self.extensions.remove(extension)
@@ -468,9 +469,7 @@ class BotWithHandler(hikari.Bot):
         else:
             del old
 
-    def resolve_arguments(
-        self, message: messages.Message, prefix: str
-    ) -> typing.List[str]:
+    def resolve_arguments(self, message: messages.Message, prefix: str) -> typing.List[str]:
         """
         Resolves the arguments that a command was invoked with from the message containing the invocation.
 
@@ -489,18 +488,14 @@ class BotWithHandler(hikari.Bot):
         string_view = stringview.StringView(message.content[len(prefix) :])
         return string_view.deconstruct_str()
 
-    async def _evaluate_checks(
-        self, command: commands.Command, context: context.Context
-    ):
+    async def _evaluate_checks(self, command: commands.Command, context: context.Context):
         failed_checks = []
 
         for check in command._checks:
             try:
                 if not await check(context):
                     failed_checks.append(
-                        errors.CheckFailure(
-                            f"Check {check.__name__} failed for command {context.invoked_with}"
-                        )
+                        errors.CheckFailure(f"Check {check.__name__} failed for command {context.invoked_with}")
                     )
             except Exception as ex:
                 error = errors.CheckFailure(str(ex))
@@ -508,33 +503,22 @@ class BotWithHandler(hikari.Bot):
                 failed_checks.append(ex)
 
         if len(failed_checks) > 1:
-            raise errors.CheckFailure(
-                "Multiple checks failed: " + ", ".join(str(ex) for ex in failed_checks)
-            )
+            raise errors.CheckFailure("Multiple checks failed: " + ", ".join(str(ex) for ex in failed_checks))
         elif failed_checks:
             raise failed_checks[0]
         return True
 
     async def _invoke_command(
-        self,
-        command: commands.Command,
-        context: context.Context,
-        args: typing.List[str],
+        self, command: commands.Command, context: context.Context, args: typing.List[str],
     ) -> None:
         try:
             if not await self._evaluate_checks(command, context):
                 return
 
-            (
-                before_asterisk,
-                param_name,
-            ) = command.arg_details._args_and_name_before_asterisk()
+            (before_asterisk, param_name,) = command.arg_details._args_and_name_before_asterisk()
             args = self._concatenate_args(args, command)
 
-            if (
-                not command.arg_details.has_max_args
-                and len(args) >= command.arg_details.min_args
-            ):
+            if not command.arg_details.has_max_args and len(args) >= command.arg_details.min_args:
                 if param_name is not None:
                     await command.invoke(
                         context, *args[:before_asterisk], **{f"{param_name}": args[-1]},
@@ -546,10 +530,7 @@ class BotWithHandler(hikari.Bot):
             elif len(args) < command.arg_details.min_args:
                 raise errors.NotEnoughArguments(context.invoked_with)
 
-            elif (
-                len(args) > command.arg_details.max_args
-                and not command._allow_extra_arguments
-            ):
+            elif len(args) > command.arg_details.max_args and not command._allow_extra_arguments:
                 raise errors.TooManyArguments(context.invoked_with)
 
             elif command.arg_details.max_args == 0:
@@ -573,16 +554,9 @@ class BotWithHandler(hikari.Bot):
     def _concatenate_args(self, args: typing.List[str], command: commands.Command):
         # Concatenates arguments for last argument (after asterisk sign)
         new_args = args
-        (
-            before_asterisk,
-            param_name,
-        ) = command.arg_details._args_and_name_before_asterisk()
+        (before_asterisk, param_name,) = command.arg_details._args_and_name_before_asterisk()
 
-        if (
-            before_asterisk < len(args)
-            and not command.arg_details.has_max_args
-            and param_name is not None
-        ):
+        if before_asterisk < len(args) and not command.arg_details.has_max_args and param_name is not None:
             new_args = [
                 *args[:before_asterisk],
                 " ".join(args[before_asterisk:]),
@@ -644,7 +618,5 @@ class BotWithHandler(hikari.Bot):
         else:
             new_args = args[1:]
 
-        command_context = context.Context(
-            self, event.message, prefix, invoked_with, invoked_command
-        )
+        command_context = context.Context(self, event.message, prefix, invoked_with, invoked_command)
         await self._invoke_command(invoked_command, command_context, new_args)

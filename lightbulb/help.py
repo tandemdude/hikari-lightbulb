@@ -128,9 +128,7 @@ class HelpCommand:
         if self.bot.get_command("help") is None:
             self.bot.add_command(_help_cmd)
 
-    async def resolve_help_obj(
-        self, context: context.Context, obj: typing.List[str]
-    ) -> None:
+    async def resolve_help_obj(self, context: context.Context, obj: typing.List[str]) -> None:
         """
         Resolve the object to send help information for from the
         arguments passed to the help command.
@@ -205,8 +203,7 @@ class HelpCommand:
         for _, cmds in plugin_commands:
             all_plugin_commands.extend(cmds)
         uncategorised_commands = await filter_commands(
-            context,
-            list(set(self.bot.commands.values()).difference(set(all_plugin_commands))),
+            context, list(set(self.bot.commands.values()).difference(set(all_plugin_commands))),
         )
         plugin_commands.insert(0, ["Uncategorised", uncategorised_commands])
 
@@ -218,14 +215,10 @@ class HelpCommand:
             for c in sorted(commands, key=lambda c: c.name):
                 short_help = get_help_text(c).split("\n")[0]
                 help_text.append(f"• `{c.name}` - {short_help}")
-        help_text.append(
-            f"\nUse `{context.prefix}help [command]` for more information."
-        )
+        help_text.append(f"\nUse `{context.prefix}help [command]` for more information.")
         await context.reply("\n".join(help_text))
 
-    async def send_plugin_help(
-        self, context: context.Context, plugin: plugins.Plugin
-    ) -> None:
+    async def send_plugin_help(self, context: context.Context, plugin: plugins.Plugin) -> None:
         """
         Method called when the help command is run with an argument that
         resolves into the name of a plugin.
@@ -244,9 +237,7 @@ class HelpCommand:
         ]
         await context.reply("\n".join(help_text))
 
-    async def send_command_help(
-        self, context: context.Context, command: commands.Command
-    ) -> None:
+    async def send_command_help(self, context: context.Context, command: commands.Command) -> None:
         """
         Method called when the help command is run with an argument that
         resolves into the name of a registered command.
@@ -265,9 +256,7 @@ class HelpCommand:
         ]
         await context.reply("\n".join(help_text))
 
-    async def send_group_help(
-        self, context: context.Context, group: commands.Group
-    ) -> None:
+    async def send_group_help(self, context: context.Context, group: commands.Group) -> None:
         """
         Method called when the help command is run with an argument that
         resolves into the name of a registered command group.

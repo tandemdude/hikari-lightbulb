@@ -21,4 +21,4 @@ from lightbulb import plugins
 from lightbulb.checks import guild_only, dm_only, owner_only
 from lightbulb import utils
 
-__version__ = "0.0.20"
+__version__ = "0.0.21"

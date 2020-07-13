@@ -59,7 +59,7 @@ class StringView:
         buff = []
         while self.index < len(self.text):
             char = self.text[self.index]
-            if char == " " and self.expect_quote is None:
+            if (char == " " or char == "\n") and self.expect_quote is None:
                 self.index += 1
                 return "".join(buff)
             elif not self.expect_quote and char in _quotes:

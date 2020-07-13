@@ -15,8 +15,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-from setuptools import setup
+from setuptools import setup, find_namespace_packages
 from lightbulb import __version__ as lightbulb_version
+
+name = "lightbulb"
 
 
 def long_description():
@@ -39,7 +41,7 @@ setup(
     author="tandemdude",
     author_email="tandemdude1@gmail.com",
     url="https://gitlab.com/tandemdude/lightbulb",
-    packages=["lightbulb"],
+    packages=find_namespace_packages(include=[name + "*"]),
     license="LGPL-3.0-ONLY",
     install_requires=parse_requirements_file("requirements.txt"),
     python_requires=">=3.8.0,<3.10",

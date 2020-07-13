@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
+import abc
+
 from hikari.events import base
 
 from lightbulb import context
@@ -121,7 +123,29 @@ class TooManyArguments(CommandError):
         self.invoked_with = invoked_with
 
 
-class UnclosedQuotes(CommandError):
+class CommandSyntaxError(CommandError, abc.ABC):
+    """
+    Base error raised if a syntax issue occurs parsing invocation arguments.
+    """
+
+    # Forces the class to be abstract.
+    @abc.abstractmethod
+    def __init__(self):
+        ...
+
+
+class PrematureEOF(CommandSyntaxError):
+    """
+    Error raised if EOF (end of input) was reached, but more content was 
+    expected.
+    """
+
+    def __init__(self) -> None:
+        # Required to override the abstract super init.
+        super().__init__()
+
+
+class UnclosedQuotes(CommandSyntaxError):
     """
     Error raised when no closing quote is found for a quoted argument.
 
@@ -130,6 +154,8 @@ class UnclosedQuotes(CommandError):
     """
 
     def __init__(self, text: str) -> None:
+        # Required to override the abstract super init.
+        super().__init__()
         self.text = text
 
 

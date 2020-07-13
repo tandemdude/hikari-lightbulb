@@ -59,12 +59,3 @@ Help
 
 .. automodule:: lightbulb.help
     :members:
-
-----
-
-Stringview
-==========
-
-.. automodule:: lightbulb.stringview
-    :members:
-

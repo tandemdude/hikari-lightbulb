@@ -26,12 +26,7 @@ T = typing.TypeVar("T")
 
 class Paginator(abc.ABC, typing.Generic[T]):
     def __init__(
-        self,
-        *,
-        max_lines: typing.Optional[int] = None,
-        max_chars: int = 2000,
-        prefix: str = "",
-        suffix: str = ""
+        self, *, max_lines: typing.Optional[int] = None, max_chars: int = 2000, prefix: str = "", suffix: str = ""
     ) -> None:
         self._page_prefix: str = prefix
         self._page_suffix: str = suffix
@@ -68,15 +63,9 @@ class Paginator(abc.ABC, typing.Generic[T]):
         if not self._next_page:
             self._next_page.append(self._page_prefix)
 
-        exceeds_max_lines = (
-            (len(self._next_page) > self._max_lines)
-            if self._max_lines is not None
-            else False
-        )
+        exceeds_max_lines = (len(self._next_page) > self._max_lines) if self._max_lines is not None else False
         # Add 2 at the end to account for the extra \n chars once the page has been joined
-        exceeds_max_chars = (
-            len("\n".join(self._next_page)) + len(line) + len(self._page_suffix) + 2
-        ) > self._max_chars
+        exceeds_max_chars = (len("\n".join(self._next_page)) + len(line) + len(self._page_suffix) + 2) > self._max_chars
 
         if exceeds_max_chars or exceeds_max_lines:
             self._pages.append(self._get_complete_page(self._next_page))
@@ -192,6 +181,4 @@ class EmbedPaginator(Paginator[Embed]):
         self._embed_factory = func
 
     def _get_complete_page(self, page: typing.List[str]) -> Embed:
-        return self._embed_factory(
-            len(self._pages), "\n".join([*page, self._page_suffix])
-        )
+        return self._embed_factory(len(self._pages), "\n".join([*page, self._page_suffix]))

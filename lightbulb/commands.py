@@ -43,9 +43,7 @@ def _bind_prototype(instance: typing.Any, command_template: _CommandT):
             self._delegates_to = command_template
             self.__dict__.update(command_template.__dict__.copy())
 
-        def invoke(
-            self, *args, **kwargs
-        ) -> typing.Coroutine[None, typing.Any, typing.Any]:
+        def invoke(self, *args, **kwargs) -> typing.Coroutine[None, typing.Any, typing.Any]:
             return self._callback(instance, *args, **kwargs)
 
     prototype = BoundCommand()
@@ -57,9 +55,7 @@ def _bind_prototype(instance: typing.Any, command_template: _CommandT):
     if isinstance(prototype, Group):
         prototype.subcommands = {}
         for subcommand_name, subcommand in command_template.subcommands.items():
-            for name, member in inspect.getmembers(
-                instance, lambda m: isinstance(m, _BoundCommandMarker)
-            ):
+            for name, member in inspect.getmembers(instance, lambda m: isinstance(m, _BoundCommandMarker)):
                 if member.delegates_to is subcommand:
                     # This will bind the instance to a bound method, and replace the parent. This completes the
                     # prototype, detatching it entirely from the class-bound implementation it was created from. This
@@ -85,14 +81,10 @@ class SignatureInspector:
         self.command = command
         self.has_self = isinstance(command, _BoundCommandMarker)
         self.args = {}
-        for index, (name, arg) in enumerate(
-            inspect.signature(command._callback).parameters.items()
-        ):
+        for index, (name, arg) in enumerate(inspect.signature(command._callback).parameters.items()):
             self.args[name] = self.parse_arg(index, arg)
         self.max_args = sum(not arg["ignore"] for arg in self.args.values())
-        self.min_args = sum(
-            not arg["ignore"] and arg["required"] for arg in self.args.values()
-        )
+        self.min_args = sum(not arg["ignore"] and arg["required"] for arg in self.args.values())
         self.has_max_args = not any(
             a.kind == inspect.Parameter.VAR_POSITIONAL
             or (a.kind == inspect.Parameter.KEYWORD_ONLY and a.default is a.empty)
@@ -110,9 +102,7 @@ class SignatureInspector:
 
         details["argtype"] = arg.kind
         details["annotation"] = arg.annotation
-        details["required"] = (arg.default is arg.empty) or (
-            arg.kind == 3
-        )  # var positional
+        details["required"] = (arg.default is arg.empty) or (arg.kind == 3)  # var positional
         return details
 
     def _args_and_name_before_asterisk(self):
@@ -127,10 +117,7 @@ class SignatureInspector:
                 break
 
             # If last arg is *arg, -1 from args_num to concatenate inputs correctly
-            if (
-                idx + 1 == len(self.args)
-                and arg["argtype"] == inspect.Parameter.VAR_POSITIONAL
-            ):
+            if idx + 1 == len(self.args) and arg["argtype"] == inspect.Parameter.VAR_POSITIONAL:
                 args_num -= 1
 
         # args_num will be 0 when it didn't encounter any *arg or *, arg
@@ -186,9 +173,7 @@ class Command:
             for a in signature.parameters.values()
         )
 
-    def __get__(
-        self: _CommandT, instance: typing.Any, owner: typing.Type[typing.Any]
-    ) -> _CommandT:
+    def __get__(self: _CommandT, instance: typing.Any, owner: typing.Type[typing.Any]) -> _CommandT:
         return _bind_prototype(instance, self)
 
     def __set_name__(self, owner, name):
@@ -278,9 +263,7 @@ class Command:
         for check in self._checks:
             result = await check(context)
             if result is False:
-                raise errors.CheckFailure(
-                    f"Check {check.__name__} failed for command {self.name}"
-                )
+                raise errors.CheckFailure(f"Check {check.__name__} failed for command {self.name}")
         return True
 
 
@@ -302,9 +285,7 @@ class Group(Command):
         self.insensitive_commands = insensitive_commands
         self.subcommands = {} if not self.insensitive_commands else CIMultiDict()
 
-    def _resolve_subcommand(
-        self, args
-    ) -> typing.Tuple[typing.Union[Command, Group], typing.Iterable[str]]:
+    def _resolve_subcommand(self, args) -> typing.Tuple[typing.Union[Command, Group], typing.Iterable[str]]:
         this = self
 
         args.pop(0)
@@ -362,11 +343,7 @@ class Group(Command):
             name = kwargs.get("name", func.__name__)
             cls = kwargs.get("cls", Command)
             subcommands[name] = cls(
-                func,
-                name,
-                kwargs.get("allow_extra_arguments", True),
-                kwargs.get("aliases", []),
-                parent=self,
+                func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []), parent=self,
             )
             for alias in kwargs.get("aliases", []):
                 subcommands[alias] = subcommands[name]
@@ -404,12 +381,7 @@ def command(**kwargs):
     def decorate(func):
         name = kwargs.get("name", func.__name__)
         cls = kwargs.get("cls", Command)
-        return cls(
-            func,
-            name,
-            kwargs.get("allow_extra_arguments", True),
-            kwargs.get("aliases", []),
-        )
+        return cls(func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []),)
 
     return decorate
 

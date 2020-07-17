@@ -44,6 +44,16 @@ Context
 
 ----
 
+Converters
+==========
+
+.. automodule:: lightbulb.converters
+    :members:
+    :show-inheritance:
+    :member-order: bysource
+
+----
+
 Errors
 ======
 

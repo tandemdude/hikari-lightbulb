@@ -52,11 +52,12 @@ def test_Command_is_subcommand_returns_False(dummy_command):
     assert dummy_command.is_subcommand is False
 
 
-def test_Command_invoke_calls_callable(dummy_command):
-    dummy_callback = mock.Mock()
+@pytest.mark.asyncio
+async def test_Command_invoke_awaits_awaitable(dummy_command):
+    dummy_callback = mock.AsyncMock()
     dummy_command._callback = dummy_callback
-    dummy_command.invoke("foo")
-    dummy_callback.assert_called_with("foo")
+    await dummy_command.invoke("foo")
+    dummy_callback.assert_awaited_with("foo")
 
 
 def test_Command_add_check_adds_callable_to_list(dummy_command, dummy_function):

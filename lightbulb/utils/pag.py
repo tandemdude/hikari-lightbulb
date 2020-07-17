@@ -20,6 +20,8 @@ import abc
 
 from hikari import Embed
 
+__all__: typing.Final[typing.Tuple[str]] = ("StringPaginator", "EmbedPaginator")
+
 
 T = typing.TypeVar("T")
 

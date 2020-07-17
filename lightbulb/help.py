@@ -21,11 +21,19 @@ import inspect
 
 from lightbulb import commands
 from lightbulb import plugins
-from lightbulb import command_handler
 from lightbulb import errors
+from lightbulb import utils
 
 if not typing.TYPE_CHECKING:
     from lightbulb import context
+    from lightbulb import command_handler
+
+__all__: typing.Final[typing.Tuple[str]] = (
+    "get_help_text",
+    "get_command_signature",
+    "filter_commands",
+    "HelpCommand",
+)
 
 
 def get_help_text(object: typing.Union[commands.Command, plugins.Plugin]) -> str:
@@ -120,13 +128,34 @@ class HelpCommand:
     wish to customise the format or other aspects of the bot's help command.
 
     Args:
-        bot (:obj:`~.command_handler.BotWithHandler`): Bot instance to add the help command class to.
+        bot (:obj:`~.command_handler.Bot`): Bot instance to add the help command class to.
     """
 
-    def __init__(self, bot: command_handler.BotWithHandler) -> None:
+    def __init__(self, bot: command_handler.Bot) -> None:
         self.bot = bot
         if self.bot.get_command("help") is None:
             self.bot.add_command(_help_cmd)
+
+    @staticmethod
+    async def send_paginated_help(text: typing.Sequence[str], context: context.Context) -> None:
+        """
+        Paginate the help text using :obj:`~.utils.pag.StringPaginator` and send each
+        of the created pages to the context in order. Note that by default, only the
+        help overview is paginated as this is the most likely to exceed the 2000
+        character message limit.
+
+        Args:
+            text (Sequence[ :obj:`str` ]): A sequence of text to be paginated.
+            context (:obj:`~.context.Context`): The context to send the help to.
+
+        Returns:
+            ``None``
+        """
+        pag = utils.pag.StringPaginator()
+        for line in text:
+            pag.add_line(line)
+        for page in pag.pages:
+            await context.reply(page)
 
     async def resolve_help_obj(self, context: context.Context, obj: typing.List[str]) -> None:
         """
@@ -207,16 +236,16 @@ class HelpCommand:
         )
         plugin_commands.insert(0, ["Uncategorised", uncategorised_commands])
 
-        help_text = [">>> __**Bot help**__\n"]
+        help_text = ["> __**Bot help**__\n"]
         for plugin, commands in plugin_commands:
             if not commands:
                 continue
-            help_text.append(f"**{plugin}**")
+            help_text.append(f"> **{plugin}**")
             for c in sorted(commands, key=lambda c: c.name):
                 short_help = get_help_text(c).split("\n")[0]
-                help_text.append(f"• `{c.name}` - {short_help}")
-        help_text.append(f"\nUse `{context.prefix}help [command]` for more information.")
-        await context.reply("\n".join(help_text))
+                help_text.append(f"> • `{c.name}` - {short_help}")
+        help_text.append(f"> \n> Use `{context.prefix}help [command]` for more information.")
+        await self.send_paginated_help(help_text, context)
 
     async def send_plugin_help(self, context: context.Context, plugin: plugins.Plugin) -> None:
         """
@@ -231,7 +260,7 @@ class HelpCommand:
             ``None``
         """
         help_text = [
-            f">>> **Help for category `{plugin.name}`**",
+            f"> **Help for category `{plugin.name}`**",
             get_help_text(plugin) or "No help text provided.",
             f"Commands:\n{', '.join(f'`{c.name}`' for c in sorted(set(plugin.commands.values()), key=lambda c: c.name)) or 'No commands in the category'}",
         ]

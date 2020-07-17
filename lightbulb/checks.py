@@ -15,9 +15,18 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
+import typing
+
 from lightbulb import context
 from lightbulb import commands
 from lightbulb import errors
+
+__all__: typing.Final[typing.Tuple[str]] = (
+    "guild_only",
+    "dm_only",
+    "owner_only",
+    "check",
+)
 
 
 async def _guild_only(ctx: context.Context) -> bool:
@@ -61,8 +70,6 @@ def dm_only():
 
         .. code-block:: python
 
-            bot = lightbulb.Bot(token="token_here", prefix="!")
-
             @lightbulb.dm_only()
             @bot.command()
             async def foo(ctx):
@@ -83,6 +90,40 @@ def owner_only():
 
     def decorate(command: commands.Command) -> commands.Command:
         command.add_check(_owner_only)
+        return command
+
+    return decorate
+
+
+def check(check_func: typing.Callable[[context.Context], typing.Coroutine[typing.Any, typing.Any, bool]]):
+    """
+    A decorator which adds a custom check function to a command. The check function must be a coroutine (async def)
+    and take a single argument, which will be the command context.
+
+    This acts as a shortcut to calling :meth:`~.commands.Command.add_check` on a command instance.
+
+    Args:
+        check_func (Callable[ [ :obj:`~.context.Context` ], Coroutine[ Any, Any, :obj:`bool` ] ]): The coroutine
+            to add to the command as a check.
+
+    Example:
+
+        .. code-block:: python
+
+            async def check_message_contains_hello(ctx):
+                return "hello" in ctx.message.content
+
+            @checks.check(check_message_contains_hello)
+            @bot.command()
+            async def foo(ctx):
+                await ctx.reply("Bar")
+
+    See Also:
+        :meth:`~.commands.Command.add_check`
+    """
+
+    def decorate(command: commands.Command) -> commands.Command:
+        command.add_check(check_func)
         return command
 
     return decorate

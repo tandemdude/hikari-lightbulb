@@ -39,6 +39,8 @@ from lightbulb import help as help_command
 if typing.TYPE_CHECKING:
     from hikari.models import messages
 
+__all__: typing.Final[typing.Tuple[str]] = ("Bot",)
+
 _LOGGER = logging.getLogger("lightbulb")
 
 
@@ -48,7 +50,7 @@ async def _return_prefix(
     return prefixes
 
 
-class BotWithHandler(hikari.Bot):
+class Bot(hikari.Bot):
     """
     A subclassed implementation of :class:`hikari.impl.bot.BotAppImpl` which contains a command handler.
     This should be instantiated instead of the superclass if you want to be able to use
@@ -70,8 +72,9 @@ class BotWithHandler(hikari.Bot):
         ignore_bots (:obj:`bool`): Ignore other bot's messages invoking your bot's commands if True (default), else not.
             invoked by other bots. Defaults to ``True``.
         owner_ids (List[ :obj:`int` ]): IDs that the bot should treat as owning the bot.
-        help_class (:obj:`~.help.HelpCommand`): The **uninstantiated** class the bot should use for it's help command. Defaults
-            to :obj:`~.help.HelpCommand`. Any class passed should always be this class or subclass of this class.
+        help_class (:obj:`~.help.HelpCommand`): The **uninstantiated** class the bot should use for it's help command.
+            Defaults to :obj:`~.help.HelpCommand`. Any class passed should always be this class or subclass of
+            this class.
         **kwargs: Other parameters passed to the :class:`hikari.impl.bot.BotAppImpl` constructor.
     """
 
@@ -109,7 +112,7 @@ class BotWithHandler(hikari.Bot):
     async def fetch_owner_ids(self) -> None:
         """
         Fetches the IDs of the bot's owner(s) from the API and stores them in
-        :attr:`~.command_handler.BotWithHandler.owner_ids`
+        :attr:`~.command_handler.Bot.owner_ids`
 
         Returns:
             ``None``
@@ -140,7 +143,7 @@ class BotWithHandler(hikari.Bot):
                     await ctx.reply("Pong!")
 
         See Also:
-            :meth:`~.command_handler.BotWithHandler.add_command`
+            :meth:`~.command_handler.Bot.add_command`
         """
 
         def decorate(func: typing.Callable):
@@ -188,7 +191,7 @@ class BotWithHandler(hikari.Bot):
             :obj:`~.commands.Command`: Command added to the bot.
 
         Raises:
-            :obj:`AttributeError`: If the name or an alias of the command being added conflicts with
+            :obj:`NameError`: If the name or an alias of the command being added conflicts with
                 an existing command.
 
         Example:
@@ -205,7 +208,7 @@ class BotWithHandler(hikari.Bot):
                 bot.add_command(ping)
 
         See Also:
-            :meth:`~.command_handler.BotWithHandler.command`
+            :meth:`~.command_handler.Bot.command`
         """
         if not isinstance(func, commands.Command):
             name = kwargs.get("name", func.__name__)
@@ -213,7 +216,7 @@ class BotWithHandler(hikari.Bot):
             func = cls(func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []),)
 
         if set(self.commands.keys()).intersection({func.name, *func._aliases}):
-            raise AttributeError(f"Command {func.name} has name or alias already registered.")
+            raise NameError(f"Command {func.name} has name or alias already registered.")
 
         self.commands[func.name] = func
         for alias in func._aliases:
@@ -240,8 +243,8 @@ class BotWithHandler(hikari.Bot):
                 an existing command.
 
         See Also:
-            :meth:`~.command_handler.BotWithHandler.group`
-            :meth:`~.command_handler.BotWithHandler.add_command`
+            :meth:`~.command_handler.Bot.group`
+            :meth:`~.command_handler.Bot.add_command`
         """
         if not isinstance(func, commands.Group):
             name = kwargs.get("name", func.__name__)
@@ -272,9 +275,13 @@ class BotWithHandler(hikari.Bot):
 
         Returns:
             ``None``
+
+        Raises:
+            :obj:`NameError`: If the name of the plugin being added conflicts with an
+                existing plugin.
         """
         if plugin.name in self.plugins:
-            raise AttributeError(f"A plugin named {plugin.name} is already registered.")
+            raise NameError(f"A plugin named {plugin.name} is already registered.")
 
         self.plugins[plugin.name] = plugin
         for command in plugin.commands.values():

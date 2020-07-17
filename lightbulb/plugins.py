@@ -25,6 +25,12 @@ import hikari
 
 from lightbulb import commands
 
+__all__: typing.Final[typing.Tuple[str]] = (
+    "EventListenerDescriptor",
+    "listener",
+    "Plugin",
+)
+
 T = typing.TypeVar("T")
 EventT_co = typing.TypeVar("EventT_co", bound=hikari.Event, covariant=True)
 

@@ -19,8 +19,11 @@ import typing
 
 from lightbulb import errors
 
+__all__: typing.Final[typing.Tuple[str]] = ("StringView",)
+
 _quotes = {
     '"': '"',
+    "'": "'",
     "‘": "’",
     "‚": "‛",
     "“": "”",

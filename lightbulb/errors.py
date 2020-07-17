@@ -16,10 +16,30 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 import abc
+import typing
 
 from hikari.events import base
 
-from lightbulb import context
+__all__: typing.Final[typing.Tuple[str]] = (
+    "CommandErrorEvent",
+    "ExtensionError",
+    "ExtensionAlreadyLoaded",
+    "ExtensionNotLoaded",
+    "ExtensionMissingLoad",
+    "ExtensionMissingUnload",
+    "CommandError",
+    "CommandNotFound",
+    "NotEnoughArguments",
+    "TooManyArguments",
+    "ConverterFailure",
+    "CommandSyntaxError",
+    "PrematureEOF",
+    "UnclosedQuotes",
+    "CheckFailure",
+    "OnlyInGuild",
+    "OnlyInDM",
+    "NotOwner",
+)
 
 
 class CommandErrorEvent(base.Event):

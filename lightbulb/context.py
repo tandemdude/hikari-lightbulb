@@ -26,13 +26,15 @@ if typing.TYPE_CHECKING:
     from lightbulb import commands
     from lightbulb import command_handler
 
+__all__: typing.Final[typing.Tuple[str]] = ("Context",)
+
 
 class Context:
     """
     The context a command was invoked under.
 
     Args:
-        bot (:obj:`~.command_handler.BotWithHandler`): The bot instance that received the command.
+        bot (:obj:`~.command_handler.Bot`): The bot instance that received the command.
         message (:obj:`hikari.models.messages.Message`): The message the context was created from.
         prefix (:obj:`str`): The prefix used in the context.
         invoked_with (:obj:`str`): The name or alias used to invoke a command.
@@ -44,7 +46,7 @@ class Context:
 
     def __init__(
         self,
-        bot: command_handler.BotWithHandler,
+        bot: command_handler.Bot,
         message: messages.Message,
         prefix: str,
         invoked_with: str,

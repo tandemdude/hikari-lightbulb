@@ -24,6 +24,12 @@ import hikari
 
 from lightbulb.context import Context
 
+__all__: typing.Final[typing.Tuple[str]] = (
+    "NavButton",
+    "StringNavigator",
+    "EmbedNavigator",
+)
+
 
 class NavButton:
     """

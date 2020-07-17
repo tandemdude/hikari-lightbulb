@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
+
 import inspect
 import typing
 import functools
@@ -26,6 +27,15 @@ from multidict import CIMultiDict
 from lightbulb import context
 from lightbulb import errors
 from lightbulb import converters
+
+__all__: typing.Final[typing.Tuple[str]] = (
+    "ArgInfo",
+    "SignatureInspector",
+    "Command",
+    "Group",
+    "command",
+    "group",
+)
 
 _LOGGER = logging.getLogger("lightbulb")
 
@@ -76,10 +86,18 @@ def _bind_prototype(instance: typing.Any, command_template: _CommandT):
 
 @dataclasses.dataclass
 class ArgInfo:
+    """
+    Dataclass representing information for a single command argument.
+    """
+
     ignore: bool
+    """:obj:`True` if the argument is ``self`` or ``context`` else :obj:`False`."""
     argtype: int
+    """The type of the argument. See :attr:`inspect.Parameter.kind` for possible types."""
     annotation: typing.Any
+    """The type annotation of the argument."""
     required: bool
+    """Whether or not the argument is required during invocation."""
 
 
 class SignatureInspector:
@@ -280,6 +298,9 @@ class Command:
                     return ctx.author.username.startswith("foo")
 
                 bot.get_command("foo").add_check(author_name_startswith_foo)
+
+        See Also:
+            :meth:`~.checks.check`
         """
         self._checks.append(check_func)
 

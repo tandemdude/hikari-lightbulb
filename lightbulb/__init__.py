@@ -18,7 +18,9 @@
 from lightbulb.command_handler import BotWithHandler as Bot
 from lightbulb import errors
 from lightbulb import plugins
+from lightbulb import commands
+from lightbulb import converters
 from lightbulb.checks import guild_only, dm_only, owner_only
 from lightbulb import utils
 
-__version__ = "0.0.23"
+__version__ = "0.0.24"

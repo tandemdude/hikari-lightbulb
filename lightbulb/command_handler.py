@@ -571,11 +571,10 @@ class BotWithHandler(hikari.Bot):
 
         Args:
             event (:obj:`hikari.events.message.MessageCreateEvent`): The message create event containing
-            a possible command invocation.
+                a possible command invocation.
 
         Raises:
-            TypeError
-            Error raised when function's signature has more than 1 argument required after asterisk symbol.
+            TypeError: when function's signature has more than 1 argument required after asterisk symbol.
 
         Returns:
             ``None``

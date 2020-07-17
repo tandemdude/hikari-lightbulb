@@ -123,6 +123,14 @@ class TooManyArguments(CommandError):
         self.invoked_with = invoked_with
 
 
+class ConverterFailure(CommandError):
+    """
+    Exception raised when a converter for a command argument fails.
+    """
+
+    pass
+
+
 class CommandSyntaxError(CommandError, abc.ABC):
     """
     Base error raised if a syntax issue occurs parsing invocation arguments.

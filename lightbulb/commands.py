@@ -19,11 +19,15 @@ from __future__ import annotations
 import inspect
 import typing
 import functools
+import logging
+import dataclasses
 from multidict import CIMultiDict
 
 from lightbulb import context
 from lightbulb import errors
+from lightbulb import converters
 
+_LOGGER = logging.getLogger("lightbulb")
 
 _CommandT = typing.TypeVar("_CommandT", bound="Command")
 
@@ -41,10 +45,12 @@ def _bind_prototype(instance: typing.Any, command_template: _CommandT):
             _BoundCommandMarker.__init__(self, command_template)
             # Do not init the super class, simply delegate to it using the __dict__
             self._delegates_to = command_template
-            self.__dict__.update(command_template.__dict__.copy())
+            self.__dict__.update(command_template.__dict__)
 
-        def invoke(self, *args, **kwargs) -> typing.Coroutine[None, typing.Any, typing.Any]:
-            return self._callback(instance, *args, **kwargs)
+        async def invoke(self, context: context.Context, *args: str, **kwargs: str) -> typing.Any:
+            # Add the start slice on to the length to offset the section of arg_details being extracted
+            new_args = await self._convert_args(context, args, list(self.arg_details.args.values())[2 : len(args) + 2])
+            return await self._callback(instance, context, *new_args, **kwargs)
 
     prototype = BoundCommand()
 
@@ -68,6 +74,14 @@ def _bind_prototype(instance: typing.Any, command_template: _CommandT):
     return typing.cast(_CommandT, prototype)
 
 
+@dataclasses.dataclass
+class ArgInfo:
+    ignore: bool
+    argtype: int
+    annotation: typing.Any
+    required: bool
+
+
 class SignatureInspector:
     """
     Contains information about the arguments that a command takes when
@@ -83,8 +97,8 @@ class SignatureInspector:
         self.args = {}
         for index, (name, arg) in enumerate(inspect.signature(command._callback).parameters.items()):
             self.args[name] = self.parse_arg(index, arg)
-        self.max_args = sum(not arg["ignore"] for arg in self.args.values())
-        self.min_args = sum(not arg["ignore"] and arg["required"] for arg in self.args.values())
+        self.max_args = sum(not arg.ignore for arg in self.args.values())
+        self.min_args = sum(not arg.ignore and arg.required for arg in self.args.values())
         self.has_max_args = not any(
             a.kind == inspect.Parameter.VAR_POSITIONAL
             or (a.kind == inspect.Parameter.KEYWORD_ONLY and a.default is a.empty)
@@ -92,18 +106,17 @@ class SignatureInspector:
         )
 
     def parse_arg(self, index, arg):
-        details = {}
         if index == 0:
-            details["ignore"] = True
+            ignore = True
         elif index == 1 and self.has_self:
-            details["ignore"] = True
+            ignore = True
         else:
-            details["ignore"] = False
+            ignore = False
 
-        details["argtype"] = arg.kind
-        details["annotation"] = arg.annotation
-        details["required"] = (arg.default is arg.empty) or (arg.kind == 3)  # var positional
-        return details
+        argtype = arg.kind
+        annotation = arg.annotation
+        required = (arg.default is arg.empty) or (arg.kind == 3)  # var positional
+        return ArgInfo(ignore, argtype, annotation, required)
 
     def _args_and_name_before_asterisk(self):
         args_num = 0
@@ -111,13 +124,13 @@ class SignatureInspector:
 
         for idx, arg in enumerate(self.args.values()):
 
-            if arg["argtype"] == inspect.Parameter.KEYWORD_ONLY and arg["required"]:
+            if arg.argtype == inspect.Parameter.KEYWORD_ONLY and arg.required:
                 args_num = idx
                 param_name = list(self.args.keys())[idx]
                 break
 
             # If last arg is *arg, -1 from args_num to concatenate inputs correctly
-            if idx + 1 == len(self.args) and arg["argtype"] == inspect.Parameter.VAR_POSITIONAL:
+            if idx + 1 == len(self.args) and arg.argtype == inspect.Parameter.VAR_POSITIONAL:
                 args_num -= 1
 
         # args_num will be 0 when it didn't encounter any *arg or *, arg
@@ -209,20 +222,43 @@ class Command:
         """
         return self.parent is not None
 
-    def invoke(self, *args, **kwargs):
+    @staticmethod
+    async def _convert_args(
+        context: context.Context, args: typing.Sequence[str], arg_details: typing.Sequence[ArgInfo],
+    ) -> typing.Sequence[typing.Any]:
+        new_args = []
+        for arg, details in zip(args, arg_details):
+            arg = converters.WrappedArg(arg, context)
+            if details.annotation is inspect.Parameter.empty or isinstance(details.annotation, str):
+                new_args.append(str(arg))
+                continue
+            try:
+                new_arg = details.annotation(arg)
+                if inspect.iscoroutine(new_arg):
+                    new_arg = await new_arg
+                new_args.append(new_arg)
+            except:
+                _LOGGER.error("Failed converting %s with converter: %s", arg, details.annotation.__name__)
+                raise errors.ConverterFailure(f"Failed converting {arg} with converter: {details.annotation.__name__}")
+        return new_args
+
+    async def invoke(self, context: context.Context, *args: str, **kwargs: str) -> typing.Any:
         """
         Invoke the command with given args and kwargs.
 
         Args:
+            context (:obj:`~.context.Context`): The command invocation context.
             *args: The positional arguments to invoke the command with.
 
         Keyword Args:
             **kwargs: The keyword arguments to invoke the command with.
 
         """
-        return self._callback(*args, **kwargs)
+        # Add the start slice on to the length to offset the section of arg_details being extracted
+        new_args = await self._convert_args(context, args, list(self.arg_details.args.values())[1 : len(args) + 1])
+        return await self._callback(context, *new_args, **kwargs)
 
-    def add_check(self, check_func) -> None:
+    def add_check(self, check_func: typing.Callable[[context.Context], typing.Coroutine[None, None, bool]]) -> None:
         """
         Add a check to an instance of :obj:`~.commands.Command` or a subclass. The check passed must
         be an awaitable function taking a single argument which will be an instance of :obj:`~.context.Context`.
@@ -230,7 +266,8 @@ class Command:
         or raise an instance of :obj:`~.errors.CheckFailure` or a subclass.
 
         Args:
-            check_func (Callable[ [ :obj:`~.context.Context` ], Coroutine[ ``None``, ``None``, :obj:`bool` ] ]): Check to add to the command
+            check_func (Callable[ [ :obj:`~.context.Context` ], Coroutine[ ``None``, ``None``, :obj:`bool` ] ]): Check
+                to add to the command
 
         Returns:
             ``None``
@@ -276,7 +313,8 @@ class Group(Command):
         *args: The args passed to :obj:`~.commands.Command` in its constructor
 
     Keyword Args:
-        insensitive_commands (:obj:`bool`): Whether or not this group's subcommands should be case insensitive. Defaults to ``False``.
+        insensitive_commands (:obj:`bool`): Whether or not this group's subcommands should be case insensitive.
+            Defaults to ``False``.
         **kwargs: The kwargs passed to :obj:`~.commands.Command` in its constructor
     """
 

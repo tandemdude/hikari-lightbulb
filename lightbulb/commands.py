@@ -27,6 +27,16 @@ from multidict import CIMultiDict
 from lightbulb import context
 from lightbulb import errors
 from lightbulb import converters
+from lightbulb import cooldowns
+
+__all__: typing.Final[typing.Tuple[str]] = (
+    "ArgInfo",
+    "SignatureInspector",
+    "Command",
+    "Group",
+    "command",
+    "group",
+)
 
 __all__: typing.Final[typing.Tuple[str]] = (
     "ArgInfo",
@@ -58,6 +68,8 @@ def _bind_prototype(instance: typing.Any, command_template: _CommandT):
             self.__dict__.update(command_template.__dict__)
 
         async def invoke(self, context: context.Context, *args: str, **kwargs: str) -> typing.Any:
+            if self.cooldown_manager is not None:
+                self.cooldown_manager.add_cooldown(context)
             # Add the start slice on to the length to offset the section of arg_details being extracted
             new_args = await self._convert_args(context, args, list(self.arg_details.args.values())[2 : len(args) + 2])
             return await self._callback(instance, context, *new_args, **kwargs)
@@ -196,6 +208,8 @@ class Command:
         self.method_name: typing.Optional[str] = None
         self.parent = parent
 
+        self.cooldown_manager: typing.Optional[cooldowns.CooldownManager] = None
+
         signature = inspect.signature(callback)
         self._has_max_args = not any(
             a.kind == inspect.Parameter.VAR_POSITIONAL
@@ -272,6 +286,8 @@ class Command:
             **kwargs: The keyword arguments to invoke the command with.
 
         """
+        if self.cooldown_manager is not None:
+            self.cooldown_manager.add_cooldown(context)
         # Add the start slice on to the length to offset the section of arg_details being extracted
         new_args = await self._convert_args(context, args, list(self.arg_details.args.values())[1 : len(args) + 1])
         return await self._callback(context, *new_args, **kwargs)

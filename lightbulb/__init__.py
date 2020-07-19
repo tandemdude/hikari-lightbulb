@@ -20,7 +20,8 @@ from lightbulb import errors
 from lightbulb import plugins
 from lightbulb import commands
 from lightbulb import converters
+from lightbulb import cooldowns
 from lightbulb.checks import guild_only, dm_only, owner_only
 from lightbulb import utils
 
-__version__ = "0.0.25"
+__version__ = "0.0.26"

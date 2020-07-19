@@ -54,6 +54,16 @@ Converters
 
 ----
 
+Cooldowns
+=========
+
+.. automodule:: lightbulb.cooldowns
+    :members:
+    :show-inheritance:
+    :member-order: bysource
+
+----
+
 Errors
 ======
 

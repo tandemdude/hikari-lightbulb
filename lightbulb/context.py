@@ -20,8 +20,9 @@ from __future__ import annotations
 import typing
 
 if typing.TYPE_CHECKING:
-    from hikari.models import messages
-    from hikari.models import users
+    import datetime
+
+    import hikari
 
     from lightbulb import commands
     from lightbulb import command_handler
@@ -47,42 +48,43 @@ class Context:
     def __init__(
         self,
         bot: command_handler.Bot,
-        message: messages.Message,
+        message: hikari.Message,
         prefix: str,
         invoked_with: str,
         command: commands.Command,
     ) -> None:
         self.bot = bot
-        self.message: messages.Message = message
-        self.author: users.User = message.author
+        self.message: hikari.Message = message
         self.prefix: str = prefix
         self.invoked_with: str = invoked_with
         self.command: commands.Command = command
 
-    guild_id = property(lambda self: self.message.guild_id)
+    guild_id: typing.Optional[hikari.Snowflake] = property(lambda self: self.message.guild_id)
     """Optional ID of the guild the command was invoked in."""
-    channel_id = property(lambda self: self.message.channel_id)
+    channel_id: hikari.Snowflake = property(lambda self: self.message.channel_id)
     """ID of the channel the command was invoked in."""
-    content = property(lambda self: self.message.content)
+    content: str = property(lambda self: self.message.content)
     """Raw content of the invocation message."""
-    member = property(lambda self: self.message.member)
+    member: typing.Optional[hikari.Member] = property(lambda self: self.message.member)
     """Optional member corresponding to the context author."""
-    message_id = property(lambda self: self.message.id)
+    message_id: hikari.Snowflake = property(lambda self: self.message.id)
     """ID of the message that invoked the command."""
-    timestamp = property(lambda self: self.message.timestamp)
+    timestamp: datetime.datetime = property(lambda self: self.message.timestamp)
     """The timestamp the context message was sent at."""
-    edited_timestamp = property(lambda self: self.message.edited_timestamp)
+    edited_timestamp: typing.Optional[datetime.datetime] = property(lambda self: self.message.edited_timestamp)
     """Optional timestamp of the previous edit of the context message."""
-    user_mentions = property(lambda self: self.message.user_mentions)
+    user_mentions: typing.Collection[hikari.Snowflake] = property(lambda self: self.message.user_mentions)
     """The users mentioned in the context message."""
-    role_mentions = property(lambda self: self.message.role_mentions)
+    role_mentions: typing.Collection[hikari.Snowflake] = property(lambda self: self.message.role_mentions)
     """The roles mentioned in the context message."""
-    channel_mentions = property(lambda self: self.message.channel_mentions)
+    channel_mentions: typing.Collection[hikari.Snowflake] = property(lambda self: self.message.channel_mentions)
     """The channels mentioned in the context message."""
-    attachments = property(lambda self: self.message.attachments)
+    attachments: typing.Sequence[hikari.Attachment] = property(lambda self: self.message.attachments)
     """The attachments to the context message."""
+    author: hikari.User = property(lambda self: self.message.author)
+    """The user who invoked the command."""
 
-    async def reply(self, *args, **kwargs) -> messages.Message:
+    async def reply(self, *args, **kwargs) -> hikari.Message:
         """
         Alias for ``ctx.message.reply(...)``.
         Replies to the message in the current context.

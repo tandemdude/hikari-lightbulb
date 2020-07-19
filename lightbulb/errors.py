@@ -15,10 +15,16 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
 import abc
 import typing
 
 from hikari.events import base
+
+if not typing.TYPE_CHECKING:
+    import hikari
+
+    from lightbulb import commands
 
 __all__: typing.Final[typing.Tuple[str]] = (
     "CommandErrorEvent",
@@ -64,13 +70,17 @@ class CommandErrorEvent(base.Event):
 
     """
 
-    def __init__(self, error, message) -> None:
+    def __init__(self, error: Exception, message: hikari.Message) -> None:
         self.error = error
         self.traceback = error.__traceback__
         self.message = message
 
 
-class ExtensionError(Exception):
+class LightbulbError(Exception):
+    """Base for any exception raised by lightbulb."""
+
+
+class ExtensionError(LightbulbError):
     """Base exception for errors incurred during the loading and unloading of extensions."""
 
     pass
@@ -100,7 +110,7 @@ class ExtensionMissingUnload(ExtensionError):
     pass
 
 
-class CommandError(Exception):
+class CommandError(LightbulbError):
     """Base exception for errors incurred during handling od commands."""
 
     pass
@@ -149,6 +159,17 @@ class ConverterFailure(CommandError):
     """
 
     pass
+
+
+class CommandIsOnCooldown(CommandError):
+    """
+    Exception raised when a command is attempted to be run but is currently on cooldown.
+    """
+
+    def __init__(self, text: str, *, command: commands.Command, retry_in: float) -> None:
+        self.text = text
+        self.command = command
+        self.retry_in = retry_in
 
 
 class CommandSyntaxError(CommandError, abc.ABC):

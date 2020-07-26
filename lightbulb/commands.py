@@ -38,15 +38,6 @@ __all__: typing.Final[typing.Tuple[str]] = (
     "group",
 )
 
-__all__: typing.Final[typing.Tuple[str]] = (
-    "ArgInfo",
-    "SignatureInspector",
-    "Command",
-    "Group",
-    "command",
-    "group",
-)
-
 _LOGGER = logging.getLogger("lightbulb")
 
 _CommandT = typing.TypeVar("_CommandT", bound="Command")
@@ -355,9 +346,10 @@ class Group(Command):
         **kwargs: The kwargs passed to :obj:`~.commands.Command` in its constructor
     """
 
-    def __init__(self, *args, insensitive_commands: bool = False, **kwargs) -> None:
+    def __init__(self, *args, insensitive_commands: bool = False, inherit_checks: bool = True, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.insensitive_commands = insensitive_commands
+        self.inherit_checks = inherit_checks
         self.subcommands = {} if not self.insensitive_commands else CIMultiDict()
 
     def _resolve_subcommand(self, args) -> typing.Tuple[typing.Union[Command, Group], typing.Iterable[str]]:
@@ -374,6 +366,12 @@ class Group(Command):
                 args = args[1:]
 
         return this, args
+
+    def add_check(self, check_func: typing.Callable[[context.Context], typing.Coroutine[None, None, bool]]) -> None:
+        if self.inherit_checks:
+            for c in set(self.subcommands.values()):
+                c.add_check(check_func)
+        super().add_check(check_func)
 
     def get_subcommand(self, name: str) -> Command:
         """
@@ -420,6 +418,8 @@ class Group(Command):
             subcommands[name] = cls(
                 func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []), parent=self,
             )
+            if self.inherit_checks:
+                subcommands[name]._checks.extend(self._checks)
             for alias in kwargs.get("aliases", []):
                 subcommands[alias] = subcommands[name]
             return subcommands[name]
@@ -436,8 +436,29 @@ class Group(Command):
             name (:obj:`str`): Optional name of the command. Defaults to the name of the function if not specified.
             aliases (Optional[ Iterable[ :obj:`str` ] ]): An iterable of aliases which can also invoke the command.
         """
+        subcommands = self.subcommands
         kwargs["cls"] = type(self)
-        return self.command(**kwargs)
+
+        def decorate(func):
+            nonlocal subcommands
+            name = kwargs.get("name", func.__name__)
+            cls = kwargs.get("cls", Group)
+            subcommands[name] = cls(
+                func,
+                name,
+                kwargs.get("allow_extra_arguments", True),
+                kwargs.get("aliases", []),
+                insensitive_commands=kwargs.get("insensitive_commands", False),
+                inherit_checks=kwargs.get("inherit_checks", True),
+                parent=self,
+            )
+            if self.inherit_checks:
+                subcommands[name]._checks.extend(self._checks)
+            for alias in kwargs.get("aliases", []):
+                subcommands[alias] = subcommands[name]
+            return subcommands[name]
+
+        return decorate
 
 
 def command(**kwargs):
@@ -456,7 +477,7 @@ def command(**kwargs):
     def decorate(func):
         name = kwargs.get("name", func.__name__)
         cls = kwargs.get("cls", Command)
-        return cls(func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []),)
+        return cls(func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []))
 
     return decorate
 
@@ -470,8 +491,11 @@ def group(**kwargs):
         allow_extra_arguments (Optional[ :obj:`bool` ]): Whether or not the command should error when run with
             more arguments than it takes. Defaults to True - will not raise an error.
         aliases (Optional[ Iterable[ :obj:`str` ] ]): Iterable of aliases which will also invoke the command.
+        insensitive_commands (:obj:`bool`): Whether or not subcommands should be case-insensitive. Defaults to
+            False.
         cls (:obj:`~.commands.Command`): The class to use to instantiate the group object from. Defaults
             to :obj:`~.commands.Group`.
+        inherit_checks (:obj:`bool`): Whether or not subcommands should inherit checks added to the base group.
     """
 
     def decorate(func):
@@ -483,6 +507,7 @@ def group(**kwargs):
             kwargs.get("allow_extra_arguments", True),
             kwargs.get("aliases", []),
             insensitive_commands=kwargs.get("insensitive_commands", False),
+            inherit_checks=kwargs.get("inherit_checks", True),
         )
 
     return decorate

@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
+
+__all__: typing.List[str] = ["StringNavigator", "EmbedNavigator", "Navigator"]
+
 import abc
 import asyncio
 import typing
@@ -23,12 +26,6 @@ import typing
 import hikari
 
 from lightbulb.context import Context
-
-__all__: typing.Final[typing.Tuple[str]] = (
-    "NavButton",
-    "StringNavigator",
-    "EmbedNavigator",
-)
 
 
 class NavButton:
@@ -83,15 +80,20 @@ T = typing.TypeVar("T")
 class Navigator(abc.ABC, typing.Generic[T]):
     def __init__(
         self,
-        pages: typing.Sequence[T],
+        pages: typing.Union[typing.Iterable[T], typing.Iterator[T]],
         *,
         buttons: typing.Optional[typing.Sequence[NavButton]] = None,
         timeout: float = 120,
     ) -> None:
         if not pages:
-            raise AttributeError("You cannot pass fewer than 1 page to the navigator.")
-        self.pages: typing.Sequence[T] = pages
-        self.buttons: typing.Sequence[NavButton] = buttons if buttons is not None else self.create_default_buttons()
+            raise ValueError("You cannot pass fewer than 1 page to the navigator.")
+        self.pages: typing.Sequence[T] = tuple(pages)
+
+        if len(self.pages) == 1 and not buttons:
+            self.buttons = [NavButton("\N{BLACK SQUARE FOR STOP}", self._stop)]
+        else:
+            self.buttons: typing.Sequence[NavButton] = buttons if buttons is not None else self.create_default_buttons()
+
         self._timeout: float = timeout
         self.current_page_index: int = 0
         self._context: typing.Optional[Context] = None
@@ -99,11 +101,11 @@ class Navigator(abc.ABC, typing.Generic[T]):
         self._timeout_task = None
 
     @abc.abstractmethod
-    def _edit_msg(self, message: hikari.models.messages.Message, page: T) -> None:
+    async def _edit_msg(self, message: hikari.models.messages.Message, page: T) -> hikari.Message:
         ...
 
     @abc.abstractmethod
-    def _send_initial_msg(self, page: T) -> None:
+    async def _send_initial_msg(self, page: T) -> hikari.Message:
         ...
 
     def create_default_buttons(self) -> typing.Sequence[NavButton]:
@@ -237,10 +239,10 @@ class StringNavigator(Navigator[str]):
 
     """
 
-    async def _edit_msg(self, message: hikari.models.messages.Message, page: str) -> None:
-        await message.edit(page)
+    async def _edit_msg(self, message: hikari.models.messages.Message, page: str) -> hikari.Message:
+        return await message.edit(page)
 
-    async def _send_initial_msg(self, page: str) -> hikari.models.messages.Message:
+    async def _send_initial_msg(self, page: str) -> hikari.Message:
         return await self._context.reply(page)
 
 
@@ -261,8 +263,10 @@ class EmbedNavigator(Navigator[hikari.models.embeds.Embed]):
         See :obj:`~.utils.nav.StringNavigator` for the default buttons supplied by the navigator.
     """
 
-    async def _edit_msg(self, message: hikari.models.messages.Message, page: hikari.models.embeds.Embed) -> None:
-        await message.edit(embed=page)
+    async def _edit_msg(
+        self, message: hikari.models.messages.Message, page: hikari.models.embeds.Embed
+    ) -> hikari.Message:
+        return await message.edit(embed=page)
 
-    async def _send_initial_msg(self, page: hikari.models.embeds.Embed) -> hikari.models.messages.Message:
+    async def _send_initial_msg(self, page: hikari.models.embeds.Embed) -> hikari.Message:
         return await self._context.reply(embed=page)

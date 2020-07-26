@@ -15,66 +15,161 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-import typing
+from __future__ import annotations
+
+__all__: typing.Final[typing.List[str]] = ["StringPaginator", "EmbedPaginator", "Paginator"]
+
 import abc
+import io
+import textwrap
+import typing
 
 from hikari import Embed
-
-__all__: typing.Final[typing.Tuple[str]] = ("StringPaginator", "EmbedPaginator")
 
 
 T = typing.TypeVar("T")
 
 
 class Paginator(abc.ABC, typing.Generic[T]):
+    @abc.abstractmethod
     def __init__(
-        self, *, max_lines: typing.Optional[int] = None, max_chars: int = 2000, prefix: str = "", suffix: str = ""
+        self,
+        *,
+        max_lines: typing.Optional[int] = None,
+        max_chars: int = 2000,
+        prefix: str = "",
+        suffix: str = "",
+        line_separator: str = "\n",
+        page_factory: typing.Callable[[int, str], T] = lambda i, s: s,
     ) -> None:
         self._page_prefix: str = prefix
         self._page_suffix: str = suffix
-        self._max_lines: typing.Optional[int] = max_lines
-        self._max_chars: int = max_chars
-        self.current_page: int = 0
-        self._next_page: typing.List[str] = []
-        self._pages: typing.List[T] = []
+        # Dummy minimum content size. This is never used, but is just symbolic for readability.
+        min_content = f"A{line_separator}"
 
-    @property
-    def pages(self) -> typing.Sequence[T]:
+        # at least one line of content.
+        extra_lines = prefix.count(line_separator) + suffix.count(line_separator)
+        min_total_lines = min_content.count(line_separator) + extra_lines
+
+        if max_lines is not None:
+            if max_lines < min_total_lines:
+                raise ValueError(f"This configuration requires at least {min_total_lines} lines per page!")
+
+        # At least 1 character per page, or we recurse forever!
+        prefix_len = len(prefix) + len(suffix)
+        min_total_len = prefix_len + len(min_content)
+
+        if max_chars < min_total_len:
+            raise ValueError(f"This configuration requires at least {min_total_len} characters per page.")
+
+        self._max_total_chars = max_chars
+        self._max_total_lines = max_lines if max_lines is not None else float("inf")
+        self._max_content_chars = max_chars - prefix_len
+        self._max_content_lines = max_lines - extra_lines if max_lines is not None else float("inf")
+        self._line_separator = line_separator
+        self._next_page: io.StringIO = io.StringIO()
+        self._pages: typing.List[str] = []
+        self._page_factory = page_factory
+        self.current_page: int = 0
+
+    def build_pages(self, page_number_start: int = 1) -> typing.Iterator[T]:
         """
         The current pages that have been created.
 
+        Args:
+            page_number_start (:obj:`int`): The page number to start at.
+                Defaults to ``1``.
+
         Returns:
-            Sequence[ T ]: Sequence of created pages.
+            Iterator[ T ]: Lazy generator of each page.
         """
-        return [*self._pages, self._get_complete_page(self._next_page)]
+        # Only add the last page if it is not empty.
+        if self._next_page.tell():
+            last_page = self._next_page.getvalue()
+            if len(last_page) > 0:
+                self.new_page()
 
-    @abc.abstractmethod
-    def _get_complete_page(self, page: typing.List[str]) -> T:
-        ...
+        for i, page in enumerate(self._pages, start=page_number_start):
+            yield self._page_factory(i, page)
 
-    def add_line(self, line: str) -> None:
+    def add_line(self, line: typing.Any) -> None:
         """
         Add a line to the paginator.
 
         Args:
-            line (:obj:`str`): The line to add to the paginator
+            line (:obj:`typing.Any`): The line to add to the paginator.
+                Will be converted to a :obj:`str`.
 
         Returns:
             ``None``
         """
-        if not self._next_page:
-            self._next_page.append(self._page_prefix)
+        whole_text = str(line).replace("\t", (" " * 4)).replace("\r", "").split(self._line_separator)
 
-        exceeds_max_lines = (len(self._next_page) > self._max_lines) if self._max_lines is not None else False
-        # Add 2 at the end to account for the extra \n chars once the page has been joined
-        exceeds_max_chars = (len("\n".join(self._next_page)) + len(line) + len(self._page_suffix) + 2) > self._max_chars
+        for line in whole_text:
+            self._add_one_line(line)
 
-        if exceeds_max_chars or exceeds_max_lines:
-            self._pages.append(self._get_complete_page(self._next_page))
-            self._next_page = []
-            self.add_line(line)
-        else:
-            self._next_page.append(line)
+    def _add_one_line(self, line: str) -> None:
+        existing_chars, existing_lines = self._sizes()
+        remaining_chars = self._max_content_chars - existing_chars
+        remaining_lines = self._max_content_lines - existing_lines
+        this_char_count = len(line)
+
+        if not self._next_page.tell():
+            self._next_page.write(self._page_prefix)
+
+        if this_char_count > self._max_content_chars:
+            self._chunk_add(line)
+            return
+
+        if remaining_chars < this_char_count or remaining_lines <= 0:
+            self.new_page()
+            self._add_one_line(line)
+            return
+
+        self._next_page.write(line)
+        self._next_page.write(self._line_separator)
+
+    def _chunk_add(self, line: str) -> None:
+        # Try to split up words, if not, break mid-word.
+        wrapper = textwrap.TextWrapper(
+            width=self._max_content_chars, expand_tabs=True, tabsize=4, max_lines=self._max_content_lines,
+        )
+
+        lines = wrapper.wrap(line)
+
+        for line in lines:
+            if len(line) > self._max_content_chars - len(self._line_separator):
+                for i in range(0, len(line), self._max_content_chars):
+                    next_line = line[i : i + self._max_content_chars]
+                    self.add_line(next_line)
+            else:
+                self.add_line(line)
+
+    def new_page(self) -> None:
+        """
+        Start a new page.
+
+        Returns:
+            ``None``
+        """
+        # Remove final newline if it is there.
+        next_page = self._next_page.getvalue()
+        if next_page.endswith(self._line_separator):
+            next_page = next_page[: -len(self._line_separator)]
+        next_page += self._page_suffix
+
+        # Append page
+        self._pages.append(next_page)
+
+        # Clear buffer
+        self._next_page.seek(0, 0)
+        self._next_page.truncate(0)
+
+    def _sizes(self) -> typing.Tuple[int, int]:
+        page = self._next_page.getvalue()[len(self._page_prefix) :]
+        current_chars = len(page)
+        current_lines = page.count(self._line_separator)
+        return current_chars, current_lines
 
 
 class StringPaginator(Paginator[str]):
@@ -111,8 +206,18 @@ class StringPaginator(Paginator[str]):
                     await ctx.reply(page)
     """
 
-    def _get_complete_page(self, page: typing.List[str]) -> str:
-        return "\n".join([*page, self._page_suffix])
+    def __init__(
+        self,
+        *,
+        max_lines: typing.Optional[int] = None,
+        max_chars: int = 2000,
+        prefix: str = "",
+        suffix: str = "",
+        line_separator: str = "\n",
+    ) -> None:
+        super().__init__(
+            max_lines=max_lines, max_chars=max_chars, prefix=prefix, suffix=suffix, line_separator=line_separator,
+        )
 
 
 class EmbedPaginator(Paginator[Embed]):
@@ -132,9 +237,23 @@ class EmbedPaginator(Paginator[Embed]):
         suffix (:obj:`str`): The string to suffix every page with. Defaults to an empty string.
     """
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self._embed_factory = lambda _, page: Embed(description=page)
+    def __init__(
+        self,
+        *,
+        max_lines: typing.Optional[int] = None,
+        max_chars: int = 2048,
+        prefix: str = "",
+        suffix: str = "",
+        line_separator: str = "\n",
+    ) -> None:
+        super().__init__(
+            max_lines=max_lines,
+            max_chars=max_chars,
+            prefix=prefix,
+            suffix=suffix,
+            line_separator=line_separator,
+            page_factory=lambda i, s: Embed(description=s).set_footer(text=f"Page {i}"),
+        )
 
     def embed_factory(self):
         """
@@ -162,7 +281,8 @@ class EmbedPaginator(Paginator[Embed]):
         """
 
         def decorate(func):
-            self._embed_factory = func
+            self.set_embed_factory(func)
+            return func
 
         return decorate
 
@@ -180,7 +300,4 @@ class EmbedPaginator(Paginator[Embed]):
         See Also:
             :meth:`embed_factory`
         """
-        self._embed_factory = func
-
-    def _get_complete_page(self, page: typing.List[str]) -> Embed:
-        return self._embed_factory(len(self._pages), "\n".join([*page, self._page_suffix]))
+        self._page_factory = func

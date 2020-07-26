@@ -15,4 +15,13 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-from . import pag, nav
+
+import typing
+
+from lightbulb.utils import nav
+from lightbulb.utils import pag
+
+from lightbulb.utils.nav import *
+from lightbulb.utils.pag import *
+
+__all__: typing.Final[typing.Tuple[str]] = (nav.__all__ + pag.__all__)

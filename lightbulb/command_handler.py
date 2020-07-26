@@ -476,6 +476,19 @@ class Bot(hikari.Bot):
         else:
             del old
 
+    def walk_commands(self) -> typing.Generator[commands.Command, None, None]:
+        """
+        A generator that walks through all commands and subcommands registered to the bot.
+
+        Yields:
+            :obj:`~.commands.Command`: All commands, groups and subcommands registered to the bot.
+        """
+        unique_commands = list(set(self.commands.values()))
+        for command in unique_commands:
+            if isinstance(command, commands.Group):
+                unique_commands.extend(list(set(command.subcommands.values())))
+            yield command
+
     def resolve_arguments(self, message: messages.Message, prefix: str) -> typing.List[str]:
         """
         Resolves the arguments that a command was invoked with from the message containing the invocation.

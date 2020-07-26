@@ -28,6 +28,7 @@ if not typing.TYPE_CHECKING:
 
 __all__: typing.Final[typing.Tuple[str]] = (
     "CommandErrorEvent",
+    "LightbulbError",
     "ExtensionError",
     "ExtensionAlreadyLoaded",
     "ExtensionNotLoaded",
@@ -38,6 +39,7 @@ __all__: typing.Final[typing.Tuple[str]] = (
     "NotEnoughArguments",
     "TooManyArguments",
     "ConverterFailure",
+    "CommandIsOnCooldown",
     "CommandSyntaxError",
     "PrematureEOF",
     "UnclosedQuotes",

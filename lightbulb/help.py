@@ -154,7 +154,7 @@ class HelpCommand:
         pag = utils.pag.StringPaginator()
         for line in text:
             pag.add_line(line)
-        for page in pag.pages:
+        for page in pag.build_pages():
             await context.reply(page)
 
     async def resolve_help_obj(self, context: context.Context, obj: typing.List[str]) -> None:

@@ -100,12 +100,16 @@ class Bot(hikari.Bot):
 
         self.ignore_bots: bool = ignore_bots
         self.owner_ids: typing.Iterable[int] = owner_ids
+        """Iterable of the bot's owner IDs. This can be set by :meth:`Bot.fetch_owner_ids` if not given in the constructor."""
         self.insensitive_commands = insensitive_commands
-        self.extensions = []
+        self.extensions: typing.List[str] = []
+        """A list of extensions currently loaded to the bot."""
         self.plugins: typing.MutableMapping[str, plugins.Plugin] = {}
+        """A list of plugins currently added to the bot."""
         self.commands: typing.MutableMapping[
             str, typing.Union[commands.Command, commands.Group]
         ] = dict() if not self.insensitive_commands else CIMultiDict()
+        """A dictionary of command name to command object containing all commands registered to the bot."""
 
         self._help_impl = help_class(self)
 

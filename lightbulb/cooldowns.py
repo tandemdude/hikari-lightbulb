@@ -65,9 +65,11 @@ class Bucket(abc.ABC):
     def __init__(self, length: float, max_usages: int) -> None:
         self.length = length
         self.usages = max_usages
-        self.commands_run = 0
+        self.commands_run: int = 0
+        """Commands run for this bucket since it was created."""
         self.activated = False
-        self.start_time = None
+        self.start_time: typing.Optional[float] = None
+        """The start time of the bucket cooldown. This is relative to :meth:`time.perf_counter`."""
 
     @classmethod
     @abc.abstractmethod
@@ -91,7 +93,7 @@ class Bucket(abc.ABC):
         Returns:
             :obj:`~CooldownStatus`: The status of the cooldown bucket.
         """
-        if self.activated and not self.expired:
+        if self.active:
             return CooldownStatus.ACTIVE
         elif self.activated and self.expired:
             return CooldownStatus.EXPIRED
@@ -184,6 +186,7 @@ class CooldownManager:
         self.usages = usages
         self.bucket = bucket
         self.cooldowns: typing.MutableMapping[typing.Hashable, Bucket] = {}
+        """Mapping of a hashable to a :obj:`~Bucket` representing the currently stored cooldowns."""
 
     def add_cooldown(self, context: context_.Context) -> None:
         """

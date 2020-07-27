@@ -36,7 +36,8 @@ EventT_co = typing.TypeVar("EventT_co", bound=hikari.Event, covariant=True)
 
 
 class EventListenerDescriptor:
-    """Descriptor for a listener.
+    """
+    Descriptor for a listener.
 
     This provides the same introspective logic as :meth:`hikari.Bot.listen`, but
     does so using a descriptor instead of directly subscribing the function. This
@@ -174,10 +175,13 @@ class Plugin:
 
     def __init__(self, *, name: str = None) -> None:
         self.name = self.__class__.__name__ if name is None else name
+        """The plugin's registered name."""
         self.commands: typing.MutableMapping[str, typing.Union[commands.Command, commands.Group]] = {}
+        """Mapping of command name to command object containing all commands registered to the plugin."""
         self.listeners: typing.MutableMapping[
             typing.Type[hikari.Event], typing.MutableSequence[EventListenerDescriptor],
         ] = {}
+        """Mapping of event to a listener method containing all listeners registered to the plugin."""
 
         # we use type(self) since it will prevent the descriptor __get__ being
         # invoked to convert the command to a bound instance.
@@ -186,6 +190,7 @@ class Plugin:
                 if not member.is_subcommand:
                     # using self here to now get the bound command.
                     self.commands[member.name] = getattr(self, name)
+                    self.commands[member.name].plugin = self
 
             elif isinstance(member, EventListenerDescriptor):
                 if member.event_type not in self.listeners:

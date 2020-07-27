@@ -185,6 +185,15 @@ class Navigator(abc.ABC, typing.Generic[T]):
         Returns:
             ``None``
         """
+        intent_to_check_for = (
+            hikari.Intent.GUILD_MESSAGE_REACTIONS
+            if context.guild_id is not None
+            else hikari.Intent.PRIVATE_MESSAGE_REACTIONS
+        )
+        if not (context.bot._intents & intent_to_check_for) == intent_to_check_for:
+            # TODO - raise more meaningful error and give it the missing intent.
+            raise RuntimeError("Your application is missing an intent required for the navigator to function.")
+
         self._context = context
         context.bot.event_dispatcher.subscribe(
             hikari.events.message.MessageReactionAddEvent, self._process_reaction_add

@@ -53,11 +53,16 @@ class Context:
         invoked_with: str,
         command: commands.Command,
     ) -> None:
-        self.bot = bot
+        self.bot: command_handler.Bot = bot
+        """The bot instance."""
         self.message: hikari.Message = message
+        """The message that the context derived from."""
         self.prefix: str = prefix
+        """The command prefix used."""
         self.invoked_with: str = invoked_with
+        """The command name or alias used."""
         self.command: commands.Command = command
+        """The command that was invoked."""
 
     guild_id: typing.Optional[hikari.Snowflake] = property(lambda self: self.message.guild_id)
     """Optional ID of the guild the command was invoked in."""

@@ -241,3 +241,11 @@ class NotOwner(CheckFailure):
     """
 
     pass
+
+
+class MissingRequiredRole(CheckFailure):
+    """
+    Error raised when the member invoking a command is missing one or more role required.
+    """
+
+    pass

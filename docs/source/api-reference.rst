@@ -6,6 +6,7 @@ Command Handler
 ===============
 .. automodule:: lightbulb.command_handler
     :members:
+    :member-order: groupwise
 
 ----
 
@@ -41,6 +42,7 @@ Context
 
 .. automodule:: lightbulb.context
     :members:
+    :member-order: groupwise
 
 ----
 

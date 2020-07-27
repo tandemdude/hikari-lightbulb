@@ -16,15 +16,20 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 import typing
+import functools
 
 from lightbulb import context
 from lightbulb import commands
 from lightbulb import errors
 
+if not typing.TYPE_CHECKING:
+    import hikari
+
 __all__: typing.Final[typing.Tuple[str]] = (
     "guild_only",
     "dm_only",
     "owner_only",
+    "has_roles",
     "check",
 )
 
@@ -47,6 +52,17 @@ async def _owner_only(ctx: context.Context) -> bool:
 
     if ctx.message.author.id not in ctx.bot.owner_ids:
         raise errors.NotOwner("You are not the owner of this bot")
+    return True
+
+
+def _role_check(member_roles: typing.Sequence[hikari.Snowflake], *, roles: typing.Sequence[int], func) -> bool:
+    return func(r in member_roles for r in roles)
+
+
+async def _has_roles(ctx: context.Context, *, role_check):
+    await _guild_only(ctx)
+    if not role_check(ctx.member.role_ids):
+        raise errors.MissingRequiredRole("You are missing one or more roles required in order to run this command.")
     return True
 
 
@@ -90,6 +106,41 @@ def owner_only():
 
     def decorate(command: commands.Command) -> commands.Command:
         command.add_check(_owner_only)
+        return command
+
+    return decorate
+
+
+def has_roles(
+    role1: hikari.SnowflakeishOr[hikari.PartialRole],
+    *role_ids: hikari.SnowflakeishOr[hikari.PartialRole],
+    mode: typing.Literal["all", "any"] = "all",
+):
+    """
+    A decorator that prevents a command from being used by anyone missing roles according
+    to the given mode.
+
+    Args:
+        role1 (:obj:`hikari.SnowflakeishOr` [ :obj:`hikari.PartialRole` ]): Role ID to check for.
+        *role_ids (:obj:`hikari.SnowflakeishOr` [ :obj:`hikari.PartialRole` ]): Additional role IDs to check for.
+
+    Keyword Args:
+        mode (Literal["all", "any"]): The mode to check roles using. If ``"all"``, all role IDs
+            passed will be required. If ``"any"``, the invoker will only be required to have one
+            of the specified roles. Defaults to ``"all"``.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have roles
+        in a DM channel.
+    """
+    if mode not in ["all", "any"]:
+        raise SyntaxError("has_roles mode must be one of: all, any")
+
+    def decorate(command: commands.Command) -> commands.Command:
+        check_func = functools.partial(
+            _role_check, roles=[int(role1), *[int(r) for r in role_ids]], func=all if mode == "all" else any
+        )
+        command.add_check(functools.partial(_has_roles, role_check=check_func))
         return command
 
     return decorate

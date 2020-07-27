@@ -29,6 +29,9 @@ from lightbulb import errors
 from lightbulb import converters
 from lightbulb import cooldowns
 
+if not typing.TYPE_CHECKING:
+    from lightbulb import plugins
+
 __all__: typing.Final[typing.Tuple[str]] = (
     "ArgInfo",
     "SignatureInspector",
@@ -197,9 +200,13 @@ class Command:
         self._aliases = aliases
         self._checks = []
         self.method_name: typing.Optional[str] = None
-        self.parent = parent
+        self.parent: typing.Optional[typing.Any] = parent
+        """The parent group for the command. If ``None`` then the command is not a subcommand."""
+        self.plugin: typing.Optional[plugins.Plugin] = None
+        """The plugin the command is registered to. If ``None`` then it was defined outside of a plugin."""
 
         self.cooldown_manager: typing.Optional[cooldowns.CooldownManager] = None
+        """The cooldown manager being used for the command. If ``None`` then the command does not have a cooldown."""
 
         signature = inspect.signature(callback)
         self._has_max_args = not any(
@@ -350,7 +357,8 @@ class Group(Command):
         super().__init__(*args, **kwargs)
         self.insensitive_commands = insensitive_commands
         self.inherit_checks = inherit_checks
-        self.subcommands = {} if not self.insensitive_commands else CIMultiDict()
+        self.subcommands: typing.MutableMapping[str, Command] = {} if not self.insensitive_commands else CIMultiDict()
+        """A mapping of command name to command object containing the subcommands registered to the group."""
 
     def _resolve_subcommand(self, args) -> typing.Tuple[typing.Union[Command, Group], typing.Iterable[str]]:
         this = self

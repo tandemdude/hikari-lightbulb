@@ -199,6 +199,7 @@ class Command:
         self._allow_extra_arguments = allow_extra_arguments
         self._aliases = aliases
         self._checks = []
+        self._error_listener = None
         self.method_name: typing.Optional[str] = None
         self.parent: typing.Optional[typing.Any] = parent
         """The parent group for the command. If ``None`` then the command is not a subcommand."""
@@ -251,6 +252,34 @@ class Command:
             Union[ :obj:`True`, :obj:`False` ]: If this object is a subcommand with a parent group.
         """
         return self.parent is not None
+
+    def command_error(self):
+        """
+        A decorator to register a coroutine as the command's error handler. Any global error 
+        handler/listener for :obj:`~.errors.CommandErrorEvent` will still be called.
+
+        Example:
+
+            .. code-block:: python
+                
+                @lightbulb.owner_only()
+                @bot.command()
+                async def foo(ctx):
+                    await ctx.reply("bar")
+
+                @foo.command_error()
+                async def on_foo_error(event):
+                    # This will be called if someone other than the
+                    # bot's owner tries to run the command foo
+                    return
+        """
+
+        def decorate(
+            func: typing.Callable[[errors.CommandErrorEvent], typing.Coroutine[None, None, typing.Any]]
+        ) -> None:
+            self._error_listener = func
+
+        return decorate
 
     @staticmethod
     async def _convert_args(

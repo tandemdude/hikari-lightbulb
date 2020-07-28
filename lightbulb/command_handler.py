@@ -570,8 +570,11 @@ class Bot(hikari.Bot):
                 else:
                     await command.invoke(context, *args[:before_asterisk])
         except errors.CommandError as ex:
+            error_event = errors.CommandErrorEvent(ex, context.message)
+            if command._error_listener is not None:
+                await command._error_listener(error_event)
             if self.get_listeners(errors.CommandErrorEvent, polymorphic=True):
-                await self.dispatch(errors.CommandErrorEvent(ex, context.message))
+                await self.dispatch(error_event)
             else:
                 raise
 

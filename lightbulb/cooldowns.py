@@ -15,18 +15,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-import abc
-import enum
-import time
-import typing
+from __future__ import annotations
 
-from lightbulb import errors
-
-if not typing.TYPE_CHECKING:
-    from lightbulb import context as context_
-    from lightbulb import commands
-
-__all__: typing.Final[typing.Tuple[str]] = (
+__all__: typing.Final[typing.List[str]] = [
     "CooldownStatus",
     "Bucket",
     "GlobalBucket",
@@ -35,7 +26,18 @@ __all__: typing.Final[typing.Tuple[str]] = (
     "GuildBucket",
     "CooldownManager",
     "cooldown",
-)
+]
+
+import abc
+import enum
+import time
+import typing
+
+from lightbulb import errors
+
+if typing.TYPE_CHECKING:
+    from lightbulb import context as context_
+    from lightbulb import commands
 
 
 class CooldownStatus(enum.IntEnum):

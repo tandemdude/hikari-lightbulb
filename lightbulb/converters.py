@@ -44,6 +44,18 @@ context can be accessed through this instance from the attributes ``data`` and `
     in your commands. Instead of converting the arguments, the raw, unconverted arguments will be passed back
     to the command.
 """
+from __future__ import annotations
+
+__all__: typing.Final[typing.List[str]] = [
+    "WrappedArg",
+    "user_converter",
+    "member_converter",
+    "text_channel_converter",
+    "voice_channel_converter",
+    "category_converter",
+    "role_converter",
+]
+
 import re
 import typing
 import collections
@@ -52,16 +64,6 @@ import hikari
 
 from lightbulb import context
 from lightbulb import errors
-
-__all__: typing.Final[typing.Tuple[str]] = (
-    "WrappedArg",
-    "user_converter",
-    "member_converter",
-    "text_channel_converter",
-    "voice_channel_converter",
-    "category_converter",
-    "role_converter",
-)
 
 USER_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<@!?(\d+)>")
 CHANNEL_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<#(\d+)>")

@@ -17,6 +17,15 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+__all__: typing.Final[typing.List[str]] = [
+    "ArgInfo",
+    "SignatureInspector",
+    "Command",
+    "Group",
+    "command",
+    "group",
+]
+
 import inspect
 import typing
 import functools
@@ -29,17 +38,8 @@ from lightbulb import errors
 from lightbulb import converters
 from lightbulb import cooldowns
 
-if not typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from lightbulb import plugins
-
-__all__: typing.Final[typing.Tuple[str]] = (
-    "ArgInfo",
-    "SignatureInspector",
-    "Command",
-    "Group",
-    "command",
-    "group",
-)
 
 _LOGGER = logging.getLogger("lightbulb")
 
@@ -75,8 +75,8 @@ def _bind_prototype(instance: typing.Any, command_template: _CommandT):
 
     # Bind each subcommand to a descriptor for this specific instance.
     if isinstance(prototype, Group):
-        prototype.subcommands = {}
-        for subcommand_name, subcommand in command_template.subcommands.items():
+        prototype._subcommands = {}
+        for subcommand_name, subcommand in command_template._subcommands.items():
             for name, member in inspect.getmembers(instance, lambda m: isinstance(m, _BoundCommandMarker)):
                 if member.delegates_to is subcommand:
                     # This will bind the instance to a bound method, and replace the parent. This completes the
@@ -85,7 +85,8 @@ def _bind_prototype(instance: typing.Any, command_template: _CommandT):
                     # hopefully are not aware of eachother by design, reducing weird side effects from shared attributes
                     # hopefully!
                     member.parent = prototype
-                    prototype.subcommands[subcommand_name] = member
+                    prototype._subcommands[subcommand_name] = member
+                    prototype.subcommands.add(member)
 
     return typing.cast(_CommandT, prototype)
 
@@ -223,8 +224,11 @@ class Command:
     def __set_name__(self, owner, name):
         self.method_name = name
 
+    def __repr__(self) -> str:
+        return f"<lightbulb.{self.__class__.__name__} {self.name} at {hex(id(self))}>"
+
     @functools.cached_property
-    def arg_details(self):
+    def arg_details(self) -> SignatureInspector:
         """
         An inspection of the arguments that a command takes.
 
@@ -242,6 +246,16 @@ class Command:
             :obj:`str`: Name of the command
         """
         return self._name
+
+    @property
+    def aliases(self) -> str:
+        """
+        The command's aliases.
+
+        Returns:
+            Iterable[ :obj:`str` ]: Aliases for the command.
+        """
+        return self._aliases
 
     @property
     def is_subcommand(self) -> bool:
@@ -386,8 +400,9 @@ class Group(Command):
         super().__init__(*args, **kwargs)
         self.insensitive_commands = insensitive_commands
         self.inherit_checks = inherit_checks
-        self.subcommands: typing.MutableMapping[str, Command] = {} if not self.insensitive_commands else CIMultiDict()
-        """A mapping of command name to command object containing the subcommands registered to the group."""
+        self._subcommands: typing.MutableMapping[str, Command] = {} if not self.insensitive_commands else CIMultiDict()
+        self.subcommands: typing.Set[Command] = set()
+        """A set containing all subcommands registered to the group."""
 
     def _resolve_subcommand(self, args) -> typing.Tuple[typing.Union[Command, Group], typing.Iterable[str]]:
         this = self
@@ -396,7 +411,7 @@ class Group(Command):
         while isinstance(this, Group) and args:
             invoked_with = args[0].casefold() if this.insensitive_commands else args[0]
             try:
-                this = this.subcommands[invoked_with]
+                this = this._subcommands[invoked_with]
             except KeyError:
                 break
             else:
@@ -406,7 +421,7 @@ class Group(Command):
 
     def add_check(self, check_func: typing.Callable[[context.Context], typing.Coroutine[None, None, bool]]) -> None:
         if self.inherit_checks:
-            for c in set(self.subcommands.values()):
+            for c in self.subcommands:
                 c.add_check(check_func)
         super().add_check(check_func)
 
@@ -420,7 +435,7 @@ class Group(Command):
         Returns:
             Optional[ :obj:`~.commands.Command` ]: command object registered to that name.
         """
-        return self.subcommands.get(name)
+        return self._subcommands.get(name)
 
     def command(self, **kwargs):
         """
@@ -446,20 +461,19 @@ class Group(Command):
                 async def bar(ctx):
                     await ctx.reply("Invoked foo bar")
         """
-        subcommands = self.subcommands
 
         def decorate(func):
-            nonlocal subcommands
             name = kwargs.get("name", func.__name__)
             cls = kwargs.get("cls", Command)
-            subcommands[name] = cls(
+            self._subcommands[name] = cls(
                 func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []), parent=self,
             )
             if self.inherit_checks:
                 subcommands[name]._checks.extend(self._checks)
+            self.subcommands.add(self._subcommands[name])
             for alias in kwargs.get("aliases", []):
-                subcommands[alias] = subcommands[name]
-            return subcommands[name]
+                self._subcommands[alias] = self._subcommands[name]
+            return self._subcommands[name]
 
         return decorate
 
@@ -473,14 +487,12 @@ class Group(Command):
             name (:obj:`str`): Optional name of the command. Defaults to the name of the function if not specified.
             aliases (Optional[ Iterable[ :obj:`str` ] ]): An iterable of aliases which can also invoke the command.
         """
-        subcommands = self.subcommands
         kwargs["cls"] = type(self)
 
         def decorate(func):
-            nonlocal subcommands
             name = kwargs.get("name", func.__name__)
             cls = kwargs.get("cls", Group)
-            subcommands[name] = cls(
+            self._subcommands[name] = cls(
                 func,
                 name,
                 kwargs.get("allow_extra_arguments", True),
@@ -490,10 +502,11 @@ class Group(Command):
                 parent=self,
             )
             if self.inherit_checks:
-                subcommands[name]._checks.extend(self._checks)
+                self._subcommands[name]._checks.extend(self._checks)
+            self.subcommands.add(self._subcommands[name])
             for alias in kwargs.get("aliases", []):
-                subcommands[alias] = subcommands[name]
-            return subcommands[name]
+                self._subcommands[alias] = self._subcommands[name]
+            return self._subcommands[name]
 
         return decorate
 

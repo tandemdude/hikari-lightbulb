@@ -88,5 +88,5 @@ def test_Group_get_subcommand_returns_None(dummy_group):
 
 
 def test_Group_get_subcommand_returns_command(dummy_group, dummy_command):
-    dummy_group.subcommands["foo"] = dummy_command
+    dummy_group._subcommands["foo"] = dummy_command
     assert dummy_group.get_subcommand("foo") is dummy_command

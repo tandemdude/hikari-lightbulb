@@ -17,6 +17,8 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+__all__: typing.Final[typing.List[str]] = ["Bot"]
+
 import typing
 import functools
 import collections
@@ -38,8 +40,6 @@ from lightbulb import help as help_command
 
 if typing.TYPE_CHECKING:
     from hikari.models import messages
-
-__all__: typing.Final[typing.Tuple[str]] = ("Bot",)
 
 _LOGGER = logging.getLogger("lightbulb")
 
@@ -105,11 +105,12 @@ class Bot(hikari.Bot):
         self.extensions: typing.List[str] = []
         """A list of extensions currently loaded to the bot."""
         self.plugins: typing.MutableMapping[str, plugins.Plugin] = {}
-        """A list of plugins currently added to the bot."""
-        self.commands: typing.MutableMapping[
-            str, typing.Union[commands.Command, commands.Group]
+        """A mapping of plugin name to plugin object currently added to the bot."""
+        self._commands: typing.MutableMapping[
+            str, commands.Command
         ] = dict() if not self.insensitive_commands else CIMultiDict()
-        """A dictionary of command name to command object containing all commands registered to the bot."""
+        self.commands: typing.Set(commands.Command) = set()
+        """A set containing all commands and groups registered to the bot."""
 
         self._help_impl = help_class(self)
 
@@ -219,14 +220,21 @@ class Bot(hikari.Bot):
             cls = kwargs.get("cls", commands.Command)
             func = cls(func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []),)
 
-        if set(self.commands.keys()).intersection({func.name, *func._aliases}):
-            raise NameError(f"Command {func.name} has name or alias already registered.")
+        if self.insensitive_commands:
+            if set([name.casefold() for name in self._commands.keys()]).intersection(
+                {func.name.casefold(), *[a.casefold() for a in func._aliases]}
+            ):
+                raise NameError(f"Command {func.name} has name or alias already registered.")
+        else:
+            if set(self._commands.keys()).intersection({func.name, *func._aliases}):
+                raise NameError(f"Command {func.name} has name or alias already registered.")
 
-        self.commands[func.name] = func
+        self.commands.add(func)
+        self._commands[func.name] = func
         for alias in func._aliases:
-            self.commands[alias] = func
+            self._commands[alias] = func
         _LOGGER.debug("new command registered: %s", func.name)
-        return self.commands[func.name]
+        return self._commands[func.name]
 
     def add_group(self, func: typing.Union[typing.Callable, commands.Group], **kwargs) -> commands.Group:
         """
@@ -261,14 +269,15 @@ class Bot(hikari.Bot):
                 insensitive_commands=kwargs.get("insensitive_commands", False),
             )
 
-        if set(self.commands.keys()).intersection({func.name, *func._aliases}):
+        if set(self._commands.keys()).intersection({func.name, *func._aliases}):
             raise AttributeError(f"Command {func.name} has name or alias already registered.")
 
-        self.commands[func.name] = func
+        self.commands.add(func)
+        self._commands[func.name] = func
         for alias in func._aliases:
-            self.commands[alias] = func
+            self._commands[alias] = func
         _LOGGER.debug("new group registered: %s", func.name)
-        return self.commands[func.name]
+        return self._commands[func.name]
 
     def add_plugin(self, plugin: plugins.Plugin) -> None:
         """
@@ -312,7 +321,7 @@ class Bot(hikari.Bot):
         Returns:
             Optional[ :obj:`~.commands.Command` ]: Command object registered to that name.
         """
-        return self.commands.get(name)
+        return self._commands.get(name)
 
     def get_plugin(self, name: str) -> typing.Optional[plugins.Plugin]:
         """
@@ -336,12 +345,13 @@ class Bot(hikari.Bot):
         Returns:
             Optional[ :obj:`str` ]: Name of the command that was removed.
         """
-        command = self.commands.pop(name)
+        command = self._commands.pop(name)
+        self.commands.remove(command)
         if command is not None:
             keys_to_remove = [command.name, *command._aliases]
             keys_to_remove.remove(name)
             for key in keys_to_remove:
-                self.commands.pop(key)
+                self._commands.pop(key)
             _LOGGER.debug("command removed: %s", command.name)
         return command.name if command is not None else None
 
@@ -487,10 +497,11 @@ class Bot(hikari.Bot):
         Yields:
             :obj:`~.commands.Command`: All commands, groups and subcommands registered to the bot.
         """
-        unique_commands = list(set(self.commands.values()))
-        for command in unique_commands:
+        unique_commands = list(self.commands)
+        while unique_commands:
+            command = unique_commands.pop()
             if isinstance(command, commands.Group):
-                unique_commands.extend(list(set(command.subcommands.values())))
+                unique_commands.extend(list(command.subcommands))
             yield command
 
     def resolve_arguments(self, message: messages.Message, prefix: str) -> typing.List[str]:
@@ -631,10 +642,10 @@ class Bot(hikari.Bot):
         args = self.resolve_arguments(event.message, prefix)
 
         invoked_with = args[0].casefold() if self.insensitive_commands else args[0]
-        if invoked_with not in self.commands:
+        if invoked_with not in self._commands:
             raise errors.CommandNotFound(invoked_with)
 
-        invoked_command = self.commands[invoked_with]
+        invoked_command = self._commands[invoked_with]
 
         if isinstance(invoked_command, commands.Group):
             try:

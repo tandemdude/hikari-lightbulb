@@ -16,17 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
-import abc
-import typing
 
-from hikari.events import base
-
-if not typing.TYPE_CHECKING:
-    import hikari
-
-    from lightbulb import commands
-
-__all__: typing.Final[typing.Tuple[str]] = (
+__all__: typing.Final[typing.List[str]] = [
     "CommandErrorEvent",
     "LightbulbError",
     "ExtensionError",
@@ -47,7 +38,17 @@ __all__: typing.Final[typing.Tuple[str]] = (
     "OnlyInGuild",
     "OnlyInDM",
     "NotOwner",
-)
+]
+
+import abc
+import typing
+
+from hikari.events import base
+
+if typing.TYPE_CHECKING:
+    import hikari
+
+    from lightbulb import commands
 
 
 class CommandErrorEvent(base.Event):

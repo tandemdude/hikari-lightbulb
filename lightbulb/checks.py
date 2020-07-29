@@ -15,6 +15,16 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
+__all__: typing.Final[typing.List[str]] = [
+    "guild_only",
+    "dm_only",
+    "owner_only",
+    "has_roles",
+    "check",
+]
+
 import typing
 import functools
 
@@ -22,16 +32,8 @@ from lightbulb import context
 from lightbulb import commands
 from lightbulb import errors
 
-if not typing.TYPE_CHECKING:
-    import hikari
-
-__all__: typing.Final[typing.Tuple[str]] = (
-    "guild_only",
-    "dm_only",
-    "owner_only",
-    "has_roles",
-    "check",
-)
+if typing.TYPE_CHECKING:
+    from hikari.utilities import snowflake
 
 
 async def _guild_only(ctx: context.Context) -> bool:
@@ -112,8 +114,8 @@ def owner_only():
 
 
 def has_roles(
-    role1: hikari.SnowflakeishOr[hikari.PartialRole],
-    *role_ids: hikari.SnowflakeishOr[hikari.PartialRole],
+    role1: snowflake.SnowflakeishOr[hikari.PartialRole],
+    *role_ids: snowflake.SnowflakeishOr[hikari.PartialRole],
     mode: typing.Literal["all", "any"] = "all",
 ):
     """
@@ -121,8 +123,8 @@ def has_roles(
     to the given mode.
 
     Args:
-        role1 (:obj:`hikari.SnowflakeishOr` [ :obj:`hikari.PartialRole` ]): Role ID to check for.
-        *role_ids (:obj:`hikari.SnowflakeishOr` [ :obj:`hikari.PartialRole` ]): Additional role IDs to check for.
+        role1 (:obj:`~hikari.utilities.snowflake.SnowflakeishOr` [ :obj:`~hikari.PartialRole` ]): Role ID to check for.
+        *role_ids (:obj:`~hikari.utilities.snowflake.SnowflakeishOr` [ :obj:`~hikari.PartialRole` ]): Additional role IDs to check for.
 
     Keyword Args:
         mode (Literal["all", "any"]): The mode to check roles using. If ``"all"``, all role IDs

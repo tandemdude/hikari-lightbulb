@@ -17,6 +17,12 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+__all__: typing.Final[typing.Tuple[str]] = [
+    "EventListenerDescriptor",
+    "listener",
+    "Plugin",
+]
+
 import inspect
 import types
 import typing
@@ -24,12 +30,6 @@ import typing
 import hikari
 
 from lightbulb import commands
-
-__all__: typing.Final[typing.Tuple[str]] = (
-    "EventListenerDescriptor",
-    "listener",
-    "Plugin",
-)
 
 T = typing.TypeVar("T")
 EventT_co = typing.TypeVar("EventT_co", bound=hikari.Event, covariant=True)
@@ -196,3 +196,6 @@ class Plugin:
                 if member.event_type not in self.listeners:
                     self.listeners[member.event_type] = []
                 self.listeners[member.event_type].append(member)
+
+    def __repr__(self) -> str:
+        return f"<lightbulb.Plugin {self.name} at {hex(id(self))}>"

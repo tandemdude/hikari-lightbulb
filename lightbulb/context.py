@@ -17,6 +17,8 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+__all__: typing.Final[typing.List[str]] = ["Context"]
+
 import typing
 
 if typing.TYPE_CHECKING:
@@ -26,8 +28,6 @@ if typing.TYPE_CHECKING:
 
     from lightbulb import commands
     from lightbulb import command_handler
-
-__all__: typing.Final[typing.Tuple[str]] = ("Context",)
 
 
 class Context:

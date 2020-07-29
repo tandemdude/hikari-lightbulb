@@ -16,6 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
+
+__all__: typing.Final[typing.Tuple[str]] = [
+    "get_help_text",
+    "get_command_signature",
+    "filter_commands",
+    "HelpCommand",
+]
+
 import typing
 import inspect
 
@@ -24,16 +32,9 @@ from lightbulb import plugins
 from lightbulb import errors
 from lightbulb import utils
 
-if not typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from lightbulb import context
     from lightbulb import command_handler
-
-__all__: typing.Final[typing.Tuple[str]] = (
-    "get_help_text",
-    "get_command_signature",
-    "filter_commands",
-    "HelpCommand",
-)
 
 
 def get_help_text(object: typing.Union[commands.Command, plugins.Plugin]) -> str:
@@ -231,9 +232,7 @@ class HelpCommand:
         all_plugin_commands = []
         for _, cmds in plugin_commands:
             all_plugin_commands.extend(cmds)
-        uncategorised_commands = await filter_commands(
-            context, list(set(self.bot.commands.values()).difference(set(all_plugin_commands))),
-        )
+        uncategorised_commands = await filter_commands(context, self.bot.commands.difference(set(all_plugin_commands)))
         plugin_commands.insert(0, ["Uncategorised", uncategorised_commands])
 
         help_text = ["> __**Bot help**__\n"]
@@ -262,7 +261,7 @@ class HelpCommand:
         help_text = [
             f"> **Help for category `{plugin.name}`**",
             get_help_text(plugin) or "No help text provided.",
-            f"Commands:\n{', '.join(f'`{c.name}`' for c in sorted(set(plugin.commands.values()), key=lambda c: c.name)) or 'No commands in the category'}",
+            f"Commands:\n{', '.join(f'`{c.name}`' for c in sorted(plugin.commands.values(), key=lambda c: c.name)) or 'No commands in the category'}",
         ]
         await context.reply("\n".join(help_text))
 
@@ -302,6 +301,6 @@ class HelpCommand:
             "Usage:",
             f"```{context.prefix}{get_command_signature(group)}```",
             get_help_text(group) or "No help text provided.",
-            f"Subcommands:\n{', '.join(f'`{c.name}`' for c in sorted(set(group.subcommands.values()), key=lambda c: c.name)) or 'No subcommands in the group'}",
+            f"Subcommands:\n{', '.join(f'`{c.name}`' for c in sorted(group.subcommands, key=lambda c: c.name)) or 'No subcommands in the group'}",
         ]
         await context.reply("\n".join(help_text))

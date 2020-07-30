@@ -51,4 +51,4 @@ __all__: typing.Final[typing.Tuple[str]] = (
     + help.__all__
 )
 
-__version__ = "0.0.30"
+__version__ = "0.0.31"

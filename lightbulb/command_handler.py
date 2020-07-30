@@ -26,10 +26,10 @@ import inspect
 import sys
 import importlib
 import logging
+from multidict import CIMultiDict
 
 import hikari
-from hikari.events import message
-from multidict import CIMultiDict
+from hikari.events import message_events as message
 
 from lightbulb import commands
 from lightbulb import context
@@ -572,16 +572,15 @@ class Bot(hikari.Bot):
                 await command.invoke(context)
 
             else:
-
                 if param_name is not None:
                     await command.invoke(
                         context, *args[:before_asterisk], **{f"{param_name}": args[-1]},
                     )
-
                 else:
                     await command.invoke(context, *args[:before_asterisk])
         except errors.CommandError as ex:
-            error_event = errors.CommandErrorEvent(ex, context.message)
+            error_event = errors.CommandErrorEvent(app=self, exception=ex, message=context.message, command=command)
+
             if command._error_listener is not None:
                 await command._error_listener(error_event)
             if self.get_listeners(errors.CommandErrorEvent, polymorphic=True):
@@ -612,7 +611,7 @@ class Bot(hikari.Bot):
                 a possible command invocation.
 
         Raises:
-            TypeError: when function's signature has more than 1 argument required after asterisk symbol.
+            TypeError: When function's signature has more than 1 argument required after asterisk symbol.
 
         Returns:
             ``None``
@@ -642,8 +641,16 @@ class Bot(hikari.Bot):
         args = self.resolve_arguments(event.message, prefix)
 
         invoked_with = args[0].casefold() if self.insensitive_commands else args[0]
+
         if invoked_with not in self._commands:
-            raise errors.CommandNotFound(invoked_with)
+            ex = errors.CommandNotFound(invoked_with)
+            error_event = errors.CommandErrorEvent(app=self, exception=ex, message=event.message)
+
+            if self.get_listeners(errors.CommandErrorEvent, polymorphic=True):
+                await self.dispatch(error_event)
+                return
+            else:
+                raise ex
 
         invoked_command = self._commands[invoked_with]
 

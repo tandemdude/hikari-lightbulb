@@ -41,23 +41,23 @@ __all__: typing.Final[typing.List[str]] = [
 ]
 
 import abc
+import attr
 import typing
 
-from hikari.events import base
+from hikari.events import base_events
 
 if typing.TYPE_CHECKING:
+    import types
+
     import hikari
 
     from lightbulb import commands
 
 
-class CommandErrorEvent(base.Event):
+@attr.s(kw_only=True, slots=True)
+class CommandErrorEvent(base_events.Event):
     """
     Event type to subscribe to for the processing of all command errors raised by the handler.
-
-    Args:
-        error (:obj:`~.errors.CommandError`): An instance or subclass of ``CommandError``. The error that was raised.
-        message (:obj:`hikari.models.messages.Message`): The message that caused the exception to be raised.
 
     Example:
 
@@ -73,10 +73,19 @@ class CommandErrorEvent(base.Event):
 
     """
 
-    def __init__(self, error: Exception, message: hikari.Message) -> None:
-        self.error = error
-        self.traceback = error.__traceback__
-        self.message = message
+    app: hikari.api.event_consumer.IEventConsumerApp = attr.ib()
+    """App instance for this application."""
+    exception: LightbulbError = attr.ib()
+    """The exception that triggered this event."""
+    message: hikari.Message = attr.ib()
+    """The message that this event was triggered for."""
+    command: typing.Optional[commands.Command] = attr.ib(default=None)
+    """The command that this event was triggered for."""
+
+    @property
+    def traceback(self) -> types.TracebackType:
+        """The traceback for this event's exception."""
+        return self.exception.__traceback__
 
 
 class LightbulbError(Exception):

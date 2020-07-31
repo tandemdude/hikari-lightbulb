@@ -12,6 +12,7 @@
 #
 import os
 import sys
+import re
 
 sys.path.insert(0, os.path.abspath(os.path.join("..", "..")))
 sys.setrecursionlimit(1500)
@@ -22,6 +23,11 @@ sys.setrecursionlimit(1500)
 project = "Lightbulb"
 copyright = "2020, tandemdude"
 author = "tandemdude"
+
+with open("../../lightbulb/__init__.py") as fp:
+    file = fp.read()
+version = re.search(r"__version__ = \"([^\"]+)", file).group(1)
+release = version
 
 # -- General configuration ---------------------------------------------------
 

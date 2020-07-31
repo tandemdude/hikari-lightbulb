@@ -469,7 +469,7 @@ class Group(Command):
                 func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []), parent=self,
             )
             if self.inherit_checks:
-                subcommands[name]._checks.extend(self._checks)
+                self._subcommands[name]._checks.extend(self._checks)
             self.subcommands.add(self._subcommands[name])
             for alias in kwargs.get("aliases", []):
                 self._subcommands[alias] = self._subcommands[name]

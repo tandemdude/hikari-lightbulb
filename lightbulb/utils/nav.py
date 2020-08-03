@@ -186,7 +186,7 @@ class Navigator(abc.ABC, typing.Generic[T]):
         )
         if not (context.bot._intents & intent_to_check_for) == intent_to_check_for:
             # TODO - raise more meaningful error and give it the missing intent.
-            raise RuntimeError("Your application is missing an intent required for the navigator to function.")
+            raise hikari.MissingIntentError(intent_to_check_for)
 
         self._context = context
         context.bot.event_dispatcher.subscribe(hikari.ReactionAddEvent, self._process_reaction_add)

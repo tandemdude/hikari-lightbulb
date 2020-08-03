@@ -42,6 +42,8 @@ already exists for your bug or feature.
 
 - `Dec0Ded#2693 <https://gitlab.com/dec0ded>`_
 
+- `Yoda#0660 <https://gitlab.com/YodaPY>`_
+
 **Index:**
 
 .. toctree::

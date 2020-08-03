@@ -44,13 +44,13 @@ class NavButton:
         self,
         emoji: typing.Union[str, hikari.models.emojis.Emoji],
         callback: typing.Callable[
-            [hikari.events.message.MessageReactionAddEvent], typing.Coroutine[typing.Any, typing.Any, None],
+            [hikari.ReactionAddEvent], typing.Coroutine[typing.Any, typing.Any, None],
         ],
     ) -> None:
         self.emoji = emoji
         self.callback = callback
 
-    def is_pressed(self, event: hikari.events.message.MessageReactionAddEvent) -> bool:
+    def is_pressed(self, event: hikari.ReactionAddEvent) -> bool:
         """
         Check if the button is pressed in a given event.
 
@@ -63,7 +63,7 @@ class NavButton:
         return str(event.emoji) == str(self.emoji)
 
     def press(
-        self, event: hikari.events.message.MessageReactionAddEvent
+        self, event: hikari.ReactionAddEvent
     ) -> typing.Coroutine[typing.Any, typing.Any, None]:
         """
         Call the button's callback coroutine and return the awaitable.
@@ -140,7 +140,7 @@ class Navigator(abc.ABC, typing.Generic[T]):
         await self._msg.delete()
         self._msg = None
 
-    async def _process_reaction_add(self, event: hikari.events.message.MessageReactionAddEvent) -> None:
+    async def _process_reaction_add(self, event: hikari.ReactionAddEvent) -> None:
         if (
             event.user_id != self._context.message.author.id
             or event.channel_id != self._context.channel_id
@@ -161,7 +161,7 @@ class Navigator(abc.ABC, typing.Generic[T]):
 
     async def _remove_reaction_listener(self):
         self._context.bot.event_dispatcher.unsubscribe(
-            hikari.events.message.MessageReactionAddEvent, self._process_reaction_add
+            hikari.ReactionAddEvent, self._process_reaction_add
         )
         try:
             await self._msg.remove_all_reactions()
@@ -196,7 +196,7 @@ class Navigator(abc.ABC, typing.Generic[T]):
 
         self._context = context
         context.bot.event_dispatcher.subscribe(
-            hikari.events.message.MessageReactionAddEvent, self._process_reaction_add
+            hikari.ReactionAddEvent, self._process_reaction_add
         )
         self._msg = await self._send_initial_msg(self.pages[self.current_page_index])
         for emoji in [button.emoji for button in self.buttons]:

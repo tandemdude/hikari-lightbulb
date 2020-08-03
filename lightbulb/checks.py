@@ -40,6 +40,7 @@ if typing.TYPE_CHECKING:
 
 T_inv = typing.TypeVar("T_inv", bound=commands.Command)
 
+
 async def _guild_only(ctx: context.Context) -> bool:
     if ctx.message.guild_id is None:
         raise errors.OnlyInGuild("This command can only be used in a guild")
@@ -133,7 +134,7 @@ def bot_only() -> typing.Callable[[T_inv], T_inv]:
     """
     A decorator that prevents a command from being used by anyone other than a bot.
     """
-    
+
     def decorate(command: T_inv) -> T_inv:
         command.add_check(_bot_only)
         return command

@@ -257,15 +257,12 @@ class BotOnly(CheckFailure):
     """
     Error raised when the command invoker is not a bot.
     """
-
     pass
-
 
 class HumanOnly(CheckFailure):
     """
     Error raised when the command invoker is not an human.
     """
-
     pass
 
 

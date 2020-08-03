@@ -43,7 +43,9 @@ class NavButton:
     def __init__(
         self,
         emoji: typing.Union[str, hikari.models.emojis.Emoji],
-        callback: typing.Callable[[hikari.ReactionAddEvent], typing.Coroutine[typing.Any, typing.Any, None],],
+        callback: typing.Callable[
+            [hikari.ReactionAddEvent], typing.Coroutine[typing.Any, typing.Any, None],
+        ],
     ) -> None:
         self.emoji = emoji
         self.callback = callback
@@ -60,7 +62,9 @@ class NavButton:
         """
         return str(event.emoji) == str(self.emoji)
 
-    def press(self, event: hikari.ReactionAddEvent) -> typing.Coroutine[typing.Any, typing.Any, None]:
+    def press(
+        self, event: hikari.ReactionAddEvent
+    ) -> typing.Coroutine[typing.Any, typing.Any, None]:
         """
         Call the button's callback coroutine and return the awaitable.
 
@@ -156,7 +160,9 @@ class Navigator(abc.ABC, typing.Generic[T]):
                 break
 
     async def _remove_reaction_listener(self):
-        self._context.bot.event_dispatcher.unsubscribe(hikari.ReactionAddEvent, self._process_reaction_add)
+        self._context.bot.event_dispatcher.unsubscribe(
+            hikari.ReactionAddEvent, self._process_reaction_add
+        )
         try:
             await self._msg.remove_all_reactions()
         except hikari.errors.Forbidden:
@@ -189,7 +195,9 @@ class Navigator(abc.ABC, typing.Generic[T]):
             raise hikari.MissingIntentError(intent_to_check_for)
 
         self._context = context
-        context.bot.event_dispatcher.subscribe(hikari.ReactionAddEvent, self._process_reaction_add)
+        context.bot.event_dispatcher.subscribe(
+            hikari.ReactionAddEvent, self._process_reaction_add
+        )
         self._msg = await self._send_initial_msg(self.pages[self.current_page_index])
         for emoji in [button.emoji for button in self.buttons]:
             await self._msg.add_reaction(emoji)

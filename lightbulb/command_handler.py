@@ -30,6 +30,7 @@ from multidict import CIMultiDict
 
 import hikari
 from hikari.events import message_events as message
+from hikari.impl import stateful_cache
 
 from lightbulb import commands
 from lightbulb import context
@@ -113,6 +114,10 @@ class Bot(hikari.Bot):
         """A set containing all commands and groups registered to the bot."""
 
         self._help_impl = help_class(self)
+
+    @property
+    def _has_stateful_cache(self):
+        return isinstance(self.cache, stateful_cache.StatefulCacheComponentImpl)
 
     async def fetch_owner_ids(self) -> None:
         """

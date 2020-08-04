@@ -253,6 +253,22 @@ class NotOwner(CheckFailure):
     pass
 
 
+class BotOnly(CheckFailure):
+    """
+    Error raised when the command invoker is not a bot.
+    """
+
+    pass
+
+
+class HumanOnly(CheckFailure):
+    """
+    Error raised when the command invoker is not an human.
+    """
+
+    pass
+
+
 class MissingRequiredRole(CheckFailure):
     """
     Error raised when the member invoking a command is missing one or more role required.

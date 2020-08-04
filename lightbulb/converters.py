@@ -96,7 +96,16 @@ def _resolve_id_from_arg(arg_string: str, regex: typing.Pattern) -> hikari.Snowf
     return hikari.Snowflake(arg_string)
 
 
-async def user_converter(arg: WrappedArg) -> hikari.UserImpl:
+async def _get_or_fetch_guild_channel_from_id(arg: WrappedArg, channel_id: hikari.Snowflake) -> hikari.GuildChannel:
+    channel = None
+    if arg.context.bot._has_stateful_cache:
+        channel = arg.context.bot.cache.get_guild_channel(channel_id)
+    if channel is None:
+        channel = await arg.context.bot.rest.fetch_channel(channel_id)
+    return channel
+
+
+async def user_converter(arg: WrappedArg) -> hikari.User:
     """
     Converter to transform a command argument into a :obj:`hikari.models.users.UserImpl` object.
 
@@ -117,8 +126,10 @@ async def user_converter(arg: WrappedArg) -> hikari.UserImpl:
             async def username(ctx, user: lightbulb.converters.user_converter):
                 await ctx.reply(user.username)
     """
-    # TODO - Implement cache checking
     user_id = _resolve_id_from_arg(arg.data, USER_MENTION_REGEX)
+    if arg.context.bot._has_stateful_cache:
+        if (user := arg.context.bot.cache.get_user(user_id)) is not None:
+            return user
     return await arg.context.bot.rest.fetch_user(user_id)
 
 
@@ -137,6 +148,9 @@ async def member_converter(arg: WrappedArg) -> hikari.Member:
     """
     # TODO - Implement cache checking
     user_id = _resolve_id_from_arg(arg.data, USER_MENTION_REGEX)
+    if arg.context.bot._has_stateful_cache:
+        if (member := arg.context.bot.cache.get_member(arg.context.guild_id, user_id)) is not None:
+            return member
     return await arg.context.bot.rest.fetch_member(arg.context.guild_id, user_id)
 
 
@@ -157,7 +171,7 @@ async def text_channel_converter(arg: WrappedArg) -> typing.Union[hikari.GuildTe
     """
     # TODO - Implement cache checking
     channel_id = _resolve_id_from_arg(arg.data, CHANNEL_MENTION_REGEX)
-    channel = await arg.context.bot.rest.fetch_channel(channel_id)
+    channel = await _get_or_fetch_guild_channel_from_id(arg, channel_id)
     if not isinstance(channel, (hikari.GuildTextChannel, hikari.GuildNewsChannel)):
         raise errors.ConverterFailure("Channel is not a text channel")
     return channel
@@ -178,7 +192,7 @@ async def voice_channel_converter(arg: WrappedArg) -> hikari.GuildVoiceChannel:
     """
     # TODO - Implement cache checking
     channel_id = _resolve_id_from_arg(arg.data, CHANNEL_MENTION_REGEX)
-    channel = await arg.context.bot.rest.fetch_channel(channel_id)
+    channel = await _get_or_fetch_guild_channel_from_id(arg, channel_id)
     if not isinstance(channel, hikari.GuildVoiceChannel):
         raise errors.ConverterFailure("Channel is not a voice channel")
     return channel
@@ -199,7 +213,7 @@ async def category_converter(arg: WrappedArg) -> hikari.GuildCategory:
     """
     # TODO - Implement cache checking
     channel_id = _resolve_id_from_arg(arg.data, CHANNEL_MENTION_REGEX)
-    channel = await arg.context.bot.rest.fetch_channel(channel_id)
+    channel = await _get_or_fetch_guild_channel_from_id(arg, channel_id)
     if not isinstance(channel, hikari.GuildCategory):
         raise errors.ConverterFailure("Channel is not a voice channel")
     return channel
@@ -220,6 +234,9 @@ async def role_converter(arg: WrappedArg) -> hikari.Role:
     """
     # TODO - Implement cache checking
     role_id = _resolve_id_from_arg(arg.data, CHANNEL_MENTION_REGEX)
+    if arg.context.bot._has_stateful_cache:
+        if (role := arg.context.bot.cache.get_role(role_id)) is not None:
+            return role
     roles = await arg.context.bot.rest.fetch_roles(arg.context.guild_id)
     roles = dict([(r.id, r) for r in roles])
     return roles[role_id]

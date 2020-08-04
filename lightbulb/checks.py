@@ -21,6 +21,8 @@ __all__: typing.Final[typing.List[str]] = [
     "guild_only",
     "dm_only",
     "owner_only",
+    "bot_only",
+    "human_only",
     "has_roles",
     "check",
 ]
@@ -33,7 +35,10 @@ from lightbulb import commands
 from lightbulb import errors
 
 if typing.TYPE_CHECKING:
+    import hikari
     from hikari.utilities import snowflake
+
+T_inv = typing.TypeVar("T_inv", bound=commands.Command)
 
 
 async def _guild_only(ctx: context.Context) -> bool:
@@ -57,6 +62,18 @@ async def _owner_only(ctx: context.Context) -> bool:
     return True
 
 
+async def _bot_only(ctx: context.Context) -> bool:
+    if not ctx.author.is_bot:
+        raise errors.BotOnly(f"Only a bot can use {ctx.invoked_with}")
+    return True
+
+
+async def _human_only(ctx: context.Context) -> bool:
+    if ctx.author.is_bot:
+        raise errors.HumanOnly(f"Only an human can use {ctx.invoked_with}")
+    return True
+
+
 def _role_check(member_roles: typing.Sequence[hikari.Snowflake], *, roles: typing.Sequence[int], func) -> bool:
     return func(r in member_roles for r in roles)
 
@@ -68,19 +85,19 @@ async def _has_roles(ctx: context.Context, *, role_check):
     return True
 
 
-def guild_only():
+def guild_only() -> typing.Callable[[T_inv], T_inv]:
     """
     A decorator that prevents a command from being used in direct messages.
     """
 
-    def decorate(command: commands.Command) -> commands.Command:
+    def decorate(command: T_inv) -> T_inv:
         command.add_check(_guild_only)
         return command
 
     return decorate
 
 
-def dm_only():
+def dm_only() -> typing.Callable[[T_inv], T_inv]:
     """
     A decorator that prevents a command from being used in a guild.
 
@@ -94,20 +111,44 @@ def dm_only():
                 await ctx.reply("bar")
     """
 
-    def decorate(command: commands.Command) -> commands.Command:
+    def decorate(command: T_inv) -> T_inv:
         command.add_check(_dm_only)
         return command
 
     return decorate
 
 
-def owner_only():
+def owner_only() -> typing.Callable[[T_inv], T_inv]:
     """
     A decorator that prevents a command from being used by anyone other than the owner of the application.
     """
 
-    def decorate(command: commands.Command) -> commands.Command:
+    def decorate(command: T_inv) -> T_inv:
         command.add_check(_owner_only)
+        return command
+
+    return decorate
+
+
+def bot_only() -> typing.Callable[[T_inv], T_inv]:
+    """
+    A decorator that prevents a command from being used by anyone other than a bot.
+    """
+
+    def decorate(command: T_inv) -> T_inv:
+        command.add_check(_bot_only)
+        return command
+
+    return decorate
+
+
+def human_only() -> typing.Callable[[T_inv], T_inv]:
+    """
+    A decorator that prevents a command from being used by anyone other than a human.
+    """
+
+    def decorate(command: T_inv) -> T_inv:
+        command.add_check(_human_only)
         return command
 
     return decorate
@@ -138,7 +179,7 @@ def has_roles(
     if mode not in ["all", "any"]:
         raise SyntaxError("has_roles mode must be one of: all, any")
 
-    def decorate(command: commands.Command) -> commands.Command:
+    def decorate(command: T_inv) -> T_inv:
         check_func = functools.partial(
             _role_check, roles=[int(role1), *[int(r) for r in role_ids]], func=all if mode == "all" else any
         )
@@ -175,7 +216,7 @@ def check(check_func: typing.Callable[[context.Context], typing.Coroutine[typing
         :meth:`~.commands.Command.add_check`
     """
 
-    def decorate(command: commands.Command) -> commands.Command:
+    def decorate(command: T_inv) -> T_inv:
         command.add_check(check_func)
         return command
 

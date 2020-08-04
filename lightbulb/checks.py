@@ -21,6 +21,8 @@ __all__: typing.Final[typing.List[str]] = [
     "guild_only",
     "dm_only",
     "owner_only",
+    "bot_only",
+    "human_only",
     "has_roles",
     "check",
 ]
@@ -33,6 +35,7 @@ from lightbulb import commands
 from lightbulb import errors
 
 if typing.TYPE_CHECKING:
+    import hikari
     from hikari.utilities import snowflake
 
 T_inv = typing.TypeVar("T_inv", bound=commands.Command)
@@ -141,7 +144,7 @@ def bot_only() -> typing.Callable[[T_inv], T_inv]:
 
 def human_only() -> typing.Callable[[T_inv], T_inv]:
     """
-    A decorator that prevents a command from being used by anyone other than an human.
+    A decorator that prevents a command from being used by anyone other than a human.
     """
 
     def decorate(command: T_inv) -> T_inv:

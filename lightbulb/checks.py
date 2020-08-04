@@ -144,7 +144,7 @@ def bot_only() -> typing.Callable[[T_inv], T_inv]:
 
 def human_only() -> typing.Callable[[T_inv], T_inv]:
     """
-    A decorator that prevents a command from being used by anyone other than an human.
+    A decorator that prevents a command from being used by anyone other than a human.
     """
 
     def decorate(command: T_inv) -> T_inv:

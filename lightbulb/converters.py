@@ -61,7 +61,6 @@ import typing
 import collections
 
 import hikari
-from hikari.impl import stateful_cache
 
 from lightbulb import context
 from lightbulb import errors
@@ -97,7 +96,7 @@ def _resolve_id_from_arg(arg_string: str, regex: typing.Pattern) -> hikari.Snowf
     return hikari.Snowflake(arg_string)
 
 
-async def _get_or_fetch_guild_channel_from_id(arg: WrappedArg, channel_id: int) -> hikari.GuildChannel:
+async def _get_or_fetch_guild_channel_from_id(arg: WrappedArg, channel_id: hikari.Snowflake) -> hikari.GuildChannel:
     channel = None
     if arg.context.bot._has_stateful_cache:
         channel = arg.context.bot.cache.get_guild_channel(channel_id)
@@ -106,7 +105,7 @@ async def _get_or_fetch_guild_channel_from_id(arg: WrappedArg, channel_id: int) 
     return channel
 
 
-async def user_converter(arg: WrappedArg) -> hikari.UserImpl:
+async def user_converter(arg: WrappedArg) -> hikari.User:
     """
     Converter to transform a command argument into a :obj:`hikari.models.users.UserImpl` object.
 

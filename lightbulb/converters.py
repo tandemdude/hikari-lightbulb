@@ -146,7 +146,6 @@ async def member_converter(arg: WrappedArg) -> hikari.Member:
     Raises:
         :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a member object.
     """
-    # TODO - Implement cache checking
     user_id = _resolve_id_from_arg(arg.data, USER_MENTION_REGEX)
     if arg.context.bot._has_stateful_cache:
         if (member := arg.context.bot.cache.get_member(arg.context.guild_id, user_id)) is not None:
@@ -169,7 +168,6 @@ async def text_channel_converter(arg: WrappedArg) -> typing.Union[hikari.GuildTe
     Raises:
         :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a channel object.
     """
-    # TODO - Implement cache checking
     channel_id = _resolve_id_from_arg(arg.data, CHANNEL_MENTION_REGEX)
     channel = await _get_or_fetch_guild_channel_from_id(arg, channel_id)
     if not isinstance(channel, (hikari.GuildTextChannel, hikari.GuildNewsChannel)):
@@ -190,7 +188,6 @@ async def voice_channel_converter(arg: WrappedArg) -> hikari.GuildVoiceChannel:
     Raises:
         :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a channel object.
     """
-    # TODO - Implement cache checking
     channel_id = _resolve_id_from_arg(arg.data, CHANNEL_MENTION_REGEX)
     channel = await _get_or_fetch_guild_channel_from_id(arg, channel_id)
     if not isinstance(channel, hikari.GuildVoiceChannel):
@@ -211,7 +208,6 @@ async def category_converter(arg: WrappedArg) -> hikari.GuildCategory:
     Raises:
         :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a category object.
     """
-    # TODO - Implement cache checking
     channel_id = _resolve_id_from_arg(arg.data, CHANNEL_MENTION_REGEX)
     channel = await _get_or_fetch_guild_channel_from_id(arg, channel_id)
     if not isinstance(channel, hikari.GuildCategory):
@@ -232,7 +228,6 @@ async def role_converter(arg: WrappedArg) -> hikari.Role:
     Raises:
         :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a role object.
     """
-    # TODO - Implement cache checking
     role_id = _resolve_id_from_arg(arg.data, CHANNEL_MENTION_REGEX)
     if arg.context.bot._has_stateful_cache:
         if (role := arg.context.bot.cache.get_role(role_id)) is not None:

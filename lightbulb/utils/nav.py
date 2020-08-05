@@ -17,7 +17,7 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__: typing.List[str] = ["StringNavigator", "EmbedNavigator", "Navigator"]
+__all__: typing.List[str] = ["StringNavigator", "EmbedNavigator", "Navigator", "NavButton"]
 
 import abc
 import asyncio
@@ -151,7 +151,7 @@ class Navigator(abc.ABC, typing.Generic[T]):
                     await self._edit_msg(self._msg, self.pages[self.current_page_index])
                     try:
                         await self._msg.remove_reaction(button.emoji, user=self._context.author)
-                    except hikari.errors.Forbidden:
+                    except hikari.ForbiddenError:
                         pass
                 break
 
@@ -159,7 +159,7 @@ class Navigator(abc.ABC, typing.Generic[T]):
         self._context.bot.event_dispatcher.unsubscribe(hikari.ReactionAddEvent, self._process_reaction_add)
         try:
             await self._msg.remove_all_reactions()
-        except hikari.errors.Forbidden:
+        except hikari.ForbiddenError:
             pass
 
     async def _timeout_coro(self):
@@ -178,13 +178,17 @@ class Navigator(abc.ABC, typing.Generic[T]):
 
         Returns:
             ``None``
+
+        Raises:
+            :obj:`hikari.MissingIntentError`: If the bot does not have the relevant reaction intent(s) for
+                the navigator to function.
         """
         intent_to_check_for = (
             hikari.Intent.GUILD_MESSAGE_REACTIONS
             if context.guild_id is not None
             else hikari.Intent.PRIVATE_MESSAGE_REACTIONS
         )
-        if not (context.bot._intents & intent_to_check_for) == intent_to_check_for:
+        if not (context.bot.intents & intent_to_check_for) == intent_to_check_for:
             # TODO - raise more meaningful error and give it the missing intent.
             raise hikari.MissingIntentError(intent_to_check_for)
 

@@ -15,10 +15,29 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
+import os
+import re
+import types
+
 from setuptools import setup, find_namespace_packages
-from lightbulb import __version__ as lightbulb_version
+
 
 name = "lightbulb"
+
+
+def parse_meta():
+    with open(os.path.join(name, "__init__.py")) as fp:
+        code = fp.read()
+
+    token_pattern = re.compile(r"^__(?P<key>\w+)?__\s*=\s*(?P<quote>(?:'{3}|\"{3}|'|\"))(?P<value>.*?)(?P=quote)", re.M)
+
+    groups = {}
+
+    for match in token_pattern.finditer(code):
+        group = match.groupdict()
+        groups[group["key"]] = group["value"]
+
+    return types.SimpleNamespace(**groups)
 
 
 def long_description():
@@ -32,9 +51,12 @@ def parse_requirements_file(path):
         return [d for d in dependencies if not d.startswith("#")]
 
 
+meta = parse_meta()
+
+
 setup(
     name="hikari-lightbulb",
-    version=lightbulb_version,
+    version=meta.version,
     description="A simple to use command handler for Hikari",
     long_description=long_description(),
     long_description_content_type="text/markdown",

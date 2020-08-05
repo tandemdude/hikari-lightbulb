@@ -176,6 +176,13 @@ class ConverterFailure(CommandError):
 class CommandIsOnCooldown(CommandError):
     """
     Exception raised when a command is attempted to be run but is currently on cooldown.
+
+    Args:
+        text (:obj:`str`): The error text.
+
+    Keyword Args:
+        command (:obj:`~.commands.Command`): The command that is on cooldown.
+        retry_in (:obj:`float`): Number of seconds remaining for the cooldown.
     """
 
     def __init__(self, text: str, *, command: commands.Command, retry_in: float) -> None:
@@ -275,3 +282,19 @@ class MissingRequiredRole(CheckFailure):
     """
 
     pass
+
+
+class MissingRequiredPermission(CheckFailure):
+    """
+    Error raised when the member invoking a command is missing one or more permission required.
+
+    Args:
+        text (:obj:`str`): The error text.
+
+    Keyword Args:
+        permissions (Sequence[ :obj:`hikari.Permission` ]: Permission(s) the member is missing.
+    """
+
+    def __init__(self, text: str, *, permissions: typing.Sequence[hikari.Permission]) -> None:
+        self.text = text
+        self.permissions = permissions

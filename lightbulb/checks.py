@@ -24,18 +24,20 @@ __all__: typing.Final[typing.List[str]] = [
     "bot_only",
     "human_only",
     "has_roles",
+    "has_guild_permissions",
     "check",
 ]
 
 import typing
 import functools
 
+import hikari
+
 from lightbulb import context
 from lightbulb import commands
 from lightbulb import errors
 
 if typing.TYPE_CHECKING:
-    import hikari
     from hikari.utilities import snowflake
 
 T_inv = typing.TypeVar("T_inv", bound=commands.Command)
@@ -82,6 +84,26 @@ async def _has_roles(ctx: context.Context, *, role_check):
     await _guild_only(ctx)
     if not role_check(ctx.member.role_ids):
         raise errors.MissingRequiredRole("You are missing one or more roles required in order to run this command.")
+    return True
+
+
+async def _has_guild_permissions(ctx: context.Context, *, permissions: typing.Sequence[hikari.Permission]):
+    if not ctx.bot._has_stateful_cache:
+        raise NotImplementedError("The bot is stateless. Cache operations are not available")
+    if not (ctx.bot.intents & hikari.Intent.GUILDS) == hikari.Intent.GUILDS:
+        raise hikari.MissingIntentError(hikari.Intent.GUILDS)
+
+    await _guild_only(ctx)
+
+    roles = ctx.bot.cache.get_roles_view_for_guild(ctx.guild_id).values()
+    missing_perms = []
+    for perm in permissions:
+        if not any(role.permissions & perm for role in roles if role.id in ctx.member.role_ids):
+            missing_perms.append(perm)
+    if missing_perms:
+        raise errors.MissingRequiredPermission(
+            "You are missing one or more permissions required in order to run this command", permissions=missing_perms
+        )
     return True
 
 
@@ -184,6 +206,36 @@ def has_roles(
             _role_check, roles=[int(role1), *[int(r) for r in role_ids]], func=all if mode == "all" else any
         )
         command.add_check(functools.partial(_has_roles, role_check=check_func))
+        return command
+
+    return decorate
+
+
+def has_guild_permissions(perm1: hikari.Permission, *permissions: hikari.Permission):
+    """
+    A decorator that prevents the command from being used by a member missing any of the required
+    guild permissions (permissions granted by a role).
+
+    Args:
+        perm1 (:obj:`hikari.Permission`): Permission to check for.
+        *permissions (:obj:`hikari.Permission`): Additional permissions to check for.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have permissions
+        in a DM channel.
+
+    Warning:
+        This check is unavailable if your application is stateless and/or missing the intent
+        :obj:`hikari.Intent.GUILDS` and will **always** raise an error on command invocation if
+        either of these conditions are not met.
+    """
+
+    def decorate(command: T_inv) -> T_inv:
+        perms = set(perm1.split())
+        for permission in permissions:
+            for perm in permission.split():
+                perms.add(perm)
+        command.add_check(functools.partial(_has_guild_permissions, permissions=list(perms)))
         return command
 
     return decorate

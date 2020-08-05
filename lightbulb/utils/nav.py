@@ -130,9 +130,7 @@ class Navigator(abc.ABC, typing.Generic[T]):
         self.current_page_index = len(self.pages) - 1
 
     async def _stop(self, _) -> None:
-        self._msg.app.event_dispatcher.unsubscribe(
-            hikari.events.message.MessageReactionAddEvent, self._process_reaction_add
-        )
+        self._msg.app.event_dispatcher.unsubscribe(hikari.ReactionAddEvent, self._process_reaction_add)
         await self._msg.delete()
         self._msg = None
 

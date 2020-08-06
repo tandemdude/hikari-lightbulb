@@ -157,7 +157,7 @@ class Navigator(abc.ABC, typing.Generic[T]):
         self._context.bot.event_dispatcher.unsubscribe(hikari.ReactionAddEvent, self._process_reaction_add)
         try:
             await self._msg.remove_all_reactions()
-        except hikari.ForbiddenError:
+        except (hikari.ForbiddenError, hikari.NotFoundError):
             pass
 
     async def _timeout_coro(self):

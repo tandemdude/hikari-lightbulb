@@ -1,0 +1,6 @@
+graft lightbulb
+include requirements.txt
+include setup.py
+include README.md
+include pyproject.toml
+global-exclude *.py[cod]

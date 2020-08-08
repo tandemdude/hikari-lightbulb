@@ -44,14 +44,13 @@ import abc
 import attr
 import typing
 
+import hikari
 from hikari.events import base_events
+
+from lightbulb import commands
 
 if typing.TYPE_CHECKING:
     import types
-
-    import hikari
-
-    from lightbulb import commands
 
 
 @attr.s(kw_only=True, slots=True)

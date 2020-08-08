@@ -20,12 +20,11 @@ from __future__ import annotations
 __all__: typing.Final[typing.List[str]] = ["Context"]
 
 import typing
+import datetime
+
+import hikari
 
 if typing.TYPE_CHECKING:
-    import datetime
-
-    import hikari
-
     from lightbulb import commands
     from lightbulb import command_handler
 

@@ -112,12 +112,13 @@ class Bot(hikari.Bot):
         ] = dict() if not self.insensitive_commands else CIMultiDict()
         self.commands: typing.Set(commands.Command) = set()
         """A set containing all commands and groups registered to the bot."""
+        self._checks = []
 
         self._help_impl = help_class(self)
 
     @property
     def _has_stateful_cache(self):
-        return isinstance(self.cache, stateful_cache.StatefulCacheComponentImpl)
+        return isinstance(self.cache, stateful_cache.StatefulCacheImpl)
 
     async def fetch_owner_ids(self) -> None:
         """
@@ -137,7 +138,7 @@ class Bot(hikari.Bot):
 
     def command(self, **kwargs) -> typing.Callable:
         """
-        A decorator that registers a callable as a command for the handler.
+        A decorator that registers a coroutine as a command for the handler.
 
         Keyword Args:
             **kwargs: See :obj:`~.commands.command` for valid kwargs.
@@ -146,7 +147,7 @@ class Bot(hikari.Bot):
 
             .. code-block:: python
 
-                bot = lightbulb.Bot(token="token_here", prefix="!")
+                bot = lightbulb.Bot(...)
 
                 @bot.command()
                 async def ping(ctx):
@@ -163,7 +164,7 @@ class Bot(hikari.Bot):
 
     def group(self, **kwargs) -> typing.Callable:
         """
-        A decorator that registers a callable as a command group for the handler.
+        A decorator that registers a coroutine as a command group for the handler.
 
         Keyword Args:
             **kwargs: See :obj:`~.commands.group` for valid kwargs.
@@ -172,7 +173,7 @@ class Bot(hikari.Bot):
 
             .. code-block:: python
 
-                bot = lightbulb.Bot(token="token_here", prefix="!")
+                bot = lightbulb.Bot(...)
 
                 @bot.group()
                 async def foo(ctx):
@@ -184,6 +185,31 @@ class Bot(hikari.Bot):
 
         def decorate(func: typing.Callable):
             return self.add_group(func, **kwargs)
+
+        return decorate
+
+    def check(self):
+        """
+        A decorator that registers a coroutine as a global check.
+
+        This check coroutine will be called before any command invocation.
+
+        Example:
+
+            .. code-block:: python
+
+                bot = lightbulb.Bot(...)
+
+                @bot.check()
+                async def global_guild_only(ctx):
+                    return ctx.guild_id is not None
+
+        See Also:
+            :meth:`~.command_handler.Bot.add_check`
+        """
+
+        def decorate(func) -> None:
+            self.add_check(func)
 
         return decorate
 
@@ -284,6 +310,21 @@ class Bot(hikari.Bot):
         _LOGGER.debug("new group registered: %s", func.name)
         return self._commands[func.name]
 
+    def add_check(self, func: typing.Callable[[context.Context], typing.Coroutine[None, None, bool]]) -> None:
+        """
+        Add a coroutine as a global check for the bot.
+
+        This coroutine will be called before any command invocation.
+
+        Args:
+            func (Callable[[ :obj:`~.context.Context ], Coroutine[ ``None``, ``None``, :obj:`bool` ]]): The
+                coroutine to add as a global check.
+
+        Returns:
+            ``None``
+        """
+        self._checks.append(func)
+
     def add_plugin(self, plugin: plugins.Plugin) -> None:
         """
         Add a :obj:`~.plugins.Plugin` to the bot including all of the plugin commands.
@@ -371,6 +412,8 @@ class Bot(hikari.Bot):
             Optional[ :obj:`str` ]: Name of the plugin that was removed.
         """
         plugin = self.plugins.pop(name)
+        plugin.plugin_remove()
+
         if plugin is not None:
             for k in plugin.commands.keys():
                 self.remove_command(k)
@@ -531,7 +574,7 @@ class Bot(hikari.Bot):
     async def _evaluate_checks(self, command: commands.Command, context: context.Context):
         failed_checks = []
 
-        for check in command._checks:
+        for check in [*self._checks, *command._checks]:
             try:
                 if not await check(context):
                     failed_checks.append(

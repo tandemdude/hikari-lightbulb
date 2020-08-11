@@ -199,3 +199,13 @@ class Plugin:
 
     def __repr__(self) -> str:
         return f"<lightbulb.Plugin {self.name} at {hex(id(self))}>"
+
+    def plugin_remove(self) -> None:
+        """
+        A method that will be called just before the plugin is removed from
+        the bot. This method **cannot** be a coroutine, it must be a regular
+        function.
+
+        You may with use this for any cleanup that the plugin may require.
+        """
+        pass

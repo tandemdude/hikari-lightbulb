@@ -291,9 +291,9 @@ class MissingRequiredPermission(CheckFailure):
         text (:obj:`str`): The error text.
 
     Keyword Args:
-        permissions (Sequence[ :obj:`hikari.Permission` ]: Permission(s) the member is missing.
+        permissions (Sequence[ :obj:`hikari.Permissions` ]: Permission(s) the member is missing.
     """
 
-    def __init__(self, text: str, *, permissions: typing.Sequence[hikari.Permission]) -> None:
+    def __init__(self, text: str, *, permissions: typing.Sequence[hikari.Permissions]) -> None:
         self.text = text
         self.permissions = permissions

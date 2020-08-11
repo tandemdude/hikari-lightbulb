@@ -87,11 +87,11 @@ async def _has_roles(ctx: context.Context, *, role_check):
     return True
 
 
-async def _has_guild_permissions(ctx: context.Context, *, permissions: typing.Sequence[hikari.Permission]):
+async def _has_guild_permissions(ctx: context.Context, *, permissions: typing.Sequence[hikari.Permissions]):
     if not ctx.bot._has_stateful_cache:
         raise NotImplementedError("The bot is stateless. Cache operations are not available")
-    if not (ctx.bot.intents & hikari.Intent.GUILDS) == hikari.Intent.GUILDS:
-        raise hikari.MissingIntentError(hikari.Intent.GUILDS)
+    if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
+        raise hikari.MissingIntentError(hikari.Intents.GUILDS)
 
     await _guild_only(ctx)
 
@@ -211,14 +211,14 @@ def has_roles(
     return decorate
 
 
-def has_guild_permissions(perm1: hikari.Permission, *permissions: hikari.Permission):
+def has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
     """
     A decorator that prevents the command from being used by a member missing any of the required
     guild permissions (permissions granted by a role).
 
     Args:
-        perm1 (:obj:`hikari.Permission`): Permission to check for.
-        *permissions (:obj:`hikari.Permission`): Additional permissions to check for.
+        perm1 (:obj:`hikari.Permissions`): Permission to check for.
+        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
 
     Note:
         This check will also prevent commands from being used in DMs, as you cannot have permissions
@@ -226,7 +226,7 @@ def has_guild_permissions(perm1: hikari.Permission, *permissions: hikari.Permiss
 
     Warning:
         This check is unavailable if your application is stateless and/or missing the intent
-        :obj:`hikari.Intent.GUILDS` and will **always** raise an error on command invocation if
+        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
         either of these conditions are not met.
     """
 

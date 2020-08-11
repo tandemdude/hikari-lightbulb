@@ -182,9 +182,9 @@ class Navigator(abc.ABC, typing.Generic[T]):
                 the navigator to function.
         """
         intent_to_check_for = (
-            hikari.Intent.GUILD_MESSAGE_REACTIONS
+            hikari.Intents.GUILD_MESSAGE_REACTIONS
             if context.guild_id is not None
-            else hikari.Intent.PRIVATE_MESSAGE_REACTIONS
+            else hikari.Intents.PRIVATE_MESSAGE_REACTIONS
         )
         if not (context.bot.intents & intent_to_check_for) == intent_to_check_for:
             # TODO - raise more meaningful error and give it the missing intent.

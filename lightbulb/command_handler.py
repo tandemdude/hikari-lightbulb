@@ -90,7 +90,7 @@ class Bot(hikari.Bot):
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
-        self.event_dispatcher.subscribe(message.MessageCreateEvent, self.handle)
+        self.subscribe(message.MessageCreateEvent, self.handle)
 
         if isinstance(prefix, str):
             self.get_prefix = functools.partial(_return_prefix, prefixes=[prefix])

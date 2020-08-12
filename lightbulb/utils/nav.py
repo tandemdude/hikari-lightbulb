@@ -130,7 +130,7 @@ class Navigator(abc.ABC, typing.Generic[T]):
         self.current_page_index = len(self.pages) - 1
 
     async def _stop(self, _) -> None:
-        self._msg.app.event_dispatcher.unsubscribe(hikari.ReactionAddEvent, self._process_reaction_add)
+        self._msg.app.unsubscribe(hikari.ReactionAddEvent, self._process_reaction_add)
         await self._msg.delete()
         self._msg = None
 
@@ -154,7 +154,7 @@ class Navigator(abc.ABC, typing.Generic[T]):
                 break
 
     async def _remove_reaction_listener(self):
-        self._context.bot.event_dispatcher.unsubscribe(hikari.ReactionAddEvent, self._process_reaction_add)
+        self._context.bot.unsubscribe(hikari.ReactionAddEvent, self._process_reaction_add)
         try:
             await self._msg.remove_all_reactions()
         except (hikari.ForbiddenError, hikari.NotFoundError):
@@ -191,7 +191,7 @@ class Navigator(abc.ABC, typing.Generic[T]):
             raise hikari.MissingIntentError(intent_to_check_for)
 
         self._context = context
-        context.bot.event_dispatcher.subscribe(hikari.ReactionAddEvent, self._process_reaction_add)
+        context.bot.subscribe(hikari.ReactionAddEvent, self._process_reaction_add)
         self._msg = await self._send_initial_msg(self.pages[self.current_page_index])
         for emoji in [button.emoji for button in self.buttons]:
             await self._msg.add_reaction(emoji)

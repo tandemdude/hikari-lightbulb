@@ -193,12 +193,14 @@ class Command:
         name: str,
         allow_extra_arguments: bool,
         aliases: typing.Iterable[str],
+        hidden: bool,
         parent: typing.Optional[typing.Any] = None,
     ) -> None:
         self._callback = callback
         self._name = name
         self._allow_extra_arguments = allow_extra_arguments
         self._aliases = aliases
+        self.hidden = hidden
         self._checks = []
         self._error_listener = None
         self.method_name: typing.Optional[str] = None
@@ -248,7 +250,7 @@ class Command:
         return self._name
 
     @property
-    def aliases(self) -> str:
+    def aliases(self) -> typing.Iterable[str]:
         """
         The command's aliases.
 
@@ -466,7 +468,7 @@ class Group(Command):
             name = kwargs.get("name", func.__name__)
             cls = kwargs.get("cls", Command)
             self._subcommands[name] = cls(
-                func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []), parent=self,
+                func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []), kwargs.get("hidden", False), parent=self
             )
             if self.inherit_checks:
                 self._subcommands[name]._checks.extend(self._checks)
@@ -497,6 +499,7 @@ class Group(Command):
                 name,
                 kwargs.get("allow_extra_arguments", True),
                 kwargs.get("aliases", []),
+                kwargs.get("hidden", False),
                 insensitive_commands=kwargs.get("insensitive_commands", False),
                 inherit_checks=kwargs.get("inherit_checks", True),
                 parent=self,
@@ -527,7 +530,7 @@ def command(**kwargs):
     def decorate(func):
         name = kwargs.get("name", func.__name__)
         cls = kwargs.get("cls", Command)
-        return cls(func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []))
+        return cls(func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []), kwargs.get("hidden", False))
 
     return decorate
 
@@ -556,6 +559,7 @@ def group(**kwargs):
             name,
             kwargs.get("allow_extra_arguments", True),
             kwargs.get("aliases", []),
+            kwargs.get("hidden", False),
             insensitive_commands=kwargs.get("insensitive_commands", False),
             inherit_checks=kwargs.get("inherit_checks", True),
         )

@@ -104,6 +104,8 @@ async def filter_commands(
     """
     filtered_commands = set()
     for command in command_list:
+        if command.hidden:
+            continue
         try:
             await command.is_runnable(context)
             filtered_commands.add(command)

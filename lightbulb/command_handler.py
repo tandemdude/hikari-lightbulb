@@ -249,7 +249,7 @@ class Bot(hikari.Bot):
         if not isinstance(func, commands.Command):
             name = kwargs.get("name", func.__name__)
             cls = kwargs.get("cls", commands.Command)
-            func = cls(func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []),)
+            func = cls(func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []), kwargs.get("hidden", False))
 
         if self.insensitive_commands:
             if set([name.casefold() for name in self._commands.keys()]).intersection(
@@ -297,6 +297,7 @@ class Bot(hikari.Bot):
                 name,
                 kwargs.get("allow_extra_arguments", True),
                 kwargs.get("aliases", []),
+                kwargs.get("hidden", False),
                 insensitive_commands=kwargs.get("insensitive_commands", False),
             )
 

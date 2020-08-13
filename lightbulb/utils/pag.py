@@ -72,6 +72,9 @@ class Paginator(abc.ABC, typing.Generic[T]):
         self._page_factory = page_factory
         self.current_page: int = 0
 
+    def __len__(self) -> int:
+        return len(self._pages)
+
     def build_pages(self, page_number_start: int = 1) -> typing.Iterator[T]:
         """
         The current pages that have been created.

@@ -25,6 +25,7 @@ __all__: typing.Final[typing.List[str]] = [
     "human_only",
     "has_roles",
     "has_guild_permissions",
+    "bot_has_guild_permissions",
     "check",
 ]
 
@@ -87,6 +88,16 @@ async def _has_roles(ctx: context.Context, *, role_check):
     return True
 
 
+def _get_missing_perms(
+    permissions: typing.Sequence[hikari.Permissions], roles: typing.Sequence[hikari.Role]
+) -> typing.Sequence[hikari.Permissions]:
+    missing_perms = []
+    for perm in permissions:
+        if not any(role.permissions & perm for role in roles):
+            missing_perms.append(perm)
+    return missing_perms
+
+
 async def _has_guild_permissions(ctx: context.Context, *, permissions: typing.Sequence[hikari.Permissions]):
     if not ctx.bot._has_stateful_cache:
         raise NotImplementedError("The bot is stateless. Cache operations are not available")
@@ -96,13 +107,30 @@ async def _has_guild_permissions(ctx: context.Context, *, permissions: typing.Se
     await _guild_only(ctx)
 
     roles = ctx.bot.cache.get_roles_view_for_guild(ctx.guild_id).values()
-    missing_perms = []
-    for perm in permissions:
-        if not any(role.permissions & perm for role in roles if role.id in ctx.member.role_ids):
-            missing_perms.append(perm)
+    missing_perms = _get_missing_perms(permissions, [role for role in roles if role.id in ctx.member.role_ids])
+
     if missing_perms:
         raise errors.MissingRequiredPermission(
             "You are missing one or more permissions required in order to run this command", permissions=missing_perms
+        )
+    return True
+
+
+async def _bot_has_guild_permissions(ctx: context.Context, *, permissions: typing.Sequence[hikari.Permissions]):
+    if not ctx.bot._has_stateful_cache:
+        raise NotImplementedError("The bot is stateless. Cache operations are not available")
+    if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
+        raise hikari.MissingIntentError(hikari.Intents.GUILDS)
+
+    await _guild_only(ctx)
+
+    roles = ctx.bot.cache.get_roles_view_for_guild(ctx.guild_id).values()
+    bot_member = ctx.bot.cache.get_member(ctx.guild_id, ctx.bot.cache.get_me().id)
+    missing_perms = _get_missing_perms(permissions, [role for role in roles if role.id in bot_member.role_ids])
+
+    if missing_perms:
+        raise errors.BotMissingRequiredPermission(
+            "I am missing one or more permissions required in order to run this command", permissions=missing_perms
         )
     return True
 
@@ -235,7 +263,41 @@ def has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permis
         for permission in permissions:
             for perm in permission.split():
                 perms.add(perm)
+        for perm in perms:
+            command.user_required_permissions.add(perm)
         command.add_check(functools.partial(_has_guild_permissions, permissions=list(perms)))
+        return command
+
+    return decorate
+
+
+def bot_has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+    """
+    A decorator that prevents the command from being used if the bot is missing any of the required
+    guild permissions (permissions granted by a role).
+
+    Args:
+        perm1 (:obj:`hikari.Permissions`): Permission to check for.
+        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have permissions
+        in a DM channel.
+
+    Warning:
+        This check is unavailable if your application is stateless and/or missing the intent
+        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
+        either of these conditions are not met.
+    """
+
+    def decorate(command: T_inv) -> T_inv:
+        perms = set(perm1.split())
+        for permission in permissions:
+            for perm in permission.split():
+                perms.add(perm)
+        for perm in perms:
+            command.bot_required_permissions.add(perm)
+        command.add_check(functools.partial(_bot_has_guild_permissions, permissions=list(perms)))
         return command
 
     return decorate

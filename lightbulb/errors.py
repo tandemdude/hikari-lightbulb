@@ -38,6 +38,11 @@ __all__: typing.Final[typing.List[str]] = [
     "OnlyInGuild",
     "OnlyInDM",
     "NotOwner",
+    "BotOnly",
+    "HumanOnly",
+    "MissingRequiredRole",
+    "MissingRequiredPermission",
+    "BotMissingRequiredPermission",
 ]
 
 import abc
@@ -292,6 +297,22 @@ class MissingRequiredPermission(CheckFailure):
 
     Keyword Args:
         permissions (Sequence[ :obj:`hikari.Permissions` ]: Permission(s) the member is missing.
+    """
+
+    def __init__(self, text: str, *, permissions: typing.Sequence[hikari.Permissions]) -> None:
+        self.text = text
+        self.permissions = permissions
+
+
+class BotMissingRequiredPermission(CheckFailure):
+    """
+    Error raised when the bot is missing one or more permission required for the command to be run.
+
+    Args:
+        text (:obj:`str`): The error text.
+
+    Keyword Args:
+        permissions (Sequence[ :obj:`hikari.Permissions` ]: Permission(s) the bot is missing.
     """
 
     def __init__(self, text: str, *, permissions: typing.Sequence[hikari.Permissions]) -> None:

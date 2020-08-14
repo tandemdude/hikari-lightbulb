@@ -39,6 +39,8 @@ from lightbulb import converters
 from lightbulb import cooldowns
 
 if typing.TYPE_CHECKING:
+    import hikari
+
     from lightbulb import plugins
 
 _LOGGER = logging.getLogger("lightbulb")
@@ -208,6 +210,16 @@ class Command:
         """The parent group for the command. If ``None`` then the command is not a subcommand."""
         self.plugin: typing.Optional[plugins.Plugin] = None
         """The plugin the command is registered to. If ``None`` then it was defined outside of a plugin."""
+        self.user_required_permissions: typing.Set[hikari.Permissions] = set()
+        """
+        The permissions required by a user to run the command. 
+        These are extracted from the permission check decorator(s) on the command.
+        """
+        self.bot_required_permissions: typing.Set[hikari.Permissions] = set()
+        """
+        The permissions the bot requires for a user to be able to run the command. 
+        These are extracted from the permission check decorator(s) on the command.
+        """
 
         self.cooldown_manager: typing.Optional[cooldowns.CooldownManager] = None
         """The cooldown manager being used for the command. If ``None`` then the command does not have a cooldown."""
@@ -528,6 +540,7 @@ def command(**kwargs):
         allow_extra_arguments (Optional[ :obj:`bool` ]): Whether or not the command should error when run with
             more arguments than it takes. Defaults to True - will not raise an error.
         aliases (Iterable[ :obj:`str` ]): Iterable of aliases which will also invoke the command.
+        hidden (:obj:`bool`): Whether or not the command should be hidden from the help command. Defaults to ``False``.
         cls (:obj:`~.commands.Command`): The class to use to instantiate the command object from. Defaults
             to :obj:`~.commands.Command`.
     """
@@ -555,6 +568,7 @@ def group(**kwargs):
         allow_extra_arguments (Optional[ :obj:`bool` ]): Whether or not the command should error when run with
             more arguments than it takes. Defaults to True - will not raise an error.
         aliases (Optional[ Iterable[ :obj:`str` ] ]): Iterable of aliases which will also invoke the command.
+        hidden (:obj:`bool`): Whether or not the command should be hidden from the help command. Defaults to ``False``.
         insensitive_commands (:obj:`bool`): Whether or not subcommands should be case-insensitive. Defaults to
             False.
         cls (:obj:`~.commands.Command`): The class to use to instantiate the group object from. Defaults

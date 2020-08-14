@@ -50,7 +50,7 @@ def test_concatenate_args_with_asterisk(dummy_bot):
     def foo(ctx, arg1, arg2, *, arg3):
         pass
 
-    cmd = commands.Command(foo, "", False, [])
+    cmd = commands.Command(foo, "", False, [], False)
     args = ["hello", "hey", "hello", "wassup"]
 
     assert dummy_bot._concatenate_args(args, cmd) == ["hello", "hey", "hello wassup"]
@@ -64,7 +64,7 @@ def test_concatenate_args_with_var_positional_arg(dummy_bot):
     def foo(ctx, arg1, arg2, *arg3):
         return arg3
 
-    cmd = commands.Command(foo, "", False, [])
+    cmd = commands.Command(foo, "", False, [], False)
     args = ["hey", "hello", "how", "are", "you"]
 
     # args list shouldn't change
@@ -78,7 +78,7 @@ def test_concatenate_args_with_positional_args(dummy_bot):
     def foo(ctx, arg1, arg2, arg3):
         pass
 
-    cmd = commands.Command(foo, "", False, [])
+    cmd = commands.Command(foo, "", False, [], False)
     args = ["hey", "hello", "hi"]
 
     # No changes should be made to args in this test

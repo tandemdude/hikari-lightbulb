@@ -28,12 +28,12 @@ def dummy_function():
 
 @pytest.fixture()
 def dummy_command():
-    return commands.Command((lambda _: _), "dummy", True, [])
+    return commands.Command((lambda _: _), "dummy", True, [], False)
 
 
 @pytest.fixture()
 def dummy_group():
-    return commands.Group((lambda _: _), "dummy", True, [])
+    return commands.Group((lambda _: _), "dummy", True, [], False)
 
 
 def test_command_decorator_returns_Command(dummy_function):
@@ -77,7 +77,7 @@ def test_Command_args_before_asterisk_raise_error():
         pass
 
     with pytest.raises(TypeError) as error:
-        dummy_cmd = commands.Command(dummy_function, "dummy", True, [])
+        dummy_cmd = commands.Command(dummy_function, "dummy", True, [], False)
         dummy_cmd.arg_details._args_and_name_before_asterisk()
 
     assert error.type is TypeError

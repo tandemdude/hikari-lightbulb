@@ -468,7 +468,12 @@ class Group(Command):
             name = kwargs.get("name", func.__name__)
             cls = kwargs.get("cls", Command)
             self._subcommands[name] = cls(
-                func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []), kwargs.get("hidden", False), parent=self
+                func,
+                name,
+                kwargs.get("allow_extra_arguments", True),
+                kwargs.get("aliases", []),
+                kwargs.get("hidden", False),
+                parent=self,
             )
             if self.inherit_checks:
                 self._subcommands[name]._checks.extend(self._checks)
@@ -530,7 +535,13 @@ def command(**kwargs):
     def decorate(func):
         name = kwargs.get("name", func.__name__)
         cls = kwargs.get("cls", Command)
-        return cls(func, name, kwargs.get("allow_extra_arguments", True), kwargs.get("aliases", []), kwargs.get("hidden", False))
+        return cls(
+            func,
+            name,
+            kwargs.get("allow_extra_arguments", True),
+            kwargs.get("aliases", []),
+            kwargs.get("hidden", False),
+        )
 
     return decorate
 

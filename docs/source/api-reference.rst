@@ -16,6 +16,7 @@ Commands
 .. automodule:: lightbulb.commands
     :members:
     :show-inheritance:
+    :member-order: groupwise
 
 ----
 
@@ -30,10 +31,9 @@ Plugins
 Checks
 ======
 
-Note that all check decorators **must** be above the command decorator otherwise your code will not work.
-
 .. automodule:: lightbulb.checks
     :members:
+    :member-order: bysource
 
 ----
 

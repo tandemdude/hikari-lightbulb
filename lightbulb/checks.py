@@ -15,11 +15,15 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
+"""
+.. error::
+    Note that all check decorators **must** be above the command decorator otherwise your code will not work.
+"""
 from __future__ import annotations
 
 __all__: typing.Final[typing.List[str]] = [
-    "guild_only",
     "dm_only",
+    "guild_only",
     "owner_only",
     "bot_only",
     "human_only",

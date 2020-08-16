@@ -1,3 +1,5 @@
+.. _custom-help:
+
 ==================================
 Implementing a Custom Help Command
 ==================================
@@ -69,6 +71,27 @@ the methods that send the help message.
             # Override this method to change the message sent when the help command
             # argument is the name or alias of a command group.
             ...
+
+If you wish to make your help command loadable/unloadable you will need to put it into a plugin and optionally an extension.
+The implementation for an extension could look something like below.
+::
+
+    class Help(lightbulb.Plugin):
+        def __init__(self, bot):
+            super().__init__()
+            self.bot = bot
+            self._original_help_impl = bot._help_impl
+            bot._help_impl = YourHelpCommandClass(bot)
+
+        def plugin_remove(self):
+            self.bot._help_impl = self._original_help_impl
+
+
+    def load(bot):
+        bot.add_plugin(Help(bot))
+
+    def unload(bot):
+        bot.remove_plugin("Help")
 
 The help submodule also provides some useful utilities to help you with your implementation:
 

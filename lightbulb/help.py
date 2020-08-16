@@ -187,6 +187,10 @@ class HelpCommand:
                 else:
                     await self.object_not_found(context, obj[0])
         else:
+            if (plugin := self.bot.get_plugin(" ".join(obj))) is not None:
+                await self.send_plugin_help(context, plugin)
+                return
+
             command = self.bot.get_command(obj[0])
 
             next_obj = 1
@@ -263,9 +267,11 @@ class HelpCommand:
         help_text = [
             f"> **Help for category `{plugin.name}`**",
             get_help_text(plugin) or "No help text provided.",
-            f"Commands:\n{', '.join(f'`{c.name}`' for c in sorted(plugin.commands.values(), key=lambda c: c.name)) or 'No commands in the category'}",
+            f"Commands:",
+            ", ".join(f"`{c.name}`" for c in sorted(plugin.commands.values(), key=lambda c: c.name))
+            or "No commands in the category",
         ]
-        await context.reply("\n".join(help_text))
+        await context.reply("\n> ".join(help_text))
 
     async def send_command_help(self, context: context.Context, command: commands.Command) -> None:
         """
@@ -280,11 +286,12 @@ class HelpCommand:
             ``None``
         """
         help_text = [
-            f">>> **Help for command `{command.name}`**",
-            f"Usage:\n```{context.prefix}{get_command_signature(command)}```",
+            f">**Help for command `{command.name}`**",
+            f"Usage:",
+            f"```{context.prefix}{get_command_signature(command)}```",
             get_help_text(command) or "No help text provided.",
         ]
-        await context.reply("\n".join(help_text))
+        await context.reply("\n>".join(help_text))
 
     async def send_group_help(self, context: context.Context, group: commands.Group) -> None:
         """
@@ -299,10 +306,11 @@ class HelpCommand:
             ``None``
         """
         help_text = [
-            f">>> **Help for command group `{group.name}`**",
+            f"> **Help for command group `{group.name}`**",
             "Usage:",
             f"```{context.prefix}{get_command_signature(group)}```",
             get_help_text(group) or "No help text provided.",
-            f"Subcommands:\n{', '.join(f'`{c.name}`' for c in sorted(group.subcommands, key=lambda c: c.name)) or 'No subcommands in the group'}",
+            f"Subcommands:" ", ".join(f"`{c.name}`" for c in sorted(group.subcommands, key=lambda c: c.name))
+            or "No subcommands in the group",
         ]
-        await context.reply("\n".join(help_text))
+        await context.reply("\n>".join(help_text))

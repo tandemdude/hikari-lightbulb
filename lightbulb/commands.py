@@ -63,6 +63,12 @@ def _bind_prototype(instance: typing.Any, command_template: _CommandT):
             self._delegates_to = command_template
             self.__dict__.update(command_template.__dict__)
 
+        def __hash__(self) -> int:
+            return hash(self.name)
+
+        def __eq__(self, other) -> bool:
+            return isinstance(other, (type(self), Command)) and other.name == self.name
+
         async def invoke(self, context: context.Context, *args: str, **kwargs: str) -> typing.Any:
             if self.cooldown_manager is not None:
                 self.cooldown_manager.add_cooldown(context)
@@ -240,6 +246,12 @@ class Command:
 
     def __repr__(self) -> str:
         return f"<lightbulb.{self.__class__.__name__} {self.name} at {hex(id(self))}>"
+
+    def __hash__(self) -> int:
+        return hash(self.name)
+
+    def __eq__(self, other) -> bool:
+        return isinstance(other, type(self)) and other.name == self.name
 
     @functools.cached_property
     def arg_details(self) -> SignatureInspector:

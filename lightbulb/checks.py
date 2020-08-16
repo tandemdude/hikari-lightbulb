@@ -34,6 +34,7 @@ __all__: typing.Final[typing.List[str]] = [
 ]
 
 import typing
+import types
 import functools
 
 import hikari
@@ -46,6 +47,30 @@ if typing.TYPE_CHECKING:
     from hikari.utilities import snowflake
 
 T_inv = typing.TypeVar("T_inv", bound=commands.Command)
+
+_CHECK_DECORATOR_BELOW_COMMAND_DECORATOR_MESSAGE = """Check decorators MUST be above the commands decorator in order for them to work.
+
+Valid:
+
+@lightbulb.guild_only()
+@lightbulb.command()
+async def foo(ctx):
+    ...
+
+Invalid:
+
+@lightbulb.command()
+@lightbulb.guild_only()
+async def foo(ctx):
+    ...
+
+See https://tandemdude.gitlab.io/lightbulb/api-reference.html#module-lightbulb.checks
+"""
+
+
+def _check_check_decorator_above_commands_decorator(func_or_command) -> None:
+    if isinstance(func_or_command, types.FunctionType):
+        raise SyntaxError(_CHECK_DECORATOR_BELOW_COMMAND_DECORATOR_MESSAGE)
 
 
 async def _guild_only(ctx: context.Context) -> bool:
@@ -145,6 +170,7 @@ def guild_only() -> typing.Callable[[T_inv], T_inv]:
     """
 
     def decorate(command: T_inv) -> T_inv:
+        _check_check_decorator_above_commands_decorator(command)
         command.add_check(_guild_only)
         return command
 
@@ -166,6 +192,7 @@ def dm_only() -> typing.Callable[[T_inv], T_inv]:
     """
 
     def decorate(command: T_inv) -> T_inv:
+        _check_check_decorator_above_commands_decorator(command)
         command.add_check(_dm_only)
         return command
 
@@ -178,6 +205,7 @@ def owner_only() -> typing.Callable[[T_inv], T_inv]:
     """
 
     def decorate(command: T_inv) -> T_inv:
+        _check_check_decorator_above_commands_decorator(command)
         command.add_check(_owner_only)
         return command
 
@@ -190,6 +218,7 @@ def bot_only() -> typing.Callable[[T_inv], T_inv]:
     """
 
     def decorate(command: T_inv) -> T_inv:
+        _check_check_decorator_above_commands_decorator(command)
         command.add_check(_bot_only)
         return command
 
@@ -202,6 +231,7 @@ def human_only() -> typing.Callable[[T_inv], T_inv]:
     """
 
     def decorate(command: T_inv) -> T_inv:
+        _check_check_decorator_above_commands_decorator(command)
         command.add_check(_human_only)
         return command
 
@@ -234,6 +264,7 @@ def has_roles(
         raise SyntaxError("has_roles mode must be one of: all, any")
 
     def decorate(command: T_inv) -> T_inv:
+        _check_check_decorator_above_commands_decorator(command)
         check_func = functools.partial(
             _role_check, roles=[int(role1), *[int(r) for r in role_ids]], func=all if mode == "all" else any
         )
@@ -263,6 +294,7 @@ def has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permis
     """
 
     def decorate(command: T_inv) -> T_inv:
+        _check_check_decorator_above_commands_decorator(command)
         perms = set(perm1.split())
         for permission in permissions:
             for perm in permission.split():
@@ -295,6 +327,7 @@ def bot_has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Pe
     """
 
     def decorate(command: T_inv) -> T_inv:
+        _check_check_decorator_above_commands_decorator(command)
         perms = set(perm1.split())
         for permission in permissions:
             for perm in permission.split():
@@ -335,6 +368,7 @@ def check(check_func: typing.Callable[[context.Context], typing.Coroutine[typing
     """
 
     def decorate(command: T_inv) -> T_inv:
+        _check_check_decorator_above_commands_decorator(command)
         command.add_check(check_func)
         return command
 

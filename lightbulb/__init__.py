@@ -39,16 +39,16 @@ from lightbulb.checks import *
 from lightbulb.help import *
 from lightbulb.stringview import *
 
-__all__: typing.Final[typing.Tuple[str]] = (
-    plugins.__all__
-    + commands.__all__
-    + converters.__all__
-    + cooldowns.__all__
-    + command_handler.__all__
-    + checks.__all__
-    + context.__all__
-    + stringview.__all__
-    + help.__all__
-)
+__all__: typing.Final[typing.List[str]] = [
+    *plugins.__all__,
+    *commands.__all__,
+    *converters.__all__,
+    *cooldowns.__all__,
+    *command_handler.__all__,
+    *checks.__all__,
+    *context.__all__,
+    *stringview.__all__,
+    *help.__all__,
+]
 
 __version__ = "0.0.39"

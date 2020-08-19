@@ -51,4 +51,4 @@ __all__: typing.Final[typing.List[str]] = [
     *help.__all__,
 ]
 
-__version__ = "0.0.39"
+__version__ = "0.0.40"

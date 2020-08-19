@@ -8,6 +8,13 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 0.0.40
+==============
+
+- Add the utils :obj:`~.utils.get` and :obj:`~.utils.find` helper functions.
+
+- Fix the ``__init__.py`` for the utils subpackage.
+
 Version 0.0.39
 ==============
 

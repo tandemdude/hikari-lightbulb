@@ -21,7 +21,6 @@ import typing
 from lightbulb.utils import nav
 from lightbulb.utils import pag
 from lightbulb.utils import search
-
 from lightbulb.utils.nav import *
 from lightbulb.utils.pag import *
 from lightbulb.utils.search import *

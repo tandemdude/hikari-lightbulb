@@ -19,14 +19,14 @@ from __future__ import annotations
 
 __all__: typing.Final[typing.List[str]] = ["Context"]
 
-import typing
 import datetime
+import typing
 
 import hikari
 
 if typing.TYPE_CHECKING:
-    from lightbulb import commands
     from lightbulb import command_handler
+    from lightbulb import commands
 
 
 class Context:

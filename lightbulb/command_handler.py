@@ -19,25 +19,25 @@ from __future__ import annotations
 
 __all__: typing.Final[typing.List[str]] = ["Bot"]
 
-import typing
-import functools
 import collections
-import inspect
-import sys
+import functools
 import importlib
+import inspect
 import logging
-from multidict import CIMultiDict
+import sys
+import typing
 
 import hikari
 from hikari.events import message_events as message
 from hikari.impl import stateful_cache
+from multidict import CIMultiDict
 
 from lightbulb import commands
 from lightbulb import context
 from lightbulb import errors
-from lightbulb import stringview
-from lightbulb import plugins
 from lightbulb import help as help_command
+from lightbulb import plugins
+from lightbulb import stringview
 
 if typing.TYPE_CHECKING:
     from hikari.models import messages

@@ -33,14 +33,14 @@ __all__: typing.Final[typing.List[str]] = [
     "check",
 ]
 
-import typing
-import types
 import functools
+import types
+import typing
 
 import hikari
 
-from lightbulb import context
 from lightbulb import commands
+from lightbulb import context
 from lightbulb import errors
 
 if typing.TYPE_CHECKING:

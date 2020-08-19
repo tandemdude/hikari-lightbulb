@@ -24,17 +24,17 @@ __all__: typing.Final[typing.Tuple[str]] = [
     "HelpCommand",
 ]
 
-import typing
 import inspect
+import typing
 
 from lightbulb import commands
-from lightbulb import plugins
 from lightbulb import errors
+from lightbulb import plugins
 from lightbulb import utils
 
 if typing.TYPE_CHECKING:
-    from lightbulb import context
     from lightbulb import command_handler
+    from lightbulb import context
 
 
 def get_help_text(object: typing.Union[commands.Command, plugins.Plugin]) -> str:

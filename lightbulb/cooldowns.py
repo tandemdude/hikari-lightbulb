@@ -36,8 +36,8 @@ import typing
 from lightbulb import errors
 
 if typing.TYPE_CHECKING:
-    from lightbulb import context as context_
     from lightbulb import commands
+    from lightbulb import context as context_
 
 
 class CooldownStatus(enum.IntEnum):

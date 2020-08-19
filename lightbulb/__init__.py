@@ -17,26 +17,25 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 import typing
 
-from lightbulb import utils
-from lightbulb import plugins
+from lightbulb import checks
+from lightbulb import command_handler
 from lightbulb import commands
+from lightbulb import context
 from lightbulb import converters
 from lightbulb import cooldowns
-from lightbulb import command_handler
-from lightbulb import checks
 from lightbulb import errors
-from lightbulb import context
 from lightbulb import help
+from lightbulb import plugins
 from lightbulb import stringview
-
-from lightbulb.plugins import *
+from lightbulb import utils
+from lightbulb.checks import *
+from lightbulb.command_handler import *
 from lightbulb.commands import *
 from lightbulb.context import *
 from lightbulb.converters import *
 from lightbulb.cooldowns import *
-from lightbulb.command_handler import *
-from lightbulb.checks import *
 from lightbulb.help import *
+from lightbulb.plugins import *
 from lightbulb.stringview import *
 
 __all__: typing.Final[typing.List[str]] = [

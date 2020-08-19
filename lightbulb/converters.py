@@ -56,9 +56,9 @@ __all__: typing.Final[typing.List[str]] = [
     "role_converter",
 ]
 
+import collections
 import re
 import typing
-import collections
 
 import hikari
 

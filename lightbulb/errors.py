@@ -46,9 +46,9 @@ __all__: typing.Final[typing.List[str]] = [
 ]
 
 import abc
-import attr
 import typing
 
+import attr
 import hikari
 from hikari.events import base_events
 

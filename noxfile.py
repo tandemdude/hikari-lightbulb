@@ -29,15 +29,17 @@ SCRIPT_PATHS = [
 
 @nox.session(python=["3.8"])
 def test(session):
-    session.run("pip", "install", "-Ur", "test_requirements.txt")
-    session.run("pip", "install", "-Ur", "requirements.txt")
+    session.install("-r", "test_requirements.txt")
+    session.install("-r", "requirements.txt")
     session.run("python", "-m", "pytest", "tests", "--testdox")
 
 
 @nox.session(python=["3.8"])
 def format_fix(session):
-    session.run("pip", "install", "-U", "black")
+    session.install("black")
+    session.install("isort")
     session.run("python", "-m", "black", *SCRIPT_PATHS)
+    session.run("python", "-m", "isort", *SCRIPT_PATHS)
 
 
 # noinspection PyShadowingBuiltins
@@ -47,8 +49,8 @@ def format(session):
     session.run("python", "-m", "black", *SCRIPT_PATHS, "--check")
 
 
-@nox.session(python=["3.8"])
+@nox.session(python=["3.8"], reuse_venv=True)
 def sphinx(session):
-    session.run("pip", "install", "sphinx", "sphinx_rtd_theme")
-    session.run("pip", "install", "-r", "requirements.txt")
+    session.install("-U", "sphinx", "sphinx_rtd_theme")
+    session.install("-Ur", "requirements.txt")
     session.run("python", "-m", "sphinx.cmd.build", "docs/source", "docs/build", "-b", "html")

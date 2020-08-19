@@ -26,7 +26,6 @@ import typing
 
 from hikari import Embed
 
-
 T = typing.TypeVar("T")
 
 

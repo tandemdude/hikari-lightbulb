@@ -26,17 +26,18 @@ __all__: typing.Final[typing.List[str]] = [
     "group",
 ]
 
-import inspect
-import typing
-import functools
-import logging
 import dataclasses
+import functools
+import inspect
+import logging
+import typing
+
 from multidict import CIMultiDict
 
 from lightbulb import context
-from lightbulb import errors
 from lightbulb import converters
 from lightbulb import cooldowns
+from lightbulb import errors
 
 if typing.TYPE_CHECKING:
     import hikari

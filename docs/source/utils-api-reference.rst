@@ -19,3 +19,11 @@ Navigation
     :members:
     :show-inheritance:
     :member-order: bysource
+
+----
+
+Miscellaneous
+=============
+
+.. automodule:: lightbulb.utils
+    :members: get, find

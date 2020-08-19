@@ -20,8 +20,10 @@ import typing
 
 from lightbulb.utils import nav
 from lightbulb.utils import pag
+from lightbulb.utils import search
 
 from lightbulb.utils.nav import *
 from lightbulb.utils.pag import *
+from lightbulb.utils.search import *
 
-__all__: typing.Final[typing.Tuple[str]] = (nav.__all__ + pag.__all__)
+__all__: typing.Final[typing.List[str]] = [*nav.__all__, *pag.__all__, *search.__all__]

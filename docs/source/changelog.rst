@@ -8,6 +8,17 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 0.0.41
+==============
+
+- Added support for hikari 2.0.0.dev70.
+
+- Made instance methods work correctly as command specific error handlers.
+
+- Made context accessible through :obj:`~.errors.CommandErrorEvent`.
+
+- Added isort to properly sort the import statements, not that you care.
+
 Version 0.0.40
 ==============
 

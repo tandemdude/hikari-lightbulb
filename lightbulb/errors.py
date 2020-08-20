@@ -52,6 +52,7 @@ import attr
 import hikari
 
 from lightbulb import commands
+from lightbulb import context as context_
 
 if typing.TYPE_CHECKING:
     import types
@@ -80,6 +81,8 @@ class CommandErrorEvent(hikari.Event):
     """App instance for this application."""
     exception: LightbulbError = attr.ib()
     """The exception that triggered this event."""
+    context: typing.Optional[context_.Context] = attr.ib(default=None)
+    """The context that this event was triggered for. Will be ``None`` for :obj:`~CommandNotFound` errors."""
     message: hikari.Message = attr.ib()
     """The message that this event was triggered for."""
     command: typing.Optional[commands.Command] = attr.ib(default=None)

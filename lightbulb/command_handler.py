@@ -625,7 +625,9 @@ class Bot(hikari.Bot):
                 else:
                     await command.invoke(context, *args[:before_asterisk])
         except errors.CommandError as ex:
-            error_event = errors.CommandErrorEvent(app=self, exception=ex, message=context.message, command=command)
+            error_event = errors.CommandErrorEvent(
+                app=self, exception=ex, context=context, message=context.message, command=command
+            )
 
             if command._error_listener is not None:
                 await command._error_listener(error_event)

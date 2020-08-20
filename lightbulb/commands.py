@@ -211,7 +211,7 @@ class Command:
         self._aliases = aliases
         self.hidden = hidden
         self._checks = []
-        self._error_listener = None
+        self._raw_error_listener = None
         self.method_name: typing.Optional[str] = None
         self.parent: typing.Optional[typing.Any] = parent
         """The parent group for the command. If ``None`` then the command is not a subcommand."""
@@ -253,6 +253,12 @@ class Command:
 
     def __eq__(self, other) -> bool:
         return isinstance(other, type(self)) and other.name == self.name
+
+    @functools.cached_property
+    def _error_listener(self):
+        if self.plugin is not None and self._raw_error_listener is not None:
+            return getattr(self.plugin, self._raw_error_listener.__name__)
+        return self._raw_error_listener
 
     @functools.cached_property
     def arg_details(self) -> SignatureInspector:
@@ -317,8 +323,9 @@ class Command:
 
         def decorate(
             func: typing.Callable[[errors.CommandErrorEvent], typing.Coroutine[None, None, typing.Any]]
-        ) -> None:
-            self._error_listener = func
+        ) -> typing.Callable[[errors.CommandErrorEvent], typing.Coroutine[None, None, typing.Any]]:
+            self._raw_error_listener = func
+            return func
 
         return decorate
 

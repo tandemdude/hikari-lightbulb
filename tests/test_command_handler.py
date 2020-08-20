@@ -18,7 +18,7 @@
 import mock
 import pytest
 
-from hikari. import messages
+from hikari import messages
 
 from lightbulb import Bot
 from lightbulb import commands

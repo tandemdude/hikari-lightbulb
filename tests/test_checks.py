@@ -17,7 +17,7 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 import mock
 import pytest
-from hikari. import messages
+from hikari import messages
 
 from lightbulb import checks
 from lightbulb import context

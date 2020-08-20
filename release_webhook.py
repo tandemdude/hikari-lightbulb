@@ -1,7 +1,8 @@
-import requests
 import os
-import lightbulb
 
+import requests
+
+import lightbulb
 
 requests.post(
     os.environ["RELEASE_WEBHOOK"],

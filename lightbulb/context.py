@@ -35,13 +35,13 @@ class Context:
 
     Args:
         bot (:obj:`~.command_handler.Bot`): The bot instance that received the command.
-        message (:obj:`hikari.models.messages.Message`): The message the context was created from.
+        message (:obj:`hikari.messages.Message`): The message the context was created from.
         prefix (:obj:`str`): The prefix used in the context.
         invoked_with (:obj:`str`): The name or alias used to invoke a command.
         command (:obj:`~.commands.Command`): The command that was invoked.
 
     Note:
-        For information on types for the various properties see :obj:`hikari.models.messages.Message`.
+        For information on types for the various properties see :obj:`hikari.messages.Message`.
     """
 
     def __init__(
@@ -94,7 +94,7 @@ class Context:
         Replies to the message in the current context.
 
         Args:
-            *args: The positional arguments :meth:`hikari.models.messages.Message.reply` is invoked with
-            **kwargs: The keyword arguments :meth:`hikari.models.messages.Message.reply` is invoked with
+            *args: The positional arguments :meth:`hikari.messages.Message.reply` is invoked with
+            **kwargs: The keyword arguments :meth:`hikari.messages.Message.reply` is invoked with
         """
         return await self.message.reply(*args, **kwargs)

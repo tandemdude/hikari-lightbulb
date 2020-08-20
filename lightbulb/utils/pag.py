@@ -24,7 +24,7 @@ import io
 import textwrap
 import typing
 
-from hikari import Embed
+import hikari
 
 T = typing.TypeVar("T")
 
@@ -222,7 +222,7 @@ class StringPaginator(Paginator[str]):
         )
 
 
-class EmbedPaginator(Paginator[Embed]):
+class EmbedPaginator(Paginator[hikari.Embed]):
     """
     Creates embed pages from lines of text according to the given parameters.
 
@@ -254,7 +254,7 @@ class EmbedPaginator(Paginator[Embed]):
             prefix=prefix,
             suffix=suffix,
             line_separator=line_separator,
-            page_factory=lambda i, s: Embed(description=s).set_footer(text=f"Page {i}"),
+            page_factory=lambda i, s: hikari.Embed(description=s).set_footer(text=f"Page {i}"),
         )
 
     def embed_factory(self):
@@ -288,12 +288,12 @@ class EmbedPaginator(Paginator[Embed]):
 
         return decorate
 
-    def set_embed_factory(self, func: typing.Callable[[int, str], Embed]) -> None:
+    def set_embed_factory(self, func: typing.Callable[[int, str], hikari.Embed]) -> None:
         """
         Method to set a callable as the paginator's embed factory. Alternative to :meth:`embed_factory`.
 
         Args:
-            func (Callable[ [ :obj:`int`, :obj:`str` ], :obj:`~hikari.models.embeds.Embed` ]): The callable to
+            func (Callable[ [ :obj:`int`, :obj:`str` ], :obj:`~hikari.embeds.Embed` ]): The callable to
                 set as the paginator's embed factory.
 
         Returns:

@@ -50,7 +50,6 @@ import typing
 
 import attr
 import hikari
-from hikari.events import base_events
 
 from lightbulb import commands
 
@@ -59,7 +58,7 @@ if typing.TYPE_CHECKING:
 
 
 @attr.s(kw_only=True, slots=True)
-class CommandErrorEvent(base_events.Event):
+class CommandErrorEvent(hikari.Event):
     """
     Event type to subscribe to for the processing of all command errors raised by the handler.
 

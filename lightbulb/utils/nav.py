@@ -34,7 +34,7 @@ class NavButton:
     the coroutine to be called when the button is pressed.
 
     Args:
-        emoji (Union[ :obj:`str`, :obj:`~hikari.models.emojis.Emoji` ]): The emoji linked to the button.
+        emoji (Union[ :obj:`str`, :obj:`~hikari.emojis.Emoji` ]): The emoji linked to the button.
         callback: The coroutine function to be called on button press.
     """
 
@@ -42,8 +42,8 @@ class NavButton:
 
     def __init__(
         self,
-        emoji: typing.Union[str, hikari.models.emojis.Emoji],
-        callback: typing.Callable[[hikari.ReactionAddEvent], typing.Coroutine[typing.Any, typing.Any, None],],
+        emoji: typing.Union[str, hikari.Emoji],
+        callback: typing.Callable[[hikari.ReactionAddEvent], typing.Coroutine[typing.Any, typing.Any, None]],
     ) -> None:
         self.emoji = emoji
         self.callback = callback
@@ -93,11 +93,11 @@ class Navigator(abc.ABC, typing.Generic[T]):
         self._timeout: float = timeout
         self.current_page_index: int = 0
         self._context: typing.Optional[Context] = None
-        self._msg: typing.Optional[hikari.models.messages.Message] = None
+        self._msg: typing.Optional[hikari.Message] = None
         self._timeout_task = None
 
     @abc.abstractmethod
-    async def _edit_msg(self, message: hikari.models.messages.Message, page: T) -> hikari.Message:
+    async def _edit_msg(self, message: hikari.Message, page: T) -> hikari.Message:
         ...
 
     @abc.abstractmethod
@@ -242,19 +242,19 @@ class StringNavigator(Navigator[str]):
 
     """
 
-    async def _edit_msg(self, message: hikari.models.messages.Message, page: str) -> hikari.Message:
+    async def _edit_msg(self, message: hikari.Message, page: str) -> hikari.Message:
         return await message.edit(page)
 
     async def _send_initial_msg(self, page: str) -> hikari.Message:
         return await self._context.reply(page)
 
 
-class EmbedNavigator(Navigator[hikari.models.embeds.Embed]):
+class EmbedNavigator(Navigator[hikari.Embed]):
     """
     A reaction navigator system for navigating through a list of embeds.
 
     Args:
-        pages (Iterable[ :obj:`~hikari.models.embeds.Embed` ]): Pages to navigate through.
+        pages (Iterable[ :obj:`~hikari.embeds.Embed` ]): Pages to navigate through.
 
     Keyword Args:
         buttons (Optional[ Iterable[ :obj:`~.utils.nav.NavButton` ] ]): Buttons to
@@ -266,10 +266,8 @@ class EmbedNavigator(Navigator[hikari.models.embeds.Embed]):
         See :obj:`~.utils.nav.StringNavigator` for the default buttons supplied by the navigator.
     """
 
-    async def _edit_msg(
-        self, message: hikari.models.messages.Message, page: hikari.models.embeds.Embed
-    ) -> hikari.Message:
+    async def _edit_msg(self, message: hikari.Message, page: hikari.Embed) -> hikari.Message:
         return await message.edit(embed=page)
 
-    async def _send_initial_msg(self, page: hikari.models.embeds.Embed) -> hikari.Message:
+    async def _send_initial_msg(self, page: hikari.Embed) -> hikari.Message:
         return await self._context.reply(embed=page)

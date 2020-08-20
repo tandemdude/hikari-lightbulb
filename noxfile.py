@@ -15,8 +15,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Hikari Command Handler. If not, see <https://www.gnu.org/licenses/>.
-import nox
 import os
+
+import nox
 
 PATH_TO_PROJECT = os.path.join(".", "lightbulb")
 SCRIPT_PATHS = [

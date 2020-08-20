@@ -44,7 +44,7 @@ from lightbulb import context
 from lightbulb import errors
 
 if typing.TYPE_CHECKING:
-    from hikari.utilities import snowflake
+    from hikari import snowflakes
 
 T_inv = typing.TypeVar("T_inv", bound=commands.Command)
 
@@ -128,7 +128,7 @@ def _get_missing_perms(
 
 
 async def _has_guild_permissions(ctx: context.Context, *, permissions: typing.Sequence[hikari.Permissions]):
-    if not ctx.bot._has_stateful_cache:
+    if ctx.bot.is_stateless:
         raise NotImplementedError("The bot is stateless. Cache operations are not available")
     if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
         raise hikari.MissingIntentError(hikari.Intents.GUILDS)
@@ -146,7 +146,7 @@ async def _has_guild_permissions(ctx: context.Context, *, permissions: typing.Se
 
 
 async def _bot_has_guild_permissions(ctx: context.Context, *, permissions: typing.Sequence[hikari.Permissions]):
-    if not ctx.bot._has_stateful_cache:
+    if ctx.bot.is_stateless:
         raise NotImplementedError("The bot is stateless. Cache operations are not available")
     if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
         raise hikari.MissingIntentError(hikari.Intents.GUILDS)
@@ -239,8 +239,8 @@ def human_only() -> typing.Callable[[T_inv], T_inv]:
 
 
 def has_roles(
-    role1: snowflake.SnowflakeishOr[hikari.PartialRole],
-    *role_ids: snowflake.SnowflakeishOr[hikari.PartialRole],
+    role1: snowflakes.SnowflakeishOr[hikari.PartialRole],
+    *role_ids: snowflakes.SnowflakeishOr[hikari.PartialRole],
     mode: typing.Literal["all", "any"] = "all",
 ):
     """
@@ -248,8 +248,8 @@ def has_roles(
     to the given mode.
 
     Args:
-        role1 (:obj:`~hikari.utilities.snowflake.SnowflakeishOr` [ :obj:`~hikari.PartialRole` ]): Role ID to check for.
-        *role_ids (:obj:`~hikari.utilities.snowflake.SnowflakeishOr` [ :obj:`~hikari.PartialRole` ]): Additional role IDs to check for.
+        role1 (:obj:`~hikari.snowflakes.SnowflakeishOr` [ :obj:`~hikari.PartialRole` ]): Role ID to check for.
+        *role_ids (:obj:`~hikari.snowflakes.SnowflakeishOr` [ :obj:`~hikari.PartialRole` ]): Additional role IDs to check for.
 
     Keyword Args:
         mode (Literal["all", "any"]): The mode to check roles using. If ``"all"``, all role IDs

@@ -28,8 +28,6 @@ import sys
 import typing
 
 import hikari
-from hikari.events import message_events as message
-from hikari.impl import stateful_cache
 from multidict import CIMultiDict
 
 from lightbulb import commands
@@ -38,9 +36,6 @@ from lightbulb import errors
 from lightbulb import help as help_command
 from lightbulb import plugins
 from lightbulb import stringview
-
-if typing.TYPE_CHECKING:
-    from hikari.models import messages
 
 _LOGGER = logging.getLogger("lightbulb")
 
@@ -90,7 +85,7 @@ class Bot(hikari.Bot):
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
-        self.subscribe(message.MessageCreateEvent, self.handle)
+        self.subscribe(hikari.MessageCreateEvent, self.handle)
 
         if isinstance(prefix, str):
             self.get_prefix = functools.partial(_return_prefix, prefixes=[prefix])
@@ -110,15 +105,11 @@ class Bot(hikari.Bot):
         self._commands: typing.MutableMapping[
             str, commands.Command
         ] = dict() if not self.insensitive_commands else CIMultiDict()
-        self.commands: typing.Set(commands.Command) = set()
+        self.commands: typing.Set[commands.Command] = set()
         """A set containing all commands and groups registered to the bot."""
         self._checks = []
 
         self._help_impl = help_class(self)
-
-    @property
-    def _has_stateful_cache(self):
-        return isinstance(self.cache, stateful_cache.StatefulCacheImpl)
 
     async def fetch_owner_ids(self) -> None:
         """
@@ -559,12 +550,12 @@ class Bot(hikari.Bot):
                 unique_commands.extend(list(command.subcommands))
             yield command
 
-    def resolve_arguments(self, message: messages.Message, prefix: str) -> typing.List[str]:
+    def resolve_arguments(self, message: hikari.Message, prefix: str) -> typing.List[str]:
         """
         Resolves the arguments that a command was invoked with from the message containing the invocation.
 
         Args:
-            message (:obj:`hikari.models.messages.Message`): The message to resolve the arguments for.
+            message (:obj:`hikari.messages.Message`): The message to resolve the arguments for.
             prefix (:obj:`str`): The prefix the command was executed with.
 
         Returns:
@@ -656,7 +647,7 @@ class Bot(hikari.Bot):
 
         return new_args
 
-    async def handle(self, event: message.MessageCreateEvent) -> None:
+    async def handle(self, event: hikari.MessageCreateEvent) -> None:
         """
         The message listener that deals with validating the invocation messages. If invocation message
         is valid then it will invoke the relevant command.

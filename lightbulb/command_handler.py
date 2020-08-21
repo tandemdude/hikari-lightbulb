@@ -639,7 +639,7 @@ class Bot(hikari.Bot):
     def _concatenate_args(self, args: typing.List[str], command: commands.Command):
         # Concatenates arguments for last argument (after asterisk sign)
         new_args = args
-        (before_asterisk, param_name) = command.arg_details._args_and_name_before_asterisk()
+        before_asterisk, param_name = command.arg_details._args_and_name_before_asterisk()
         default = command.arg_details._get_default_values()
 
         if before_asterisk < len(args) and not command.arg_details.has_max_args and param_name is not None:

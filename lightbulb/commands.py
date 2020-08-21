@@ -187,14 +187,9 @@ class SignatureInspector:
             args_num -= 1  # because of the self arg if exists
         return args_num, param_name
 
-    def _get_default_values(self) -> list:
+    def _get_default_values(self) -> typing.List[typing.Any]:
         # Returns a list of all variables' default values
-
-        value_list = []
-        for arg in self.args.values():
-            value_list.append(arg.default)
-
-        return value_list
+        return [arg.default for arg in self.args.values()]
 
 
 class Command:

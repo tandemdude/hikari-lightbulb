@@ -187,8 +187,8 @@ class SignatureInspector:
             args_num -= 1  # because of the self arg if exists
         return args_num, param_name
 
-    def _get_default_values(self):
-        # Returns default value of last variable
+    def _get_default_values(self) -> list:
+        # Returns a list of all variables' default values
 
         value_list = []
         for arg in self.args.values():

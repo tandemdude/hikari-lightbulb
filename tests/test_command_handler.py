@@ -29,6 +29,7 @@ from lightbulb import context
 def dummy_bot():
     return Bot(token="_", prefix="?")
 
+
 @pytest.fixture()
 def ctx():
     return mock.MagicMock(
@@ -83,7 +84,3 @@ def test_concatenate_args_with_positional_args(dummy_bot):
 
     # No changes should be made to args in this test
     assert dummy_bot._concatenate_args(args, cmd) == args
-
-
-
-

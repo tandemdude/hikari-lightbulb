@@ -27,6 +27,11 @@ def dummy_function():
 
 
 @pytest.fixture()
+def dummy_ctx():
+    return lambda _: _
+
+
+@pytest.fixture()
 def dummy_command():
     return commands.Command((lambda _: _), "dummy", True, [], False)
 
@@ -81,6 +86,25 @@ def test_Command_args_before_asterisk_raise_error():
         dummy_cmd.arg_details._args_and_name_before_asterisk()
 
     assert error.type is TypeError
+
+
+@pytest.mark.asyncio
+async def test_Commands_convert_args_for_asterisk_arg(dummy_ctx):
+    # Check if function works properly with *arg in command's sign
+    def dummy(a, b, *c):
+        assert a == "witcher"
+        assert b == "was"
+        assert c == ("here",)
+
+    args = ["witcher", "was", "here"]
+    cmd = commands.SignatureInspector(commands.Command(dummy, "dummy", False, [], False))
+
+    before_asterisk, name = cmd._args_and_name_before_asterisk()
+    arg_details = list(cmd.args.values())[1 : len(args) + 1]
+
+    new_args = await commands.Command._convert_args(dummy_ctx, args[:before_asterisk], arg_details)
+    new_args = [*new_args, *args[before_asterisk:]]
+    dummy(*new_args)
 
 
 def test_Group_get_subcommand_returns_None(dummy_group):

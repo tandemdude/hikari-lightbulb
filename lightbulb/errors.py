@@ -129,7 +129,7 @@ class ExtensionMissingUnload(ExtensionError):
 
 
 class CommandError(LightbulbError):
-    """Base exception for errors incurred during handling od commands."""
+    """Base exception for errors incurred during handling of commands."""
 
     pass
 
@@ -298,10 +298,10 @@ class MissingRequiredPermission(CheckFailure):
         text (:obj:`str`): The error text.
 
     Keyword Args:
-        permissions (Sequence[ :obj:`hikari.Permissions` ]: Permission(s) the member is missing.
+        permissions (:obj:`hikari.Permissions`): Permission(s) the member is missing.
     """
 
-    def __init__(self, text: str, *, permissions: typing.Sequence[hikari.Permissions]) -> None:
+    def __init__(self, text: str, *, permissions: hikari.Permissions) -> None:
         self.text = text
         self.permissions = permissions
 
@@ -314,9 +314,26 @@ class BotMissingRequiredPermission(CheckFailure):
         text (:obj:`str`): The error text.
 
     Keyword Args:
-        permissions (Sequence[ :obj:`hikari.Permissions` ]: Permission(s) the bot is missing.
+        permissions (:obj:`hikari.Permissions`): Permission(s) the bot is missing.
     """
 
-    def __init__(self, text: str, *, permissions: typing.Sequence[hikari.Permissions]) -> None:
+    def __init__(self, text: str, *, permissions: hikari.Permissions) -> None:
         self.text = text
         self.permissions = permissions
+
+
+class CommandInvocationError(CommandError):
+    """
+    Error raised if an error is encountered during command invocation. This will only be raised
+    if all the checks passed and an error was raised somewhere inside the command.
+    This effectively acts as a wrapper for the original exception for easier handling in an error handler.
+
+    Args:
+        text (:obj:`str`): The error text.
+
+    Keyword Args:
+        original (:obj:`Exception`): The original exception that caused this one to be raised.
+    """
+    def __init__(self, text: str, *, original: Exception):
+        self.text = text
+        self.original = original

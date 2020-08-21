@@ -118,16 +118,16 @@ async def _has_roles(ctx: context.Context, *, role_check):
 
 
 def _get_missing_perms(
-    permissions: typing.Sequence[hikari.Permissions], roles: typing.Sequence[hikari.Role]
-) -> typing.Sequence[hikari.Permissions]:
-    missing_perms = []
+    permissions: hikari.Permissions, roles: typing.Sequence[hikari.Role]
+) -> hikari.Permissions:
+    missing_perms = hikari.Permissions.NONE
     for perm in permissions:
         if not any(role.permissions & perm for role in roles):
-            missing_perms.append(perm)
+            missing_perms |= perm
     return missing_perms
 
 
-async def _has_guild_permissions(ctx: context.Context, *, permissions: typing.Sequence[hikari.Permissions]):
+async def _has_guild_permissions(ctx: context.Context, *, permissions: hikari.Permissions):
     if ctx.bot.is_stateless:
         raise NotImplementedError("The bot is stateless. Cache operations are not available")
     if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
@@ -145,7 +145,7 @@ async def _has_guild_permissions(ctx: context.Context, *, permissions: typing.Se
     return True
 
 
-async def _bot_has_guild_permissions(ctx: context.Context, *, permissions: typing.Sequence[hikari.Permissions]):
+async def _bot_has_guild_permissions(ctx: context.Context, *, permissions: hikari.Permissions):
     if ctx.bot.is_stateless:
         raise NotImplementedError("The bot is stateless. Cache operations are not available")
     if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
@@ -299,9 +299,11 @@ def has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permis
         for permission in permissions:
             for perm in permission.split():
                 perms.add(perm)
+        total_perms = hikari.Permissions.NONE
         for perm in perms:
-            command.user_required_permissions.add(perm)
-        command.add_check(functools.partial(_has_guild_permissions, permissions=list(perms)))
+            total_perms |= perm
+            command.user_required_permissions |= perm
+        command.add_check(functools.partial(_has_guild_permissions, permissions=total_perms))
         return command
 
     return decorate
@@ -332,9 +334,11 @@ def bot_has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Pe
         for permission in permissions:
             for perm in permission.split():
                 perms.add(perm)
+        total_perms = hikari.Permissions.NONE
         for perm in perms:
-            command.bot_required_permissions.add(perm)
-        command.add_check(functools.partial(_bot_has_guild_permissions, permissions=list(perms)))
+            total_perms |= perm
+            command.user_required_permissions |= perm
+        command.add_check(functools.partial(_bot_has_guild_permissions, permissions=total_perms))
         return command
 
     return decorate

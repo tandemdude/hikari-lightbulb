@@ -33,6 +33,7 @@ import logging
 import typing
 
 from multidict import CIMultiDict
+import hikari
 
 from lightbulb import context
 from lightbulb import converters
@@ -40,8 +41,6 @@ from lightbulb import cooldowns
 from lightbulb import errors
 
 if typing.TYPE_CHECKING:
-    import hikari
-
     from lightbulb import plugins
 
 _LOGGER = logging.getLogger("lightbulb")
@@ -224,12 +223,12 @@ class Command:
         """The parent group for the command. If ``None`` then the command is not a subcommand."""
         self.plugin: typing.Optional[plugins.Plugin] = None
         """The plugin the command is registered to. If ``None`` then it was defined outside of a plugin."""
-        self.user_required_permissions: typing.Set[hikari.Permissions] = set()
+        self.user_required_permissions: hikari.Permissions = hikari.Permissions.NONE
         """
         The permissions required by a user to run the command. 
         These are extracted from the permission check decorator(s) on the command.
         """
-        self.bot_required_permissions: typing.Set[hikari.Permissions] = set()
+        self.bot_required_permissions: hikari.Permissions = hikari.Permissions.NONE
         """
         The permissions the bot requires for a user to be able to run the command. 
         These are extracted from the permission check decorator(s) on the command.

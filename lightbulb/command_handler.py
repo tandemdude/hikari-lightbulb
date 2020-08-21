@@ -635,6 +635,18 @@ class Bot(hikari.Bot):
                 await self.dispatch(error_event)
             else:
                 raise
+        except Exception as ex:
+            new_ex = errors.CommandInvocationError("An error occurred during command invocation.", original=ex)
+            error_event = errors.CommandErrorEvent(
+                app=self, exception=new_ex, context=context, message=context.message, command=command
+            )
+
+            if command._error_listener is not None:
+                await command._error_listener(error_event)
+            if self.get_listeners(errors.CommandErrorEvent, polymorphic=True):
+                await self.dispatch(error_event)
+            else:
+                raise
 
     def _concatenate_args(self, args: typing.List[str], command: commands.Command):
         # Concatenates arguments for last argument (after asterisk sign)

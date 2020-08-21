@@ -137,38 +137,32 @@ class CommandError(LightbulbError):
 class CommandNotFound(CommandError):
     """
     Exception raised when a command when attempted to be invoked but one with that name could not be found.
-
-    Args:
-        invoked_with (:obj:`str`): The command string that was attempted to be invoked.
     """
 
     def __init__(self, invoked_with: str) -> None:
         self.invoked_with = invoked_with
+        """The command string that was attempted to be invoked."""
 
 
 class NotEnoughArguments(CommandError):
     """
     Exception raised when a command is run without a sufficient number of arguments.
-
-    Args:
-        invoked_with (:obj:`str`): The command string that was attempted to be invoked
     """
 
     def __init__(self, invoked_with: str) -> None:
         self.invoked_with = invoked_with
+        """The command string that was attempted to be invoked."""
 
 
 class TooManyArguments(CommandError):
     """
     Exception raised when a command is run with too many arguments, and the command has been
     defined to not accept any extra arguments when invoked.
-
-    Args:
-        invoked_with (:obj:`str`): The command string that was attempted to be invoked
     """
 
     def __init__(self, invoked_with: str) -> None:
         self.invoked_with = invoked_with
+        """The command string that was attempted to be invoked."""
 
 
 class ConverterFailure(CommandError):
@@ -182,19 +176,15 @@ class ConverterFailure(CommandError):
 class CommandIsOnCooldown(CommandError):
     """
     Exception raised when a command is attempted to be run but is currently on cooldown.
-
-    Args:
-        text (:obj:`str`): The error text.
-
-    Keyword Args:
-        command (:obj:`~.commands.Command`): The command that is on cooldown.
-        retry_in (:obj:`float`): Number of seconds remaining for the cooldown.
     """
 
     def __init__(self, text: str, *, command: commands.Command, retry_in: float) -> None:
         self.text = text
+        """The error text."""
         self.command = command
+        """The command that is on cooldown."""
         self.retry_in = retry_in
+        """Number of seconds remaining for the cooldown."""
 
 
 class CommandSyntaxError(CommandError, abc.ABC):
@@ -222,15 +212,13 @@ class PrematureEOF(CommandSyntaxError):
 class UnclosedQuotes(CommandSyntaxError):
     """
     Error raised when no closing quote is found for a quoted argument.
-
-    Args:
-        text (:obj:`str`): The text that caused the error to be raised.
     """
 
     def __init__(self, text: str) -> None:
         # Required to override the abstract super init.
         super().__init__()
         self.text = text
+        """The text that caused the error to be raised."""
 
 
 class CheckFailure(CommandError):
@@ -293,33 +281,25 @@ class MissingRequiredRole(CheckFailure):
 class MissingRequiredPermission(CheckFailure):
     """
     Error raised when the member invoking a command is missing one or more permission required.
-
-    Args:
-        text (:obj:`str`): The error text.
-
-    Keyword Args:
-        permissions (:obj:`hikari.Permissions`): Permission(s) the member is missing.
     """
 
     def __init__(self, text: str, *, permissions: hikari.Permissions) -> None:
         self.text = text
+        """The error text."""
         self.permissions = permissions
+        """Permission(s) the bot is missing."""
 
 
 class BotMissingRequiredPermission(CheckFailure):
     """
     Error raised when the bot is missing one or more permission required for the command to be run.
-
-    Args:
-        text (:obj:`str`): The error text.
-
-    Keyword Args:
-        permissions (:obj:`hikari.Permissions`): Permission(s) the bot is missing.
     """
 
     def __init__(self, text: str, *, permissions: hikari.Permissions) -> None:
         self.text = text
+        """The error text."""
         self.permissions = permissions
+        """Permission(s) the bot is missing."""
 
 
 class CommandInvocationError(CommandError):
@@ -327,14 +307,10 @@ class CommandInvocationError(CommandError):
     Error raised if an error is encountered during command invocation. This will only be raised
     if all the checks passed and an error was raised somewhere inside the command.
     This effectively acts as a wrapper for the original exception for easier handling in an error handler.
-
-    Args:
-        text (:obj:`str`): The error text.
-
-    Keyword Args:
-        original (:obj:`Exception`): The original exception that caused this one to be raised.
     """
 
     def __init__(self, text: str, *, original: Exception):
         self.text = text
+        """The error text."""
         self.original = original
+        """The original exception that caused this one to be raised."""

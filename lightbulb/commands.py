@@ -114,6 +114,8 @@ class ArgInfo:
     """The type annotation of the argument."""
     required: bool
     """Whether or not the argument is required during invocation."""
+    default: typing.Any
+    """Default value for an argument."""
 
 
 class SignatureInspector:
@@ -134,8 +136,7 @@ class SignatureInspector:
         self.max_args = sum(not arg.ignore for arg in self.args.values())
         self.min_args = sum(not arg.ignore and arg.required for arg in self.args.values())
         self.has_max_args = not any(
-            a.kind == inspect.Parameter.VAR_POSITIONAL
-            or (a.kind == inspect.Parameter.KEYWORD_ONLY and a.default is a.empty)
+            a.kind == inspect.Parameter.VAR_POSITIONAL or a.kind == inspect.Parameter.KEYWORD_ONLY
             for a in inspect.signature(command._callback).parameters.values()
         )
 
@@ -149,8 +150,9 @@ class SignatureInspector:
 
         argtype = arg.kind
         annotation = arg.annotation
-        required = (arg.default is arg.empty) or (arg.kind == 3)  # var positional
-        return ArgInfo(ignore, argtype, annotation, required)
+        required = ((arg.default is arg.empty) or (arg.kind == 3)) and arg.kind != 2  # keyword-only not required
+        default = arg.default
+        return ArgInfo(ignore, argtype, annotation, required, default)
 
     def _args_and_name_before_asterisk(self):
         args_num = 0
@@ -175,7 +177,8 @@ class SignatureInspector:
         # Check if number or *, args is bigger than 1 and throw error if yes
         if len(self.args) - args_num > 1:
             raise TypeError(
-                f"Number of arguments after * (asterisk) symbol in command {self.command._callback.__name__} has to be smaller or equal 1."
+                f"Number of arguments after * (asterisk) symbol in command {self.command._callback.__name__} is {len(self.args) - args_num}"
+                f" but has to be smaller or equal 1."
             )
 
         args_num -= 1  # because of the ctx arg
@@ -183,6 +186,15 @@ class SignatureInspector:
         if self.has_self:
             args_num -= 1  # because of the self arg if exists
         return args_num, param_name
+
+    def _get_default_values(self):
+        # Returns default value of last variable
+
+        value_list = []
+        for arg in self.args.values():
+            value_list.append(arg.default)
+
+        return value_list
 
 
 class Command:
@@ -334,6 +346,7 @@ class Command:
         context: context.Context, args: typing.Sequence[str], arg_details: typing.Sequence[ArgInfo],
     ) -> typing.Sequence[typing.Any]:
         new_args = []
+
         for arg, details in zip(args, arg_details):
             arg = converters.WrappedArg(arg, context)
             if details.annotation is inspect.Parameter.empty or isinstance(details.annotation, str):
@@ -364,7 +377,9 @@ class Command:
         if self.cooldown_manager is not None:
             self.cooldown_manager.add_cooldown(context)
         # Add the start slice on to the length to offset the section of arg_details being extracted
-        new_args = await self._convert_args(context, args, list(self.arg_details.args.values())[1 : len(args) + 1])
+        arg_details = list(self.arg_details.args.values())[1 : len(args) + 1]
+        new_args = await self._convert_args(context, args[: len(arg_details)], arg_details)
+        new_args = [*new_args, *args[len(arg_details) :]]
         return await self._callback(context, *new_args, **kwargs)
 
     def add_check(self, check_func: typing.Callable[[context.Context], typing.Coroutine[None, None, bool]]) -> None:

@@ -8,6 +8,15 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 0.0.42
+==============
+
+- Changed ``user_required_permissions`` and ``bot_required_permissions`` to be :obj:`hikari.Permissions` objects.
+
+- Added :obj:`~.errors.CommandInvocationError` for catching of errors raised during the invocation of a command.
+
+- Fixed greedy args not working with a default.
+
 Version 0.0.41
 ==============
 
@@ -22,7 +31,7 @@ Version 0.0.41
 Version 0.0.40
 ==============
 
-- Add the utils :obj:`~.utils.get` and :obj:`~.utils.find` helper functions.
+- Added the utils :obj:`~.utils.get` and :obj:`~.utils.find` helper functions.
 
 - Fix the ``__init__.py`` for the utils subpackage.
 

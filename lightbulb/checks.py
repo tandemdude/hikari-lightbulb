@@ -117,9 +117,7 @@ async def _has_roles(ctx: context.Context, *, role_check):
     return True
 
 
-def _get_missing_perms(
-    permissions: hikari.Permissions, roles: typing.Sequence[hikari.Role]
-) -> hikari.Permissions:
+def _get_missing_perms(permissions: hikari.Permissions, roles: typing.Sequence[hikari.Role]) -> hikari.Permissions:
     missing_perms = hikari.Permissions.NONE
     for perm in permissions:
         if not any(role.permissions & perm for role in roles):

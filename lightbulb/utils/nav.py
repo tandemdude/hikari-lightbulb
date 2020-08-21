@@ -187,7 +187,6 @@ class Navigator(abc.ABC, typing.Generic[T]):
             else hikari.Intents.PRIVATE_MESSAGE_REACTIONS
         )
         if not (context.bot.intents & intent_to_check_for) == intent_to_check_for:
-            # TODO - raise more meaningful error and give it the missing intent.
             raise hikari.MissingIntentError(intent_to_check_for)
 
         self._context = context

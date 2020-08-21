@@ -32,8 +32,8 @@ import inspect
 import logging
 import typing
 
-from multidict import CIMultiDict
 import hikari
+from multidict import CIMultiDict
 
 from lightbulb import context
 from lightbulb import converters

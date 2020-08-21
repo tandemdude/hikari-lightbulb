@@ -334,6 +334,7 @@ class CommandInvocationError(CommandError):
     Keyword Args:
         original (:obj:`Exception`): The original exception that caused this one to be raised.
     """
+
     def __init__(self, text: str, *, original: Exception):
         self.text = text
         self.original = original

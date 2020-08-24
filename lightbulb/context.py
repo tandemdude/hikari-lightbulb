@@ -95,6 +95,7 @@ class Context:
         The context's prefix, cleaned to remove user mentions. If the bot is stateless, then this just
         returns the raw prefix.
         """
+
         def replace(match):
             user = self.bot.cache.get_user(hikari.Snowflake(match.group(1)))
             return f"@{user}" if user is not None else self.prefix

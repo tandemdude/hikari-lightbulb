@@ -286,12 +286,12 @@ class HelpCommand:
             ``None``
         """
         help_text = [
-            f">**Help for command `{command.name}`**",
+            f"> **Help for command `{command.name}`**",
             f"Usage:",
             f"```{context.prefix}{get_command_signature(command)}```",
             get_help_text(command) or "No help text provided.",
         ]
-        await context.reply("\n>".join(help_text))
+        await context.reply("\n> ".join(help_text))
 
     async def send_group_help(self, context: context.Context, group: commands.Group) -> None:
         """

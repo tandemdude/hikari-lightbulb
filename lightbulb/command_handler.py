@@ -17,7 +17,7 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__: typing.Final[typing.List[str]] = ["Bot"]
+__all__: typing.Final[typing.List[str]] = ["Bot", "when_mentioned_or"]
 
 import collections
 import functools
@@ -26,6 +26,7 @@ import inspect
 import logging
 import sys
 import typing
+import asyncio
 
 import hikari
 from multidict import CIMultiDict
@@ -40,8 +41,58 @@ from lightbulb import stringview
 _LOGGER = logging.getLogger("lightbulb")
 
 
-async def _return_prefix(
-    _, __, *, prefixes: typing.Union[str, typing.List[str], typing.Tuple[str]]
+def when_mentioned_or(prefix_provider):
+    """
+    Helper function which allows the bot's mentions to be used as the command prefix, as well
+    as any other prefix(es) passed in or supplied by the ``prefix_provider``.
+
+    Args:
+        prefix_provider: An object that is a prefix, contains prefixes, or returns prefixes.
+
+    Example:
+
+        .. code-block:: python
+
+            # The below are all valid
+            bot = lightbulb.Bot(prefix=lightbulb.when_mentioned_or("!"), ...)
+
+            bot = lightbulb.Bot(prefix=lightbulb.when_mentioned_or(["!", "?"]), ...)
+
+            # Using only mentions as the prefix
+            bot = lightbulb.Bot(prefix=lightbulb.when_mentioned_or(None), ...)
+
+            # Using with a get_prefix function
+            def get_prefix(bot, message):
+                # Do something to get the prefixes
+                return prefixes
+
+            bot = lightbulb.Bot(prefix=lightbulb.when_mentioned_or(get_prefix), ...)
+    """
+
+    async def get_prefixes(bot, message):
+        mentions = [f"<@{bot.me.id}> ", f"<@!{bot.me.id}> "]
+
+        if callable(prefix_provider):
+            prefixes = prefix_provider(bot, message)
+            if inspect.iscoroutine(prefixes) or isinstance(prefixes, asyncio.Future):
+                prefixes = await prefixes
+        else:
+            prefixes = prefix_provider
+
+        if isinstance(prefixes, str):
+            return mentions + [prefixes]
+        elif isinstance(prefixes, typing.Iterable):
+            return mentions + list(prefixes)
+        elif prefixes is None:
+            return mentions
+        else:
+            return mentions + [prefix async for prefix in prefixes]
+
+    return get_prefixes
+
+
+def _return_prefix(
+    _, __, *, prefixes: typing.Union[str, typing.Iterable[str]]
 ) -> typing.Union[str, typing.List[str], typing.Tuple[str]]:
     return prefixes
 

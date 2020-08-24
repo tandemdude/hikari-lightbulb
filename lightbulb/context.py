@@ -21,6 +21,7 @@ __all__: typing.Final[typing.List[str]] = ["Context"]
 
 import datetime
 import typing
+import re
 
 import hikari
 
@@ -87,6 +88,18 @@ class Context:
     """The attachments to the context message."""
     author: hikari.User = property(lambda self: self.message.author)
     """The user who invoked the command."""
+
+    @property
+    def clean_prefix(self) -> str:
+        """
+        The context's prefix, cleaned to remove user mentions. If the bot is stateless, then this just
+        returns the raw prefix.
+        """
+        def replace(match):
+            user = self.bot.cache.get_user(hikari.Snowflake(match.group(1)))
+            return f"@{user}" if user is not None else self.prefix
+
+        return re.sub(r"<@!?(\d+)>", replace, self.prefix) if not self.bot.is_stateless else self.prefix
 
     async def reply(self, *args, **kwargs) -> hikari.Message:
         """

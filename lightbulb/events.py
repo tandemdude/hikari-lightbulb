@@ -19,8 +19,8 @@ from __future__ import annotations
 
 __all__: typing.Final[typing.List[str]] = ["CommandErrorEvent", "CommandInvocationEvent", "CommandCompletionEvent"]
 
-import typing
 import abc
+import typing
 
 import attr
 import hikari
@@ -28,9 +28,9 @@ import hikari
 if typing.TYPE_CHECKING:
     import types
 
-    from lightbulb import errors
-    from lightbulb import context as context_
     from lightbulb import commands
+    from lightbulb import context as context_
+    from lightbulb import errors
 
 
 @attr.s(slots=True)

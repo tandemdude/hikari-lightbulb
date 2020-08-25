@@ -19,6 +19,7 @@ from __future__ import annotations
 
 __all__: typing.Final[typing.List[str]] = ["Bot", "when_mentioned_or"]
 
+import asyncio
 import collections
 import functools
 import importlib
@@ -26,7 +27,6 @@ import inspect
 import logging
 import sys
 import typing
-import asyncio
 
 import hikari
 from multidict import CIMultiDict
@@ -34,10 +34,10 @@ from multidict import CIMultiDict
 from lightbulb import commands
 from lightbulb import context
 from lightbulb import errors
+from lightbulb import events
 from lightbulb import help as help_command
 from lightbulb import plugins
 from lightbulb import stringview
-from lightbulb import events
 
 _LOGGER = logging.getLogger("lightbulb")
 

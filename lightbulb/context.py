@@ -20,8 +20,8 @@ from __future__ import annotations
 __all__: typing.Final[typing.List[str]] = ["Context"]
 
 import datetime
-import typing
 import re
+import typing
 
 import hikari
 

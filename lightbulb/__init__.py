@@ -27,6 +27,7 @@ from lightbulb import errors
 from lightbulb import help
 from lightbulb import plugins
 from lightbulb import stringview
+from lightbulb import events
 from lightbulb import utils
 from lightbulb.checks import *
 from lightbulb.command_handler import *
@@ -37,6 +38,7 @@ from lightbulb.cooldowns import *
 from lightbulb.help import *
 from lightbulb.plugins import *
 from lightbulb.stringview import *
+from lightbulb.events import *
 
 __all__: typing.Final[typing.List[str]] = [
     *plugins.__all__,
@@ -48,6 +50,7 @@ __all__: typing.Final[typing.List[str]] = [
     *context.__all__,
     *stringview.__all__,
     *help.__all__,
+    *events.__all__
 ]
 
-__version__ = "0.0.42"
+__version__ = "0.0.43"

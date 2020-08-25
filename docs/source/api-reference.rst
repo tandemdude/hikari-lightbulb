@@ -66,6 +66,15 @@ Cooldowns
 
 ----
 
+Events
+======
+
+.. automodule:: lightbulb.events
+    :members:
+    :show-inheritance:
+
+----
+
 Errors
 ======
 

@@ -8,6 +8,27 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 0.0.43
+==============
+
+**Breaking changes**
+
+- :obj:`~.events.CommandErrorEvent` has been moved from the ``errors`` module to the ``events`` module.
+
+**Other changes**
+
+- Added new module, ``lightbulb.events``.
+
+- Added two new events, :obj:`~.events.CommandInvocationEvent` and :obj:`~.events.CommandCompletionEvent`.
+
+- Added :obj:`~.commands.Command.before_invoke` and :obj:`~.commands.Command.after_invoke`.
+
+- Added :obj:`~.command_handler.when_mentioned_or` to allow you to use the bot's mention as a prefix.
+
+- Added :obj:`~.context.Context.clean_prefix` to fix wonky looking prefixes due to mentions.
+
+- Fixed help command for single commands having quotes render incorrectly.
+
 Version 0.0.42
 ==============
 
@@ -24,7 +45,7 @@ Version 0.0.41
 
 - Made instance methods work correctly as command specific error handlers.
 
-- Made context accessible through :obj:`~.errors.CommandErrorEvent`.
+- Made context accessible through :obj:`~.events.CommandErrorEvent`.
 
 - Added isort to properly sort the import statements, not that you care.
 

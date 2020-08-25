@@ -39,6 +39,7 @@ from lightbulb import context
 from lightbulb import converters
 from lightbulb import cooldowns
 from lightbulb import errors
+from lightbulb import events
 
 if typing.TYPE_CHECKING:
     from lightbulb import plugins
@@ -323,9 +324,9 @@ class Command:
     def command_error(self):
         """
         A decorator to register a coroutine as the command's error handler. Any global error 
-        handler/listener for :obj:`~.errors.CommandErrorEvent` will still be called.
+        handler/listener for :obj:`~.events.CommandErrorEvent` will still be called.
 
-        The coroutine can only take one argument, which will be an instance of :obj:`~.errors.CommandErrorEvent`
+        The coroutine can only take one argument, which will be an instance of :obj:`~.events.CommandErrorEvent`
         unless in a class in which case it may also take the ``self`` argument.
 
         Example:
@@ -345,8 +346,8 @@ class Command:
         """
 
         def decorate(
-            func: typing.Callable[[errors.CommandErrorEvent], typing.Coroutine[None, None, typing.Any]]
-        ) -> typing.Callable[[errors.CommandErrorEvent], typing.Coroutine[None, None, typing.Any]]:
+            func: typing.Callable[[events.CommandErrorEvent], typing.Coroutine[None, None, typing.Any]]
+        ) -> typing.Callable[[events.CommandErrorEvent], typing.Coroutine[None, None, typing.Any]]:
             self._raw_error_listener = func
             return func
 

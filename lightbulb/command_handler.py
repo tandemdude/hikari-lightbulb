@@ -37,6 +37,7 @@ from lightbulb import errors
 from lightbulb import help as help_command
 from lightbulb import plugins
 from lightbulb import stringview
+from lightbulb import events
 
 _LOGGER = logging.getLogger("lightbulb")
 
@@ -644,6 +645,8 @@ class Bot(hikari.Bot):
         self, command: commands.Command, context: context.Context, args: typing.List[str],
     ) -> None:
         try:
+            await self.dispatch(events.CommandInvocationEvent(app=self, command=command, context=context))
+
             if not await self._evaluate_checks(command, context):
                 return
 
@@ -681,26 +684,28 @@ class Bot(hikari.Bot):
 
             if (after_invoke := command._after_invoke) is not None:
                 await after_invoke(context)
+
+            await self.dispatch(events.CommandCompletionEvent(app=self, command=command, context=context))
         except errors.CommandError as ex:
-            error_event = errors.CommandErrorEvent(
+            error_event = events.CommandErrorEvent(
                 app=self, exception=ex, context=context, message=context.message, command=command
             )
 
             if command._error_listener is not None:
                 await command._error_listener(error_event)
-            if self.get_listeners(errors.CommandErrorEvent, polymorphic=True):
+            if self.get_listeners(events.CommandErrorEvent, polymorphic=True):
                 await self.dispatch(error_event)
             else:
                 raise
         except Exception as ex:
             new_ex = errors.CommandInvocationError("An error occurred during command invocation.", original=ex)
-            error_event = errors.CommandErrorEvent(
+            error_event = events.CommandErrorEvent(
                 app=self, exception=new_ex, context=context, message=context.message, command=command
             )
 
             if command._error_listener is not None:
                 await command._error_listener(error_event)
-            if self.get_listeners(errors.CommandErrorEvent, polymorphic=True):
+            if self.get_listeners(events.CommandErrorEvent, polymorphic=True):
                 await self.dispatch(error_event)
             else:
                 raise
@@ -768,9 +773,9 @@ class Bot(hikari.Bot):
 
         if invoked_with not in self._commands:
             ex = errors.CommandNotFound(invoked_with)
-            error_event = errors.CommandErrorEvent(app=self, exception=ex, message=event.message)
+            error_event = events.CommandErrorEvent(app=self, exception=ex, message=event.message)
 
-            if self.get_listeners(errors.CommandErrorEvent, polymorphic=True):
+            if self.get_listeners(events.CommandErrorEvent, polymorphic=True):
                 await self.dispatch(error_event)
                 return
             else:

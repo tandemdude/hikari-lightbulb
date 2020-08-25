@@ -18,7 +18,6 @@
 from __future__ import annotations
 
 __all__: typing.Final[typing.List[str]] = [
-    "CommandErrorEvent",
     "LightbulbError",
     "ExtensionError",
     "ExtensionAlreadyLoaded",
@@ -54,45 +53,6 @@ import hikari
 
 from lightbulb import commands
 from lightbulb import context as context_
-
-if typing.TYPE_CHECKING:
-    import types
-
-
-@attr.s(kw_only=True, slots=True)
-class CommandErrorEvent(hikari.Event):
-    """
-    Event type to subscribe to for the processing of all command errors raised by the handler.
-
-    Example:
-
-        .. code-block:: python
-
-            from lightbulb.errors import CommandErrorEvent
-
-            bot = lightbulb.Bot(token="token_here", prefix="!")
-
-            @bot.listen(CommandErrorEvent)
-            async def handle_command_error(error):
-                ...
-
-    """
-
-    app: hikari.api.event_consumer.IEventConsumerApp = attr.ib()
-    """App instance for this application."""
-    exception: LightbulbError = attr.ib()
-    """The exception that triggered this event."""
-    context: typing.Optional[context_.Context] = attr.ib(default=None)
-    """The context that this event was triggered for. Will be ``None`` for :obj:`~CommandNotFound` errors."""
-    message: hikari.Message = attr.ib()
-    """The message that this event was triggered for."""
-    command: typing.Optional[commands.Command] = attr.ib(default=None)
-    """The command that this event was triggered for."""
-
-    @property
-    def traceback(self) -> types.TracebackType:
-        """The traceback for this event's exception."""
-        return self.exception.__traceback__
 
 
 class LightbulbError(Exception):
@@ -315,3 +275,4 @@ class CommandInvocationError(CommandError):
         """The error text."""
         self.original = original
         """The original exception that caused this one to be raised."""
+        self.__traceback__ = original.__traceback__

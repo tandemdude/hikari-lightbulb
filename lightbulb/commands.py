@@ -218,6 +218,8 @@ class Command:
         self.hidden = hidden
         self._checks = []
         self._raw_error_listener = None
+        self._raw_before_invoke = None
+        self._raw_after_invoke = None
         self.method_name: typing.Optional[str] = None
         self.parent: typing.Optional[typing.Any] = parent
         """The parent group for the command. If ``None`` then the command is not a subcommand."""
@@ -267,6 +269,18 @@ class Command:
         return self._raw_error_listener
 
     @functools.cached_property
+    def _before_invoke(self):
+        if self.plugin is not None and self._raw_before_invoke is not None:
+            return getattr(self.plugin, self._raw_before_invoke.__name__)
+        return self._raw_before_invoke
+
+    @functools.cached_property
+    def _after_invoke(self):
+        if self.plugin is not None and self._raw_after_invoke is not None:
+            return getattr(self.plugin, self._raw_after_invoke.__name__)
+        return self._raw_after_invoke
+
+    @functools.cached_property
     def arg_details(self) -> SignatureInspector:
         """
         An inspection of the arguments that a command takes.
@@ -311,6 +325,9 @@ class Command:
         A decorator to register a coroutine as the command's error handler. Any global error 
         handler/listener for :obj:`~.errors.CommandErrorEvent` will still be called.
 
+        The coroutine can only take one argument, which will be an instance of :obj:`~.errors.CommandErrorEvent`
+        unless in a class in which case it may also take the ``self`` argument.
+
         Example:
 
             .. code-block:: python
@@ -331,6 +348,38 @@ class Command:
             func: typing.Callable[[errors.CommandErrorEvent], typing.Coroutine[None, None, typing.Any]]
         ) -> typing.Callable[[errors.CommandErrorEvent], typing.Coroutine[None, None, typing.Any]]:
             self._raw_error_listener = func
+            return func
+
+        return decorate
+
+    def before_invoke(self):
+        """
+        A decorator to register a coroutine to be run before the command is invoked.
+
+        The coroutine can take only one argument which will be an instance of the :obj:`~.context.Context`
+        for the command.
+        """
+
+        def decorate(
+            func: typing.Callable[[context.Context], typing.Coroutine[None, None, typing.Any]]
+        ) -> typing.Callable[[context.Context], typing.Coroutine[None, None, typing.Any]]:
+            self._raw_before_invoke = func
+            return func
+
+        return decorate
+
+    def after_invoke(self):
+        """
+        A decorator to register a coroutine to be run after the command is invoked.
+
+        The coroutine can take only one argument which will be an instance of the :obj:`~.context.Context`
+        for the command.
+        """
+
+        def decorate(
+            func: typing.Callable[[context.Context], typing.Coroutine[None, None, typing.Any]]
+        ) -> typing.Callable[[context.Context], typing.Coroutine[None, None, typing.Any]]:
+            self._raw_after_invoke = func
             return func
 
         return decorate

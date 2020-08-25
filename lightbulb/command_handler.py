@@ -647,6 +647,9 @@ class Bot(hikari.Bot):
             if not await self._evaluate_checks(command, context):
                 return
 
+            if (before_invoke := command._before_invoke) is not None:
+                await before_invoke(context)
+
             (before_asterisk, param_name,) = command.arg_details._args_and_name_before_asterisk()
             args = self._concatenate_args(args, command)
 
@@ -675,6 +678,9 @@ class Bot(hikari.Bot):
                     )
                 else:
                     await command.invoke(context, *args[:before_asterisk])
+
+            if (after_invoke := command._after_invoke) is not None:
+                await after_invoke(context)
         except errors.CommandError as ex:
             error_event = errors.CommandErrorEvent(
                 app=self, exception=ex, context=context, message=context.message, command=command

@@ -798,7 +798,12 @@ class Bot(hikari.Bot):
         try:
             positional_args, keyword_arg = self._resolve_args_for_command(command, final_args)
             await self._evaluate_checks(command, context)
-        except (errors.NotEnoughArguments, errors.TooManyArguments, errors.CheckFailure) as ex:
+        except (
+            errors.NotEnoughArguments,
+            errors.TooManyArguments,
+            errors.CheckFailure,
+            errors.CommandSyntaxError,
+        ) as ex:
             await self._dispatch_command_error_event_from_exception(ex, event.message, context, command)
             return
 

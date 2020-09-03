@@ -130,17 +130,39 @@ class SignatureInspector:
     def __init__(self, command: Command) -> None:
         self.command = command
         self.has_self = isinstance(command, _BoundCommandMarker)
+        self.kwarg_name = None
         self.args = {}
-        for index, (name, arg) in enumerate(inspect.signature(command._callback).parameters.items()):
-            self.args[name] = self.parse_arg(index, arg)
-        self.max_args = sum(not arg.ignore for arg in self.args.values())
-        self.min_args = sum(not arg.ignore and arg.required for arg in self.args.values())
-        self.has_max_args = not any(
-            a.kind == inspect.Parameter.VAR_POSITIONAL or a.kind == inspect.Parameter.KEYWORD_ONLY
-            for a in inspect.signature(command._callback).parameters.values()
+        signature = inspect.signature(command._callback)
+        for index, (name, arg) in enumerate(signature.parameters.items()):
+            self.args[name] = self._parse_arg(index, arg)
+        self.number_positional_args = len(
+            [
+                a
+                for a in self.args.values()
+                if (
+                    a.argtype == inspect.Parameter.POSITIONAL_OR_KEYWORD
+                    or a.argtype == inspect.Parameter.POSITIONAL_ONLY
+                )
+                and not a.ignore
+            ]
+        )
+        self.minimum_arguments = len(
+            [
+                a
+                for a in self.args.values()
+                if not a.ignore and a.required and a.argtype != inspect.Parameter.KEYWORD_ONLY
+            ]
+        )
+        self.maximum_arguments = (
+            float("inf")
+            if any([a.kind == inspect.Parameter.VAR_POSITIONAL for a in signature.parameters.values()])
+            else self.number_positional_args
+        )
+        self.has_var_positional = any(
+            [a.kind == inspect.Parameter.VAR_POSITIONAL for a in signature.parameters.values()]
         )
 
-    def parse_arg(self, index, arg):
+    def _parse_arg(self, index, arg):
         if index == 0:
             ignore = True
         elif index == 1 and self.has_self:
@@ -150,46 +172,13 @@ class SignatureInspector:
 
         argtype = arg.kind
         annotation = arg.annotation
-        required = ((arg.default is arg.empty) or (arg.kind == 3)) and arg.kind != 2  # keyword-only not required
+        required = arg.default is inspect.Parameter.empty
         default = arg.default
+
+        if arg.kind == inspect.Parameter.KEYWORD_ONLY and self.kwarg_name is None:
+            self.kwarg_name = arg.name
+
         return ArgInfo(ignore, argtype, annotation, required, default)
-
-    def _args_and_name_before_asterisk(self):
-        args_num = 0
-        param_name = None
-
-        for idx, arg in enumerate(self.args.values()):
-
-            if arg.argtype == inspect.Parameter.KEYWORD_ONLY and arg.required:
-                args_num = idx
-                param_name = list(self.args.keys())[idx]
-                break
-
-            # If last arg is *arg, -1 from args_num to concatenate inputs correctly
-            if idx + 1 == len(self.args) and arg.argtype == inspect.Parameter.VAR_POSITIONAL:
-                args_num -= 1
-
-        # args_num will be 0 when it didn't encounter any *arg or *, arg
-        # args_num will be -1 when it didn't encounter any *, arg but found *arg at the end
-        if args_num in (0, -1):
-            args_num += len(self.args)
-
-        # Check if number or *, args is bigger than 1 and throw error if yes
-        if len(self.args) - args_num > 1:
-            raise TypeError(
-                f"Number of arguments after * (asterisk) symbol in command {self.command._callback.__name__} is {len(self.args) - args_num}"
-                f" but has to be smaller or equal 1."
-            )
-
-        args_num -= 1  # because of the ctx arg
-
-        if self.has_self:
-            args_num -= 1  # because of the self arg if exists
-        return args_num, param_name
-
-    def _get_default_values(self) -> typing.List[typing.Any]:
-        # Returns a list of all variables' default values
-        return [arg.default for arg in self.args.values()]
 
 
 class Command:
@@ -353,14 +342,16 @@ class Command:
         The command's checks.
 
         Returns:
-            Iterable[ Callable[ [ :obj:`~.conext.Context` ], :obj:`bool` ] ]: The checks for the command.
+            Iterable[ Callable[ [ :obj:`~.context.Context` ], :obj:`bool` ] ]: The checks for the command.
         """
         return self._checks
 
     def command_error(self):
         """
-        A decorator to register a coroutine as the command's error handler. Any global error
-        handler/listener for :obj:`~.events.CommandErrorEvent` will still be called.
+        A decorator to register a coroutine as the command's error handler. Any return from the error handler
+        will be used to determine whether or not the error was handled successfully. A return of any truthy
+        object will prevent the event from propagating further down the listener chain. Returning a falsy value
+        will mean that any global command error listener will then be called.
 
         The coroutine can only take one argument, which will be an instance of :obj:`~.events.CommandErrorEvent`
         unless in a class in which case it may also take the ``self`` argument.
@@ -462,6 +453,11 @@ class Command:
         arg_details = list(self.arg_details.args.values())[1 : len(args) + 1]
         new_args = await self._convert_args(context, args[: len(arg_details)], arg_details)
         new_args = [*new_args, *args[len(arg_details) :]]
+
+        if kwargs:
+            new_kwarg = await self._convert_args(context, kwargs.values(), [self.arg_details.args[self.arg_details.kwarg_name]])
+            kwargs = {self.arg_details.kwarg_name: new_kwarg[0]}
+
         return await self._callback(context, *new_args, **kwargs)
 
     def add_check(self, check_func: typing.Callable[[context.Context], typing.Coroutine[None, None, bool]]) -> None:

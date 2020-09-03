@@ -25,6 +25,7 @@ import functools
 import importlib
 import inspect
 import logging
+import re
 import sys
 import typing
 
@@ -40,6 +41,8 @@ from lightbulb import plugins
 from lightbulb import stringview
 
 _LOGGER = logging.getLogger("lightbulb")
+
+ARG_SEP_REGEX = re.compile(r"(?:\s+|\n)")
 
 
 def when_mentioned_or(prefix_provider):
@@ -647,33 +650,14 @@ class Bot(hikari.Bot):
         """
         return context_.Context(self, message, prefix, invoked_with, invoked_command)
 
-    def resolve_arguments(self, message: hikari.Message, prefix: str) -> typing.List[str]:
-        """
-        Resolves the arguments that a command was invoked with from the message containing the invocation.
-
-        Args:
-            message (:obj:`hikari.messages.Message`): The message to resolve the arguments for.
-            prefix (:obj:`str`): The prefix the command was executed with.
-
-        Returns:
-            List[ :obj:`str` ]: List of the arguments the command was invoked with.
-
-        Note:
-            The first item in the list will always contain the prefix+command string which can
-            be used to validate if the message was intended to invoke a command and if the command
-            they attempted to invoke is actually valid.
-        """
-        string_view = stringview.StringView(message.content[len(prefix) :])
-        return string_view.deconstruct_str()
-
-    async def _evaluate_checks(self, command: commands.Command, context: context_.Context):
+    async def _evaluate_checks(self, command: commands.Command, context: context_.Context) -> bool:
         failed_checks = []
 
         for check in [*self._checks, *command._checks]:
             try:
                 if not await check(context):
                     failed_checks.append(
-                        errors.CheckFailure(f"Check {check.__name__} failed for command {context.invoked_with}")
+                        errors.CheckFailure(f"Check {check.__name__} failed for command {command.name}")
                     )
             except Exception as ex:
                 error = errors.CheckFailure(str(ex))
@@ -686,116 +670,167 @@ class Bot(hikari.Bot):
             raise failed_checks[0]
         return True
 
+    async def _dispatch_command_error_event_from_exception(
+        self,
+        exception: errors.CommandError,
+        message: hikari.Message,
+        context: typing.Optional[context_.Context] = None,
+        command: typing.Optional[commands.Command] = None,
+    ) -> None:
+        error_event = events.CommandErrorEvent(
+            app=self, exception=exception, message=message, context=context, command=command
+        )
+
+        handled = False
+        if command is not None:
+            if command._error_listener is not None:
+                handled = bool(await command._error_listener(error_event))
+            if not handled and self.get_listeners(events.CommandErrorEvent, polymorphic=True):
+                await self.dispatch(error_event)
+                handled = True
+        else:
+            if self.get_listeners(events.CommandErrorEvent, polymorphic=True):
+                await self.dispatch(error_event)
+                handled = True
+
+        if not handled:
+            raise exception
+
+    async def _resolve_prefix(self, message: hikari.Message) -> typing.Optional[str]:
+        prefixes = self.get_prefix(self, message)
+        if inspect.iscoroutine(prefixes):
+            prefixes = await prefixes
+
+        if isinstance(prefixes, str):
+            prefixes = [prefixes]
+
+        prefix = None
+        for p in prefixes:
+            if message.content.startswith(p):
+                prefix = p
+                break
+        return prefix
+
+    def _validate_command_exists(self, invoked_with) -> commands.Command:
+        if (command := self.get_command(invoked_with)) is not None:
+            return command
+        raise errors.CommandNotFound(invoked_with)
+
+    def _resolve_args_for_command(
+        self, command: commands.Command, raw_arg_string: str
+    ) -> typing.Tuple[typing.List[str], typing.Dict[str, str]]:
+        sv = stringview.StringView(raw_arg_string)
+        positional_args, remainder = sv.deconstruct_str(max_parse=command.arg_details.maximum_arguments)
+        if remainder and command.arg_details.kwarg_name is None and not command._allow_extra_arguments:
+            raise errors.TooManyArguments(command.name)
+        if len(positional_args) < command.arg_details.minimum_arguments:
+            raise errors.NotEnoughArguments(command.name)
+
+        if not remainder:
+            remainder = {}
+        if remainder and command.arg_details.kwarg_name is not None:
+            remainder = {command.arg_details.kwarg_name: remainder}
+        return positional_args, remainder
+
     async def _invoke_command(
         self,
         command: commands.Command,
         context: context_.Context,
-        args: typing.List[str],
+        args: typing.Sequence[str],
+        kwarg: typing.Mapping[str, str],
     ) -> None:
+        if kwarg and command.arg_details.kwarg_name:
+            await command.invoke(context, *args, **kwarg)
+        elif args:
+            await command.invoke(context, *args)
+        else:
+            await command.invoke(context)
+
+    async def process_commands_for_event(self, event: hikari.MessageCreateEvent) -> None:
+        """
+        Carries out all command and argument parsing, evaluates checks and ultimately invokes
+        a command if the event passed is deemed to contain a command invocation.
+
+        It is not recommended that you override this method - if you do you should make sure that
+        you know what you are doing.
+
+        Args:
+            event (:obj:`hikari.MessageCreateEvent`): The event to process commands for.
+
+        Returns:
+            ``None``
+        """
+        prefix = await self._resolve_prefix(event.message)
+        if prefix is None:
+            return
+
+        new_content = event.message.content[len(prefix) :]
+        split_args = ARG_SEP_REGEX.split(new_content, maxsplit=1)
+        invoked_with, command_args = split_args[0], "".join(split_args[1:])
+
         try:
-            await self.dispatch(events.CommandInvocationEvent(app=self, command=command, context=context))
+            command = self._validate_command_exists(invoked_with)
+        except errors.CommandNotFound as ex:
+            await self._dispatch_command_error_event_from_exception(ex, event.message)
+            return
 
-            if not await self._evaluate_checks(command, context):
-                return
+        temp_args = command_args
+        final_args = command_args
+        while isinstance(command, commands.Group) and command_args:
+            next_split = ARG_SEP_REGEX.split(temp_args, maxsplit=1)
+            next_arg, temp_args = next_split[0], "".join(next_split[1:])
+            prev_command = command
+            maybe_subcommand = command.get_subcommand(next_arg)
 
-            if (before_invoke := command._before_invoke) is not None:
-                await before_invoke(context)
-
-            (
-                before_asterisk,
-                param_name,
-            ) = command.arg_details._args_and_name_before_asterisk()
-            args = self._concatenate_args(args, command)
-
-            if not command.arg_details.has_max_args and len(args) >= command.arg_details.min_args:
-                if param_name is not None:
-                    await command.invoke(
-                        context,
-                        *args[:before_asterisk],
-                        **{f"{param_name}": args[-1]},
-                    )
-
-                else:
-                    await command.invoke(context, *args)
-
-            elif len(args) < command.arg_details.min_args:
-                raise errors.NotEnoughArguments(context.invoked_with)
-
-            elif len(args) > command.arg_details.max_args and not command._allow_extra_arguments:
-                raise errors.TooManyArguments(context.invoked_with)
-
-            elif command.arg_details.max_args == 0:
-                await command.invoke(context)
-
+            if maybe_subcommand is None:
+                command = prev_command
+                break
             else:
-                if param_name is not None:
-                    await command.invoke(
-                        context,
-                        *args[:before_asterisk],
-                        **{f"{param_name}": args[-1]},
-                    )
-                else:
-                    await command.invoke(context, *args[:before_asterisk])
+                command = maybe_subcommand
+                final_args = temp_args
 
-            if (after_invoke := command._after_invoke) is not None:
-                await after_invoke(context)
+        context = self.get_context(event.message, prefix, invoked_with, command)
 
-            await self.dispatch(events.CommandCompletionEvent(app=self, command=command, context=context))
+        await self.dispatch(events.CommandInvocationEvent(app=self, command=command, context=context))
+        if (before_invoke := command._before_invoke) is not None:
+            await before_invoke(context)
+
+        try:
+            positional_args, keyword_arg = self._resolve_args_for_command(command, final_args)
+            await self._evaluate_checks(command, context)
+        except (errors.NotEnoughArguments, errors.TooManyArguments, errors.CheckFailure) as ex:
+            await self._dispatch_command_error_event_from_exception(ex, event.message, context, command)
+            return
+
+        try:
+            await self._invoke_command(command, context, positional_args, keyword_arg)
         except errors.CommandError as ex:
-            error_event = events.CommandErrorEvent(
-                app=self, exception=ex, context=context, message=context.message, command=command
-            )
-
-            if command._error_listener is not None:
-                await command._error_listener(error_event)
-            if self.get_listeners(events.CommandErrorEvent, polymorphic=True):
-                await self.dispatch(error_event)
-            else:
-                raise
+            await self._dispatch_command_error_event_from_exception(ex, event.message, context, command)
+            return
         except Exception as ex:
             new_ex = errors.CommandInvocationError("An error occurred during command invocation.", original=ex)
-            error_event = events.CommandErrorEvent(
-                app=self, exception=new_ex, context=context, message=context.message, command=command
-            )
+            await self._dispatch_command_error_event_from_exception(new_ex, event.message, context, command)
+            return
 
-            if command._error_listener is not None:
-                await command._error_listener(error_event)
-            if self.get_listeners(events.CommandErrorEvent, polymorphic=True):
-                await self.dispatch(error_event)
-            else:
-                raise
+        if (after_invoke := command._after_invoke) is not None:
+            await after_invoke(context)
 
-    def _concatenate_args(self, args: typing.List[str], command: commands.Command):
-        # Concatenates arguments for last argument (after asterisk sign)
-        new_args = args
-        before_asterisk, param_name = command.arg_details._args_and_name_before_asterisk()
-        default = command.arg_details._get_default_values()
-
-        if before_asterisk < len(args) and not command.arg_details.has_max_args and param_name is not None:
-
-            new_args = [
-                *args[:before_asterisk],
-                " ".join(args[before_asterisk:]),
-            ]
-
-        elif before_asterisk == len(args) and not command.arg_details.has_max_args and param_name is not None:
-            if default[-1] != inspect.Parameter.empty:
-
-                new_args = [*args, default[-1]]
-
-        return new_args
+        await self.dispatch(events.CommandCompletionEvent(app=self, command=command, context=context))
 
     async def handle(self, event: hikari.MessageCreateEvent) -> None:
         """
         The message listener that deals with validating the invocation messages. If invocation message
-        is valid then it will invoke the relevant command.
+        is valid then it will delegate parsing and invocation to :obj:`Bot.process_commands_for_event`.
+
+        You can override this method to customise how the bot should validate that a message could
+        contain a command invocation, for example making it ignore specific guilds or users.
+
+        If you choose to override this method, it should await :obj:`Bot.process_commands_for_event`
+        otherwise no commands will ever be invoked.
 
         Args:
             event (:obj:`hikari.events.message.MessageCreateEvent`): The message create event containing
                 a possible command invocation.
-
-        Raises:
-            TypeError: When function's signature has more than 1 argument required after asterisk symbol.
 
         Returns:
             ``None``
@@ -806,45 +841,4 @@ class Bot(hikari.Bot):
         if not event.message.content:
             return
 
-        prefixes = self.get_prefix(self, event.message)
-        if inspect.iscoroutine(prefixes):
-            prefixes = await prefixes
-
-        if isinstance(prefixes, str):
-            prefixes = [prefixes]
-
-        prefix = None
-        for p in prefixes:
-            if event.message.content.startswith(p):
-                prefix = p
-                break
-
-        if prefix is None:
-            return
-
-        args = self.resolve_arguments(event.message, prefix)
-
-        invoked_with = args[0].casefold() if self.insensitive_commands else args[0]
-
-        if invoked_with not in self._commands:
-            ex = errors.CommandNotFound(invoked_with)
-            error_event = events.CommandErrorEvent(app=self, exception=ex, message=event.message)
-
-            if self.get_listeners(events.CommandErrorEvent, polymorphic=True):
-                await self.dispatch(error_event)
-                return
-            else:
-                raise ex
-
-        invoked_command = self._commands[invoked_with]
-
-        if isinstance(invoked_command, commands.Group):
-            try:
-                invoked_command, new_args = invoked_command._resolve_subcommand(args)
-            except AttributeError:
-                new_args = args[1:]
-        else:
-            new_args = args[1:]
-
-        command_context = self.get_context(event.message, prefix, invoked_with, invoked_command)
-        await self._invoke_command(invoked_command, command_context, new_args)
+        await self.process_commands_for_event(event)

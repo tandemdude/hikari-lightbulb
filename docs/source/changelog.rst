@@ -8,6 +8,17 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 0.0.45
+==============
+
+- Rewrote the argument parsing system and greedy arg system.
+
+- Made converters work for greedy args.
+
+- Added functionality to :obj:`~.stringview.StringView` to allow it to only parse up to a specified number of args.
+
+- Abstracted the :obj:`~.command_handler.Bot.handle` method to make it easier to override to customise functionality.
+
 Version 0.0.44
 ==============
 

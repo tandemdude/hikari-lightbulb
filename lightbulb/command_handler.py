@@ -32,7 +32,7 @@ import hikari
 from multidict import CIMultiDict
 
 from lightbulb import commands
-from lightbulb import context
+from lightbulb import context as context_
 from lightbulb import errors
 from lightbulb import events
 from lightbulb import help as help_command
@@ -154,14 +154,19 @@ class Bot(hikari.Bot):
         """A list of extensions currently loaded to the bot."""
         self.plugins: typing.MutableMapping[str, plugins.Plugin] = {}
         """A mapping of plugin name to plugin object currently added to the bot."""
-        self._commands: typing.MutableMapping[
-            str, commands.Command
-        ] = dict() if not self.insensitive_commands else CIMultiDict()
+        self._commands: typing.MutableMapping[str, commands.Command] = (
+            dict() if not self.insensitive_commands else CIMultiDict()
+        )
         self.commands: typing.Set[commands.Command] = set()
         """A set containing all commands and groups registered to the bot."""
         self._checks = []
 
         self._help_impl = help_class(self)
+
+    @property
+    def help_class(self):
+        """The instance of the help class used by the bot."""
+        return self._help_impl
 
     async def fetch_owner_ids(self) -> None:
         """
@@ -360,7 +365,7 @@ class Bot(hikari.Bot):
         _LOGGER.debug("new group registered: %s", func.name)
         return self._commands[func.name]
 
-    def add_check(self, func: typing.Callable[[context.Context], typing.Coroutine[None, None, bool]]) -> None:
+    def add_check(self, func: typing.Callable[[context_.Context], typing.Coroutine[None, None, bool]]) -> None:
         """
         Add a coroutine as a global check for the bot.
 
@@ -595,12 +600,52 @@ class Bot(hikari.Bot):
         Yields:
             :obj:`~.commands.Command`: All commands, groups and subcommands registered to the bot.
         """
-        unique_commands = list(self.commands)
-        while unique_commands:
-            command = unique_commands.pop()
-            if isinstance(command, commands.Group):
-                unique_commands.extend(list(command.subcommands))
+        for command in self.commands:
             yield command
+            if isinstance(command, commands.Group):
+                yield from command.walk_commands()
+
+    async def send_help(
+        self, context: context_.Context, obj: typing.Union[commands.Command, plugins.Plugin] = None
+    ) -> None:
+        """
+        Send help to the provided context to the specified object, or send the bot's help overview if
+        no object to send help for is supplied.
+
+        Args:
+            context (:obj:`~.context.Context`): The context to send help to.
+            obj (Union[ :obj:`~.commands.Command`, :obj:`~.plugins.Plugin` ]): The object to send help for.
+                Defaults to ``None``.
+
+        Returns:
+            ``None``
+        """
+        if obj is None:
+            await self.help_class.send_help_overview(context)
+        elif isinstance(obj, commands.Group):
+            await self.help_class.send_group_help(context, obj)
+        elif isinstance(obj, commands.Command):
+            await self.help_class.send_command_help(context, obj)
+        elif isinstance(obj, plugins.Plugin):
+            await self.help_class.send_plugin_help(context, obj)
+
+    def get_context(
+        self, message: hikari.Message, prefix: str, invoked_with: str, invoked_command: commands.Command
+    ) -> context_.Context:
+        """
+        Get the :obj:`~.context.Context` instance for the given arguments. This should be overridden
+        if you wish to supply a custom :obj:`~.context.Context` class to your commands.
+
+        Args:
+            message (:obj:`hikari.Message`): The message the context is for.
+            prefix (:obj:`str`): The prefix used in this context.
+            invoked_with (:obj:`str`): The command name/alias used to trigger invocation.
+            invoked_command (:obj:`~.commands.Command`): The command that will be invoked.
+
+        Returns:
+            :obj:`~.context.Context`: The context to be used for the command invocation.
+        """
+        return context_.Context(self, message, prefix, invoked_with, invoked_command)
 
     def resolve_arguments(self, message: hikari.Message, prefix: str) -> typing.List[str]:
         """
@@ -621,7 +666,7 @@ class Bot(hikari.Bot):
         string_view = stringview.StringView(message.content[len(prefix) :])
         return string_view.deconstruct_str()
 
-    async def _evaluate_checks(self, command: commands.Command, context: context.Context):
+    async def _evaluate_checks(self, command: commands.Command, context: context_.Context):
         failed_checks = []
 
         for check in [*self._checks, *command._checks]:
@@ -642,7 +687,10 @@ class Bot(hikari.Bot):
         return True
 
     async def _invoke_command(
-        self, command: commands.Command, context: context.Context, args: typing.List[str],
+        self,
+        command: commands.Command,
+        context: context_.Context,
+        args: typing.List[str],
     ) -> None:
         try:
             await self.dispatch(events.CommandInvocationEvent(app=self, command=command, context=context))
@@ -653,13 +701,18 @@ class Bot(hikari.Bot):
             if (before_invoke := command._before_invoke) is not None:
                 await before_invoke(context)
 
-            (before_asterisk, param_name,) = command.arg_details._args_and_name_before_asterisk()
+            (
+                before_asterisk,
+                param_name,
+            ) = command.arg_details._args_and_name_before_asterisk()
             args = self._concatenate_args(args, command)
 
             if not command.arg_details.has_max_args and len(args) >= command.arg_details.min_args:
                 if param_name is not None:
                     await command.invoke(
-                        context, *args[:before_asterisk], **{f"{param_name}": args[-1]},
+                        context,
+                        *args[:before_asterisk],
+                        **{f"{param_name}": args[-1]},
                     )
 
                 else:
@@ -677,7 +730,9 @@ class Bot(hikari.Bot):
             else:
                 if param_name is not None:
                     await command.invoke(
-                        context, *args[:before_asterisk], **{f"{param_name}": args[-1]},
+                        context,
+                        *args[:before_asterisk],
+                        **{f"{param_name}": args[-1]},
                     )
                 else:
                     await command.invoke(context, *args[:before_asterisk])
@@ -791,5 +846,5 @@ class Bot(hikari.Bot):
         else:
             new_args = args[1:]
 
-        command_context = context.Context(self, event.message, prefix, invoked_with, invoked_command)
+        command_context = self.get_context(event.message, prefix, invoked_with, invoked_command)
         await self._invoke_command(invoked_command, command_context, new_args)

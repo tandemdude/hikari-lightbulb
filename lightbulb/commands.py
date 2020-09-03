@@ -302,6 +302,22 @@ class Command:
         return self._name
 
     @property
+    def qualified_name(self) -> str:
+        """
+        The fully qualified name of the command, taking into  account
+        whether or not the command is a subcommand.
+
+        Returns:
+            :obj:`str`: Qualified name of the command.
+        """
+        command_qualname = []
+        cmd = self
+        while cmd is not None:
+            command_qualname.append(cmd.name)
+            cmd = cmd.parent
+        return " ".join(command_qualname[::-1])
+
+    @property
     def aliases(self) -> typing.Iterable[str]:
         """
         The command's aliases.
@@ -321,9 +337,29 @@ class Command:
         """
         return self.parent is not None
 
+    @property
+    def callback(self) -> typing.Callable:
+        """
+        The command's callback coroutine
+
+        Returns:
+            Callable: The callback coroutine for the command
+        """
+        return self._callback
+
+    @property
+    def checks(self) -> typing.Iterable[typing.Callable[[context.Context], bool]]:
+        """
+        The command's checks.
+
+        Returns:
+            Iterable[ Callable[ [ :obj:`~.conext.Context` ], :obj:`bool` ] ]: The checks for the command.
+        """
+        return self._checks
+
     def command_error(self):
         """
-        A decorator to register a coroutine as the command's error handler. Any global error 
+        A decorator to register a coroutine as the command's error handler. Any global error
         handler/listener for :obj:`~.events.CommandErrorEvent` will still be called.
 
         The coroutine can only take one argument, which will be an instance of :obj:`~.events.CommandErrorEvent`
@@ -332,7 +368,7 @@ class Command:
         Example:
 
             .. code-block:: python
-                
+
                 @lightbulb.owner_only()
                 @bot.command()
                 async def foo(ctx):
@@ -387,7 +423,9 @@ class Command:
 
     @staticmethod
     async def _convert_args(
-        context: context.Context, args: typing.Sequence[str], arg_details: typing.Sequence[ArgInfo],
+        context: context.Context,
+        args: typing.Sequence[str],
+        arg_details: typing.Sequence[ArgInfo],
     ) -> typing.Sequence[typing.Any]:
         new_args = []
 
@@ -511,6 +549,18 @@ class Group(Command):
                 args = args[1:]
 
         return this, args
+
+    def walk_commands(self) -> typing.Generator[Command, None, None]:
+        """
+        A generator that walks through all commands and subcommands registered to this group.
+
+        Yields:
+            :obj:`~.commands.Command`: All commands, groups and subcommands registered to this group.
+        """
+        for command in self.subcommands:
+            yield command
+            if isinstance(command, type(self)):
+                yield from command.walk_commands()
 
     def add_check(self, check_func: typing.Callable[[context.Context], typing.Coroutine[None, None, bool]]) -> None:
         if self.inherit_checks:

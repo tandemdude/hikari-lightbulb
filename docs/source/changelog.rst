@@ -8,6 +8,23 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 0.0.44
+==============
+
+- Improved :obj:`~.command_handler.Bot.walk_commands`.
+
+- Added :obj:`~.commands.Group.walk_commands`.
+
+- Added :obj:`~.commands.Command.qualified_name`, :obj:`~.commands.Command.callback`, :obj:`~.commands.Command.checks`.
+
+- Fixed wonky default help for command groups.
+
+- Added :obj:`~.context.Context.send_help` and :obj:`~.command_handler.Bot.send_help`.
+
+- Added :obj:`~.command_handler.Bot.get_context`.
+
+- Added :obj:`~.command_handler.Bot.help_class`.
+
 Version 0.0.43
 ==============
 

@@ -134,7 +134,10 @@ class Paginator(abc.ABC, typing.Generic[T]):
     def _chunk_add(self, line: str) -> None:
         # Try to split up words, if not, break mid-word.
         wrapper = textwrap.TextWrapper(
-            width=self._max_content_chars, expand_tabs=True, tabsize=4, max_lines=self._max_content_lines,
+            width=self._max_content_chars,
+            expand_tabs=True,
+            tabsize=4,
+            max_lines=self._max_content_lines,
         )
 
         lines = wrapper.wrap(line)
@@ -218,7 +221,11 @@ class StringPaginator(Paginator[str]):
         line_separator: str = "\n",
     ) -> None:
         super().__init__(
-            max_lines=max_lines, max_chars=max_chars, prefix=prefix, suffix=suffix, line_separator=line_separator,
+            max_lines=max_lines,
+            max_chars=max_chars,
+            prefix=prefix,
+            suffix=suffix,
+            line_separator=line_separator,
         )
 
 

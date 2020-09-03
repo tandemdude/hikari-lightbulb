@@ -71,14 +71,7 @@ def get_command_signature(command: commands.Command) -> str:
     """
     signature = inspect.signature(command._callback)
 
-    command_qualname = []
-    cmd = command
-    while cmd is not None:
-        command_qualname.append(cmd.name)
-        cmd = cmd.parent
-    command_qualname = " ".join(command_qualname[::-1])
-
-    items = [command_qualname]
+    items = [command.qualified_name]
     num_args = len(signature.parameters) - command.arg_details.max_args
     for name, param in list(signature.parameters.items())[num_args:]:
         if param.default is param.empty:
@@ -89,7 +82,8 @@ def get_command_signature(command: commands.Command) -> str:
 
 
 async def filter_commands(
-    context: context.Context, command_list: typing.Iterable[commands.Command],
+    context: context.Context,
+    command_list: typing.Iterable[commands.Command],
 ) -> typing.List[commands.Command]:
     """
     Filter a list of :obj:`~.commands.Command` and :obj:`~.commands.Group`, removing any commands that cannot
@@ -310,7 +304,8 @@ class HelpCommand:
             "Usage:",
             f"```{context.clean_prefix}{get_command_signature(group)}```",
             get_help_text(group).replace("\n", "\n> ") or "No help text provided.",
-            f"Subcommands:" ", ".join(f"`{c.name}`" for c in sorted(group.subcommands, key=lambda c: c.name))
-            or "No subcommands in the group",
+            f"Subcommands: {', '.join(f'`{c.name}`' for c in sorted(group.subcommands, key=lambda c: c.name))}"
+            if group.subcommands
+            else "No subcommands in the group",
         ]
         await context.reply("\n> ".join(help_text))

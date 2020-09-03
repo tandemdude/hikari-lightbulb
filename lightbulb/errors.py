@@ -161,7 +161,7 @@ class CommandSyntaxError(CommandError, abc.ABC):
 
 class PrematureEOF(CommandSyntaxError):
     """
-    Error raised if EOF (end of input) was reached, but more content was 
+    Error raised if EOF (end of input) was reached, but more content was
     expected.
     """
 

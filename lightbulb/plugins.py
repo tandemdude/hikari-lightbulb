@@ -90,7 +90,10 @@ class EventListenerDescriptor:
             next(param_iterator)  # discard "self"
             event_param = next(param_iterator)
 
-            if event_param.kind not in (inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.POSITIONAL_ONLY,):
+            if event_param.kind not in (
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                inspect.Parameter.POSITIONAL_ONLY,
+            ):
                 raise TypeError("Expected two positional parameters on event listener (self, event)")
 
             if not issubclass(event_param.annotation, hikari.Event):
@@ -179,7 +182,8 @@ class Plugin:
         self.commands: typing.MutableMapping[str, typing.Union[commands.Command, commands.Group]] = {}
         """Mapping of command name to command object containing all commands registered to the plugin."""
         self.listeners: typing.MutableMapping[
-            typing.Type[hikari.Event], typing.MutableSequence[EventListenerDescriptor],
+            typing.Type[hikari.Event],
+            typing.MutableSequence[EventListenerDescriptor],
         ] = {}
         """Mapping of event to a listener method containing all listeners registered to the plugin."""
 

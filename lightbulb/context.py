@@ -28,6 +28,7 @@ import hikari
 if typing.TYPE_CHECKING:
     from lightbulb import command_handler
     from lightbulb import commands
+    from lightbulb import plugins
 
 
 class Context:
@@ -112,3 +113,17 @@ class Context:
             **kwargs: The keyword arguments :meth:`hikari.messages.Message.reply` is invoked with
         """
         return await self.message.reply(*args, **kwargs)
+
+    async def send_help(self, obj: typing.Union[commands.Command, plugins.Plugin] = None) -> None:
+        """
+        Send help for the given object or the bot's help overview if no object
+        is supplied to the current context.
+
+        Args:
+            obj (Union[ :obj:`~.commands.Command`, :obj:`~.plugins.Plugin` ]): The object to send help for.
+                Defaults to ``None``.
+
+        Returns:
+            ``None``
+        """
+        await self.bot.send_help(self, obj)

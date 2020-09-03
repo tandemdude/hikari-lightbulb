@@ -200,7 +200,8 @@ async def guild_voice_channel_converter(arg: WrappedArg) -> hikari.GuildVoiceCha
 # so this shouldn't be used as it may cause breaking changes later.
 def voice_channel_converter(arg: WrappedArg) -> typing.Coroutine[typing.Any, typing.Any, hikari.GuildVoiceChannel]:
     warnings.warn(
-        "voice_channel_converter is deprecated, use guild_voice_channel_converter instead", category=DeprecationWarning,
+        "voice_channel_converter is deprecated, use guild_voice_channel_converter instead",
+        category=DeprecationWarning,
     )
     return guild_voice_channel_converter(arg)
 

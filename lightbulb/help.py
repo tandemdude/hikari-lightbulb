@@ -313,4 +313,4 @@ class HelpCommand:
             f"Subcommands:" ", ".join(f"`{c.name}`" for c in sorted(group.subcommands, key=lambda c: c.name))
             or "No subcommands in the group",
         ]
-        await context.reply("\n>".join(help_text))
+        await context.reply("\n> ".join(help_text))

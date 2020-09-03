@@ -64,7 +64,7 @@ class StringView:
         buff = []
         while self.index < len(self.text):
             char = self.text[self.index]
-            if char == " " and self.expect_quote is None:
+            if char.isspace() and self.expect_quote is None:
                 self.index += 1
                 return "".join(buff)
             elif not self.expect_quote and char in _quotes:
@@ -91,14 +91,15 @@ class StringView:
         if buff:
             return "".join(buff)
 
-    def deconstruct_str(self, *, max_parse=float("inf")) -> typing.Tuple[typing.List[str], str]:
+    def deconstruct_str(self, *, max_parse: typing.Optional[int] = None) -> typing.Tuple[typing.List[str], str]:
         """
         Method called to deconstruct the string passed in at instantiation into
         a list of all of its arguments. Arguments are defined as words separated by whitespace,
         or as words enclosed in quotation marks.
 
         Keyword Args:
-            max_parse (:obj:`int`): The maximum number of arguments to parse. Defaults to ``float("inf")``.
+            max_parse (Optional[ :obj:`int` ]): The maximum number of arguments to parse. If unspecified,
+                as many arguments will be parsed as possible.
 
         Raises:
             :obj:`~.errors.UnclosedQuotes`: When an unexpected EOF is encountered.
@@ -107,6 +108,8 @@ class StringView:
             Tuple[ List[ :obj:`str` ], :obj:`str`]: The arguments extracted from the string, as well as any
                 remainder if ``max_parse`` was supplied.
         """
+        max_parse = max_parse if max_parse is not None else float("inf")
+
         finished = False
         args_list = []
         while not finished and len(args_list) < max_parse:

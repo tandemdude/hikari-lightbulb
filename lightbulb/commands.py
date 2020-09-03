@@ -134,35 +134,27 @@ class SignatureInspector:
         self.args = {}
         signature = inspect.signature(command._callback)
         for index, (name, arg) in enumerate(signature.parameters.items()):
-            self.args[name] = self._parse_arg(index, arg)
-        self.number_positional_args = len(
-            [
-                a
-                for a in self.args.values()
-                if (
-                    a.argtype == inspect.Parameter.POSITIONAL_OR_KEYWORD
-                    or a.argtype == inspect.Parameter.POSITIONAL_ONLY
-                )
-                and not a.ignore
-            ]
-        )
-        self.minimum_arguments = len(
-            [
-                a
-                for a in self.args.values()
-                if not a.ignore and a.required and a.argtype != inspect.Parameter.KEYWORD_ONLY
-            ]
+            self.args[name] = self.parse_arg(index, arg)
+
+        self.number_positional_args = 0
+        for arg in self.args.values():
+            if (
+                arg.argtype == inspect.Parameter.POSITIONAL_OR_KEYWORD
+                or arg.argtype == inspect.Parameter.POSITIONAL_ONLY
+            ) and not arg.ignore:
+                self.number_positional_args += 1
+
+        self.minimum_arguments = sum(
+            1 for a in self.args.values() if not a.ignore and a.required and a.argtype != inspect.Parameter.KEYWORD_ONLY
         )
         self.maximum_arguments = (
             float("inf")
-            if any([a.kind == inspect.Parameter.VAR_POSITIONAL for a in signature.parameters.values()])
+            if any(a.kind == inspect.Parameter.VAR_POSITIONAL for a in signature.parameters.values())
             else self.number_positional_args
         )
-        self.has_var_positional = any(
-            [a.kind == inspect.Parameter.VAR_POSITIONAL for a in signature.parameters.values()]
-        )
+        self.has_var_positional = any(a.kind == inspect.Parameter.VAR_POSITIONAL for a in signature.parameters.values())
 
-    def _parse_arg(self, index, arg):
+    def parse_arg(self, index: int, arg: inspect.Parameter) -> ArgInfo:
         if index == 0:
             ignore = True
         elif index == 1 and self.has_self:
@@ -455,10 +447,10 @@ class Command:
         new_args = [*new_args, *args[len(arg_details) :]]
 
         if kwargs:
-            new_kwarg = await self._convert_args(
-                context, kwargs.values(), [self.arg_details.args[self.arg_details.kwarg_name]]
-            )
-            kwargs = {self.arg_details.kwarg_name: new_kwarg[0]}
+            new_kwarg = (
+                await self._convert_args(context, kwargs.values(), [self.arg_details.args[self.arg_details.kwarg_name]])
+            )[0]
+            kwargs = {self.arg_details.kwarg_name: new_kwarg}
 
         return await self._callback(context, *new_args, **kwargs)
 

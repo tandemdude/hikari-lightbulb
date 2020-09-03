@@ -455,7 +455,9 @@ class Command:
         new_args = [*new_args, *args[len(arg_details) :]]
 
         if kwargs:
-            new_kwarg = await self._convert_args(context, kwargs.values(), [self.arg_details.args[self.arg_details.kwarg_name]])
+            new_kwarg = await self._convert_args(
+                context, kwargs.values(), [self.arg_details.args[self.arg_details.kwarg_name]]
+            )
             kwargs = {self.arg_details.kwarg_name: new_kwarg[0]}
 
         return await self._callback(context, *new_args, **kwargs)

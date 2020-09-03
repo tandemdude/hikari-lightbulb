@@ -23,12 +23,12 @@ from lightbulb import errors
 
 def test_stringview_splits_normal_args():
     sv = stringview.StringView("I am thommo")
-    assert sv.deconstruct_str() == ["I", "am", "thommo"]
+    assert sv.deconstruct_str() == (["I", "am", "thommo"], "")
 
 
 def test_stringview_splits_quoted_args():
     sv = stringview.StringView('I "am thommo"')
-    assert sv.deconstruct_str() == ["I", "am thommo"]
+    assert sv.deconstruct_str() == (["I", "am thommo"], "")
 
 
 def test_stringview_raises_UnclosedQuotes():

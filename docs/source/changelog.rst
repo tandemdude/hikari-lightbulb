@@ -8,6 +8,15 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 0.0.46
+==============
+
+- Fixed converters not working with kwargs for commands in plugins.
+
+- Improved README.md
+
+- Added documentation and public method for how to customise how arguments are parsed.
+
 Version 0.0.45
 ==============
 

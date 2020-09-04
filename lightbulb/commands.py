@@ -75,6 +75,15 @@ def _bind_prototype(instance: typing.Any, command_template: _CommandT):
                 self.cooldown_manager.add_cooldown(context)
             # Add the start slice on to the length to offset the section of arg_details being extracted
             new_args = await self._convert_args(context, args, list(self.arg_details.args.values())[2 : len(args) + 2])
+
+            if kwargs:
+                new_kwarg = (
+                    await self._convert_args(
+                        context, kwargs.values(), [self.arg_details.args[self.arg_details.kwarg_name]]
+                    )
+                )[0]
+                kwargs = {self.arg_details.kwarg_name: new_kwarg}
+
             return await self._callback(instance, context, *new_args, **kwargs)
 
     prototype = BoundCommand()
@@ -429,7 +438,8 @@ class Command:
 
     async def invoke(self, context: context.Context, *args: str, **kwargs: str) -> typing.Any:
         """
-        Invoke the command with given args and kwargs.
+        Invoke the command with given args and kwargs. Cooldowns and converters will
+        be processed however this method bypasses all command checks.
 
         Args:
             context (:obj:`~.context.Context`): The command invocation context.

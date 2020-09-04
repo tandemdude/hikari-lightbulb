@@ -716,9 +716,37 @@ class Bot(hikari.Bot):
             return command
         raise errors.CommandNotFound(invoked_with)
 
-    def _resolve_args_for_command(
+    def resolve_args_for_command(
         self, command: commands.Command, raw_arg_string: str
     ) -> typing.Tuple[typing.List[str], typing.Dict[str, str]]:
+        """
+        Resolve the appropriate command arguments from an unparsed string
+        containing the raw command arguments.
+
+        This method can be overridden if you wish to customise how arguments
+        are parsed for all the commands. If you override this then it is important that
+        it at least returns a tuple containing an empty list if no positional arguments
+        were resolved, and an empty dict if no keyword arguments were resolved.
+
+        If you override this method then you may find the :obj:`~.stringview.StringView`
+        class useful for extracting the arguments from the raw string and the property
+        :obj:`~.command.arg_details` which contains information about the command's arguments
+        and which are optional or required.
+
+        Args:
+            command (:obj:`~.commands.Command`): The command to resolve the arguments for.
+            raw_arg_string (:obj:`str`): String containing the raw, unparsed arguments.
+
+        Returns:
+            Tuple[ List[ :obj:`str` ], Dict[ :obj:`str1, :obj:`str` ] ]: Positional and keyword
+                arguments the command should be invoked with.
+
+        Raises:
+            :obj:`~.errors.TooManyArguments`: The command does not ignore extra arguments and too many
+                arguments were supplied by the user.
+            :obj:`~.errors.NotEnoughArguments`: Not enough arguments were provided by the user to fill
+                all required argument fields.
+        """
         sv = stringview.StringView(raw_arg_string)
         positional_args, remainder = sv.deconstruct_str(max_parse=command.arg_details.maximum_arguments)
         if remainder and command.arg_details.kwarg_name is None and not command._allow_extra_arguments:
@@ -796,7 +824,7 @@ class Bot(hikari.Bot):
             await before_invoke(context)
 
         try:
-            positional_args, keyword_arg = self._resolve_args_for_command(command, final_args)
+            positional_args, keyword_arg = self.resolve_args_for_command(command, final_args)
             await self._evaluate_checks(command, context)
         except (
             errors.NotEnoughArguments,

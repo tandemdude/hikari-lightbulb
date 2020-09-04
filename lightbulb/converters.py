@@ -154,7 +154,7 @@ async def member_converter(arg: WrappedArg) -> hikari.Member:
     return await arg.context.bot.rest.fetch_member(arg.context.guild_id, user_id)
 
 
-async def text_channel_converter(arg: WrappedArg) -> typing.Union[hikari.GuildTextChannel, hikari.GuildNewsChannel]:
+async def text_channel_converter(arg: WrappedArg) -> hikari.TextChannel:
     """
     Converter to transform a command argument into a :obj:`~hikari.channels.GuildTextChannel` or
     :obj:`~hikari.channels.GuildNewsChannel` object.
@@ -163,8 +163,7 @@ async def text_channel_converter(arg: WrappedArg) -> typing.Union[hikari.GuildTe
         arg (:obj:`WrappedArg`): Argument to transform.
 
     Returns:
-        Union[ :obj:`~hikari.channels.GuildTextChannel`, :obj:`~hikari.channels.GuildNewsChannel`]: The
-        channel object resolved from the argument.
+        :obj:`hikari.TextChannel`: The channel object resolved from the argument.
 
     Raises:
         :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a channel object.
@@ -246,3 +245,13 @@ async def role_converter(arg: WrappedArg) -> hikari.Role:
     roles = await arg.context.bot.rest.fetch_roles(arg.context.guild_id)
     roles = dict([(r.id, r) for r in roles])
     return roles[role_id]
+
+
+if typing.TYPE_CHECKING:
+    user_converter = hikari.User
+    member_converter = hikari.Member
+    text_channel_converter = hikari.TextChannel
+    guild_voice_channel_converter = hikari.GuildVoiceChannel
+    voice_channel_converter = guild_voice_channel_converter
+    category_converter = hikari.GuildCategory
+    role_converter = hikari.Role

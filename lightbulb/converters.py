@@ -277,3 +277,4 @@ if typing.TYPE_CHECKING:
     voice_channel_converter = guild_voice_channel_converter
     category_converter = hikari.GuildCategory
     role_converter = hikari.Role
+    custom_emoji_converter = hikari.KnownCustomEmoji

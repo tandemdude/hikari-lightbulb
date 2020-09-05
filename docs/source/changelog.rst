@@ -8,12 +8,17 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 0.0.47
+==============
+
+- Added :obj:`~.context.Context.channel` and :obj:`~.context.Context.guild` properties.
+
 Version 0.0.46
 ==============
 
 - Fixed converters not working with kwargs for commands in plugins.
 
-- Improved README.md
+- Improved README.md.
 
 - Added documentation and public method for how to customise how arguments are parsed.
 

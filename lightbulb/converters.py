@@ -107,27 +107,6 @@ async def _get_or_fetch_guild_channel_from_id(arg: WrappedArg, channel_id: hikar
     return channel
 
 
-async def custom_emoji_converter(arg: WrappedArg) -> hikari.KnownCustomEmoji:
-	"""
-    Converter to transform a command argument into a :obj:`~hikari.emojis.KnownCustomEmoji` object.
-
-    Args:
-        arg (:obj:`WrappedArg`): Argument to transform.
-
-    Returns:
-        :obj:`~hikari.emojis.KnownCustomEmoji`: The custom emoji object resolved from the argument.
-
-    Raises:
-        :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a custom emoji object.
-    """
-
-	emoji_id = _resolve_id_from_arg(arg.data, EMOJI_MENTION_REGEX)
-	if not arg.context.bot.is_stateless:
-        if (emoji := arg.context.bot.cache.get_emoji(emoji_id)) is not None:
-            return emoji
-    return await arg.context.bot.rest.fetch_emoji(arg.context.guild_id, emoji_id)
-
-
 async def user_converter(arg: WrappedArg) -> hikari.User:
     """
     Converter to transform a command argument into a :obj:`hikari.users.UserImpl` object.
@@ -267,6 +246,27 @@ async def role_converter(arg: WrappedArg) -> hikari.Role:
     roles = await arg.context.bot.rest.fetch_roles(arg.context.guild_id)
     roles = dict([(r.id, r) for r in roles])
     return roles[role_id]
+
+
+async def custom_emoji_converter(arg: WrappedArg) -> hikari.KnownCustomEmoji:
+	"""
+    Converter to transform a command argument into a :obj:`~hikari.emojis.KnownCustomEmoji` object.
+
+    Args:
+        arg (:obj:`WrappedArg`): Argument to transform.
+
+    Returns:
+        :obj:`~hikari.emojis.KnownCustomEmoji`: The custom emoji object resolved from the argument.
+
+    Raises:
+        :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a custom emoji object.
+    """
+
+	emoji_id = _resolve_id_from_arg(arg.data, EMOJI_MENTION_REGEX)
+	if not arg.context.bot.is_stateless:
+        if (emoji := arg.context.bot.cache.get_emoji(emoji_id)) is not None:
+            return emoji
+    return await arg.context.bot.rest.fetch_emoji(arg.context.guild_id, emoji_id)
 
 
 if typing.TYPE_CHECKING:

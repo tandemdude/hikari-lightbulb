@@ -54,41 +54,96 @@ class Context:
         invoked_with: str,
         command: commands.Command,
     ) -> None:
-        self.bot: command_handler.Bot = bot
+        self._bot: command_handler.Bot = bot
         """The bot instance."""
-        self.message: hikari.Message = message
+        self._message: hikari.Message = message
         """The message that the context derived from."""
-        self.prefix: str = prefix
+        self._prefix: str = prefix
         """The command prefix used."""
-        self.invoked_with: str = invoked_with
+        self._invoked_with: str = invoked_with
         """The command name or alias used."""
-        self.command: commands.Command = command
+        self._command: commands.Command = command
         """The command that was invoked."""
 
-    guild_id: typing.Optional[hikari.Snowflake] = property(lambda self: self.message.guild_id)
-    """Optional ID of the guild the command was invoked in."""
-    channel_id: hikari.Snowflake = property(lambda self: self.message.channel_id)
-    """ID of the channel the command was invoked in."""
-    content: str = property(lambda self: self.message.content)
-    """Raw content of the invocation message."""
-    member: typing.Optional[hikari.Member] = property(lambda self: self.message.member)
-    """Optional member corresponding to the context author."""
-    message_id: hikari.Snowflake = property(lambda self: self.message.id)
-    """ID of the message that invoked the command."""
-    timestamp: datetime.datetime = property(lambda self: self.message.timestamp)
-    """The timestamp the context message was sent at."""
-    edited_timestamp: typing.Optional[datetime.datetime] = property(lambda self: self.message.edited_timestamp)
-    """Optional timestamp of the previous edit of the context message."""
-    user_mentions: typing.Collection[hikari.Snowflake] = property(lambda self: self.message.user_mentions)
-    """The users mentioned in the context message."""
-    role_mentions: typing.Collection[hikari.Snowflake] = property(lambda self: self.message.role_mentions)
-    """The roles mentioned in the context message."""
-    channel_mentions: typing.Collection[hikari.Snowflake] = property(lambda self: self.message.channel_mentions)
-    """The channels mentioned in the context message."""
-    attachments: typing.Sequence[hikari.Attachment] = property(lambda self: self.message.attachments)
-    """The attachments to the context message."""
-    author: hikari.User = property(lambda self: self.message.author)
-    """The user who invoked the command."""
+    @property
+    def bot(self) -> command_handler.Bot:
+        return self._bot
+
+    @property
+    def message(self) -> hikari.Message:
+        return self._message
+
+    @property
+    def prefix(self) -> str:
+        return self._prefix
+
+    @property
+    def invoked_with(self) -> str:
+        return self._invoked_with
+
+    @property
+    def command(self) -> commands.Command:
+        return self._command
+
+    @property
+    def guild_id(self) -> typing.Optional[hikari.Snowflake]:
+        """ID of the guild the command was invoked in, or None if the command was invoked in DMs."""
+        return self._message.guild_id
+
+    @property
+    def channel_id(self) -> hikari.Snowflake:
+        """ID of the channel the command was invoked in."""
+        return self._message.channel_id
+
+    @property
+    def content(self) -> str:
+        """Raw content of the invocation message."""
+        return self._message.content
+
+    @property
+    def member(self) -> typing.Optional[hikari.Member]:
+        """Optional member corresponding to the context author."""
+        return self._message.member
+
+    @property
+    def message_id(self) -> hikari.Snowflake:
+        """ID of the message that invoked the command."""
+        return self._message.id
+
+    @property
+    def timestamp(self) -> datetime.datetime:
+        """The timestamp the context message was sent at."""
+        return self._message.timestamp
+
+    @property
+    def edited_timestamp(self) -> typing.Optional[datetime.datetime]:
+        """Optional timestamp of the previous edit of the context message."""
+        return self._message.edited_timestamp
+
+    @property
+    def user_mentions(self) -> typing.Collection[hikari.Snowflake]:
+        """The users mentioned in the context message."""
+        return self._message.user_mentions
+
+    @property
+    def role_mentions(self) -> typing.Collection[hikari.Snowflake]:
+        """The roles mentioned in the context message."""
+        return self._message.role_mentions
+
+    @property
+    def channel_mentions(self) -> typing.Collection[hikari.Snowflake]:
+        """The channels mentioned in the context message."""
+        return self._message.channel_mentions
+
+    @property
+    def attachments(self) -> typing.Sequence[hikari.Attachment]:
+        """The attachments to the context message."""
+        return self._message.attachments
+
+    @property
+    def author(self) -> hikari.User:
+        """The user who invoked the command."""
+        return self._message.author
 
     @property
     def clean_prefix(self) -> str:
@@ -102,6 +157,31 @@ class Context:
             return f"@{user}" if user is not None else self.prefix
 
         return re.sub(r"<@!?(\d+)>", replace, self.prefix) if not self.bot.is_stateless else self.prefix
+
+    @property
+    def guild(self) -> typing.Optional[hikari.Guild]:
+        """
+        The cached :obj:`hikari.Guild` instance for the context's guild ID.
+
+        This will be None if the bot is stateless, the guild is not found in the cache,
+        or the context is for a command run in DMs.
+        """
+        if not self.bot.is_stateless and self.guild_id is not None:
+            return self.bot.cache.get_guild(self.guild_id)
+        return None
+
+    @property
+    def channel(self) -> typing.Optional[hikari.TextChannel]:
+        """
+        The cached :obj:`hikari.TextChannel` instance for the context's channel ID.
+
+        This will be None if the bot is stateless or if the channel is not found in the cache.
+        """
+        if not self.bot.is_stateless:
+            if self.guild_id is not None:
+                return self.bot.cache.get_guild_channel(self.channel_id)
+            return self.bot.cache.get_private_text_channel(self.author.id)
+        return None
 
     async def reply(self, *args, **kwargs) -> hikari.Message:
         """

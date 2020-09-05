@@ -107,7 +107,7 @@ async def _get_or_fetch_guild_channel_from_id(arg: WrappedArg, channel_id: hikar
     return channel
 
 
-async def emoji_converter(arg: WrappedArg) -> hikari.KnownCustomEmoji:
+async def custom_emoji_converter(arg: WrappedArg) -> hikari.KnownCustomEmoji:
 	"""
     Converter to transform a command argument into a :obj:`~hikari.emojis.KnownCustomEmoji` object.
 

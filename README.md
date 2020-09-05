@@ -6,7 +6,7 @@ This library aims to make it simple for you to make your own Discord bots and pr
 all the utilities and functions you need to help make this job easier.
 
 ## Installation
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foobar.
+Use the package manager [pip](https://pip.pypa.io/en/stable/) to install Lightbulb.
 
 ```bash
 pip install hikari-lightbulb

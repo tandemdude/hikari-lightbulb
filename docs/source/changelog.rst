@@ -13,6 +13,8 @@ Version 0.0.47
 
 - Added :obj:`~.context.Context.channel` and :obj:`~.context.Context.guild` properties.
 
+- Added :obj:`~.plugins.Plugin.plugin_check` method.
+
 Version 0.0.46
 ==============
 

@@ -30,6 +30,7 @@ import typing
 import hikari
 
 from lightbulb import commands
+from lightbulb import context as context_
 
 T = typing.TypeVar("T")
 EventT_co = typing.TypeVar("EventT_co", bound=hikari.Event, covariant=True)
@@ -213,3 +214,18 @@ class Plugin:
         You may with use this for any cleanup that the plugin may require.
         """
         pass
+
+    async def plugin_check(self, context: context_.Context) -> bool:
+        """
+        A check method called for only the commands inside the plugin.
+
+        This method **must** be a coroutine and return a boolean-like value
+        or raise an error when called.
+
+        Args:
+            context (:obj:`.context.Context): The command invocation context.
+
+        Returns:
+            :obj:`bool`: Whether the check passed or failed.
+        """
+        return True

@@ -651,9 +651,12 @@ class Bot(hikari.Bot):
         return context_.Context(self, message, prefix, invoked_with, invoked_command)
 
     async def _evaluate_checks(self, command: commands.Command, context: context_.Context) -> bool:
-        failed_checks = []
+        checks = [*self._checks, *command.checks]
+        if command.plugin is not None:
+            checks.append(command.plugin.plugin_check)
 
-        for check in [*self._checks, *command._checks]:
+        failed_checks = []
+        for check in checks:
             try:
                 if not await check(context):
                     failed_checks.append(

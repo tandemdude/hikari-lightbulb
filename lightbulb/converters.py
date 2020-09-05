@@ -69,6 +69,7 @@ from lightbulb import errors
 USER_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<@!?(\d+)>")
 CHANNEL_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<#(\d+)>")
 ROLE_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<@&(\d+)>")
+EMOJI_MENTION_REGEX : typing.Final[typing.Pattern] = re.compile(r"<a?:\w+:(\d+)>")
 
 
 class WrappedArg(collections.UserString):
@@ -104,6 +105,27 @@ async def _get_or_fetch_guild_channel_from_id(arg: WrappedArg, channel_id: hikar
     if channel is None:
         channel = await arg.context.bot.rest.fetch_channel(channel_id)
     return channel
+
+
+async def emoji_converter(arg: WrappedArg) -> hikari.KnownCustomEmoji:
+	"""
+    Converter to transform a command argument into a :obj:`~hikari.emojis.KnownCustomEmoji` object.
+
+    Args:
+        arg (:obj:`WrappedArg`): Argument to transform.
+
+    Returns:
+        :obj:`~hikari.emojis.KnownCustomEmoji`: The custom emoji object resolved from the argument.
+
+    Raises:
+        :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a custom emoji object.
+    """
+
+	emoji_id = _resolve_id_from_arg(arg.data, EMOJI_MENTION_REGEX)
+	if not arg.context.bot.is_stateless:
+        if (emoji := arg.context.bot.cache.get_emoji(emoji_id)) is not None:
+            return emoji
+    return await arg.context.bot.rest.fetch_emoji(arg.context.guild_id, emoji_id)
 
 
 async def user_converter(arg: WrappedArg) -> hikari.User:

@@ -54,6 +54,7 @@ __all__: typing.Final[typing.List[str]] = [
     "guild_voice_channel_converter",
     "category_converter",
     "role_converter",
+    "custom_emoji_converter",
 ]
 
 import collections
@@ -63,7 +64,7 @@ import warnings
 
 import hikari
 
-from lightbulb import context
+from lightbulb import context as context_
 from lightbulb import errors
 
 USER_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<@!?(\d+)>")
@@ -75,7 +76,8 @@ EMOJI_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<a?:\w+:(\d+)>"
 class WrappedArg(collections.UserString):
     """
     A wrapped command argument containing the invocation context
-    of the command for which the argument is to be converted under.
+    of the command for which the argument is to be converted under, accessible
+    through the :attr:`context` attribute.
 
     This class acts like a string so any operations that will work on a string will
     also work on this class.
@@ -86,10 +88,11 @@ class WrappedArg(collections.UserString):
         seq (:obj:`str`): The argument text.
         context (:obj:`~.context.Context`): The command invocation context for the argument.
     """
+    __slots__ = ["context"]
 
-    def __init__(self, seq: str, context: context.Context) -> None:
+    def __init__(self, seq: str, context: context_.Context) -> None:
         super().__init__(seq)
-        self.context = context
+        self.context: context_.Context = context
 
 
 def _resolve_id_from_arg(arg_string: str, regex: typing.Pattern) -> hikari.Snowflake:
@@ -99,9 +102,7 @@ def _resolve_id_from_arg(arg_string: str, regex: typing.Pattern) -> hikari.Snowf
 
 
 async def _get_or_fetch_guild_channel_from_id(arg: WrappedArg, channel_id: hikari.Snowflake) -> hikari.GuildChannel:
-    channel = None
-    if not arg.context.bot.is_stateless:
-        channel = arg.context.bot.cache.get_guild_channel(channel_id)
+    channel = arg.context.bot.cache.get_guild_channel(channel_id)
     if channel is None:
         channel = await arg.context.bot.rest.fetch_channel(channel_id)
     return channel
@@ -129,10 +130,10 @@ async def user_converter(arg: WrappedArg) -> hikari.User:
                 await ctx.reply(user.username)
     """
     user_id = _resolve_id_from_arg(arg.data, USER_MENTION_REGEX)
-    if not arg.context.bot.is_stateless:
-        if (user := arg.context.bot.cache.get_user(user_id)) is not None:
-            return user
-    return await arg.context.bot.rest.fetch_user(user_id)
+    user = arg.context.bot.cache.get_user(user_id)
+    if user is None:
+        user = await arg.context.bot.rest.fetch_user(user_id)
+    return user
 
 
 async def member_converter(arg: WrappedArg) -> hikari.Member:
@@ -149,10 +150,10 @@ async def member_converter(arg: WrappedArg) -> hikari.Member:
         :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a member object.
     """
     user_id = _resolve_id_from_arg(arg.data, USER_MENTION_REGEX)
-    if not arg.context.bot.is_stateless:
-        if (member := arg.context.bot.cache.get_member(arg.context.guild_id, user_id)) is not None:
-            return member
-    return await arg.context.bot.rest.fetch_member(arg.context.guild_id, user_id)
+    member = arg.context.bot.cache.get_member(arg.context.guild_id, user_id)
+    if member is None:
+        member = await arg.context.bot.rest.fetch_member(arg.context.guild_id, user_id)
+    return member
 
 
 async def text_channel_converter(arg: WrappedArg) -> hikari.TextChannel:
@@ -240,12 +241,12 @@ async def role_converter(arg: WrappedArg) -> hikari.Role:
         :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a role object.
     """
     role_id = _resolve_id_from_arg(arg.data, CHANNEL_MENTION_REGEX)
-    if not arg.context.bot.is_stateless:
-        if (role := arg.context.bot.cache.get_role(role_id)) is not None:
-            return role
-    roles = await arg.context.bot.rest.fetch_roles(arg.context.guild_id)
-    roles = dict([(r.id, r) for r in roles])
-    return roles[role_id]
+    role = arg.context.bot.cache.get_role(role_id)
+    if role is None:
+        roles = await arg.context.bot.rest.fetch_roles(arg.context.guild_id)
+        roles = dict([(r.id, r) for r in roles])
+        role = roles[role_id]
+    return role
 
 
 async def custom_emoji_converter(arg: WrappedArg) -> hikari.KnownCustomEmoji:
@@ -263,10 +264,10 @@ async def custom_emoji_converter(arg: WrappedArg) -> hikari.KnownCustomEmoji:
     """
 
     emoji_id = _resolve_id_from_arg(arg.data, EMOJI_MENTION_REGEX)
-    if not arg.context.bot.is_stateless:
-        if (emoji := arg.context.bot.cache.get_emoji(emoji_id)) is not None:
-            return emoji
-    return await arg.context.bot.rest.fetch_emoji(arg.context.guild_id, emoji_id)
+    emoji = arg.context.bot.cache.get_emoji(emoji_id)
+    if emoji is None:
+        emoji = await arg.context.bot.rest.fetch_emoji(arg.context.guild_id, emoji_id)
+    return emoji
 
 
 if typing.TYPE_CHECKING:

@@ -126,8 +126,6 @@ def _get_missing_perms(permissions: hikari.Permissions, roles: typing.Sequence[h
 
 
 async def _has_guild_permissions(ctx: context.Context, *, permissions: hikari.Permissions):
-    if ctx.bot.is_stateless:
-        raise NotImplementedError("The bot is stateless. Cache operations are not available")
     if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
         raise hikari.MissingIntentError(hikari.Intents.GUILDS)
 
@@ -144,8 +142,6 @@ async def _has_guild_permissions(ctx: context.Context, *, permissions: hikari.Pe
 
 
 async def _bot_has_guild_permissions(ctx: context.Context, *, permissions: hikari.Permissions):
-    if ctx.bot.is_stateless:
-        raise NotImplementedError("The bot is stateless. Cache operations are not available")
     if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
         raise hikari.MissingIntentError(hikari.Intents.GUILDS)
 

@@ -156,7 +156,7 @@ class Context:
             user = self.bot.cache.get_user(hikari.Snowflake(match.group(1)))
             return f"@{user}" if user is not None else self.prefix
 
-        return re.sub(r"<@!?(\d+)>", replace, self.prefix) if not self.bot.is_stateless else self.prefix
+        return re.sub(r"<@!?(\d+)>", replace, self.prefix)
 
     @property
     def guild(self) -> typing.Optional[hikari.Guild]:
@@ -166,7 +166,7 @@ class Context:
         This will be None if the bot is stateless, the guild is not found in the cache,
         or the context is for a command run in DMs.
         """
-        if not self.bot.is_stateless and self.guild_id is not None:
+        if self.guild_id is not None:
             return self.bot.cache.get_guild(self.guild_id)
         return None
 
@@ -177,11 +177,9 @@ class Context:
 
         This will be None if the bot is stateless or if the channel is not found in the cache.
         """
-        if not self.bot.is_stateless:
-            if self.guild_id is not None:
-                return self.bot.cache.get_guild_channel(self.channel_id)
-            return self.bot.cache.get_private_text_channel(self.author.id)
-        return None
+        if self.guild_id is not None:
+            return self.bot.cache.get_guild_channel(self.channel_id)
+        return self.bot.cache.get_private_text_channel(self.author.id)
 
     async def reply(self, *args, **kwargs) -> hikari.Message:
         """

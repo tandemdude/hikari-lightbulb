@@ -15,6 +15,10 @@ Version 0.0.47
 
 - Added :obj:`~.plugins.Plugin.plugin_check` method.
 
+- Added :obj:`~.converters.custom_emoji_converter`.
+
+- Made converters work when the arg is a name/name#discrim/nickname/etc
+
 Version 0.0.46
 ==============
 

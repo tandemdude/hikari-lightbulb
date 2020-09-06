@@ -88,6 +88,7 @@ class WrappedArg(collections.UserString):
         seq (:obj:`str`): The argument text.
         context (:obj:`~.context.Context`): The command invocation context for the argument.
     """
+
     __slots__ = ["context"]
 
     def __init__(self, seq: str, context: context_.Context) -> None:

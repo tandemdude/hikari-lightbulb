@@ -69,7 +69,7 @@ from lightbulb import errors
 USER_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<@!?(\d+)>")
 CHANNEL_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<#(\d+)>")
 ROLE_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<@&(\d+)>")
-EMOJI_MENTION_REGEX : typing.Final[typing.Pattern] = re.compile(r"<a?:\w+:(\d+)>")
+EMOJI_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<a?:\w+:(\d+)>")
 
 
 class WrappedArg(collections.UserString):

@@ -144,8 +144,7 @@ async def user_converter(arg: WrappedArg) -> hikari.User:
     except ValueError:
         users = arg.context.bot.cache.get_users_view()
         user = utils.find(
-            users.values(),
-            lambda u: u.username == arg.data or f"{u.username}#{u.discriminator}" == arg.data
+            users.values(), lambda u: u.username == arg.data or f"{u.username}#{u.discriminator}" == arg.data
         )
     else:
         user = arg.context.bot.cache.get_user(user_id)
@@ -173,7 +172,7 @@ async def member_converter(arg: WrappedArg) -> hikari.Member:
         members = arg.context.bot.cache.get_members_view_for_guild(arg.context.guild_id)
         member = utils.find(
             members.values(),
-            lambda m: m.username == arg.data or m.nickname == arg.data or f"{m.username}#{m.discriminator}" == arg.data
+            lambda m: m.username == arg.data or m.nickname == arg.data or f"{m.username}#{m.discriminator}" == arg.data,
         )
     else:
         member = arg.context.bot.cache.get_member(arg.context.guild_id, user_id)

@@ -66,6 +66,9 @@ import hikari
 
 from lightbulb import context as context_
 from lightbulb import errors
+from lightbulb import utils
+
+T = typing.TypeVar("T")
 
 USER_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<@!?(\d+)>")
 CHANNEL_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<#(\d+)>")
@@ -109,15 +112,21 @@ async def _get_or_fetch_guild_channel_from_id(arg: WrappedArg, channel_id: hikar
     return channel
 
 
+def _raise_if_not_none(obj: typing.Optional[T]) -> T:
+    if obj is None:
+        raise errors.ConverterFailure()
+    return obj
+
+
 async def user_converter(arg: WrappedArg) -> hikari.User:
     """
-    Converter to transform a command argument into a :obj:`hikari.users.UserImpl` object.
+    Converter to transform a command argument into a :obj:`hikari.UserImpl` object.
 
     Args:
         arg (:obj:`WrappedArg`): Argument to transform.
 
     Returns:
-        :obj:`hikari.users.UserImpl`: The user object resolved from the argument.
+        :obj:`hikari.UserImpl`: The user object resolved from the argument.
 
     Raises:
         :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a user object.
@@ -130,36 +139,52 @@ async def user_converter(arg: WrappedArg) -> hikari.User:
             async def username(ctx, user: lightbulb.converters.user_converter):
                 await ctx.reply(user.username)
     """
-    user_id = _resolve_id_from_arg(arg.data, USER_MENTION_REGEX)
-    user = arg.context.bot.cache.get_user(user_id)
-    if user is None:
-        user = await arg.context.bot.rest.fetch_user(user_id)
-    return user
+    try:
+        user_id = _resolve_id_from_arg(arg.data, USER_MENTION_REGEX)
+    except ValueError:
+        users = arg.context.bot.cache.get_users_view()
+        user = utils.find(
+            users.values(),
+            lambda u: u.username == arg.data or f"{u.username}#{u.discriminator}" == arg.data
+        )
+    else:
+        user = arg.context.bot.cache.get_user(user_id)
+        if user is None:
+            user = await arg.context.bot.rest.fetch_user(user_id)
+    return _raise_if_not_none(user)
 
 
 async def member_converter(arg: WrappedArg) -> hikari.Member:
     """
-    Converter to transform a command argument into a :obj:`~hikari.guilds.Member` object.
+    Converter to transform a command argument into a :obj:`~hikari.Member` object.
 
     Args:
         arg (:obj:`WrappedArg`): Argument to transform.
 
     Returns:
-        :obj:`~hikari.guilds.Member`: The member object resolved from the argument.
+        :obj:`~hikari.Member`: The member object resolved from the argument.
 
     Raises:
         :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a member object.
     """
-    user_id = _resolve_id_from_arg(arg.data, USER_MENTION_REGEX)
-    member = arg.context.bot.cache.get_member(arg.context.guild_id, user_id)
-    if member is None:
-        member = await arg.context.bot.rest.fetch_member(arg.context.guild_id, user_id)
-    return member
+    try:
+        user_id = _resolve_id_from_arg(arg.data, USER_MENTION_REGEX)
+    except ValueError:
+        members = arg.context.bot.cache.get_members_view_for_guild(arg.context.guild_id)
+        member = utils.find(
+            members.values(),
+            lambda m: m.username == arg.data or m.nickname == arg.data or f"{m.username}#{m.discriminator}" == arg.data
+        )
+    else:
+        member = arg.context.bot.cache.get_member(arg.context.guild_id, user_id)
+        if member is None:
+            member = await arg.context.bot.rest.fetch_member(arg.context.guild_id, user_id)
+    return _raise_if_not_none(member)
 
 
 async def text_channel_converter(arg: WrappedArg) -> hikari.TextChannel:
     """
-    Converter to transform a command argument into a :obj:`~hikari.channels.GuildTextChannel` or
+    Converter to transform a command argument into a :obj:`~hikari.GuildTextChannel` or
     :obj:`~hikari.channels.GuildNewsChannel` object.
 
     Args:
@@ -171,8 +196,14 @@ async def text_channel_converter(arg: WrappedArg) -> hikari.TextChannel:
     Raises:
         :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a channel object.
     """
-    channel_id = _resolve_id_from_arg(arg.data, CHANNEL_MENTION_REGEX)
-    channel = await _get_or_fetch_guild_channel_from_id(arg, channel_id)
+    try:
+        channel_id = _resolve_id_from_arg(arg.data, CHANNEL_MENTION_REGEX)
+    except ValueError:
+        channels = arg.context.bot.cache.get_guild_channels_view_for_guild(arg.context.guild_id)
+        channel = utils.get(channels.values(), name=arg.data)
+    else:
+        channel = await _get_or_fetch_guild_channel_from_id(arg, channel_id)
+
     if not isinstance(channel, hikari.TextChannel):
         raise errors.ConverterFailure("Channel is not a text channel")
     return channel
@@ -180,19 +211,25 @@ async def text_channel_converter(arg: WrappedArg) -> hikari.TextChannel:
 
 async def guild_voice_channel_converter(arg: WrappedArg) -> hikari.GuildVoiceChannel:
     """
-    Converter to transform a command argument into a :obj:`~hikari.channels.GuildVoiceChannel` object.
+    Converter to transform a command argument into a :obj:`~hikari.GuildVoiceChannel` object.
 
     Args:
         arg (:obj:`WrappedArg`): Argument to transform.
 
     Returns:
-        :obj:`~hikari.channels.GuildVoiceChannel`: The channel object resolved from the argument.
+        :obj:`~hikari.GuildVoiceChannel`: The channel object resolved from the argument.
 
     Raises:
         :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a channel object.
     """
-    channel_id = _resolve_id_from_arg(arg.data, CHANNEL_MENTION_REGEX)
-    channel = await _get_or_fetch_guild_channel_from_id(arg, channel_id)
+    try:
+        channel_id = _resolve_id_from_arg(arg.data, CHANNEL_MENTION_REGEX)
+    except ValueError:
+        channels = arg.context.bot.cache.get_guild_channels_view_for_guild(arg.context.guild_id)
+        channel = utils.get(channels.values(), name=arg.data)
+    else:
+        channel = await _get_or_fetch_guild_channel_from_id(arg, channel_id)
+
     if not isinstance(channel, hikari.GuildVoiceChannel):
         raise errors.ConverterFailure("Channel is not a guild voice channel")
     return channel
@@ -210,19 +247,25 @@ def voice_channel_converter(arg: WrappedArg) -> typing.Coroutine[typing.Any, typ
 
 async def category_converter(arg: WrappedArg) -> hikari.GuildCategory:
     """
-    Converter to transform a command argument into a :obj:`~hikari.channels.GuildCategory` object.
+    Converter to transform a command argument into a :obj:`~hikari.GuildCategory` object.
 
     Args:
         arg (:obj:`WrappedArg`): Argument to transform.
 
     Returns:
-        :obj:`~hikari.channels.GuildCategory`: The category object resolved from the argument.
+        :obj:`~hikari.GuildCategory`: The category object resolved from the argument.
 
     Raises:
         :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a category object.
     """
-    channel_id = _resolve_id_from_arg(arg.data, CHANNEL_MENTION_REGEX)
-    channel = await _get_or_fetch_guild_channel_from_id(arg, channel_id)
+    try:
+        channel_id = _resolve_id_from_arg(arg.data, CHANNEL_MENTION_REGEX)
+    except ValueError:
+        channels = arg.context.bot.cache.get_guild_channels_view_for_guild(arg.context.guild_id)
+        channel = utils.get(channels.values(), name=arg.data)
+    else:
+        channel = await _get_or_fetch_guild_channel_from_id(arg, channel_id)
+
     if not isinstance(channel, hikari.GuildCategory):
         raise errors.ConverterFailure("Channel is not a guild category")
     return channel
@@ -230,24 +273,29 @@ async def category_converter(arg: WrappedArg) -> hikari.GuildCategory:
 
 async def role_converter(arg: WrappedArg) -> hikari.Role:
     """
-    Converter to transform a command argument into a :obj:`~hikari.guilds.Role` object.
+    Converter to transform a command argument into a :obj:`~hikari.Role` object.
 
     Args:
         arg (:obj:`WrappedArg`): Argument to transform.
 
     Returns:
-        :obj:`~hikari.guilds.Role`: The role object resolved from the argument.
+        :obj:`~hikari.Role`: The role object resolved from the argument.
 
     Raises:
         :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a role object.
     """
-    role_id = _resolve_id_from_arg(arg.data, CHANNEL_MENTION_REGEX)
-    role = arg.context.bot.cache.get_role(role_id)
-    if role is None:
-        roles = await arg.context.bot.rest.fetch_roles(arg.context.guild_id)
-        roles = dict([(r.id, r) for r in roles])
-        role = roles[role_id]
-    return role
+    try:
+        role_id = _resolve_id_from_arg(arg.data, CHANNEL_MENTION_REGEX)
+    except ValueError:
+        roles = arg.context.bot.cache.get_roles_view_for_guild(arg.context.guild_id)
+        role = utils.get(roles.values(), name=arg.data)
+    else:
+        role = arg.context.bot.cache.get_role(role_id)
+        if role is None:
+            roles = await arg.context.bot.rest.fetch_roles(arg.context.guild_id)
+            roles = dict([(r.id, r) for r in roles])
+            role = roles[role_id]
+    return _raise_if_not_none(role)
 
 
 async def custom_emoji_converter(arg: WrappedArg) -> hikari.KnownCustomEmoji:
@@ -263,12 +311,16 @@ async def custom_emoji_converter(arg: WrappedArg) -> hikari.KnownCustomEmoji:
     Raises:
         :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a custom emoji object.
     """
-
-    emoji_id = _resolve_id_from_arg(arg.data, EMOJI_MENTION_REGEX)
-    emoji = arg.context.bot.cache.get_emoji(emoji_id)
-    if emoji is None:
-        emoji = await arg.context.bot.rest.fetch_emoji(arg.context.guild_id, emoji_id)
-    return emoji
+    try:
+        emoji_id = _resolve_id_from_arg(arg.data, EMOJI_MENTION_REGEX)
+    except ValueError:
+        emojis = arg.context.bot.cache.get_emojis_view_for_guild(arg.context.guild_id)
+        emoji = utils.get(emojis.values(), name=arg.data)
+    else:
+        emoji = arg.context.bot.cache.get_emoji(emoji_id)
+        if emoji is None:
+            emoji = await arg.context.bot.rest.fetch_emoji(arg.context.guild_id, emoji_id)
+    return _raise_if_not_none(emoji)
 
 
 if typing.TYPE_CHECKING:

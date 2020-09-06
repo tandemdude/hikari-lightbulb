@@ -431,7 +431,7 @@ class Command:
                 if inspect.iscoroutine(new_arg):
                     new_arg = await new_arg
                 new_args.append(new_arg)
-            except:
+            except Exception:
                 _LOGGER.error("Failed converting %s with converter: %s", arg, details.annotation.__name__)
                 raise errors.ConverterFailure(f"Failed converting {arg} with converter: {details.annotation.__name__}")
         return new_args

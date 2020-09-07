@@ -19,6 +19,8 @@ Version 0.0.47
 
 - Made converters work when the arg is a name/name#discrim/nickname/etc
 
+- Added support for hikari 2.0.0.dev75
+
 Version 0.0.46
 ==============
 

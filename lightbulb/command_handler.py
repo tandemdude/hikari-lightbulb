@@ -30,6 +30,7 @@ import sys
 import typing
 
 import hikari
+from hikari.utilities import ux
 from multidict import CIMultiDict
 
 from lightbulb import commands
@@ -165,6 +166,12 @@ class Bot(hikari.Bot):
         self._checks = []
 
         self._help_impl = help_class(self)
+
+    @staticmethod
+    def print_banner(banner: typing.Optional[str], allow_color: bool, force_color: bool) -> None:
+        ux.print_banner(banner, allow_color, force_color)
+        if banner == "hikari":
+            sys.stdout.write(f"Thank you for using lightbulb!\n")
 
     @property
     def help_class(self):

@@ -37,7 +37,7 @@ from lightbulb import commands
 from lightbulb import context as context_
 from lightbulb import errors
 from lightbulb import events
-from lightbulb import help as help_command
+from lightbulb import help as help_
 from lightbulb import plugins
 from lightbulb import stringview
 
@@ -137,7 +137,7 @@ class Bot(hikari.Bot):
         insensitive_commands: bool = False,
         ignore_bots: bool = True,
         owner_ids: typing.Iterable[int] = (),
-        help_class: typing.Type[help_command.HelpCommand] = help_command.HelpCommand,
+        help_class: typing.Type[help_.HelpCommand] = help_.HelpCommand,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
@@ -174,9 +174,13 @@ class Bot(hikari.Bot):
             sys.stdout.write(f"Thank you for using lightbulb!\n")
 
     @property
-    def help_class(self):
+    def help_command(self):
         """The instance of the help class used by the bot."""
         return self._help_impl
+
+    @help_command.setter
+    def help_command(self, new_help_instance: help_.HelpCommand):
+        self._help_impl = new_help_instance
 
     async def fetch_owner_ids(self) -> None:
         """

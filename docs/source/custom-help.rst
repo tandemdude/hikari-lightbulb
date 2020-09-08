@@ -80,11 +80,11 @@ The implementation for an extension could look something like below.
         def __init__(self, bot):
             super().__init__()
             self.bot = bot
-            self._original_help_impl = bot._help_impl
-            bot._help_impl = YourHelpCommandClass(bot)
+            self._original_help_command = bot.help_command
+            bot.help_command = YourHelpCommandClass(bot)
 
         def plugin_remove(self):
-            self.bot._help_impl = self._original_help_impl
+            self.bot.help_command = self._original_help_command
 
 
     def load(bot):

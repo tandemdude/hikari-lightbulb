@@ -26,10 +26,11 @@ from lightbulb.utils.nav import *
 from lightbulb.utils.pag import *
 from lightbulb.utils.search import *
 
-__all__: typing.Final[typing.List[str]] = [*nav.__all__, *pag.__all__, *search.__all__, "_maybe_await"]
+__all__: typing.Final[typing.List[str]] = [*nav.__all__, *pag.__all__, *search.__all__, "maybe_await"]
 
 
-async def _maybe_await(typename):
-    if inspect.iscoroutine(typename):
-        typename = await typename
-    return typename
+async def maybe_await(callable_, *args, **kwargs):
+    result = callable_(*args, **kwargs)
+    if inspect.iscoroutine(result):
+        result = await result
+    return result

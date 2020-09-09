@@ -35,12 +35,12 @@ import typing
 import hikari
 from multidict import CIMultiDict
 
-from lightbulb import context
+from lightbulb import context as context_
 from lightbulb import converters
 from lightbulb import cooldowns
 from lightbulb import errors
 from lightbulb import events
-from lightbulb.utils import _maybe_await
+from lightbulb.utils import maybe_await
 
 if typing.TYPE_CHECKING:
     from lightbulb import plugins
@@ -71,7 +71,7 @@ def _bind_prototype(instance: typing.Any, command_template: _CommandT):
         def __eq__(self, other) -> bool:
             return isinstance(other, (type(self), Command)) and other.name == self.name
 
-        async def invoke(self, context: context.Context, *args: str, **kwargs: str) -> typing.Any:
+        async def invoke(self, context: context_.Context, *args: str, **kwargs: str) -> typing.Any:
             if self.cooldown_manager is not None:
                 self.cooldown_manager.add_cooldown(context)
             # Add the start slice on to the length to offset the section of arg_details being extracted
@@ -420,8 +420,7 @@ class Command:
             for typename in (types := typing.get_args(details.annotation)) :
                 try:
                     if typename is not None:
-                        new_arg = typename(arg)
-                        new_arg = await _maybe_await(new_arg)
+                        new_arg = await maybe_await(typename, arg)
                     else:
                         new_arg = typename(arg)
                     return new_arg
@@ -431,15 +430,12 @@ class Command:
                     else:
                         continue
         else:
-            new_arg = details.annotation(arg)
-
-            new_arg = await _maybe_await(new_arg)
-
+            new_arg = await maybe_await(details.annotation, arg)
             return new_arg
 
     async def _convert_args(
         self,
-        context: context.Context,
+        context: context_.Context,
         args: typing.Sequence[str],
         arg_details: typing.Sequence[ArgInfo],
     ) -> typing.Sequence[typing.Any]:
@@ -464,7 +460,7 @@ class Command:
                 )
         return new_args
 
-    async def invoke(self, context: context.Context, *args: str, **kwargs: str) -> typing.Any:
+    async def invoke(self, context: context_.Context, *args: str, **kwargs: str) -> typing.Any:
         """
         Invoke the command with given args and kwargs. Cooldowns and converters will
         be processed however this method bypasses all command checks.
@@ -520,7 +516,7 @@ class Command:
         """
         self._checks.append(check_func)
 
-    async def is_runnable(self, context: context.Context) -> bool:
+    async def is_runnable(self, context: context_.Context) -> bool:
         """
         Run all the checks for the command to determine whether or not it is
         runnable in the given context.

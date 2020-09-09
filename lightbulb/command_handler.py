@@ -40,6 +40,7 @@ from lightbulb import events
 from lightbulb import help as help_
 from lightbulb import plugins
 from lightbulb import stringview
+from lightbulb.utils import maybe_await
 
 _LOGGER = logging.getLogger("lightbulb")
 
@@ -711,9 +712,7 @@ class Bot(hikari.Bot):
             raise exception
 
     async def _resolve_prefix(self, message: hikari.Message) -> typing.Optional[str]:
-        prefixes = self.get_prefix(self, message)
-        if inspect.iscoroutine(prefixes):
-            prefixes = await prefixes
+        prefixes = await maybe_await(self.get_prefix, self, message)
 
         if isinstance(prefixes, str):
             prefixes = [prefixes]

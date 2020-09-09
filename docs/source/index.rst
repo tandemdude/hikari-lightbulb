@@ -44,6 +44,8 @@ already exists for your bug or feature.
 
 - `Yoda#0660 <https://gitlab.com/YodaPY>`_
 
+- `M.A#4999 <https://gitlab.com/MonAaraj>`_
+
 **Index:**
 
 .. toctree::

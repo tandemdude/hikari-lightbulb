@@ -231,14 +231,24 @@ class CooldownManager:
         del self.cooldowns[self.bucket.extract_hash(context)]
 
 
-def cooldown(length: float, usages: int, bucket: typing.Type[Bucket]):
+def cooldown(
+    length: float,
+    usages: int,
+    bucket: typing.Type[Bucket],
+    *,
+    manager_cls: typing.Type[CooldownManager] = CooldownManager,
+):
     """
     Decorator which adds a cooldown to a command.
 
     Args:
         length (:obj:`float`): The amount of time before the cooldown expires.
         usages (:obj:`int`): The amount of usages of the command allowed before the cooldown activates.
-        bucket (:obj:`~Bucket`): The bucket that the cooldown should be evaluated under.
+        bucket (Type[ :obj:`~Bucket` ]): The bucket that the cooldown should be evaluated under.
+
+    Keyword Args:
+        manager_cls (Type[ :obj:`~CooldownManager` ]): The **uninstantiated** class to use as the command's
+            cooldown manager. Defaults to :obj:`~CooldownManager`.
 
     Example:
 
@@ -253,7 +263,7 @@ def cooldown(length: float, usages: int, bucket: typing.Type[Bucket]):
     """
 
     def decorate(command: commands.Command) -> commands.Command:
-        command.cooldown_manager = CooldownManager(length, usages, bucket)
+        command.cooldown_manager = manager_cls(length, usages, bucket)
         return command
 
     return decorate

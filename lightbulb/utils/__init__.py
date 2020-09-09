@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 
+import inspect
 import typing
 
 from lightbulb.utils import nav
@@ -25,4 +26,10 @@ from lightbulb.utils.nav import *
 from lightbulb.utils.pag import *
 from lightbulb.utils.search import *
 
-__all__: typing.Final[typing.List[str]] = [*nav.__all__, *pag.__all__, *search.__all__]
+__all__: typing.Final[typing.List[str]] = [*nav.__all__, *pag.__all__, *search.__all__, "_maybe_await"]
+
+
+async def _maybe_await(typename):
+    if inspect.iscoroutine(typename):
+        typename = await typename
+    return typename

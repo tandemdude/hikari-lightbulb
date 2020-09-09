@@ -40,6 +40,7 @@ from lightbulb import converters
 from lightbulb import cooldowns
 from lightbulb import errors
 from lightbulb import events
+from lightbulb.utils import _maybe_await
 
 if typing.TYPE_CHECKING:
     from lightbulb import plugins
@@ -218,12 +219,12 @@ class Command:
         """The plugin the command is registered to. If ``None`` then it was defined outside of a plugin."""
         self.user_required_permissions: hikari.Permissions = hikari.Permissions.NONE
         """
-        The permissions required by a user to run the command. 
+        The permissions required by a user to run the command.
         These are extracted from the permission check decorator(s) on the command.
         """
         self.bot_required_permissions: hikari.Permissions = hikari.Permissions.NONE
         """
-        The permissions the bot requires for a user to be able to run the command. 
+        The permissions the bot requires for a user to be able to run the command.
         These are extracted from the permission check decorator(s) on the command.
         """
 
@@ -414,7 +415,30 @@ class Command:
         return decorate
 
     @staticmethod
+    async def _handle_types(arg: str, details: ArgInfo):
+        if typing.get_origin(details.annotation) is typing.Union:
+            for typename in (types := typing.get_args(details.annotation)) :
+                try:
+                    if typename is not None:
+                        new_arg = typename(arg)
+                        new_arg = await _maybe_await(new_arg)
+                    else:
+                        new_arg = typename(arg)
+                    return new_arg
+                except (ValueError, TypeError, errors.ConverterFailure):
+                    if typename == types[-1]:
+                        raise errors.ConverterFailure
+                    else:
+                        continue
+        else:
+            new_arg = details.annotation(arg)
+
+            new_arg = await _maybe_await(new_arg)
+
+            return new_arg
+
     async def _convert_args(
+        self,
         context: context.Context,
         args: typing.Sequence[str],
         arg_details: typing.Sequence[ArgInfo],
@@ -427,13 +451,17 @@ class Command:
                 new_args.append(str(arg))
                 continue
             try:
-                new_arg = details.annotation(arg)
-                if inspect.iscoroutine(new_arg):
-                    new_arg = await new_arg
+                new_arg = await self._handle_types(arg, details)
                 new_args.append(new_arg)
-            except Exception:
-                _LOGGER.error("Failed converting %s with converter: %s", arg, details.annotation.__name__)
-                raise errors.ConverterFailure(f"Failed converting {arg} with converter: {details.annotation.__name__}")
+            except (errors.ConverterFailure, ValueError):
+                _LOGGER.error(
+                    "Failed converting %s with converter: %s",
+                    arg,
+                    getattr(details.annotation, "__name__", repr(details.annotation)),
+                )
+                raise errors.ConverterFailure(
+                    f"Failed converting {arg} with converter: {getattr(details.annotation, '__name__', repr(details.annotation))}"
+                )
         return new_args
 
     async def invoke(self, context: context.Context, *args: str, **kwargs: str) -> typing.Any:

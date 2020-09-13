@@ -37,24 +37,29 @@ if typing.TYPE_CHECKING:
     from lightbulb import context
 
 
-def get_help_text(object: typing.Union[commands.Command, plugins.Plugin]) -> str:
+def _format_help_text(help_text: str) -> str:
+    segments = help_text.split("\n\n")
+    return "\n".join(seg.replace("\n", " ").strip() for seg in segments)
+
+
+def get_help_text(obj: typing.Union[commands.Command, plugins.Plugin]) -> str:
     """
     Get the help text for a command, group or plugin, extracted from its docstring.
 
     Args:
-        object (Union[ :obj:`~.commands.Command`, :obj:`~.commands.Group`, :obj:`~.plugins.Plugin` ]): The
+        obj (Union[ :obj:`~.commands.Command`, :obj:`~.commands.Group`, :obj:`~.plugins.Plugin` ]): The
             object to get the help text for.
 
     Returns:
         :obj:`str`: The extracted help text, or an empty string if no help text has
         been provided for the object.
     """
-    if not isinstance(object, plugins.Plugin):
-        doc = inspect.getdoc(object._callback)
-        return doc if doc is not None else ""
+    if not isinstance(obj, plugins.Plugin):
+        doc = inspect.getdoc(obj._callback)
+        return _format_help_text(doc if doc is not None else "")
     else:
-        doc = inspect.getdoc(object)
-        return doc if doc != inspect.getdoc(plugins.Plugin) else ""
+        doc = inspect.getdoc(obj)
+        return _format_help_text(doc if doc != inspect.getdoc(plugins.Plugin) else "")
 
 
 def get_command_signature(command: commands.Command) -> str:
@@ -72,7 +77,7 @@ def get_command_signature(command: commands.Command) -> str:
     signature = inspect.signature(command._callback)
 
     items = [command.qualified_name]
-    num_args = len(signature.parameters) - command.arg_details.max_args
+    num_args = len(signature.parameters) - command.arg_details.maximum_arguments
     for name, param in list(signature.parameters.items())[num_args:]:
         if param.default is param.empty:
             items.append(f"<{name}>")

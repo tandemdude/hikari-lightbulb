@@ -329,8 +329,8 @@ async def custom_emoji_converter(arg: WrappedArg) -> hikari.KnownCustomEmoji:
 async def message_converter(arg: WrappedArg) -> hikari.Message:
     """
     Converter to transform a command argument into a :obj:`~hikari.Message` object. Note that
-    this converter will only return messages from the same context that the command was invoked from, eg
-    from the guild the command was invoked in or the DM channel it was invoked in.
+    this converter will only return messages from the same context that the command was invoked from, that
+    is to say the channel ID of the command invocation and the fetched message must be the same.
 
     Args:
         arg (:obj:`WrappedArg`): Argument to transform.
@@ -342,19 +342,15 @@ async def message_converter(arg: WrappedArg) -> hikari.Message:
         :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a message object.
     """
     try:
-        message_id, channel_id, guild_id = int(arg.data), arg.context.channel_id, arg.context.guild_id
+        message_id, channel_id = int(arg.data), arg.context.channel_id
     except ValueError:
         parts = arg.data.rstrip("/").split("/")
-        message_id, channel_id, guild_id = parts[-1], parts[-2], None if not parts[-3].isdigit() else parts[-3]
+        message_id, channel_id = parts[-1], parts[-2]
 
-    message = await arg.context.bot.rest.fetch_message(channel_id, message_id)
+    if channel_id != arg.context.channel_id:
+        raise errors.ConverterFailure("Invocation channel ID and message channel ID did not match")
 
-    if (arg.context.guild_id is None and arg.context.channel_id != message.channel_id) or (
-        arg.context.guild_id != guild_id
-    ):
-        raise errors.ConverterFailure()
-
-    return message
+    return await arg.context.bot.rest.fetch_message(channel_id, message_id)
 
 
 async def invite_converter(arg: WrappedArg) -> hikari.Invite:

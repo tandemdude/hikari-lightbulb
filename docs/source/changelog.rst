@@ -8,6 +8,19 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 0.0.48
+==============
+
+- Added :obj:`~.converters.colour_converter` and :obj:`~.converters.message_converter`.
+
+- Added support for :obj:`typing.Union` and :obj:`typing.Optional` as converters/typehints.
+
+- Exposed the current help class the bot uses through :attr:`~.command_handler.Bot.help_class`.
+
+- Added support for a custom cooldown manager class through the :obj:`~.cooldowns.cooldown` decorator.
+
+- Improved the error message for :obj:`~.errors.CommandInvocationError`.
+
 Version 0.0.47
 ==============
 

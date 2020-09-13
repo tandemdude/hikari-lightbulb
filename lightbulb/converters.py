@@ -55,6 +55,10 @@ __all__: typing.Final[typing.List[str]] = [
     "category_converter",
     "role_converter",
     "custom_emoji_converter",
+    "message_converter",
+    "invite_converter",
+    "colour_converter",
+    "color_converter",
 ]
 
 import collections
@@ -299,7 +303,7 @@ async def role_converter(arg: WrappedArg) -> hikari.Role:
 
 async def custom_emoji_converter(arg: WrappedArg) -> hikari.KnownCustomEmoji:
     """
-    Converter to transform a command argument into a :obj:`~hikari.emojis.KnownCustomEmoji` object.
+    Converter to transform a command argument into a :obj:`~hikari.KnownCustomEmoji` object.
 
     Args:
         arg (:obj:`WrappedArg`): Argument to transform.
@@ -322,6 +326,78 @@ async def custom_emoji_converter(arg: WrappedArg) -> hikari.KnownCustomEmoji:
     return _raise_if_not_none(emoji)
 
 
+async def message_converter(arg: WrappedArg) -> hikari.Message:
+    """
+    Converter to transform a command argument into a :obj:`~hikari.Message` object. Note that
+    this converter will only return messages from the same context that the command was invoked from, eg
+    from the guild the command was invoked in or the DM channel it was invoked in.
+
+    Args:
+        arg (:obj:`WrappedArg`): Argument to transform.
+
+    Returns:
+        :obj:`~hikari.Message`: The message object resolved from the argument.
+
+    Raises:
+        :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a message object.
+    """
+    try:
+        message_id, channel_id, guild_id = int(arg.data), arg.context.channel_id, arg.context.guild_id
+    except ValueError:
+        parts = arg.data.rstrip("/").split("/")
+        message_id, channel_id, guild_id = parts[-1], parts[-2], None if not parts[-3].isdigit() else parts[-3]
+
+    message = await arg.context.bot.rest.fetch_message(channel_id, message_id)
+
+    if (arg.context.guild_id is None and arg.context.channel_id != message.channel_id) or (
+        arg.context.guild_id != guild_id
+    ):
+        raise errors.ConverterFailure()
+
+    return message
+
+
+async def invite_converter(arg: WrappedArg) -> hikari.Invite:
+    """
+    Converter to transform a command argument into an :obj:`~hikari.Invite` object.
+
+    Args:
+        arg (:obj:`WrappedArg`): Argument to transform.
+
+    Returns:
+        :obj:`~hikari.Invite`: The invite object resolved from the argument.
+
+    Raises:
+        :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into an invite object.
+    """
+    invite_code = arg.data.rstrip("/").split("/")[-1]
+    invite = arg.context.bot.cache.get_invite(invite_code)
+    if invite is None:
+        invite = await arg.context.bot.rest.fetch_invite(invite_code)
+    return invite
+
+
+async def colour_converter(arg: WrappedArg) -> hikari.Colour:
+    """
+    Converter to transform a command argument into a :obj:`~hikari.Colour` object.
+
+    Args:
+        arg (:obj:`WrappedArg`): Argument to transform.
+
+    Returns:
+        :obj:`~hikari.Colour`: The colour object resolved from the argument.
+
+    Raises:
+        :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a colour object.
+    """
+    return hikari.Colour.of(arg.data)
+
+
+async def color_converter(arg: WrappedArg) -> hikari.Color:
+    """Alias for :obj:`~colour_converter`"""
+    return await colour_converter(arg)
+
+
 if typing.TYPE_CHECKING:
     user_converter = hikari.User
     member_converter = hikari.Member
@@ -331,3 +407,7 @@ if typing.TYPE_CHECKING:
     category_converter = hikari.GuildCategory
     role_converter = hikari.Role
     custom_emoji_converter = hikari.KnownCustomEmoji
+    message_converter = hikari.Message
+    invite_converter = hikari.Invite
+    colour_converter = hikari.Colour
+    color_converter = colour_converter

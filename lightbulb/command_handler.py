@@ -854,7 +854,7 @@ class Bot(hikari.Bot):
             await self._dispatch_command_error_event_from_exception(ex, event.message, context, command)
             return
         except Exception as ex:
-            new_ex = errors.CommandInvocationError("An error occurred during command invocation.", original=ex)
+            new_ex = errors.CommandInvocationError(f"{type(ex).__name__}: {ex}", original=ex)
             await self._dispatch_command_error_event_from_exception(new_ex, event.message, context, command)
             return
 

@@ -8,6 +8,13 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 0.0.49
+==============
+
+- Improved help docstring format parsing.
+
+- Fixed :obj:`~.help.get_command_signature` no longer working due to an :obj:`AttributeError`.
+
 Version 0.0.48
 ==============
 
@@ -15,7 +22,7 @@ Version 0.0.48
 
 - Added support for :obj:`typing.Union` and :obj:`typing.Optional` as converters/typehints.
 
-- Exposed the current help class the bot uses through :attr:`~.command_handler.Bot.help_class`.
+- Exposed the current help class the bot uses through :attr:`~.command_handler.Bot.help_command`.
 
 - Added support for a custom cooldown manager class through the :obj:`~.cooldowns.cooldown` decorator.
 

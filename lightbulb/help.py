@@ -114,14 +114,14 @@ async def filter_commands(
 
 
 @commands.command(name="help")
-async def _help_cmd(ctx):
+async def _help_cmd(ctx: context.Context) -> None:
     """
     Displays help for the bot, a command, or a category.
     If no object is specified with the command then a help menu
     for the bot as a whole is displayed instead.
     """
     obj = ctx.message.content[len(f"{ctx.prefix}{ctx.invoked_with}") :].strip().split()
-    await ctx.bot._help_impl.resolve_help_obj(ctx, obj)
+    await ctx.bot.help_command.resolve_help_obj(ctx, obj)
 
 
 class HelpCommand:

@@ -15,6 +15,8 @@ Version 0.0.49
 
 - Fixed :obj:`~.help.get_command_signature` no longer working due to an :obj:`AttributeError`.
 
+- Fixed :obj:`~.command_handler.Bot.send_help` no longer working.
+
 Version 0.0.48
 ==============
 

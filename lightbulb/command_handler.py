@@ -636,13 +636,13 @@ class Bot(hikari.Bot):
             ``None``
         """
         if obj is None:
-            await self.help_class.send_help_overview(context)
+            await self.help_command.send_help_overview(context)
         elif isinstance(obj, commands.Group):
-            await self.help_class.send_group_help(context, obj)
+            await self.help_command.send_group_help(context, obj)
         elif isinstance(obj, commands.Command):
-            await self.help_class.send_command_help(context, obj)
+            await self.help_command.send_command_help(context, obj)
         elif isinstance(obj, plugins.Plugin):
-            await self.help_class.send_plugin_help(context, obj)
+            await self.help_command.send_plugin_help(context, obj)
 
     def get_context(
         self, message: hikari.Message, prefix: str, invoked_with: str, invoked_command: commands.Command

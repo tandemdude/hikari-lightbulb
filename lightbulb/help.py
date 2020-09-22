@@ -34,7 +34,7 @@ from lightbulb import utils
 
 if typing.TYPE_CHECKING:
     from lightbulb import command_handler
-    from lightbulb import context
+    from lightbulb import context as context_
 
 
 def _format_help_text(help_text: str) -> str:
@@ -87,7 +87,7 @@ def get_command_signature(command: commands.Command) -> str:
 
 
 async def filter_commands(
-    context: context.Context,
+    context: context_.Context,
     command_list: typing.Iterable[commands.Command],
 ) -> typing.List[commands.Command]:
     """
@@ -114,7 +114,7 @@ async def filter_commands(
 
 
 @commands.command(name="help")
-async def _help_cmd(ctx: context.Context) -> None:
+async def _help_cmd(ctx: context_.Context) -> None:
     """
     Displays help for the bot, a command, or a category.
     If no object is specified with the command then a help menu
@@ -139,7 +139,7 @@ class HelpCommand:
             self.bot.add_command(_help_cmd)
 
     @staticmethod
-    async def send_paginated_help(text: typing.Sequence[str], context: context.Context) -> None:
+    async def send_paginated_help(text: typing.Sequence[str], context: context_.Context) -> None:
         """
         Paginate the help text using :obj:`~.utils.pag.StringPaginator` and send each
         of the created pages to the context in order. Note that by default, only the
@@ -159,7 +159,7 @@ class HelpCommand:
         for page in pag.build_pages():
             await context.reply(page)
 
-    async def resolve_help_obj(self, context: context.Context, obj: typing.List[str]) -> None:
+    async def resolve_help_obj(self, context: context_.Context, obj: typing.List[str]) -> None:
         """
         Resolve the object to send help information for from the
         arguments passed to the help command.
@@ -207,7 +207,7 @@ class HelpCommand:
             else:
                 await self.object_not_found(context, " ".join(obj))
 
-    async def object_not_found(self, context: context.Context, name: str) -> None:
+    async def object_not_found(self, context: context_.Context, name: str) -> None:
         """
         Method called when help is requested for an object that does not exist.
 
@@ -220,7 +220,7 @@ class HelpCommand:
         """
         await context.reply(f"`{name}` is not a valid command, group or category.")
 
-    async def send_help_overview(self, context: context.Context) -> None:
+    async def send_help_overview(self, context: context_.Context) -> None:
         """
         Method called when the help command is run without any arguments.
 
@@ -251,7 +251,7 @@ class HelpCommand:
         help_text.append(f"> \n> Use `{context.clean_prefix}help [command]` for more information.")
         await self.send_paginated_help(help_text, context)
 
-    async def send_plugin_help(self, context: context.Context, plugin: plugins.Plugin) -> None:
+    async def send_plugin_help(self, context: context_.Context, plugin: plugins.Plugin) -> None:
         """
         Method called when the help command is run with an argument that
         resolves into the name of a plugin.
@@ -272,7 +272,7 @@ class HelpCommand:
         ]
         await context.reply("\n> ".join(help_text))
 
-    async def send_command_help(self, context: context.Context, command: commands.Command) -> None:
+    async def send_command_help(self, context: context_.Context, command: commands.Command) -> None:
         """
         Method called when the help command is run with an argument that
         resolves into the name of a registered command.
@@ -292,7 +292,7 @@ class HelpCommand:
         ]
         await context.reply("\n> ".join(help_text))
 
-    async def send_group_help(self, context: context.Context, group: commands.Group) -> None:
+    async def send_group_help(self, context: context_.Context, group: commands.Group) -> None:
         """
         Method called when the help command is run with an argument that
         resolves into the name of a registered command group.

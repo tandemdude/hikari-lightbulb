@@ -254,7 +254,7 @@ def cooldown(
 
         .. code-block:: python
 
-            @lightbulb.cooldowns.cooldown(10, 1, lightbulb.cooldowns.UserBucket)
+            @lightbulb.cooldown(10, 1, lightbulb.UserBucket)
             @bot.command()
             async def ping(ctx):
                 await ctx.reply("Pong!")

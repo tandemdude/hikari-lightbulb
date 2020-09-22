@@ -192,6 +192,12 @@ class Command:
     Args:
         callback: The coroutine to register as the command's callback.
         name (:obj:`str`): The name to register the command to.
+        allow_extra_arguments (:obj:`bool`): Whether or not the command should error
+            when run with too many arguments.
+        aliases (Iterable[ :obj:`str` ]): Additional names to register the command to.
+        hidden (:obj:`bool`): Whether or not to show the command in the bot's help overview.
+        parent (Optional[ :obj:`~Group` ]): The parent group for the command, or ``None`` if
+            the command has no parent.
     """
 
     def __init__(
@@ -213,7 +219,7 @@ class Command:
         self._raw_before_invoke = None
         self._raw_after_invoke = None
         self.method_name: typing.Optional[str] = None
-        self.parent: typing.Optional[typing.Any] = parent
+        self.parent: typing.Optional[Group] = parent
         """The parent group for the command. If ``None`` then the command is not a subcommand."""
         self.plugin: typing.Optional[plugins.Plugin] = None
         """The plugin the command is registered to. If ``None`` then it was defined outside of a plugin."""
@@ -548,6 +554,8 @@ class Group(Command):
     Keyword Args:
         insensitive_commands (:obj:`bool`): Whether or not this group's subcommands should be case insensitive.
             Defaults to ``False``.
+        inherit_checks (:obj:`bool`): Whether or not this group's subcommands should inherit the checks of the parent.
+            Defaults to ``True``.
         **kwargs: The kwargs passed to :obj:`~.commands.Command` in its constructor
     """
 
@@ -609,10 +617,7 @@ class Group(Command):
         A decorator that registers a callable as a subcommand for the command group.
 
         Keyword Args:
-            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if the command is run
-                with more arguments than it requires. Defaults to True.
-            name (:obj:`str`): Optional name of the command. Defaults to the name of the function if not specified.
-            aliases (Optional[ Iterable[ :obj:`str` ] ]): An iterable of aliases which can also invoke the command.
+            **kwargs: Kwargs passed to :obj:`~command`
 
         Example:
 
@@ -654,10 +659,7 @@ class Group(Command):
         A decorator that registers a callable as a subgroup for the command group.
 
         Keyword Args:
-            allow_extra_arguments (:obj:`bool`): Whether or not the handler should raise an error if the command is run
-                with more arguments than it requires. Defaults to True.
-            name (:obj:`str`): Optional name of the command. Defaults to the name of the function if not specified.
-            aliases (Optional[ Iterable[ :obj:`str` ] ]): An iterable of aliases which can also invoke the command.
+            **kwargs: Kwargs passed to :obj:`~group`
         """
         kwargs["cls"] = type(self)
 

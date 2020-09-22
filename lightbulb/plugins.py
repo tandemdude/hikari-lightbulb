@@ -132,11 +132,11 @@ def listener(
 
         .. code-block:: python
 
-            from lightbulb import plugins
-            from hikari.events.message import MessageCreateEvent
+            import lightbulb
+            import hikari
 
-            class TestPlugin(plugins.Plugin):
-                @plugins.listener(MessageCreateEvent)
+            class TestPlugin(lightbulb.Plugin):
+                @plugins.listener(hikari.MessageCreateEvent)
                 async def print_message(self, event):
                     print(event.message.content)
     """
@@ -164,13 +164,12 @@ class Plugin:
         .. code-block:: python
 
             import lightbulb
-            from lightbulb import plugins, commands
 
-            bot = lightbulb.Bot(token="token_here", prefix="!")
+            bot = lightbulb.Bot(...)
 
-            class MyPlugin(plugins.Plugin):
+            class MyPlugin(lightbulb.Plugin):
 
-                @commands.command()
+                @lightbulb.command()
                 async def ping(self, ctx):
                     await ctx.send("Pong!")
 

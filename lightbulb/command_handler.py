@@ -299,7 +299,7 @@ class Bot(hikari.Bot):
 
                 import lightbulb
 
-                bot = lightbulb.Bot(token="token_here", prefix="!")
+                bot = lightbulb.Bot(...)
 
                 async def ping(ctx):
                     await ctx.reply("Pong!")
@@ -520,9 +520,9 @@ class Bot(hikari.Bot):
 
             .. code-block:: python
 
-                from lightbulb import plugins
+                import lightbulb
 
-                class MyPlugin(plugins.Plugin):
+                class MyPlugin(lightbulb.Plugin):
                     ...
 
                 def load(bot):
@@ -560,9 +560,9 @@ class Bot(hikari.Bot):
 
             .. code-block:: python
 
-                from lightbulb import plugins
+                import lightbulb
 
-                class MyPlugin(plugins.Plugin):
+                class MyPlugin(lightbulb.Plugin):
                     ...
 
                 def load(bot):

@@ -140,7 +140,7 @@ async def user_converter(arg: WrappedArg) -> hikari.User:
         .. code-block:: python
 
             @bot.command()
-            async def username(ctx, user: lightbulb.converters.user_converter):
+            async def username(ctx, user: lightbulb.user_converter):
                 await ctx.reply(user.username)
     """
     try:

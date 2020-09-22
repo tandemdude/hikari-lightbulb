@@ -167,7 +167,7 @@ class Context:
         or the context is for a command run in DMs.
         """
         if self.guild_id is not None:
-            return self.bot.cache.get_guild(self.guild_id)
+            return self.bot.cache.get_available_guild(self.guild_id)
         return None
 
     @property
@@ -179,7 +179,7 @@ class Context:
         """
         if self.guild_id is not None:
             return self.bot.cache.get_guild_channel(self.channel_id)
-        return self.bot.cache.get_private_text_channel(self.author.id)
+        return self.bot.cache.get_dm(self.author.id)
 
     async def reply(self, *args, **kwargs) -> hikari.Message:
         """

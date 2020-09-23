@@ -243,6 +243,7 @@ def nsfw_channel_only() -> typing.Callable[[T_inv], T_inv]:
         _check_check_decorator_above_commands_decorator(command)
         command.add_check(_nsfw_channel_only)
         return command
+
     return decorate
 
 

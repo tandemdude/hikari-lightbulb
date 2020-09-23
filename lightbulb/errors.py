@@ -39,6 +39,7 @@ __all__: typing.Final[typing.List[str]] = [
     "NotOwner",
     "BotOnly",
     "HumanOnly",
+    "NSFWChannelOnly",
     "MissingRequiredRole",
     "MissingRequiredPermission",
     "BotMissingRequiredPermission",
@@ -226,6 +227,14 @@ class BotOnly(CheckFailure):
 class HumanOnly(CheckFailure):
     """
     Error raised when the command invoker is not an human.
+    """
+
+    pass
+
+
+class NSFWChannelOnly(CheckFailure):
+    """
+    Error raised when a command that must be invoked in an NSFW channel is attempted to be invoked outside of one.
     """
 
     pass

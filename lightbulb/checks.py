@@ -106,6 +106,12 @@ async def _human_only(ctx: context.Context) -> bool:
     return True
 
 
+async def _nsfw_channel_only(ctx: context.Context) -> bool:
+    if not ctx.channel.is_nsfw:
+        raise errors.NSFWChannelOnly(f"{ctx.invoked_with} can only be used in an NSFW channel")
+    return True
+
+
 def _role_check(member_roles: typing.Sequence[hikari.Snowflake], *, roles: typing.Sequence[int], func) -> bool:
     return func(r in member_roles for r in roles)
 
@@ -229,6 +235,14 @@ def human_only() -> typing.Callable[[T_inv], T_inv]:
         command.add_check(_human_only)
         return command
 
+    return decorate
+
+
+def nsfw_channel_only() -> typing.Callable[[T_inv], T_inv]:
+    def decorate(command: T_inv) -> T_inv:
+        _check_check_decorator_above_commands_decorator(command)
+        command.add_check(_nsfw_channel_only)
+        return command
     return decorate
 
 

@@ -179,7 +179,7 @@ class Context:
         """
         if self.guild_id is not None:
             return self.bot.cache.get_guild_channel(self.channel_id)
-        return self.bot.cache.get_dm(self.author.id)
+        return self.bot.cache.get_dm_channel(self.author.id)
 
     async def reply(self, *args, **kwargs) -> hikari.Message:
         """

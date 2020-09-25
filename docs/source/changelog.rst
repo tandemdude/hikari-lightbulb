@@ -8,6 +8,15 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 0.0.50
+==============
+
+- Fixed :obj:`~.context.channel`
+
+- Added NSFW channel only check
+
+- Ensured all docstrings are correct and up to date, including any examples.
+
 Version 0.0.49
 ==============
 

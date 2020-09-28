@@ -175,11 +175,12 @@ class Context:
         """
         The cached :obj:`hikari.TextChannel` instance for the context's channel ID.
 
-        This will be None if the bot is stateless or if the channel is not found in the cache.
+        This will be None if the bot is stateless, the channel is not found in the cache,
+        or the context is for a command run in DMs.
         """
         if self.guild_id is not None:
             return self.bot.cache.get_guild_channel(self.channel_id)
-        return self.bot.cache.get_dm_channel(self.author.id)
+        return None
 
     async def reply(self, *args, **kwargs) -> hikari.Message:
         """

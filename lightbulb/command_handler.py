@@ -103,7 +103,7 @@ def _return_prefix(
     return prefixes
 
 
-class Bot(hikari.Bot):
+class Bot(hikari.BotApp):
     """
     A subclassed implementation of :class:`hikari.impl.bot.BotAppImpl` which contains a command handler.
     This should be instantiated instead of the superclass if you want to be able to use

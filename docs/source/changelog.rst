@@ -8,6 +8,11 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 0.0.51
+==============
+
+- Added support for hikari 2.0.0.dev85
+
 Version 0.0.50
 ==============
 

@@ -117,6 +117,7 @@ async def filter_commands(
 async def _help_cmd(ctx: context_.Context) -> None:
     """
     Displays help for the bot, a command, or a category.
+
     If no object is specified with the command then a help menu
     for the bot as a whole is displayed instead.
     """

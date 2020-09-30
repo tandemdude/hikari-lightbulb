@@ -178,7 +178,7 @@ class Navigator(abc.ABC, typing.Generic[T]):
 
         for button in self.buttons:
             if button.is_pressed(event):
-                await button.press(event)
+                await button.press(self, event)
                 if self._msg is not None:
                     await self._edit_msg(self._msg, self.pages[self.current_page_index])
                     try:

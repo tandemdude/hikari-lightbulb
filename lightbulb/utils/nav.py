@@ -17,7 +17,17 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__: typing.List[str] = ["StringNavigator", "EmbedNavigator", "Navigator", "NavButton"]
+__all__: typing.List[str] = [
+    "StringNavigator",
+    "EmbedNavigator",
+    "Navigator",
+    "NavButton",
+    "next_page",
+    "prev_page",
+    "first_page",
+    "last_page",
+    "stop",
+]
 
 import abc
 import asyncio

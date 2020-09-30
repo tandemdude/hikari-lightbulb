@@ -421,9 +421,17 @@ class Command:
         return decorate
 
     @staticmethod
-    async def _handle_types(arg: str, details: ArgInfo):
-        if typing.get_origin(details.annotation) is typing.Union:
-            for typename in (types := typing.get_args(details.annotation)) :
+    async def handle_types(arg: str, type: typing.Any):
+        """
+        A method which handles converting Union (and therefore Optional) into objects usable by command functions.
+
+        Args:
+            arg (:obj:`str`): The argument's value to be converted.
+            type (:obj:`typing.Any`): Any type for the converter.
+        """
+
+        if typing.get_origin(type) is typing.Union:
+            for typename in (types := typing.get_args(type)) :
                 try:
                     if typename is not None:
                         new_arg = await maybe_await(typename, arg)
@@ -436,7 +444,7 @@ class Command:
                     else:
                         continue
         else:
-            new_arg = await maybe_await(details.annotation, arg)
+            new_arg = await maybe_await(type, arg)
             return new_arg
 
     async def _convert_args(
@@ -453,7 +461,7 @@ class Command:
                 new_args.append(str(arg))
                 continue
             try:
-                new_arg = await self._handle_types(arg, details)
+                new_arg = await self.handle_types(arg, details.annotation)
                 new_args.append(new_arg)
             except (errors.ConverterFailure, ValueError):
                 _LOGGER.error(

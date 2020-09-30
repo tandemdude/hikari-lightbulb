@@ -30,10 +30,13 @@ __all__: typing.Final[typing.List[str]] = [
     "has_roles",
     "has_guild_permissions",
     "bot_has_guild_permissions",
+    "has_permissions",
+    "bot_has_permissions",
     "check",
 ]
 
 import functools
+import operator
 import types
 import typing
 
@@ -160,6 +163,47 @@ async def _bot_has_guild_permissions(ctx: context.Context, *, permissions: hikar
     if missing_perms:
         raise errors.BotMissingRequiredPermission(
             "I am missing one or more permissions required in order to run this command", permissions=missing_perms
+        )
+    return True
+
+
+async def _has_permissions(ctx: context.Context, *, permissions: hikari.Permissions) -> bool:
+
+    await _guild_only(ctx)
+
+    perm_over = ctx.channel.permission_overwrites.values()
+    perm_none = hikari.Permissions.NONE
+
+    allowed_perms = functools.reduce(
+        operator.or_, (override.allow if override.id in ctx.member.role_ids else perm_none for override in perm_over)
+    )
+
+    missing_perms = allowed_perms ^ permissions
+
+    if missing_perms:
+        raise errors.MissingRequiredPermission(
+            "You are missing one or more permissions required in order to run this command", permissions=missing_perms
+        )
+    return True
+
+
+async def _bot_has_permissions(ctx: context.Context, *, permissions: hikari.Permissions) -> bool:
+
+    await _guild_only(ctx)
+
+    perm_over = ctx.channel.permission_overwrites.values()
+    perm_none = hikari.Permissions.NONE
+    bot_member = ctx.bot.cache.get_member(ctx.guild_id, ctx.bot.cache.get_me().id)
+
+    allowed_perms = functools.reduce(
+        operator.or_, (override.allow if override.id in bot_member.role_ids else perm_none for override in perm_over)
+    )
+
+    missing_perms = allowed_perms ^ permissions
+
+    if missing_perms:
+        raise errors.MissingRequiredPermission(
+            "You are missing one or more permissions required in order to run this command", permissions=missing_perms
         )
     return True
 
@@ -348,6 +392,60 @@ def bot_has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Pe
             total_perms |= perm
             command.user_required_permissions |= perm
         command.add_check(functools.partial(_bot_has_guild_permissions, permissions=total_perms))
+        return command
+
+    return decorate
+
+
+def has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+    """
+    A decorator that prevents the command from being used by a member missing any of the required
+    channel permissions (permissions granted by a permission overwrite).
+
+    Args:
+        perm1 (:obj:`hikari.Permissions`): Permission to check for.
+        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have permissions
+        in a DM channel.
+    """
+
+    def decorate(command: T_inv) -> T_inv:
+        _check_check_decorator_above_commands_decorator(command)
+        perms = perm1.split()
+
+        total_perms = functools.reduce(operator.or_, (*perms, *permissions))
+        command.user_required_permissions = total_perms
+
+        command.add_check(functools.partial(_has_permissions, permissions=total_perms))
+        return command
+
+    return decorate
+
+
+def bot_has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+    """
+    A decorator that prevents the command from being used if the bot is missing any of the required
+    channel permissions (permissions granted by a permission overwrite).
+
+    Args:
+        perm1 (:obj:`hikari.Permissions`): Permission to check for.
+        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have permissions
+        in a DM channel.
+    """
+
+    def decorate(command: T_inv) -> T_inv:
+        _check_check_decorator_above_commands_decorator(command)
+        perms = perm1.split()
+
+        total_perms = functools.reduce(operator.or_, (*perms, *permissions))
+        command.user_required_permissions = total_perms
+
+        command.add_check(functools.partial(_bot_has_permissions, permissions=total_perms))
         return command
 
     return decorate

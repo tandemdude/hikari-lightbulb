@@ -43,7 +43,7 @@ class NavButton:
     def __init__(
         self,
         emoji: typing.Union[str, hikari.Emoji],
-        callback: typing.Callable[[hikari.ReactionAddEvent], typing.Coroutine[typing.Any, typing.Any, None]],
+        callback: typing.Callable[[Navigator, hikari.ReactionAddEvent], typing.Coroutine[typing.Any, typing.Any, None]],
     ) -> None:
         self.emoji = emoji
         self.callback = callback
@@ -60,17 +60,57 @@ class NavButton:
         """
         return str(event.emoji) == str(self.emoji)
 
-    def press(self, event: hikari.ReactionAddEvent) -> typing.Coroutine[typing.Any, typing.Any, None]:
+    def press(self, nav: Navigator, event: hikari.ReactionAddEvent) -> typing.Coroutine[typing.Any, typing.Any, None]:
         """
         Call the button's callback coroutine and return the awaitable.
 
         Returns:
             Coroutine[``None``, Any, ``None``]: Returned awaitable from the coroutine call.
         """
-        return self.callback(event)
+        return self.callback(nav, event)
 
 
 T = typing.TypeVar("T")
+
+
+async def next_page(nav: Navigator, _) -> None:
+    """
+    :obj:`NavButton` callback to make the navigator go to the next page.
+    """
+    nav.current_page_index += 1
+    nav.current_page_index %= len(nav.pages)
+
+
+async def prev_page(nav: Navigator, _) -> None:
+    """
+    :obj:`NavButton` callback to make the navigator go to the previous page.
+    """
+    nav.current_page_index -= 1
+    if nav.current_page_index < 0:
+        nav.current_page_index = len(nav.pages) - 1
+
+
+async def first_page(nav: Navigator, _) -> None:
+    """
+    :obj:`NavButton` callback to make the navigator go to the first page.
+    """
+    nav.current_page_index = 0
+
+
+async def last_page(nav: Navigator, _) -> None:
+    """
+    :obj:`NavButton` callback to make the navigator go to the last page.
+    """
+    nav.current_page_index = len(nav.pages) - 1
+
+
+async def stop(nav: Navigator, _) -> None:
+    """
+    :obj:`NavButton` callback to make the navigator stop navigation.
+    """
+    nav._msg.app.unsubscribe(hikari.ReactionAddEvent, nav._process_reaction_add)
+    await nav._msg.delete()
+    nav._msg = None
 
 
 class Navigator(abc.ABC, typing.Generic[T]):
@@ -84,6 +124,10 @@ class Navigator(abc.ABC, typing.Generic[T]):
         if not pages:
             raise ValueError("You cannot pass fewer than 1 page to the navigator.")
         self.pages: typing.Sequence[T] = tuple(pages)
+
+        if buttons is not None:
+            if any(not isinstance(btn, NavButton) for btn in buttons):
+                raise TypeError("Buttons must be an instance of NavButton")
 
         if len(self.pages) == 1 and not buttons:
             self.buttons = [NavButton("\N{BLACK SQUARE FOR STOP}", self._stop)]
@@ -106,33 +150,13 @@ class Navigator(abc.ABC, typing.Generic[T]):
 
     def create_default_buttons(self) -> typing.Sequence[NavButton]:
         buttons = (
-            NavButton("\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}", self._first),
-            NavButton("\N{BLACK LEFT-POINTING TRIANGLE}", self._prev),
-            NavButton("\N{BLACK SQUARE FOR STOP}", self._stop),
-            NavButton("\N{BLACK RIGHT-POINTING TRIANGLE}", self._next),
-            NavButton("\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}", self._last),
+            NavButton("\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}", first_page),
+            NavButton("\N{BLACK LEFT-POINTING TRIANGLE}", prev_page),
+            NavButton("\N{BLACK SQUARE FOR STOP}", stop),
+            NavButton("\N{BLACK RIGHT-POINTING TRIANGLE}", next_page),
+            NavButton("\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}", last_page),
         )
         return buttons
-
-    async def _next(self, _) -> None:
-        self.current_page_index += 1
-        self.current_page_index %= len(self.pages)
-
-    async def _prev(self, _) -> None:
-        self.current_page_index -= 1
-        if self.current_page_index < 0:
-            self.current_page_index = len(self.pages) - 1
-
-    async def _first(self, _) -> None:
-        self.current_page_index = 0
-
-    async def _last(self, _) -> None:
-        self.current_page_index = len(self.pages) - 1
-
-    async def _stop(self, _) -> None:
-        self._msg.app.unsubscribe(hikari.ReactionAddEvent, self._process_reaction_add)
-        await self._msg.delete()
-        self._msg = None
 
     async def _process_reaction_add(self, event: hikari.ReactionAddEvent) -> None:
         if (

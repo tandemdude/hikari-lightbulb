@@ -140,7 +140,7 @@ class Navigator(abc.ABC, typing.Generic[T]):
                 raise TypeError("Buttons must be an instance of NavButton")
 
         if len(self.pages) == 1 and not buttons:
-            self.buttons = [NavButton("\N{BLACK SQUARE FOR STOP}", self._stop)]
+            self.buttons = [NavButton("\N{BLACK SQUARE FOR STOP}", stop)]
         else:
             self.buttons: typing.Sequence[NavButton] = buttons if buttons is not None else self.create_default_buttons()
 
@@ -218,7 +218,7 @@ class Navigator(abc.ABC, typing.Generic[T]):
         intent_to_check_for = (
             hikari.Intents.GUILD_MESSAGE_REACTIONS
             if context.guild_id is not None
-            else hikari.Intents.PRIVATE_MESSAGE_REACTIONS
+            else hikari.Intents.DM_MESSAGE_REACTIONS
         )
         if not (context.bot.intents & intent_to_check_for) == intent_to_check_for:
             raise hikari.MissingIntentError(intent_to_check_for)

@@ -53,4 +53,4 @@ __all__: typing.Final[typing.List[str]] = [
     *events.__all__,
 ]
 
-__version__ = "0.0.51"
+__version__ = "0.0.52"

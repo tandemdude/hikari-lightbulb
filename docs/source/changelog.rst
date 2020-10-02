@@ -8,17 +8,34 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 0.0.52
+==============
+
+**Breaking changes**
+
+- Removed custom_emoji_converter and replaced it with :obj:`~.converters.emoji_converter`.
+
+**Other changes**
+
+- Added :obj:`~.checks.has_permissions` and :obj:`~.checks.bot_has_permissions`.
+
+- Added :obj:`~.converters.guild_converter`.
+
+- Exposed navigator callbacks to make it easier to supply your own buttons.
+
+- Fixed navigator not working with custom emojis when using your own buttons.
+
 Version 0.0.51
 ==============
 
-- Added support for hikari 2.0.0.dev85
+- Added support for hikari 2.0.0.dev85.
 
 Version 0.0.50
 ==============
 
-- Fixed :obj:`~.context.channel`
+- Fixed :obj:`~.context.channel`.
 
-- Added NSFW channel only check
+- Added NSFW channel only check.
 
 - Ensured all docstrings are correct and up to date, including any examples.
 

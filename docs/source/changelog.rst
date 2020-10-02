@@ -8,6 +8,13 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 0.0.53
+==============
+
+- Fix print_banner.
+
+- Bump requirements.
+
 Version 0.0.52
 ==============
 

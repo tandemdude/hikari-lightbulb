@@ -302,29 +302,20 @@ async def role_converter(arg: WrappedArg) -> hikari.Role:
     return _raise_if_not_none(role)
 
 
-async def custom_emoji_converter(arg: WrappedArg) -> hikari.KnownCustomEmoji:
+async def emoji_converter(arg: WrappedArg) -> hikari.Emoji:
     """
-    Converter to transform a command argument into a :obj:`~hikari.KnownCustomEmoji` object.
+    Converter to transform a command argument into a :obj:`~hikari.Emoji` object.
 
     Args:
         arg (:obj:`WrappedArg`): Argument to transform.
 
     Returns:
-        :obj:`~hikari.emojis.KnownCustomEmoji`: The custom emoji object resolved from the argument.
+        :obj:`~hikari.Emoji`: The emoji object resolved from the argument.
 
     Raises:
-        :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a custom emoji object.
+        :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into an emoji object.
     """
-    try:
-        emoji_id = _resolve_id_from_arg(arg.data, EMOJI_MENTION_REGEX)
-    except ValueError:
-        emojis = arg.context.bot.cache.get_emojis_view_for_guild(arg.context.guild_id)
-        emoji = utils.get(emojis.values(), name=arg.data)
-    else:
-        emoji = arg.context.bot.cache.get_emoji(emoji_id)
-        if emoji is None:
-            emoji = await arg.context.bot.rest.fetch_emoji(arg.context.guild_id, emoji_id)
-    return _raise_if_not_none(emoji)
+    return hikari.Emoji.parse(arg.data)
 
 
 async def guild_converter(arg: WrappedArg) -> hikari.GuildPreview:
@@ -341,8 +332,8 @@ async def guild_converter(arg: WrappedArg) -> hikari.GuildPreview:
         :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a guild object.
     """
     if arg.data.isdigit():
-        guild_id = _resolve_id_from_arg(arg.data, arg.data)
-        guild = arg.context.bot.rest.fetch_guild_preview(guild_id)
+        guild_id = int(arg.data)
+        guild = await arg.context.bot.rest.fetch_guild_preview(guild_id)
     else:
         guilds = arg.context.bot.cache.get_available_guilds_view()
         guild = utils.get(guilds.values(), name=arg.data)

@@ -55,6 +55,8 @@ class NavButton:
         emoji: typing.Union[str, hikari.Emoji],
         callback: typing.Callable[[Navigator, hikari.ReactionAddEvent], typing.Coroutine[typing.Any, typing.Any, None]],
     ) -> None:
+        if isinstance(emoji, str):
+            emoji = hikari.Emoji.parse(emoji)
         self.emoji = emoji
         self.callback = callback
 
@@ -68,7 +70,7 @@ class NavButton:
         Returns:
             :obj:`bool`: Whether or not the button is pressed in the given event.
         """
-        return str(event.emoji) == str(self.emoji)
+        return event.emoji.mention == self.emoji.mention
 
     def press(self, nav: Navigator, event: hikari.ReactionAddEvent) -> typing.Coroutine[typing.Any, typing.Any, None]:
         """

@@ -55,6 +55,7 @@ __all__: typing.Final[typing.List[str]] = [
     "category_converter",
     "role_converter",
     "custom_emoji_converter",
+    "guild_converter",
     "message_converter",
     "invite_converter",
     "colour_converter",
@@ -326,6 +327,31 @@ async def custom_emoji_converter(arg: WrappedArg) -> hikari.KnownCustomEmoji:
     return _raise_if_not_none(emoji)
 
 
+async def guild_converter(arg: WrappedArg) -> hikari.GuildPreview:
+    """
+    Converter to transform a command argument into a :obj:`~hikari.Guild` object.
+
+    Args:
+        arg (:obj:`WrappedArg`): Argument to transform.
+
+    Returns:
+        :obj:`~hikari.Guild`: The guild object resolved from the argument.
+
+    Raises:
+        :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a guild object.
+    """
+    if arg.data.isdigit():
+        guild_id = _resolve_id_from_arg(arg.data, arg.data)
+        guild = arg.context.bot.rest.fetch_guild_preview(guild_id)
+    else:
+        guilds = arg.context.bot.cache.get_available_guilds_view()
+        guild = utils.get(guilds.values(), name=arg.data)
+
+        guild = await arg.context.bot.rest.fetch_guild_preview(guild.id)
+
+    return _raise_if_not_none(guild)
+
+
 async def message_converter(arg: WrappedArg) -> hikari.Message:
     """
     Converter to transform a command argument into a :obj:`~hikari.Message` object. Note that
@@ -403,6 +429,7 @@ if typing.TYPE_CHECKING:
     category_converter = hikari.GuildCategory
     role_converter = hikari.Role
     custom_emoji_converter = hikari.KnownCustomEmoji
+    guild_converter = hikari.GuildPreview
     message_converter = hikari.Message
     invite_converter = hikari.Invite
     colour_converter = hikari.Colour

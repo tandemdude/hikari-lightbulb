@@ -54,7 +54,7 @@ __all__: typing.Final[typing.List[str]] = [
     "guild_voice_channel_converter",
     "category_converter",
     "role_converter",
-    "custom_emoji_converter",
+    "emoji_converter",
     "guild_converter",
     "message_converter",
     "invite_converter",
@@ -419,7 +419,7 @@ if typing.TYPE_CHECKING:
     voice_channel_converter = guild_voice_channel_converter
     category_converter = hikari.GuildCategory
     role_converter = hikari.Role
-    custom_emoji_converter = hikari.KnownCustomEmoji
+    emoji_converter = hikari.Emoji
     guild_converter = hikari.GuildPreview
     message_converter = hikari.Message
     invite_converter = hikari.Invite

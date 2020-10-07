@@ -7,33 +7,48 @@ stages:
     - if: "$CI_PIPELINE_SOURCE == 'push'"
     - if: "$CI_PIPELINE_SOURCE == 'merge_request_event'"
 
-.cpython:3.8:
-  before_script:
-    - pip install nox 'virtualenv<20.0.19'
-  image: python:3.8
-
 black:
-  extends: 
-    - .cpython:3.8
-    - .reactive-job
-  script:
+  image: python:3.9
+  extends: .reactive-job
+  before_script: 
+    - pip install nox
+  script: 
     - nox -s format
   stage: test
 
-pytest:
-  extends:
-    - .cpython:3.8
-    - .reactive-job
-  script:
+pytest-cpython-3.8:
+  image: python:3.8
+  extends: .reactive-job
+  before_script: 
+    - pip install nox
+  script: 
     - nox -s test
   stage: test
 
+pytest-cpython-3.9:
+  image: python:3.9
+  extends: .reactive-job
+  before_script: 
+    - pip install nox
+  script: 
+    - nox -s test
+  stage: test
+
+deploy-dryrun:
+  image: python:3.9
+  extends: .reactive-job
+  script: 
+    - pip install -U requests setuptools twine wheel -r requirements.txt
+    - python setup.py sdist bdist_wheel install
+    - ls dist -rl
+  stage: test
+
 pages:
-  extends:
-    - .cpython:3.8
-  script:
-    - nox -s sphinx
-    - mv docs/build public
+  image: python:3.9
+  before_script: 
+    - pip install nox
+  script: 
+    - nox -s sphinx && mv docs/build public
   stage: deploy
   artifacts:
     expire_in: 2 days
@@ -47,14 +62,11 @@ pypi:
   environment:
     name: prod
     url: https://tandemdude.gitlab.io/lightbulb
-  extends:
-    - .cpython:3.8
+  image: python:3.9
   script:
-    - pip install -U twine
-    - pip install -r requirements.txt
+    - pip install -U requests setuptools twine wheel -r requirements.txt
     - python setup.py sdist bdist_wheel
     - twine upload --skip-existing dist/*
-    - pip install -U requests
     - python release_webhook.py
   stage: deploy
   only:

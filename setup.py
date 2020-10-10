@@ -26,13 +26,6 @@ from setuptools.command import install
 name = "lightbulb"
 
 
-class SpeedupsAwareInstaller(install.install):
-    distribution: dist.Distribution
-    def initialize_options(self):
-        self.distribution.
-
-
-
 def parse_meta():
     with open(os.path.join(name, "__init__.py")) as fp:
         code = fp.read()
@@ -79,11 +72,17 @@ setup(
     python_requires=">=3.8.0,<3.10",
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
+        "Framework :: AsyncIO",
         "Intended Audience :: Developers",
         "Natural Language :: English",
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: Implementation :: CPython",
+        "Programming Language :: Python :: Implementation :: Stackless",
         "Programming Language :: Python :: 3 :: Only",
+        "Topic :: Software Development :: Libraries",
+        "Topic :: Software Development :: Libraries :: Application Frameworks",
+        "Topic :: Software Development :: Libraries :: Python Modules",
     ],
 )

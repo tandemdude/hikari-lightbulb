@@ -16,6 +16,15 @@ black:
     - nox -s format
   stage: test
 
+pytest-stackless-3.8:
+  image: nekokatt/stackless-python-hikari:3.8.0b3
+  extends: .reactive-job
+  before_script: 
+    - pip install nox
+  script: 
+    - nox -s test
+  stage: test
+
 pytest-cpython-3.8:
   image: python:3.8
   extends: .reactive-job

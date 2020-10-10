@@ -306,6 +306,10 @@ async def emoji_converter(arg: WrappedArg) -> hikari.Emoji:
     """
     Converter to transform a command argument into a :obj:`~hikari.Emoji` object.
 
+    Note that this **does not** validate unicode emojis to ensure they are defined
+    as standard emojis. See https://github.com/nekokatt/hikari/issues/270 for discussion
+    on supporting this.
+
     Args:
         arg (:obj:`WrappedArg`): Argument to transform.
 

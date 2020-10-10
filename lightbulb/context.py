@@ -20,6 +20,7 @@ from __future__ import annotations
 __all__: typing.Final[typing.List[str]] = ["Context"]
 
 import datetime
+import functools
 import re
 import typing
 
@@ -46,6 +47,8 @@ class Context:
         For information on types for the various properties see :obj:`hikari.messages.Message`.
     """
 
+    __slots__: typing.Sequence[str] = ("_bot", "_message", "_prefix", "_invoked_with", "_command")
+
     def __init__(
         self,
         bot: command_handler.Bot,
@@ -65,6 +68,8 @@ class Context:
         self._command: commands.Command = command
         """The command that was invoked."""
 
+    # XXX: should this be deprecated and changed to `app` to be consistent
+    # with the entire hikari API, and the lightbulb error event API?
     @property
     def bot(self) -> command_handler.Bot:
         return self._bot
@@ -120,6 +125,8 @@ class Context:
         """Optional timestamp of the previous edit of the context message."""
         return self._message.edited_timestamp
 
+    # XXX: these are at the time of writing typing.Sequence objects, but will
+    # be refactored to use typing.AbstractSet as part of https://github.com/nekokatt/hikari/issues/273.
     @property
     def user_mentions(self) -> typing.Collection[hikari.Snowflake]:
         """The users mentioned in the context message."""
@@ -182,6 +189,7 @@ class Context:
             return self.bot.cache.get_guild_channel(self.channel_id)
         return None
 
+    @functools.wraps(hikari.Message.reply)
     async def reply(self, *args, **kwargs) -> hikari.Message:
         """
         Alias for ``ctx.message.reply(...)``.

@@ -24,6 +24,7 @@ import typing
 
 import attr
 import hikari
+from hikari.events import base_events as hikari_base_events
 
 if typing.TYPE_CHECKING:
     import types
@@ -34,16 +35,19 @@ if typing.TYPE_CHECKING:
 
 
 @attr.s(slots=True)
+@hikari_base_events.requires_intents(hikari.Intents.DM_MESSAGES, hikari.Intents.GUILD_MESSAGES)
 class LightbulbEvent(hikari.Event, abc.ABC):
     """
     The base class for all lightbulb events. Every event dispatched by lightbulb
     will be an instance of a subclass of this.
     """
 
-    pass
+    app: hikari.BotAware = attr.ib()
+    """App instance for this application."""
 
 
 @attr.s(kw_only=True, slots=True)
+@hikari_base_events.requires_intents(hikari.Intents.DM_MESSAGES, hikari.Intents.GUILD_MESSAGES)
 class CommandErrorEvent(LightbulbEvent):
     """
     Event type to subscribe to for the processing of all command errors raised by the handler.
@@ -62,8 +66,6 @@ class CommandErrorEvent(LightbulbEvent):
 
     """
 
-    app: hikari.api.event_consumer.IEventConsumerApp = attr.ib()
-    """App instance for this application."""
     exception: errors.LightbulbError = attr.ib()
     """The exception that triggered this event."""
     context: typing.Optional[context_.Context] = attr.ib(default=None)
@@ -74,20 +76,26 @@ class CommandErrorEvent(LightbulbEvent):
     """The command that this event was triggered for."""
 
     @property
+    def exc_info(
+        self,
+    ) -> typing.Tuple[typing.Type[errors.LightbulbError], errors.LightbulbError, typing.Optional[types.TracebackType]]:
+        """The exception triplet compatible with context managers and :mod:`traceback` helpers."""
+        return type(self.exception), self.exception, self.exception.__traceback__
+
+    @property
     def traceback(self) -> types.TracebackType:
         """The traceback for this event's exception."""
         return self.exception.__traceback__
 
 
 @attr.s(kw_only=True, slots=True)
+@hikari_base_events.requires_intents(hikari.Intents.DM_MESSAGES, hikari.Intents.GUILD_MESSAGES)
 class CommandInvocationEvent(LightbulbEvent):
     """
     Event dispatched when a command is invoked, regardless of whether or not the checks
     passed or failed, or an error was raised during command invocation.
     """
 
-    app: hikari.api.event_consumer.IEventConsumerApp = attr.ib()
-    """App instance for this application."""
     command: commands.Command = attr.ib()
     """The command that this event was triggered for."""
     context: context_.Context = attr.ib()
@@ -95,14 +103,13 @@ class CommandInvocationEvent(LightbulbEvent):
 
 
 @attr.s(kw_only=True, slots=True)
+@hikari_base_events.requires_intents(hikari.Intents.DM_MESSAGES, hikari.Intents.GUILD_MESSAGES)
 class CommandCompletionEvent(LightbulbEvent):
     """
     Event type dispatched when a command invocation occurred and was completed successfully. This means
     that all checks must have passed and that no errors can have been raised during the command invocation.
     """
 
-    app: hikari.api.event_consumer.IEventConsumerApp = attr.ib()
-    """App instance for this application."""
     command: commands.Command = attr.ib()
     """The command that this event was triggered for."""
     context: context_.Context = attr.ib()

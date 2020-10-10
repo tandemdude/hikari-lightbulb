@@ -272,7 +272,7 @@ class StringNavigator(Navigator[str]):
                 paginated_help = pag.StringPaginator()
                 for l in thing_that_creates_a_lot_of_text.split("\\n"):
                     paginated_help.add_line(l)
-                navigator = nav.StringNavigator(paginated_help.pages)
+                navigator = nav.StringNavigator(paginated_help.build_pages())
                 await navigator.run(ctx)
 
     """

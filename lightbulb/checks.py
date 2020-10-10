@@ -36,6 +36,7 @@ __all__: typing.Final[typing.List[str]] = [
 ]
 
 import functools
+import inspect
 import operator
 import types
 import typing
@@ -72,7 +73,7 @@ See https://tandemdude.gitlab.io/lightbulb/api-reference.html#module-lightbulb.c
 
 
 def _check_check_decorator_above_commands_decorator(func_or_command) -> None:
-    if isinstance(func_or_command, types.FunctionType):
+    if inspect.isfunction(func_or_command) or inspect.ismethod(func_or_command):
         raise SyntaxError(_CHECK_DECORATOR_BELOW_COMMAND_DECORATOR_MESSAGE)
 
 

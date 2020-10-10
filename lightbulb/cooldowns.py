@@ -29,9 +29,10 @@ __all__: typing.Final[typing.List[str]] = [
 ]
 
 import abc
-import enum
 import time
 import typing
+
+from hikari.internal import enums
 
 from lightbulb import errors
 
@@ -40,7 +41,7 @@ if typing.TYPE_CHECKING:
     from lightbulb import context as context_
 
 
-class CooldownStatus(enum.IntEnum):
+class CooldownStatus(int, enums.Enum):
     """The status of a cooldown bucket"""
 
     EXPIRED = 0

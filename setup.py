@@ -19,10 +19,18 @@ import os
 import re
 import types
 
-from setuptools import setup, find_namespace_packages
+from setuptools import setup, find_namespace_packages, dist
+from setuptools.command import install
 
 
 name = "lightbulb"
+
+
+class SpeedupsAwareInstaller(install.install):
+    distribution: dist.Distribution
+    def initialize_options(self):
+        self.distribution.
+
 
 
 def parse_meta():

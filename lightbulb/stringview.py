@@ -53,6 +53,8 @@ class StringView:
         raw_string (:obj:`str`): The string to break down into its arguments.
     """
 
+    __slots__: typing.Sequence[str] = ("text", "index", "final_args", "current_arg", "expect_quote")
+
     def __init__(self, raw_string: str) -> None:
         self.text = raw_string
         self.index = 0

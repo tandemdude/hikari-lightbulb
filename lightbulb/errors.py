@@ -56,77 +56,85 @@ from lightbulb import commands
 from lightbulb import context as context_
 
 
+@attr.s(slots=True, auto_exc=True)
 class LightbulbError(Exception):
     """Base for any exception raised by lightbulb."""
 
 
+@attr.s(slots=True, auto_exc=True)
 class ExtensionError(LightbulbError):
     """Base exception for errors incurred during the loading and unloading of extensions."""
 
     pass
 
 
+@attr.s(slots=True, auto_exc=True)
 class ExtensionAlreadyLoaded(ExtensionError):
     """Exception raised when an extension already loaded is attempted to be loaded."""
 
     pass
 
 
+@attr.s(slots=True, auto_exc=True)
 class ExtensionNotLoaded(ExtensionError):
     """Exception raised when an extension not already loaded is attempted to be unloaded."""
 
     pass
 
 
+@attr.s(slots=True, auto_exc=True)
 class ExtensionMissingLoad(ExtensionError):
     """Exception raised when an extension is attempted to be loaded but does not contain a load function"""
 
     pass
 
 
+@attr.s(slots=True, auto_exc=True)
 class ExtensionMissingUnload(ExtensionError):
     """Exception raised when an extension is attempted to be unloaded but does not contain an unload function"""
 
     pass
 
 
+@attr.s(slots=True, auto_exc=True)
 class CommandError(LightbulbError):
     """Base exception for errors incurred during handling of commands."""
 
     pass
 
 
+@attr.s(slots=True, auto_exc=True)
 class CommandNotFound(CommandError):
     """
     Exception raised when a command when attempted to be invoked but one with that name could not be found.
     """
 
-    def __init__(self, invoked_with: str) -> None:
-        self.invoked_with = invoked_with
-        """The command string that was attempted to be invoked."""
+    invoked_with: str = attr.ib()
+    """The command string that was attempted to be invoked."""
 
 
+@attr.s(slots=True, auto_exc=True)
 class NotEnoughArguments(CommandError):
     """
     Exception raised when a command is run without a sufficient number of arguments.
     """
 
-    def __init__(self, invoked_with: str) -> None:
-        self.invoked_with = invoked_with
-        """The command string that was attempted to be invoked."""
+    invoked_with: str = attr.ib()
+    """The command string that was attempted to be invoked."""
 
 
+@attr.s(slots=True, auto_exc=True)
 class TooManyArguments(CommandError):
     """
     Exception raised when a command is run with too many arguments, and the command has been
     defined to not accept any extra arguments when invoked.
     """
 
-    def __init__(self, invoked_with: str) -> None:
-        self.invoked_with = invoked_with
-        """The command string that was attempted to be invoked."""
+    invoked_with: str = attr.ib()
+    """The command string that was attempted to be invoked."""
 
 
+@attr.s(slots=True, auto_exc=True)
 class ConverterFailure(CommandError):
     """
     Exception raised when a converter for a command argument fails.
@@ -135,20 +143,23 @@ class ConverterFailure(CommandError):
     pass
 
 
+@attr.s(slots=True, auto_exc=True)
 class CommandIsOnCooldown(CommandError):
     """
     Exception raised when a command is attempted to be run but is currently on cooldown.
     """
 
-    def __init__(self, text: str, *, command: commands.Command, retry_in: float) -> None:
-        self.text = text
-        """The error text."""
-        self.command = command
-        """The command that is on cooldown."""
-        self.retry_in = retry_in
-        """Number of seconds remaining for the cooldown."""
+    text: str = attr.ib()
+    """The error text."""
+
+    command: commands.Command = attr.ib(kw_only=True)
+    """The command that is on cooldown."""
+
+    retry_in: float = attr.ib(kw_only=True)
+    """Number of seconds remaining for the cooldown."""
 
 
+@attr.s(slots=True, auto_exc=True)
 class CommandSyntaxError(CommandError, abc.ABC):
     """
     Base error raised if a syntax issue occurs parsing invocation arguments.
@@ -156,10 +167,11 @@ class CommandSyntaxError(CommandError, abc.ABC):
 
     # Forces the class to be abstract.
     @abc.abstractmethod
-    def __init__(self):
+    def __init__(self) -> None:
         ...
 
 
+@attr.s(slots=True, auto_exc=True, init=False)
 class PrematureEOF(CommandSyntaxError):
     """
     Error raised if EOF (end of input) was reached, but more content was
@@ -171,18 +183,22 @@ class PrematureEOF(CommandSyntaxError):
         super().__init__()
 
 
+@attr.s(slots=True, auto_exc=True, init=False)
 class UnclosedQuotes(CommandSyntaxError):
     """
     Error raised when no closing quote is found for a quoted argument.
     """
 
+    text: str = attr.ib()
+    """The text that caused the error to be raised."""
+
     def __init__(self, text: str) -> None:
         # Required to override the abstract super init.
         super().__init__()
         self.text = text
-        """The text that caused the error to be raised."""
 
 
+@attr.s(slots=True, auto_exc=True)
 class CheckFailure(CommandError):
     """
     Base error that is raised when a check fails for a command. Anything raised by a check
@@ -192,30 +208,37 @@ class CheckFailure(CommandError):
     pass
 
 
+@attr.s(slots=True, auto_exc=True)
 class OnlyInGuild(CheckFailure):
     """
     Error raised when a command marked as guild only is attempted to be invoked in DMs.
     """
 
-    pass
+    text: str = attr.ib()
+    """The error text."""
 
 
+@attr.s(slots=True, auto_exc=True)
 class OnlyInDM(CheckFailure):
     """
     Error raised when a command marked as DM only is attempted to be invoked in a guild.
     """
 
-    pass
+    text: str = attr.ib()
+    """The error text."""
 
 
+@attr.s(slots=True, auto_exc=True)
 class NotOwner(CheckFailure):
     """
     Error raised when a command marked as owner only is attempted to be invoked by another user.
     """
 
-    pass
+    text: str = attr.ib()
+    """The error text."""
 
 
+@attr.s(slots=True, auto_exc=True)
 class BotOnly(CheckFailure):
     """
     Error raised when the command invoker is not a bot.
@@ -224,6 +247,7 @@ class BotOnly(CheckFailure):
     pass
 
 
+@attr.s(slots=True, auto_exc=True)
 class HumanOnly(CheckFailure):
     """
     Error raised when the command invoker is not an human.
@@ -232,6 +256,7 @@ class HumanOnly(CheckFailure):
     pass
 
 
+@attr.s(slots=True, auto_exc=True)
 class NSFWChannelOnly(CheckFailure):
     """
     Error raised when a command that must be invoked in an NSFW channel is attempted to be invoked outside of one.
@@ -240,6 +265,7 @@ class NSFWChannelOnly(CheckFailure):
     pass
 
 
+@attr.s(slots=True, auto_exc=True)
 class MissingRequiredRole(CheckFailure):
     """
     Error raised when the member invoking a command is missing one or more role required.
@@ -248,30 +274,31 @@ class MissingRequiredRole(CheckFailure):
     pass
 
 
+@attr.s(slots=True, auto_exc=True)
 class MissingRequiredPermission(CheckFailure):
     """
     Error raised when the member invoking a command is missing one or more permission required.
     """
 
-    def __init__(self, text: str, *, permissions: hikari.Permissions) -> None:
-        self.text = text
-        """The error text."""
-        self.permissions = permissions
-        """Permission(s) the bot is missing."""
+    text: str = attr.ib()
+    """The error text."""
+    permissions: hikari.Permissions = attr.ib(kw_only=True)
+    """Permission(s) the bot is missing."""
 
 
+@attr.s(slots=True, auto_exc=True)
 class BotMissingRequiredPermission(CheckFailure):
     """
     Error raised when the bot is missing one or more permission required for the command to be run.
     """
 
-    def __init__(self, text: str, *, permissions: hikari.Permissions) -> None:
-        self.text = text
-        """The error text."""
-        self.permissions = permissions
-        """Permission(s) the bot is missing."""
+    text: str = attr.ib()
+    """The error text."""
+    permissions: hikari.Permissions = attr.ib(kw_only=True)
+    """Permission(s) the bot is missing."""
 
 
+@attr.s(slots=True, auto_exc=True, init=False)
 class CommandInvocationError(CommandError):
     """
     Error raised if an error is encountered during command invocation. This will only be raised
@@ -279,9 +306,16 @@ class CommandInvocationError(CommandError):
     This effectively acts as a wrapper for the original exception for easier handling in an error handler.
     """
 
-    def __init__(self, text: str, *, original: Exception):
+    text: str = attr.ib()
+    """The error text."""
+
+    # XXX: deprecate this and use `__cause__` instead, either manually setting it or
+    # using `raise x from original`
+    @property
+    def original(self) -> Exception:
+        return self.__cause__
+
+    def __init__(self, text: str, *, original: Exception) -> None:
         self.text = text
         """The error text."""
-        self.original = original
-        """The original exception that caused this one to be raised."""
-        self.__traceback__ = original.__traceback__
+        self.__cause__ = cause

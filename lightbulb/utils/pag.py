@@ -207,7 +207,7 @@ class StringPaginator(Paginator[str]):
                 pag = StringPaginator(max_lines=10)
                 for n, guild in enumerate(guilds, start=1):
                     pag.add_line(f"**{n}.** {guild.name}")
-                for page in pag.pages:
+                for page in pag.build_pages():
                     await ctx.reply(page)
     """
 
@@ -283,7 +283,7 @@ class EmbedPaginator(Paginator[hikari.Embed]):
 
                 @pag.embed_factory()
                 def build_embed(page_index, page_content):
-                    return Embed(description=page_content, colour=randint(0, 0xFFFFFF)
+                    return Embed(description=page_content, colour=randint(0, 0xFFFFFF))
 
         See Also:
             :meth:`set_embed_factory`

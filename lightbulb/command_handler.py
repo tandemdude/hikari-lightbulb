@@ -44,6 +44,7 @@ from lightbulb.utils import maybe_await
 
 _LOGGER = logging.getLogger("lightbulb")
 
+# XXX: can't we use `str.split()` here, which splits on all whitespace in the same way?
 ARG_SEP_REGEX = re.compile(r"(?:\s+|\n)")
 
 
@@ -97,9 +98,9 @@ def when_mentioned_or(prefix_provider):
     return get_prefixes
 
 
-def _return_prefix(
-    _, __, *, prefixes: typing.Union[str, typing.Iterable[str]]
-) -> typing.Union[str, typing.List[str], typing.Tuple[str]]:
+# Prefixes may be a string or iterable of strings. A string is a sequence of strings too by definition,
+# so this type hint _is_ correct.
+def _return_prefix(_: typing.Any, __: typing.Any, *, prefixes: typing.Iterable[str]) -> typing.Sequence[str]:
     return prefixes
 
 

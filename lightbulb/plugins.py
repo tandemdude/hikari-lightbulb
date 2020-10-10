@@ -40,7 +40,7 @@ class EventListenerDescriptor:
     """
     Descriptor for a listener.
 
-    This provides the same introspective logic as :meth:`hikari.Bot.listen`, but
+    This provides the same introspective logic as :meth:`hikari.BotApp.listen`, but
     does so using a descriptor instead of directly subscribing the function. This
     is detected when loading plugins as a way of defining event listeners within
     plugins lazily.
@@ -222,7 +222,7 @@ class Plugin:
         or raise an error when called.
 
         Args:
-            context (:obj:`.context.Context): The command invocation context.
+            context (:obj:`~.context.Context`): The command invocation context.
 
         Returns:
             :obj:`bool`: Whether the check passed or failed.

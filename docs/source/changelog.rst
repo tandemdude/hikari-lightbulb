@@ -8,6 +8,11 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 0.0.54
+==============
+
+- Various performance improvements
+
 Version 0.0.53
 ==============
 

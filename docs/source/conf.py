@@ -51,7 +51,7 @@ exclude_patterns = []
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
-    "hikari": ("https://nekokatt.github.io/hikari", None),
+    "hikari": ("https://hikari-py.github.io/hikari", None),
 }
 
 

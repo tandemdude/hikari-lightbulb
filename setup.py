@@ -71,7 +71,7 @@ setup(
     install_requires=parse_requirements_file("requirements.txt"),
     python_requires=">=3.8.0,<3.10",
     classifiers=[
-        "Development Status :: 2 - Pre-Alpha",
+        "Development Status :: 3 - Alpha",
         "Framework :: AsyncIO",
         "Intended Audience :: Developers",
         "Natural Language :: English",

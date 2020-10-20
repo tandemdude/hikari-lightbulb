@@ -34,7 +34,7 @@ if typing.TYPE_CHECKING:
     from lightbulb import errors
 
 
-@attr.s(slots=True)
+@attr.s(slots=True, weakref_slot=False)
 @hikari_base_events.requires_intents(hikari.Intents.DM_MESSAGES, hikari.Intents.GUILD_MESSAGES)
 class LightbulbEvent(hikari.Event, abc.ABC):
     """
@@ -46,7 +46,7 @@ class LightbulbEvent(hikari.Event, abc.ABC):
     """App instance for this application."""
 
 
-@attr.s(kw_only=True, slots=True)
+@attr.s(kw_only=True, slots=True, weakref_slot=False)
 @hikari_base_events.requires_intents(hikari.Intents.DM_MESSAGES, hikari.Intents.GUILD_MESSAGES)
 class CommandErrorEvent(LightbulbEvent):
     """
@@ -88,7 +88,7 @@ class CommandErrorEvent(LightbulbEvent):
         return self.exception.__traceback__
 
 
-@attr.s(kw_only=True, slots=True)
+@attr.s(kw_only=True, slots=True, weakref_slot=False)
 @hikari_base_events.requires_intents(hikari.Intents.DM_MESSAGES, hikari.Intents.GUILD_MESSAGES)
 class CommandInvocationEvent(LightbulbEvent):
     """
@@ -102,7 +102,7 @@ class CommandInvocationEvent(LightbulbEvent):
     """The context that this event was triggered for."""
 
 
-@attr.s(kw_only=True, slots=True)
+@attr.s(kw_only=True, slots=True, weakref_slot=False)
 @hikari_base_events.requires_intents(hikari.Intents.DM_MESSAGES, hikari.Intents.GUILD_MESSAGES)
 class CommandCompletionEvent(LightbulbEvent):
     """

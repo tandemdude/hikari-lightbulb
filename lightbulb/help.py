@@ -74,15 +74,18 @@ def get_command_signature(command: commands.Command) -> str:
     Returns:
         :obj:`str`: Signature for the command.
     """
-    signature = inspect.signature(command._callback)
-
     items = [command.qualified_name]
-    first_arg_index = 1 if command.plugin is None else 2
-    for name, param in list(signature.parameters.items())[first_arg_index:]:
-        if param.default is param.empty:
-            items.append(f"<{name}>")
+    for argname, arginfo in command.arg_details.args.items():
+        if arginfo.ignore:
+            continue
+
+        if arginfo.default is inspect.Parameter.empty:
+            items.append(f"<{argname}>")
         else:
-            items.append(f"[{name}={param.default}]")
+            items.append(f"[{argname}={arginfo.default}]")
+
+        if arginfo.argtype is inspect.Parameter.KEYWORD_ONLY:
+            break
     return " ".join(items)
 
 

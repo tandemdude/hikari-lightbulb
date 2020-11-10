@@ -77,8 +77,8 @@ def get_command_signature(command: commands.Command) -> str:
     signature = inspect.signature(command._callback)
 
     items = [command.qualified_name]
-    num_args = len(signature.parameters) - command.arg_details.maximum_arguments
-    for name, param in list(signature.parameters.items())[num_args:]:
+    first_arg_index = 1 if command.plugin is None else 2
+    for name, param in list(signature.parameters.items())[first_arg_index:]:
         if param.default is param.empty:
             items.append(f"<{name}>")
         else:

@@ -130,6 +130,8 @@ async def _has_roles(ctx: context.Context, *, role_check):
 def _get_missing_perms(permissions: hikari.Permissions, roles: typing.Sequence[hikari.Role]) -> hikari.Permissions:
     missing_perms = hikari.Permissions.NONE
     for perm in permissions:
+        if perm is hikari.Permissions.ADMINISTRATOR:
+            return hikari.Permissions.NONE
         if not any(role.permissions & perm for role in roles):
             missing_perms |= perm
     return missing_perms
@@ -169,6 +171,8 @@ async def _bot_has_guild_permissions(ctx: context.Context, *, permissions: hikar
 
 
 async def _has_permissions(ctx: context.Context, *, permissions: hikari.Permissions) -> bool:
+    if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
+        raise hikari.MissingIntentError(hikari.Intents.GUILDS)
 
     await _guild_only(ctx)
 
@@ -189,6 +193,8 @@ async def _has_permissions(ctx: context.Context, *, permissions: hikari.Permissi
 
 
 async def _bot_has_permissions(ctx: context.Context, *, permissions: hikari.Permissions) -> bool:
+    if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
+        raise hikari.MissingIntentError(hikari.Intents.GUILDS)
 
     await _guild_only(ctx)
 
@@ -349,15 +355,12 @@ def has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permis
 
     def decorate(command: T_inv) -> T_inv:
         _check_check_decorator_above_commands_decorator(command)
-        perms = set(perm1.split())
-        for permission in permissions:
-            for perm in permission.split():
-                perms.add(perm)
-        total_perms = hikari.Permissions.NONE
-        for perm in perms:
-            total_perms |= perm
-            command.user_required_permissions |= perm
-        command.add_check(functools.partial(_has_guild_permissions, permissions=total_perms))
+        perms = perm1.split()
+
+        total_perms = functools.reduce(operator.or_, (*perms, *permissions))
+        command.user_required_permissions = total_perms
+
+        command.add_check(functools.partial(_bot_has_guild_permissions, permissions=total_perms))
         return command
 
     return decorate
@@ -384,14 +387,11 @@ def bot_has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Pe
 
     def decorate(command: T_inv) -> T_inv:
         _check_check_decorator_above_commands_decorator(command)
-        perms = set(perm1.split())
-        for permission in permissions:
-            for perm in permission.split():
-                perms.add(perm)
-        total_perms = hikari.Permissions.NONE
-        for perm in perms:
-            total_perms |= perm
-            command.user_required_permissions |= perm
+        perms = perm1.split()
+
+        total_perms = functools.reduce(operator.or_, (*perms, *permissions))
+        command.bot_required_permissions = total_perms
+
         command.add_check(functools.partial(_bot_has_guild_permissions, permissions=total_perms))
         return command
 

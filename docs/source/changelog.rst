@@ -8,10 +8,19 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 0.0.55
+==============
+
+- Fix issue with errors not being raised correctly.
+
+- Fix get_command_signature showing ctx for subcommands.
+
+- Make bot_has_guild_permissions and has_guild_permissions pass if bot or invoker has the administrator permission.
+
 Version 0.0.54
 ==============
 
-- Various performance improvements
+- Various performance improvements.
 
 Version 0.0.53
 ==============

@@ -148,7 +148,7 @@ async def _has_guild_permissions(ctx: context.Context, *, permissions: hikari.Pe
 
     if missing_perms:
         raise errors.MissingRequiredPermission(
-            "You are missing one or more permissions required in order to run this command", permissions=missing_perms
+            "You are missing one or more permissions required in order to run this command", missing_perms
         )
     return True
 
@@ -165,7 +165,7 @@ async def _bot_has_guild_permissions(ctx: context.Context, *, permissions: hikar
 
     if missing_perms:
         raise errors.BotMissingRequiredPermission(
-            "I am missing one or more permissions required in order to run this command", permissions=missing_perms
+            "I am missing one or more permissions required in order to run this command", missing_perms
         )
     return True
 
@@ -187,7 +187,7 @@ async def _has_permissions(ctx: context.Context, *, permissions: hikari.Permissi
 
     if missing_perms:
         raise errors.MissingRequiredPermission(
-            "You are missing one or more permissions required in order to run this command", permissions=missing_perms
+            "You are missing one or more permissions required in order to run this command", missing_perms
         )
     return True
 
@@ -210,7 +210,7 @@ async def _bot_has_permissions(ctx: context.Context, *, permissions: hikari.Perm
 
     if missing_perms:
         raise errors.MissingRequiredPermission(
-            "You are missing one or more permissions required in order to run this command", permissions=missing_perms
+            "You are missing one or more permissions required in order to run this command", missing_perms
         )
     return True
 

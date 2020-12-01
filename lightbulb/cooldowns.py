@@ -210,8 +210,8 @@ class CooldownManager:
                 # Cooldown has been activated
                 raise errors.CommandIsOnCooldown(
                     "This command is on cooldown",
-                    command=context.command,
-                    retry_in=(cooldown_bucket.start_time + cooldown_bucket.length) - time.perf_counter(),
+                    context.command,
+                    (cooldown_bucket.start_time + cooldown_bucket.length) - time.perf_counter(),
                 )
             elif cooldown_status == CooldownStatus.INACTIVE:
                 # Cooldown has not yet been activated.

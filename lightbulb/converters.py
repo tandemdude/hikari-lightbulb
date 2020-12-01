@@ -119,7 +119,7 @@ async def _get_or_fetch_guild_channel_from_id(arg: WrappedArg, channel_id: hikar
 
 def _raise_if_not_none(obj: typing.Optional[T]) -> T:
     if obj is None:
-        raise errors.ConverterFailure()
+        raise errors.ConverterFailure
     return obj
 
 
@@ -209,7 +209,7 @@ async def text_channel_converter(arg: WrappedArg) -> hikari.TextChannel:
         channel = await _get_or_fetch_guild_channel_from_id(arg, channel_id)
 
     if not isinstance(channel, hikari.TextChannel):
-        raise errors.ConverterFailure("Channel is not a text channel")
+        raise errors.ConverterFailure
     return channel
 
 
@@ -235,7 +235,7 @@ async def guild_voice_channel_converter(arg: WrappedArg) -> hikari.GuildVoiceCha
         channel = await _get_or_fetch_guild_channel_from_id(arg, channel_id)
 
     if not isinstance(channel, hikari.GuildVoiceChannel):
-        raise errors.ConverterFailure("Channel is not a guild voice channel")
+        raise errors.ConverterFailure
     return channel
 
 
@@ -271,7 +271,7 @@ async def category_converter(arg: WrappedArg) -> hikari.GuildCategory:
         channel = await _get_or_fetch_guild_channel_from_id(arg, channel_id)
 
     if not isinstance(channel, hikari.GuildCategory):
-        raise errors.ConverterFailure("Channel is not a guild category")
+        raise errors.ConverterFailure
     return channel
 
 
@@ -369,7 +369,7 @@ async def message_converter(arg: WrappedArg) -> hikari.Message:
         message_id, channel_id = parts[-1], parts[-2]
 
     if channel_id != arg.context.channel_id:
-        raise errors.ConverterFailure("Invocation channel ID and message channel ID did not match")
+        raise errors.ConverterFailure
 
     return await arg.context.bot.rest.fetch_message(channel_id, message_id)
 

@@ -29,6 +29,8 @@ with open("../../lightbulb/__init__.py") as fp:
 version = re.search(r"__version__ = \"([^\"]+)", file).group(1)
 release = version
 
+master_doc = "index"
+
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be

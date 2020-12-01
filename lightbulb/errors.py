@@ -217,6 +217,7 @@ class NotOwner(CheckFailure):
         self.text: str = text
         """The error text."""
 
+
 class BotOnly(CheckFailure):
     """
     Error raised when the command invoker is not a bot.

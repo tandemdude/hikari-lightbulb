@@ -21,7 +21,6 @@
 """
 from __future__ import annotations
 
-
 __all__: typing.Final[typing.List[str]] = [
     "dm_only",
     "guild_only",
@@ -48,8 +47,6 @@ import hikari
 from lightbulb import commands
 from lightbulb import context
 from lightbulb import errors
-
-
 
 if typing.TYPE_CHECKING:
     from hikari import snowflakes

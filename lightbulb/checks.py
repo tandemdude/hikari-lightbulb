@@ -35,6 +35,7 @@ __all__: typing.Final[typing.List[str]] = [
     "check",
 ]
 
+
 import functools
 import inspect
 import operator
@@ -210,7 +211,7 @@ async def _bot_has_permissions(ctx: context.Context, *, permissions: hikari.Perm
 
     if missing_perms:
         raise errors.MissingRequiredPermission(
-            "You are missing one or more permissions required in order to run this command", missing_perms
+            "I am missing one or more permissions required in order to run this command", missing_perms
         )
     return True
 
@@ -360,7 +361,7 @@ def has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permis
         total_perms = functools.reduce(operator.or_, (*perms, *permissions))
         command.user_required_permissions = total_perms
 
-        command.add_check(functools.partial(_bot_has_guild_permissions, permissions=total_perms))
+        command.add_check(functools.partial(_has_guild_permissions, permissions=total_perms))
         return command
 
     return decorate

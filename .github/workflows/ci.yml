@@ -7,7 +7,6 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest]
         python-version: [3.8, 3.9]
 
     steps:
@@ -22,5 +21,4 @@ jobs:
           pip install nox
           nox -s test
       - name: Run black
-        run: |
-          nox -s format
+        run: nox -s format

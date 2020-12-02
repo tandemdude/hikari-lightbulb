@@ -20,15 +20,6 @@
     Note that all check decorators **must** be above the command decorator otherwise your code will not work.
 """
 from __future__ import annotations
-from lightbulb import errors
-from lightbulb import context
-from lightbulb import commands
-import hikari
-import typing
-import types
-import operator
-import inspect
-import functools
 
 
 __all__: typing.Final[typing.List[str]] = [
@@ -44,6 +35,20 @@ __all__: typing.Final[typing.List[str]] = [
     "bot_has_permissions",
     "check",
 ]
+
+
+import functools
+import inspect
+import operator
+import types
+import typing
+
+import hikari
+
+from lightbulb import commands
+from lightbulb import context
+from lightbulb import errors
+
 
 
 if typing.TYPE_CHECKING:
@@ -111,8 +116,7 @@ async def _human_only(ctx: context.Context) -> bool:
 
 async def _nsfw_channel_only(ctx: context.Context) -> bool:
     if not ctx.channel.is_nsfw:
-        raise errors.NSFWChannelOnly(
-            f"{ctx.invoked_with} can only be used in an NSFW channel")
+        raise errors.NSFWChannelOnly(f"{ctx.invoked_with} can only be used in an NSFW channel")
     return True
 
 
@@ -123,8 +127,7 @@ def _role_check(member_roles: typing.Sequence[hikari.Snowflake], *, roles: typin
 async def _has_roles(ctx: context.Context, *, role_check):
     await _guild_only(ctx)
     if not role_check(ctx.member.role_ids):
-        raise errors.MissingRequiredRole(
-            "You are missing one or more roles required in order to run this command.")
+        raise errors.MissingRequiredRole("You are missing one or more roles required in order to run this command.")
     return True
 
 
@@ -145,8 +148,7 @@ async def _has_guild_permissions(ctx: context.Context, *, permissions: hikari.Pe
     await _guild_only(ctx)
 
     roles = ctx.bot.cache.get_roles_view_for_guild(ctx.guild_id).values()
-    missing_perms = _get_missing_perms(
-        permissions, [role for role in roles if role.id in ctx.member.role_ids])
+    missing_perms = _get_missing_perms(permissions, [role for role in roles if role.id in ctx.member.role_ids])
 
     if missing_perms:
         raise errors.MissingRequiredPermission(
@@ -162,10 +164,8 @@ async def _bot_has_guild_permissions(ctx: context.Context, *, permissions: hikar
     await _guild_only(ctx)
 
     roles = ctx.bot.cache.get_roles_view_for_guild(ctx.guild_id).values()
-    bot_member = ctx.bot.cache.get_member(
-        ctx.guild_id, ctx.bot.cache.get_me().id)
-    missing_perms = _get_missing_perms(
-        permissions, [role for role in roles if role.id in bot_member.role_ids])
+    bot_member = ctx.bot.cache.get_member(ctx.guild_id, ctx.bot.cache.get_me().id)
+    missing_perms = _get_missing_perms(permissions, [role for role in roles if role.id in bot_member.role_ids])
 
     if missing_perms:
         raise errors.BotMissingRequiredPermission(
@@ -204,8 +204,7 @@ async def _bot_has_permissions(ctx: context.Context, *, permissions: hikari.Perm
 
     perm_over = ctx.channel.permission_overwrites.values()
     perm_none = hikari.Permissions.NONE
-    bot_member = ctx.bot.cache.get_member(
-        ctx.guild_id, ctx.bot.cache.get_me().id)
+    bot_member = ctx.bot.cache.get_member(ctx.guild_id, ctx.bot.cache.get_me().id)
 
     allowed_perms = functools.reduce(
         operator.or_, (override.allow if override.id in bot_member.role_ids else perm_none for override in perm_over)
@@ -365,8 +364,7 @@ def has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permis
         total_perms = functools.reduce(operator.or_, (*perms, *permissions))
         command.user_required_permissions = total_perms
 
-        command.add_check(functools.partial(
-            _has_guild_permissions, permissions=total_perms))
+        command.add_check(functools.partial(_has_guild_permissions, permissions=total_perms))
         return command
 
     return decorate
@@ -398,8 +396,7 @@ def bot_has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Pe
         total_perms = functools.reduce(operator.or_, (*perms, *permissions))
         command.bot_required_permissions = total_perms
 
-        command.add_check(functools.partial(
-            _bot_has_guild_permissions, permissions=total_perms))
+        command.add_check(functools.partial(_bot_has_guild_permissions, permissions=total_perms))
         return command
 
     return decorate
@@ -426,8 +423,7 @@ def has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions)
         total_perms = functools.reduce(operator.or_, (*perms, *permissions))
         command.user_required_permissions = total_perms
 
-        command.add_check(functools.partial(
-            _has_permissions, permissions=total_perms))
+        command.add_check(functools.partial(_has_permissions, permissions=total_perms))
         return command
 
     return decorate
@@ -454,8 +450,7 @@ def bot_has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissi
         total_perms = functools.reduce(operator.or_, (*perms, *permissions))
         command.user_required_permissions = total_perms
 
-        command.add_check(functools.partial(
-            _bot_has_permissions, permissions=total_perms))
+        command.add_check(functools.partial(_bot_has_permissions, permissions=total_perms))
         return command
 
     return decorate

@@ -18,6 +18,7 @@
 import os
 
 import nox
+from nox import options
 
 PATH_TO_PROJECT = os.path.join(".", "lightbulb")
 SCRIPT_PATHS = [
@@ -26,6 +27,8 @@ SCRIPT_PATHS = [
     "release_webhook.py",
     "docs/source/conf.py",
 ]
+
+options.sessions = ["format_fix", "test", "sphinx"]
 
 
 @nox.session()

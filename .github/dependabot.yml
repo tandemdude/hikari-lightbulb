@@ -1,0 +1,12 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: daily
+    assignees:
+      - tandemdude
+    reviewers:
+      - tandemdude
+    rebase-strategy: auto
+    target-branch: development

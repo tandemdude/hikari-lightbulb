@@ -1,0 +1,26 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - "master"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+
+    - name: Deploy to PyPi
+      env:
+        RELEASE_WEBHOOK: ${{ secrets.RELEASE_WEBHOOK }}
+      run: |
+        pip install -U requests setuptools twine wheel -r requirements.txt
+        python setup.py sdist bdist_wheel
+        twine upload --skip-existing dist/*
+        python release_webhook.py

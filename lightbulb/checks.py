@@ -21,6 +21,18 @@
 """
 from __future__ import annotations
 
+import functools
+import inspect
+import operator
+import types
+import typing
+
+import hikari
+
+from lightbulb import commands
+from lightbulb import context
+from lightbulb import errors
+
 __all__: typing.Final[typing.List[str]] = [
     "dm_only",
     "guild_only",
@@ -35,17 +47,6 @@ __all__: typing.Final[typing.List[str]] = [
     "check",
 ]
 
-import functools
-import inspect
-import operator
-import types
-import typing
-
-import hikari
-
-from lightbulb import commands
-from lightbulb import context
-from lightbulb import errors
 
 if typing.TYPE_CHECKING:
     from hikari import snowflakes
@@ -210,7 +211,7 @@ async def _bot_has_permissions(ctx: context.Context, *, permissions: hikari.Perm
 
     if missing_perms:
         raise errors.MissingRequiredPermission(
-            "You are missing one or more permissions required in order to run this command", missing_perms
+            "I am missing one or more permissions required in order to run this command", missing_perms
         )
     return True
 
@@ -360,7 +361,7 @@ def has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permis
         total_perms = functools.reduce(operator.or_, (*perms, *permissions))
         command.user_required_permissions = total_perms
 
-        command.add_check(functools.partial(_bot_has_guild_permissions, permissions=total_perms))
+        command.add_check(functools.partial(_has_guild_permissions, permissions=total_perms))
         return command
 
     return decorate

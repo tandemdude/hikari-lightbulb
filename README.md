@@ -38,10 +38,10 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 Please try to update tests as appropriate and ensure that documentation is updated if 
 you add any features accessible through the public API.
 
-If you use this library and like it, feel free to sign up to GitLab and star the project,
+If you use this library and like it, feel free to sign up to GitHub and star the project,
 it is greatly appreciated and lets me know that I'm going in the right direction!
 
 ## Links
 - **License:** [LGPLv3](https://choosealicense.com/licenses/lgpl-3.0/)
-- **Repository:** [Gitlab](https://gitlab.com/tandemdude/lightbulb)
-- **Documentation:** [GitLab Pages](https://tandemdude.gitlab.io/lightbulb/)
+- **Repository:** [GitHub](https://github.com/tandemdude/hikari-lightbulb)
+- **Documentation:** [ReadTheDocs](https://hikari-lightbulb.readthedocs.io/en/latest/)

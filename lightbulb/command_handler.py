@@ -530,12 +530,12 @@ class Bot(hikari.BotApp):
                     bot.add_plugin(MyPlugin())
         """
         if extension in self.extensions:
-            raise errors.ExtensionAlreadyLoaded(f"{extension} is already loaded.")
+            raise errors.ExtensionAlreadyLoaded(text=f"{extension} is already loaded.")
 
         module = importlib.import_module(extension)
 
         if not hasattr(module, "load"):
-            raise errors.ExtensionMissingLoad(f"{extension} is missing a load function")
+            raise errors.ExtensionMissingLoad(text=f"{extension} is missing a load function")
         else:
             module.load(self)
             self.extensions.append(extension)
@@ -573,12 +573,12 @@ class Bot(hikari.BotApp):
                     bot.remove_plugin("MyPlugin")
         """
         if extension not in self.extensions:
-            raise errors.ExtensionNotLoaded(f"{extension} is not loaded.")
+            raise errors.ExtensionNotLoaded(text=f"{extension} is not loaded.")
 
         module = importlib.import_module(extension)
 
         if not hasattr(module, "unload"):
-            raise errors.ExtensionMissingUnload(f"{extension} is missing an unload function")
+            raise errors.ExtensionMissingUnload(text=f"{extension} is missing an unload function")
         else:
             module.unload(self)
             self.extensions.remove(extension)
@@ -764,9 +764,9 @@ class Bot(hikari.BotApp):
         sv = stringview.StringView(raw_arg_string)
         positional_args, remainder = sv.deconstruct_str(max_parse=command.arg_details.maximum_arguments)
         if remainder and command.arg_details.kwarg_name is None and not command._allow_extra_arguments:
-            raise errors.TooManyArguments(command.name)
+            raise errors.TooManyArguments(command)
         if len(positional_args) < command.arg_details.minimum_arguments:
-            raise errors.NotEnoughArguments(command.name)
+            raise errors.NotEnoughArguments(command)
 
         if not remainder:
             remainder = {}
@@ -855,7 +855,7 @@ class Bot(hikari.BotApp):
             await self._dispatch_command_error_event_from_exception(ex, event.message, context, command)
             return
         except Exception as ex:
-            new_ex = errors.CommandInvocationError(text=f"{type(ex).__name__}: {ex}", original=ex)
+            new_ex = errors.CommandInvocationError(f"{type(ex).__name__}: {ex}", ex)
             await self._dispatch_command_error_event_from_exception(new_ex, event.message, context, command)
             return
 

@@ -49,102 +49,100 @@ __all__: typing.Final[typing.List[str]] = [
 import abc
 import typing
 
-import attr
 import hikari
 
 from lightbulb import commands
 
 
-@attr.s(slots=True, weakref_slot=False)
 class LightbulbError(Exception):
     """Base for any exception raised by lightbulb."""
 
 
-@attr.s(slots=True, weakref_slot=False)
 class ExtensionError(LightbulbError):
     """Base exception for errors incurred during the loading and unloading of extensions."""
 
+    def __init__(self, text: str) -> None:
+        self.text: str = text
+        """The error text."""
 
-@attr.s(slots=True, weakref_slot=False)
+
 class ExtensionAlreadyLoaded(ExtensionError):
     """Exception raised when an extension already loaded is attempted to be loaded."""
 
 
-@attr.s(slots=True, weakref_slot=False)
 class ExtensionNotLoaded(ExtensionError):
     """Exception raised when an extension not already loaded is attempted to be unloaded."""
 
 
-@attr.s(slots=True, weakref_slot=False)
 class ExtensionMissingLoad(ExtensionError):
     """Exception raised when an extension is attempted to be loaded but does not contain a load function"""
 
 
-@attr.s(slots=True, weakref_slot=False)
 class ExtensionMissingUnload(ExtensionError):
     """Exception raised when an extension is attempted to be unloaded but does not contain an unload function"""
 
 
-@attr.s(slots=True, weakref_slot=False)
 class CommandError(LightbulbError):
     """Base exception for errors incurred during handling of commands."""
 
 
-@attr.s(slots=True, weakref_slot=False)
 class CommandNotFound(CommandError):
     """
     Exception raised when a command when attempted to be invoked but one with that name could not be found.
     """
 
-    invoked_with: str = attr.ib()
-    """The command string that was attempted to be invoked."""
+    def __init__(self, invoked_with: str) -> None:
+        self.invoked_with: str = invoked_with
+        """The command string that was attempted to be invoked."""
 
 
-@attr.s(slots=True, weakref_slot=False)
 class NotEnoughArguments(CommandError):
     """
     Exception raised when a command is run without a sufficient number of arguments.
     """
 
-    invoked_with: str = attr.ib()
-    """The command string that was attempted to be invoked."""
+    def __init__(self, command: commands.Command) -> None:
+        self.command: commands.Command = command
+        """The command string that was attempted to be invoked."""
 
 
-@attr.s(slots=True, weakref_slot=False)
 class TooManyArguments(CommandError):
     """
     Exception raised when a command is run with too many arguments, and the command has been
     defined to not accept any extra arguments when invoked.
     """
 
-    invoked_with: str = attr.ib()
-    """The command string that was attempted to be invoked."""
+    def __init__(self, command: commands.Command) -> None:
+        self.command: commands.Command = command
+        """The command string that was attempted to be invoked."""
 
 
-@attr.s(slots=True, weakref_slot=False)
 class ConverterFailure(CommandError):
     """
     Exception raised when a converter for a command argument fails.
     """
 
+    def __init__(self, text: typing.Optional[str] = None) -> None:
+        self.text: typing.Optional[str] = text
+        """The error text."""
 
-@attr.s(slots=True, weakref_slot=False)
+
 class CommandIsOnCooldown(CommandError):
     """
     Exception raised when a command is attempted to be run but is currently on cooldown.
     """
 
-    text: str = attr.ib()
-    """The error text."""
+    def __init__(self, text: str, command: commands.Command, retry_in: float) -> None:
+        self.text: str = text
+        """The error text."""
 
-    command: commands.Command = attr.ib(kw_only=True)
-    """The command that is on cooldown."""
+        self.command: commands.Command = command
+        """The command that is on cooldown."""
 
-    retry_in: float = attr.ib(kw_only=True)
-    """Number of seconds remaining for the cooldown."""
+        self.retry_in: float = retry_in
+        """Number of seconds remaining for the cooldown."""
 
 
-@attr.s(slots=True, weakref_slot=False)
 class CommandSyntaxError(CommandError, abc.ABC):
     """
     Base error raised if a syntax issue occurs parsing invocation arguments.
@@ -156,7 +154,6 @@ class CommandSyntaxError(CommandError, abc.ABC):
         ...
 
 
-@attr.s(slots=True, init=False, weakref_slot=False)
 class PrematureEOF(CommandSyntaxError):
     """
     Error raised if EOF (end of input) was reached, but more content was
@@ -168,106 +165,123 @@ class PrematureEOF(CommandSyntaxError):
         super().__init__()
 
 
-@attr.s(slots=True, init=False, weakref_slot=False)
 class UnclosedQuotes(CommandSyntaxError):
     """
     Error raised when no closing quote is found for a quoted argument.
     """
 
-    text: str = attr.ib()
-    """The text that caused the error to be raised."""
-
     def __init__(self, text: str) -> None:
         # Required to override the abstract super init.
         super().__init__()
         self.text = text
+        """The text that caused the error to be raised."""
 
 
-@attr.s(slots=True, weakref_slot=False)
 class CheckFailure(CommandError):
     """
     Base error that is raised when a check fails for a command. Anything raised by a check
     should inherit from this class.
     """
 
-    text: typing.Optional[str] = attr.ib(default=None)
-    """The error text."""
+    def __init__(self, text: typing.Optional[str] = None) -> None:
+        self.text: typing.Optional[str] = text
+        """The error text."""
 
 
-@attr.s(slots=True, weakref_slot=False)
 class OnlyInGuild(CheckFailure):
     """
     Error raised when a command marked as guild only is attempted to be invoked in DMs.
     """
 
+    def __init__(self, text: str) -> None:
+        self.text: str = text
+        """The error text."""
 
-@attr.s(slots=True, weakref_slot=False)
+
 class OnlyInDM(CheckFailure):
     """
     Error raised when a command marked as DM only is attempted to be invoked in a guild.
     """
 
+    def __init__(self, text: str) -> None:
+        self.text: str = text
+        """The error text."""
 
-@attr.s(slots=True, weakref_slot=False)
+
 class NotOwner(CheckFailure):
     """
     Error raised when a command marked as owner only is attempted to be invoked by another user.
     """
 
+    def __init__(self, text: str) -> None:
+        self.text: str = text
+        """The error text."""
 
-@attr.s(slots=True, weakref_slot=False)
+
 class BotOnly(CheckFailure):
     """
     Error raised when the command invoker is not a bot.
     """
 
+    def __init__(self, text: str) -> None:
+        self.text: str = text
+        """The error text."""
 
-@attr.s(slots=True, weakref_slot=False)
+
 class HumanOnly(CheckFailure):
     """
     Error raised when the command invoker is not an human.
     """
 
+    def __init__(self, text: str) -> None:
+        self.text: str = text
+        """The error text."""
 
-@attr.s(slots=True, weakref_slot=False)
+
 class NSFWChannelOnly(CheckFailure):
     """
     Error raised when a command that must be invoked in an NSFW channel is attempted to be invoked outside of one.
     """
 
+    def __init__(self, text: str) -> None:
+        self.text: str = text
+        """The error text."""
 
-@attr.s(slots=True, weakref_slot=False)
+
 class MissingRequiredRole(CheckFailure):
     """
     Error raised when the member invoking a command is missing one or more role required.
     """
 
+    def __init__(self, text: str) -> None:
+        self.text: str = text
+        """The error text."""
 
-@attr.s(slots=True, weakref_slot=False)
+
 class MissingRequiredPermission(CheckFailure):
     """
     Error raised when the member invoking a command is missing one or more permission required.
     """
 
-    text: typing.Optional[str] = attr.ib(default=None)
-    """The error text."""
-    permissions: hikari.Permissions = attr.ib(kw_only=True)
-    """Permission(s) the bot is missing."""
+    def __init__(self, text: str, permissions: hikari.Permissions) -> None:
+        self.text: str = text
+        """The error text."""
+        self.permissions: hikari.Permissions = permissions
+        """Permission(s) the bot is missing."""
 
 
-@attr.s(slots=True, weakref_slot=False)
 class BotMissingRequiredPermission(CheckFailure):
     """
     Error raised when the bot is missing one or more permission required for the command to be run.
     """
 
-    text: typing.Optional[str] = attr.ib(default=None)
-    """The error text."""
-    permissions: hikari.Permissions = attr.ib(kw_only=True)
-    """Permission(s) the bot is missing."""
+    def __init__(self, text: str, permissions: hikari.Permissions) -> None:
+        self.text: str = text
+        """The error text."""
+        self.permissions: hikari.Permissions = permissions
+        """Permission(s) the bot is missing."""
 
 
-@attr.s(slots=True, weakref_slot=False)
 class CommandInvocationError(CommandError):
     """
     Error raised if an error is encountered during command invocation. This will only be raised
@@ -275,10 +289,11 @@ class CommandInvocationError(CommandError):
     This effectively acts as a wrapper for the original exception for easier handling in an error handler.
     """
 
-    text: str = attr.ib()
-    """The error text."""
-    original: Exception = attr.ib()
-    """The original exception that caused this to be raised."""
+    def __init__(self, text: str, original: Exception) -> None:
+        self.text: str = text
+        """The error text."""
+        self.original: Exception = original
+        """The original exception that caused this to be raised."""
 
     @property
     def __cause__(self) -> Exception:

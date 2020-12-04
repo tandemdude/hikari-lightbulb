@@ -470,7 +470,7 @@ class Command:
                     getattr(details.annotation, "__name__", repr(details.annotation)),
                 )
                 raise errors.ConverterFailure(
-                    f"Failed converting {arg} with converter: {getattr(details.annotation, '__name__', repr(details.annotation))}"
+                    text=f"Failed converting {arg} with converter: {getattr(details.annotation, '__name__', repr(details.annotation))}"
                 )
         return new_args
 

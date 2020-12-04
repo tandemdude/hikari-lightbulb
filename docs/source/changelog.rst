@@ -8,14 +8,23 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 0.0.56
+==============
+
+- Move docs to [readthedocs](https://hikari-lightbulb.readthedocs.io/en/latest/).
+
+- Refactor errors to ensure they get instantiated correctly everywhere they are used.
+
+- Fix various check messages and an issue where a check decorator added an incorrect check function.
+
 Version 0.0.55
 ==============
 
 - Fix issue with errors not being raised correctly.
 
-- Fix get_command_signature showing ctx for subcommands.
+- Fix :obj:`~lightbulb.help.get_command_signature` showing ctx for subcommands.
 
-- Make bot_has_guild_permissions and has_guild_permissions pass if bot or invoker has the administrator permission.
+- Make :obj:`~lightbulb.checks.bot_has_guild_permissions` and :obj:`~lightbulb.checks.has_guild_permissions` pass if bot or invoker has the administrator permission.
 
 Version 0.0.54
 ==============

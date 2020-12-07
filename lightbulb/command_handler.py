@@ -765,8 +765,9 @@ class Bot(hikari.BotApp):
         positional_args, remainder = sv.deconstruct_str(max_parse=command.arg_details.maximum_arguments)
         if remainder and command.arg_details.kwarg_name is None and not command._allow_extra_arguments:
             raise errors.TooManyArguments(command)
-        if len(positional_args) < command.arg_details.minimum_arguments:
-            raise errors.NotEnoughArguments(command)
+        if (len(positional_args) + bool(remainder)) < command.arg_details.minimum_arguments:
+            missing_args = command.arg_details.get_missing_args([*positional_args, *([remainder] if remainder else [])])
+            raise errors.NotEnoughArguments(command, missing_args)
 
         if not remainder:
             remainder = {}

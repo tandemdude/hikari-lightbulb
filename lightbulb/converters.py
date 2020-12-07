@@ -103,6 +103,9 @@ class WrappedArg(collections.UserString):
         super().__init__(seq)
         self.context: context_.Context = context
 
+    def __iter__(self):
+        return iter(self.data)
+
 
 def _resolve_id_from_arg(arg_string: str, regex: typing.Pattern) -> hikari.Snowflake:
     if match := regex.match(arg_string):

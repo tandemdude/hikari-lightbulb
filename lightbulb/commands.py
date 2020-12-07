@@ -155,7 +155,7 @@ class SignatureInspector:
                 self.number_positional_args += 1
 
         self.minimum_arguments = sum(
-            1 for a in self.args.values() if not a.ignore and a.required and a.argtype != inspect.Parameter.KEYWORD_ONLY
+            1 for a in self.args.values() if not a.ignore and a.required
         )
         self.maximum_arguments = (
             float("inf")
@@ -181,6 +181,10 @@ class SignatureInspector:
             self.kwarg_name = arg.name
 
         return ArgInfo(ignore, argtype, annotation, required, default)
+
+    def get_missing_args(self, args: typing.List[str]) -> typing.List[str]:
+        required_command_args = [name for name, arg in self.args.items() if not arg.ignore and arg.required]
+        return required_command_args[len(args):]
 
 
 class Command:

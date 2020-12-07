@@ -101,9 +101,11 @@ class NotEnoughArguments(CommandError):
     Exception raised when a command is run without a sufficient number of arguments.
     """
 
-    def __init__(self, command: commands.Command) -> None:
+    def __init__(self, command: commands.Command, missing_args: typing.List[str]) -> None:
         self.command: commands.Command = command
         """The command string that was attempted to be invoked."""
+        self.missing_args: typing.List[str] = missing_args
+        """The required arguments that are missing."""
 
 
 class TooManyArguments(CommandError):

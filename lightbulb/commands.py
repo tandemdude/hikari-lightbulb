@@ -154,7 +154,9 @@ class SignatureInspector:
             ) and not arg.ignore:
                 self.number_positional_args += 1
 
-        self.minimum_arguments = sum(1 for a in self.args.values() if not a.ignore and a.required)
+        self.minimum_arguments = sum(
+            1 for a in self.args.values() if not a.ignore and a.required
+        )
         self.maximum_arguments = (
             float("inf")
             if any(a.kind == inspect.Parameter.VAR_POSITIONAL for a in signature.parameters.values())

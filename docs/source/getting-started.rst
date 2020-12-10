@@ -45,23 +45,41 @@ Optional: Setting up logging
 
 Lightbulb uses the ``logging`` library for the logging of useful information for debugging and testing purposes. For
 example, if the logging level is set to debug, messages will be displayed every time a command, plugin or extension
-is added or removed.
+is added or removed. This can be changed by using the ``logs`` argument if you want to keep the customization that
+``hikari`` does by default. Alternatively, you can use ``logging`` directly.
 
-Example:
+Changing the logging level with using the ``logs`` argument:
 ::
 
     import logging
     import lightbulb
 
-    # Get the lightbulb logger and set the level to debug
-    logging.getLogger("lightbulb").setLevel(logging.DEBUG)
-
-    bot = lightbulb.Bot(...)
+    # Set to debug for both lightbulb and hikari
+    bot = lightbulb.Bot(..., logs="DEBUG")
 
     bot.run()
 
-This code sets the logging level of the lightbulb logger to debug. This will log all commands added or removed, plugins
-added or removed, and extensions loaded or unloaded.
+Using different logging levels for both ``hikari`` and ``lightbulb``:
+::
+
+    import logging
+    import lightbulb
+
+    # Set different logging levels for both lightbulb and hikari
+    bot = lightbulb.Bot(
+        ...,
+        logs={
+            "version": 1,
+            "incremental": True,
+            "loggers": {
+                "hikari": {"level": "INFO"},
+                "hikari.ratelimits": {"level": "TRACE_HIKARI"},
+                "lightbulb": {"level": "DEBUG"},
+            },
+        },
+    )
+
+    bot.run()
 
 .. note::
     Usually you should set the logging level to ``logging.INFO`` as setting it to debug can cause a lot

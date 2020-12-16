@@ -63,7 +63,7 @@ setup(
     long_description_content_type="text/markdown",
     author="tandemdude",
     author_email="tandemdude1@gmail.com",
-    url="https://gitlab.com/tandemdude/lightbulb",
+    url="https://github.com/tandemdude/hikari-lightbulb",
     packages=find_namespace_packages(include=[name + "*"]),
     license="LGPL-3.0-ONLY",
     include_package_data=True,

@@ -438,7 +438,18 @@ class Bot(hikari.BotApp):
         Returns:
             Optional[ :obj:`~.commands.Command` ]: Command object registered to that name.
         """
-        return self._commands.get(name)
+        tokens = name.split()
+        this = self._commands.get(tokens.pop(0))
+
+        if not tokens:
+            return this
+        if this is None:
+            return this
+
+        for token in tokens:
+            this = this.get_subcommand(token)
+
+        return this
 
     def get_plugin(self, name: str) -> typing.Optional[plugins.Plugin]:
         """

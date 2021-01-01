@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © Thomm.o 2020
+# Copyright © Thomm.o 2021
 #
 # This file is part of Lightbulb.
 #
@@ -154,9 +154,7 @@ class SignatureInspector:
             ) and not arg.ignore:
                 self.number_positional_args += 1
 
-        self.minimum_arguments = sum(
-            1 for a in self.args.values() if not a.ignore and a.required and a.argtype != inspect.Parameter.KEYWORD_ONLY
-        )
+        self.minimum_arguments = sum(1 for a in self.args.values() if not a.ignore and a.required)
         self.maximum_arguments = (
             float("inf")
             if any(a.kind == inspect.Parameter.VAR_POSITIONAL for a in signature.parameters.values())
@@ -181,6 +179,10 @@ class SignatureInspector:
             self.kwarg_name = arg.name
 
         return ArgInfo(ignore, argtype, annotation, required, default)
+
+    def get_missing_args(self, args: typing.List[str]) -> typing.List[str]:
+        required_command_args = [name for name, arg in self.args.items() if not arg.ignore and arg.required]
+        return required_command_args[len(args) :]
 
 
 class Command:

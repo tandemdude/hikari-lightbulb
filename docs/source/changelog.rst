@@ -8,6 +8,15 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 0.0.57
+==============
+
+- Add `missing_args` parameter to :obj:`~lightbulb.errors.NotEnoughArguments`
+
+- Fix `__iter__` for :obj:`~lightbulb.converters.WrappedArg`
+
+- Improve :obj:`~lightbulb.command_handler.Bot.get_command` to allow you to get subcommands without having to call :obj:`~lightbulb.commands.Group.get_subcommand`
+
 Version 0.0.56
 ==============
 

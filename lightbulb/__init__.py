@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © Thomm.o 2020
+# Copyright © Thomm.o 2021
 #
 # This file is part of Lightbulb.
 #
@@ -53,4 +53,4 @@ __all__: typing.Final[typing.List[str]] = [
     *events.__all__,
 ]
 
-__version__ = "0.0.56"
+__version__ = "0.0.57"

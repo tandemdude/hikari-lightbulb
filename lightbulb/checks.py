@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © Thomm.o 2020
+# Copyright © Thomm.o 2021
 #
 # This file is part of Lightbulb.
 #
@@ -67,7 +67,7 @@ Invalid:
 async def foo(ctx):
     ...
 
-See https://tandemdude.gitlab.io/lightbulb/api-reference.html#module-lightbulb.checks
+See https://hikari-lightbulb.readthedocs.io/en/latest/api-reference.html#module-lightbulb.checks
 """
 
 

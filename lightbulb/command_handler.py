@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © Thomm.o 2020
+# Copyright © Thomm.o 2021
 #
 # This file is part of Lightbulb.
 #
@@ -438,7 +438,18 @@ class Bot(hikari.BotApp):
         Returns:
             Optional[ :obj:`~.commands.Command` ]: Command object registered to that name.
         """
-        return self._commands.get(name)
+        tokens = name.split()
+        this = self._commands.get(tokens.pop(0))
+
+        if not tokens:
+            return this
+        if this is None:
+            return this
+
+        for token in tokens:
+            this = this.get_subcommand(token)
+
+        return this
 
     def get_plugin(self, name: str) -> typing.Optional[plugins.Plugin]:
         """
@@ -765,8 +776,9 @@ class Bot(hikari.BotApp):
         positional_args, remainder = sv.deconstruct_str(max_parse=command.arg_details.maximum_arguments)
         if remainder and command.arg_details.kwarg_name is None and not command._allow_extra_arguments:
             raise errors.TooManyArguments(command)
-        if len(positional_args) < command.arg_details.minimum_arguments:
-            raise errors.NotEnoughArguments(command)
+        if (len(positional_args) + bool(remainder)) < command.arg_details.minimum_arguments:
+            missing_args = command.arg_details.get_missing_args([*positional_args, *([remainder] if remainder else [])])
+            raise errors.NotEnoughArguments(command, missing_args)
 
         if not remainder:
             remainder = {}

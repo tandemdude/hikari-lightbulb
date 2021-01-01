@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © Thomm.o 2020
+# Copyright © Thomm.o 2021
 #
 # This file is part of Hikari Command Handler.
 #

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © Thomm.o 2020
+# Copyright © Thomm.o 2021
 #
 # This file is part of Lightbulb.
 #
@@ -102,6 +102,9 @@ class WrappedArg(collections.UserString):
     def __init__(self, seq: str, context: context_.Context) -> None:
         super().__init__(seq)
         self.context: context_.Context = context
+
+    def __iter__(self):
+        return iter(self.data)
 
 
 def _resolve_id_from_arg(arg_string: str, regex: typing.Pattern) -> hikari.Snowflake:

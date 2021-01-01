@@ -11,38 +11,38 @@
 Lightbulb
 =========
 
-Lightbulb is a command handler library designed for use with `Hikari <https://gitlab.com/nekokatt/hikari>`_
+Lightbulb is a command handler library designed for use with `Hikari <https://github.com/hikari-py/hikari>`_
 
 It aims to provide an easy to use interface for building commands with your bot.
 
 This library is currently unfinished but you can help speed up the development by contributing and submitting merge requests to the repository.
 It is working in its current state but I'd love to see more functionality added further down the line!
 
-Repository: `View on GitLab <https://gitlab.com/tandemdude/lightbulb>`_
+Repository: `View on GitHub <https://github.com/tandemdude/hikari-lightbulb>`_
 
-Docs: `View Here <https://tandemdude.gitlab.io/lightbulb>`_
+Docs: `View Here <https://hikari-lightbulb.readthedocs.io/>`_
 
 If you need any help with this library or hikari at any point feel free to join the `Discord Server <https://discord.gg/Jx4cNGG>`_
 
 If you think you have found a bug or other problem with the library, or you would like to suggest a feature,
-you should submit an issue on the GitLab repository `here <https://gitlab.com/tandemdude/lightbulb/-/issues>`_.
+you should submit an issue on the GitHub repository `here <https://github.com/tandemdude/hikari-lightbulb/issues>`_.
 Before doing so you should make sure you are on the latest version of the library and check to see if an issue
 already exists for your bug or feature.
 
 
 **Contributors:**
 
-- `thomm.o#8637 (creator) <https://gitlab.com/tandemdude>`_
+- `thomm.o#8637 (creator) <https://github.com/tandemdude>`_
 
-- `davfsa#7026 <https://gitlab.com/davfsa>`_
+- `davfsa#7026 <https://github.com/davfsa>`_
 
 - `nekoka#8788 <https://gitlab.com/nekokatt>`_
 
-- `Forbidden#0001 <https://gitlab.com/Forbidden-A>`_
+- `Forbidden#0001 <https://github.com/Forbidden-A>`_
 
-- `Dec0Ded#2693 <https://gitlab.com/dec0ded>`_
+- `Dec0Ded#2693 <https://github.com/Dec0Dedd>`_
 
-- `Yoda#0660 <https://gitlab.com/YodaPY>`_
+- `Yoda#0660 <https://github.com/YodaPY>`_
 
 - `M.A#4999 <https://gitlab.com/MonAaraj>`_
 
@@ -52,9 +52,9 @@ already exists for your bug or feature.
    :maxdepth: 2
 
    getting-started
-   changelog
    api-reference
    utils-api-reference
    custom-help
+   changelog
 
 * :ref:`genindex`

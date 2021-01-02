@@ -230,6 +230,16 @@ class BotOnly(CheckFailure):
         """The error text."""
 
 
+class WebhookOnly(CheckFailure):
+    """
+    Error raised when the command invoker is not a webhook.
+    """
+
+    def __init__(self, text: str) -> None:
+        self.text: str = text
+        """The error text."""
+
+
 class HumanOnly(CheckFailure):
     """
     Error raised when the command invoker is not an human.

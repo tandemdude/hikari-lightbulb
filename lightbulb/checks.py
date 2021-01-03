@@ -26,6 +26,7 @@ __all__: typing.Final[typing.List[str]] = [
     "guild_only",
     "owner_only",
     "bot_only",
+    "webhook_only",
     "human_only",
     "has_roles",
     "has_guild_permissions",
@@ -103,8 +104,14 @@ async def _bot_only(ctx: context.Context) -> bool:
     return True
 
 
+async def _webhook_only(ctx: context.Context) -> bool:
+    if not ctx.author.is_webhook:
+        raise errors.WebhookOnly(f"Only a webhook can use {ctx.invoked_with}")
+    return True
+
+
 async def _human_only(ctx: context.Context) -> bool:
-    if ctx.author.is_bot:
+    if not ctx.author.is_human:
         raise errors.HumanOnly(f"Only an human can use {ctx.invoked_with}")
     return True
 
@@ -270,6 +277,19 @@ def bot_only() -> typing.Callable[[T_inv], T_inv]:
     def decorate(command: T_inv) -> T_inv:
         _check_check_decorator_above_commands_decorator(command)
         command.add_check(_bot_only)
+        return command
+
+    return decorate
+
+
+def webhook_only() -> typing.Callable[[T_inv], T_inv]:
+    """
+    A decorator that prevents a command from being used by anyone other than a webhook.
+    """
+
+    def decorate(command: T_inv) -> T_inv:
+        _check_check_decorator_above_commands_decorator(command)
+        command.add_check(_webhook_only)
         return command
 
     return decorate

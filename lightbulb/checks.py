@@ -105,13 +105,13 @@ async def _bot_only(ctx: context.Context) -> bool:
 
 
 async def _webhook_only(ctx: context.Context) -> bool:
-    if not ctx.author.is_webhook:
+    if ctx.message.webhook_id is None:
         raise errors.WebhookOnly(f"Only a webhook can use {ctx.invoked_with}")
     return True
 
 
 async def _human_only(ctx: context.Context) -> bool:
-    if not ctx.author.is_human:
+    if ctx.author.is_bot or ctx.message.webhook_id is not None:
         raise errors.HumanOnly(f"Only an human can use {ctx.invoked_with}")
     return True
 

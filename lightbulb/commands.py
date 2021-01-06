@@ -601,10 +601,10 @@ class Group(Command):
         """
         for command in self.subcommands:
             yield command
-            if isinstance(command, type(self)):
+            if isinstance(command, Group):
                 yield from command.walk_commands()
 
-    def add_check(self, check_func: typing.Callable[[context.Context], typing.Coroutine[None, None, bool]]) -> None:
+    def add_check(self, check_func: typing.Callable[[context_.Context], typing.Coroutine[None, None, bool]]) -> None:
         if self.inherit_checks:
             for c in self.subcommands:
                 c.add_check(check_func)

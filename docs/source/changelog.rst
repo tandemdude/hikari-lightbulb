@@ -25,7 +25,6 @@ Version 0.0.58
 
 - Include support for hikari `2.0.0.dev98`.
 
-
 Version 0.0.57
 ==============
 

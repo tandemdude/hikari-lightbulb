@@ -8,14 +8,24 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 0.0.58
+==============
+
+- Fix :obj:`IndexError` raised when no command provided after the prefix.
+
+- Fix :obj:`~lightbulb.checks.human_only` and add :obj:`~lightbulb.checks.webhook_only`.
+
+- Fix :obj:`~lightbulb.converters.role_converter` incorrectly converting from mentions.
+
+
 Version 0.0.57
 ==============
 
-- Add `missing_args` parameter to :obj:`~lightbulb.errors.NotEnoughArguments`
+- Add `missing_args` parameter to :obj:`~lightbulb.errors.NotEnoughArguments`.
 
-- Fix `__iter__` for :obj:`~lightbulb.converters.WrappedArg`
+- Fix `__iter__` for :obj:`~lightbulb.converters.WrappedArg`.
 
-- Improve :obj:`~lightbulb.command_handler.Bot.get_command` to allow you to get subcommands without having to call :obj:`~lightbulb.commands.Group.get_subcommand`
+- Improve :obj:`~lightbulb.command_handler.Bot.get_command` to allow you to get subcommands without having to call :obj:`~lightbulb.commands.Group.get_subcommand`.
 
 Version 0.0.56
 ==============

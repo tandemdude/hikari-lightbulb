@@ -258,7 +258,7 @@ def cooldown(
             @lightbulb.cooldown(10, 1, lightbulb.UserBucket)
             @bot.command()
             async def ping(ctx):
-                await ctx.reply("Pong!")
+                await ctx.respond("Pong!")
 
         This would make it so that each user can only use the ``ping`` command once every ten seconds.
     """

@@ -21,7 +21,7 @@ bot = lightbulb.Bot(token="your_token_here", prefix="!")
 
 @bot.command()
 async def ping(ctx):
-    await ctx.reply("Pong!")
+    await ctx.respond("Pong!")
 
 
 bot.run()

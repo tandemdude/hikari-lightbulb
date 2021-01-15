@@ -215,7 +215,7 @@ class Bot(hikari.BotApp):
 
                 @bot.command()
                 async def ping(ctx):
-                    await ctx.reply("Pong!")
+                    await ctx.respond("Pong!")
 
         See Also:
             :meth:`~.command_handler.Bot.add_command`
@@ -241,7 +241,7 @@ class Bot(hikari.BotApp):
 
                 @bot.group()
                 async def foo(ctx):
-                    await ctx.reply("Bar")
+                    await ctx.respond("Bar")
 
         See Also:
             :meth:`~.commands.Group.command` for how to add subcommands to a group.
@@ -303,7 +303,7 @@ class Bot(hikari.BotApp):
                 bot = lightbulb.Bot(...)
 
                 async def ping(ctx):
-                    await ctx.reply("Pong!")
+                    await ctx.respond("Pong!")
 
                 bot.add_command(ping)
 
@@ -819,6 +819,10 @@ class Bot(hikari.BotApp):
             return
 
         new_content = event.message.content[len(prefix) :]
+
+        if not new_content or new_content.isspace():
+            return
+
         split_args = ARG_SEP_REGEX.split(new_content, maxsplit=1)
         invoked_with, command_args = split_args[0], "".join(split_args[1:])
 
@@ -894,7 +898,7 @@ class Bot(hikari.BotApp):
         Returns:
             ``None``
         """
-        if self.ignore_bots and event.message.author.is_bot:
+        if self.ignore_bots and not event.is_human:
             return
 
         if not event.message.content:

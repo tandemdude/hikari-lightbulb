@@ -26,6 +26,7 @@ __all__: typing.Final[typing.List[str]] = [
     "guild_only",
     "owner_only",
     "bot_only",
+    "webhook_only",
     "human_only",
     "has_roles",
     "has_guild_permissions",
@@ -103,8 +104,14 @@ async def _bot_only(ctx: context.Context) -> bool:
     return True
 
 
+async def _webhook_only(ctx: context.Context) -> bool:
+    if ctx.message.webhook_id is None:
+        raise errors.WebhookOnly(f"Only a webhook can use {ctx.invoked_with}")
+    return True
+
+
 async def _human_only(ctx: context.Context) -> bool:
-    if ctx.author.is_bot:
+    if ctx.author.is_bot or ctx.message.webhook_id is not None:
         raise errors.HumanOnly(f"Only an human can use {ctx.invoked_with}")
     return True
 
@@ -238,7 +245,7 @@ def dm_only() -> typing.Callable[[T_inv], T_inv]:
             @lightbulb.dm_only()
             @bot.command()
             async def foo(ctx):
-                await ctx.reply("bar")
+                await ctx.respond("bar")
     """
 
     def decorate(command: T_inv) -> T_inv:
@@ -270,6 +277,19 @@ def bot_only() -> typing.Callable[[T_inv], T_inv]:
     def decorate(command: T_inv) -> T_inv:
         _check_check_decorator_above_commands_decorator(command)
         command.add_check(_bot_only)
+        return command
+
+    return decorate
+
+
+def webhook_only() -> typing.Callable[[T_inv], T_inv]:
+    """
+    A decorator that prevents a command from being used by anyone other than a webhook.
+    """
+
+    def decorate(command: T_inv) -> T_inv:
+        _check_check_decorator_above_commands_decorator(command)
+        command.add_check(_webhook_only)
         return command
 
     return decorate
@@ -472,7 +492,7 @@ def check(check_func: typing.Callable[[context.Context], typing.Coroutine[typing
             @checks.check(check_message_contains_hello)
             @bot.command()
             async def foo(ctx):
-                await ctx.reply("Bar")
+                await ctx.respond("Bar")
 
     See Also:
         :meth:`~.commands.Command.add_check`

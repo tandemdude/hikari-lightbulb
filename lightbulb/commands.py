@@ -373,7 +373,7 @@ class Command:
                 @lightbulb.owner_only()
                 @bot.command()
                 async def foo(ctx):
-                    await ctx.reply("bar")
+                    await ctx.respond("bar")
 
                 @foo.command_error()
                 async def on_foo_error(event):
@@ -601,10 +601,10 @@ class Group(Command):
         """
         for command in self.subcommands:
             yield command
-            if isinstance(command, type(self)):
+            if isinstance(command, Group):
                 yield from command.walk_commands()
 
-    def add_check(self, check_func: typing.Callable[[context.Context], typing.Coroutine[None, None, bool]]) -> None:
+    def add_check(self, check_func: typing.Callable[[context_.Context], typing.Coroutine[None, None, bool]]) -> None:
         if self.inherit_checks:
             for c in self.subcommands:
                 c.add_check(check_func)
@@ -637,11 +637,11 @@ class Group(Command):
 
                 @bot.group()
                 async def foo(ctx):
-                    await ctx.reply("Invoked foo")
+                    await ctx.respond("Invoked foo")
 
                 @foo.command()
                 async def bar(ctx):
-                    await ctx.reply("Invoked foo bar")
+                    await ctx.respond("Invoked foo bar")
         """
 
         def decorate(func):

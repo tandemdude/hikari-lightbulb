@@ -161,7 +161,7 @@ class HelpCommand:
         for line in text:
             pag.add_line(line)
         for page in pag.build_pages():
-            await context.reply(page)
+            await context.respond(page)
 
     async def resolve_help_obj(self, context: context_.Context, obj: typing.List[str]) -> None:
         """
@@ -222,7 +222,7 @@ class HelpCommand:
         Returns:
             ``None``
         """
-        await context.reply(f"`{name}` is not a valid command, group or category.")
+        await context.respond(f"`{name}` is not a valid command, group or category.")
 
     async def send_help_overview(self, context: context_.Context) -> None:
         """
@@ -274,7 +274,7 @@ class HelpCommand:
             ", ".join(f"`{c.name}`" for c in sorted(plugin.commands.values(), key=lambda c: c.name))
             or "No commands in the category",
         ]
-        await context.reply("\n> ".join(help_text))
+        await context.respond("\n> ".join(help_text))
 
     async def send_command_help(self, context: context_.Context, command: commands.Command) -> None:
         """
@@ -294,7 +294,7 @@ class HelpCommand:
             f"```{context.clean_prefix}{get_command_signature(command)}```",
             get_help_text(command).replace("\n", "\n> ") or "No help text provided.",
         ]
-        await context.reply("\n> ".join(help_text))
+        await context.respond("\n> ".join(help_text))
 
     async def send_group_help(self, context: context_.Context, group: commands.Group) -> None:
         """
@@ -317,4 +317,4 @@ class HelpCommand:
             if group.subcommands
             else "No subcommands in the group",
         ]
-        await context.reply("\n> ".join(help_text))
+        await context.respond("\n> ".join(help_text))

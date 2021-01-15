@@ -25,7 +25,7 @@ Example:
 
     @bot.command()
     async def to_int(ctx, number: int):
-        await ctx.reply(f"{number}, {type(number)}")
+        await ctx.respond(f"{number}, {type(number)}")
         # If ran with the argument "10"
         # The output would be: 10, <class 'int'>
 
@@ -145,7 +145,7 @@ async def user_converter(arg: WrappedArg) -> hikari.User:
 
             @bot.command()
             async def username(ctx, user: lightbulb.user_converter):
-                await ctx.reply(user.username)
+                await ctx.respond(user.username)
     """
     try:
         user_id = _resolve_id_from_arg(arg.data, USER_MENTION_REGEX)

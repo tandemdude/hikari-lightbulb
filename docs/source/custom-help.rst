@@ -31,7 +31,7 @@ Example:
 
     @bot.command()
     async def help(ctx):
-        await ctx.reply(HELP_MESSAGE)
+        await ctx.respond(HELP_MESSAGE)
 
 However, the main flaw of this method is that the command will not be auto generated so you will have to add details
 for all of your commands, groups, and plugins manually.

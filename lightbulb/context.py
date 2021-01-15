@@ -189,17 +189,17 @@ class Context:
             return self.bot.cache.get_guild_channel(self.channel_id)
         return None
 
-    @functools.wraps(hikari.Message.reply)
-    async def reply(self, *args, **kwargs) -> hikari.Message:
+    @functools.wraps(hikari.Message.respond)
+    async def respond(self, *args, **kwargs) -> hikari.Message:
         """
-        Alias for ``ctx.message.reply(...)``.
+        Alias for ``ctx.message.respond(...)``.
         Replies to the message in the current context.
 
         Args:
-            *args: The positional arguments :meth:`hikari.messages.Message.reply` is invoked with
-            **kwargs: The keyword arguments :meth:`hikari.messages.Message.reply` is invoked with
+            *args: The positional arguments :meth:`hikari.messages.Message.respond` is invoked with
+            **kwargs: The keyword arguments :meth:`hikari.messages.Message.respond` is invoked with
         """
-        return await self.message.reply(*args, **kwargs)
+        return await self.message.respond(*args, **kwargs)
 
     async def send_help(self, obj: typing.Union[commands.Command, plugins.Plugin] = None) -> None:
         """

@@ -281,7 +281,7 @@ class StringNavigator(Navigator[str]):
         return await message.edit(page)
 
     async def _send_initial_msg(self, page: str) -> hikari.Message:
-        return await self._context.reply(page)
+        return await self._context.respond(page)
 
 
 class EmbedNavigator(Navigator[hikari.Embed]):
@@ -305,4 +305,4 @@ class EmbedNavigator(Navigator[hikari.Embed]):
         return await message.edit(embed=page)
 
     async def _send_initial_msg(self, page: hikari.Embed) -> hikari.Message:
-        return await self._context.reply(embed=page)
+        return await self._context.respond(embed=page)

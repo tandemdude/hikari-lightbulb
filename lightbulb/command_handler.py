@@ -215,7 +215,7 @@ class Bot(hikari.BotApp):
 
                 @bot.command()
                 async def ping(ctx):
-                    await ctx.reply("Pong!")
+                    await ctx.respond("Pong!")
 
         See Also:
             :meth:`~.command_handler.Bot.add_command`
@@ -241,7 +241,7 @@ class Bot(hikari.BotApp):
 
                 @bot.group()
                 async def foo(ctx):
-                    await ctx.reply("Bar")
+                    await ctx.respond("Bar")
 
         See Also:
             :meth:`~.commands.Group.command` for how to add subcommands to a group.
@@ -303,7 +303,7 @@ class Bot(hikari.BotApp):
                 bot = lightbulb.Bot(...)
 
                 async def ping(ctx):
-                    await ctx.reply("Pong!")
+                    await ctx.respond("Pong!")
 
                 bot.add_command(ping)
 

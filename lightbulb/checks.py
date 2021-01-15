@@ -245,7 +245,7 @@ def dm_only() -> typing.Callable[[T_inv], T_inv]:
             @lightbulb.dm_only()
             @bot.command()
             async def foo(ctx):
-                await ctx.reply("bar")
+                await ctx.respond("bar")
     """
 
     def decorate(command: T_inv) -> T_inv:
@@ -492,7 +492,7 @@ def check(check_func: typing.Callable[[context.Context], typing.Coroutine[typing
             @checks.check(check_message_contains_hello)
             @bot.command()
             async def foo(ctx):
-                await ctx.reply("Bar")
+                await ctx.respond("Bar")
 
     See Also:
         :meth:`~.commands.Command.add_check`

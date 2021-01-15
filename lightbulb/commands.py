@@ -373,7 +373,7 @@ class Command:
                 @lightbulb.owner_only()
                 @bot.command()
                 async def foo(ctx):
-                    await ctx.reply("bar")
+                    await ctx.respond("bar")
 
                 @foo.command_error()
                 async def on_foo_error(event):
@@ -637,11 +637,11 @@ class Group(Command):
 
                 @bot.group()
                 async def foo(ctx):
-                    await ctx.reply("Invoked foo")
+                    await ctx.respond("Invoked foo")
 
                 @foo.command()
                 async def bar(ctx):
-                    await ctx.reply("Invoked foo bar")
+                    await ctx.respond("Invoked foo bar")
         """
 
         def decorate(func):

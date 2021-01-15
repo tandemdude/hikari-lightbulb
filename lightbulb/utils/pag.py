@@ -208,7 +208,7 @@ class StringPaginator(Paginator[str]):
                 for n, guild in enumerate(guilds, start=1):
                     pag.add_line(f"**{n}.** {guild.name}")
                 for page in pag.build_pages():
-                    await ctx.reply(page)
+                    await ctx.respond(page)
     """
 
     def __init__(

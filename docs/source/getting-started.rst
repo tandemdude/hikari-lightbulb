@@ -29,7 +29,7 @@ Your first bot can be written in just a few lines of code:
     @bot.command()
     async def ping(ctx):
         # Send a message to the channel the command was used in
-        await ctx.reply("Pong!")
+        await ctx.respond("Pong!")
 
     # Run the bot
     # Note that this is blocking meaning no code after this line will run

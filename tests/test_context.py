@@ -96,5 +96,5 @@ async def test_context_edited_timestamp_property(bot, message, command):
 async def test_context_reply(bot, message, command):
     ctx = context.Context(bot, message, "", "", command)
     msg = "super cool message"
-    await ctx.reply(msg)
-    message.reply.assert_called_with(msg)
+    await ctx.respond(msg)
+    message.respond.assert_called_with(msg)

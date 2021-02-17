@@ -179,8 +179,9 @@ class Plugin:
     def __init__(self, *, name: str = None) -> None:
         self.name = self.__class__.__name__ if name is None else name
         """The plugin's registered name."""
-        self.commands: typing.MutableMapping[str, typing.Union[commands.Command, commands.Group]] = {}
-        """Mapping of command name to command object containing all commands registered to the plugin."""
+        self.commands = set()
+        """"A set containing all commands and groups registered to the plugin."""
+        self._commands: typing.MutableMapping[str, typing.Union[commands.Command, commands.Group]] = {}
         self.listeners: typing.MutableMapping[
             typing.Type[hikari.Event],
             typing.MutableSequence[EventListenerDescriptor],
@@ -193,8 +194,9 @@ class Plugin:
             if isinstance(member, commands.Command):
                 if not member.is_subcommand:
                     # using self here to now get the bound command.
-                    self.commands[member.name] = getattr(self, name)
-                    self.commands[member.name].plugin = self
+                    self._commands[member.name] = getattr(self, name)
+                    self._commands[member.name].plugin = self
+                    self.commands.add(self._commands[member.name])
 
             elif isinstance(member, EventListenerDescriptor):
                 if member.event_type not in self.listeners:
@@ -228,3 +230,15 @@ class Plugin:
             :obj:`bool`: Whether the check passed or failed.
         """
         return True
+
+    def walk_commands(self) -> typing.Generator[commands.Command, None, None]:
+        """
+        A generator that walks through all commands, groups and subcommands registered to this plugin.
+
+        Yields:
+            :obj:`~.commands.Command`: All commands, groups and subcommands registered to this plugin.
+        """
+        for command in self.commands:
+            yield command
+            if isinstance(command, commands.Group):
+                yield from command.walk_commands()

@@ -235,7 +235,7 @@ class HelpCommand:
             ``None``
         """
         plugin_commands = [
-            [plugin.name, await filter_commands(context, plugin.commands.values())]
+            [plugin.name, await filter_commands(context, plugin._commands.values())]
             for plugin in self.bot.plugins.values()
         ]
         all_plugin_commands = []
@@ -271,7 +271,7 @@ class HelpCommand:
             f"> **Help for category `{plugin.name}`**",
             get_help_text(plugin).replace("\n", "\n> ") or "No help text provided.",
             f"Commands:",
-            ", ".join(f"`{c.name}`" for c in sorted(plugin.commands.values(), key=lambda c: c.name))
+            ", ".join(f"`{c.name}`" for c in sorted(plugin._commands.values(), key=lambda c: c.name))
             or "No commands in the category",
         ]
         await context.respond("\n> ".join(help_text))

@@ -8,6 +8,17 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 0.0.59
+==============
+
+**Breaking Changes**
+
+- :obj:`~lightbulb.plugins.Plugin.commands` changed to a :obj:`set` from a :obj:`dict` for consistency.
+
+**Other Changes**
+
+- Added :obj:`~lightbulb.plugins.Plugin.walk_commands`.
+
 Version 0.0.58
 ==============
 

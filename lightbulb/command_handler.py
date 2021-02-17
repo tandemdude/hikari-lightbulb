@@ -414,7 +414,7 @@ class Bot(hikari.BotApp):
             raise NameError(f"A plugin named {plugin.name} is already registered.")
 
         self.plugins[plugin.name] = plugin
-        for command in plugin.commands.values():
+        for command in plugin._commands.values():
             if isinstance(command, commands.Group):
                 self.add_group(command)
             else:
@@ -497,7 +497,7 @@ class Bot(hikari.BotApp):
         plugin.plugin_remove()
 
         if plugin is not None:
-            for k in plugin.commands.keys():
+            for k in plugin._commands.keys():
                 self.remove_command(k)
 
             for event_type, listeners in plugin.listeners.items():

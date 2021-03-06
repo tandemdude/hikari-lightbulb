@@ -138,7 +138,9 @@ def _get_missing_perms(permissions: hikari.Permissions, roles: typing.Sequence[h
     for perm in permissions:
         if perm is hikari.Permissions.ADMINISTRATOR:
             return hikari.Permissions.NONE
-        if not any(role.permissions & perm for role in roles):
+
+        # Now it check if the role has admin. If it has admin, it doesn't count it as missing perm
+        if not any(role.permissions & perm or role.permissions & hikari.Permissions.ADMINISTRATOR for role in roles):
             missing_perms |= perm
     return missing_perms
 
@@ -150,6 +152,11 @@ async def _has_guild_permissions(ctx: context.Context, *, permissions: hikari.Pe
     await _guild_only(ctx)
 
     roles = ctx.bot.cache.get_roles_view_for_guild(ctx.guild_id).values()
+
+    # Checks if the author is the server owner
+    if ctx.guild.owner_id == ctx.author.id:
+        return True
+
     missing_perms = _get_missing_perms(permissions, [role for role in roles if role.id in ctx.member.role_ids])
 
     if missing_perms:

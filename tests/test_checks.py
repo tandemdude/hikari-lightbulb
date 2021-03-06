@@ -18,6 +18,8 @@
 import mock
 import pytest
 from hikari import messages
+from hikari import Permissions
+from hikari import Intents
 
 from lightbulb import checks
 from lightbulb import context
@@ -81,6 +83,14 @@ async def test_owner_only_fails(ctx):
     with pytest.raises(errors.NotOwner) as exc_info:
         await checks._owner_only(ctx)
     assert exc_info.type is errors.NotOwner
+
+
+@pytest.mark.asyncio
+async def test_guild_owner_passes(ctx):
+    ctx.author.id = 12345
+    ctx.guild.owner_id = 12345
+    ctx.bot.intents = Intents.GUILDS
+    assert await checks._has_guild_permissions(ctx, permissions=[Permissions.ADMINISTRATOR])
 
 
 def test_add_check_called_with_guild_only():

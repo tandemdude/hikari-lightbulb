@@ -705,7 +705,7 @@ class Bot(hikari.BotApp):
         command: typing.Optional[commands.Command] = None,
     ) -> None:
         error_event = events.CommandErrorEvent(
-            app=self, exception=exception, message=message, context=context, command=command
+            bot=self, exception=exception, message=message, context=context, command=command
         )
 
         handled = False
@@ -849,7 +849,7 @@ class Bot(hikari.BotApp):
 
         context = self.get_context(event.message, prefix, invoked_with, command)
 
-        await self.dispatch(events.CommandInvocationEvent(app=self, command=command, context=context))
+        await self.dispatch(events.CommandInvocationEvent(bot=self, command=command, context=context))
         if (before_invoke := command._before_invoke) is not None:
             await before_invoke(context)
 
@@ -878,7 +878,7 @@ class Bot(hikari.BotApp):
         if (after_invoke := command._after_invoke) is not None:
             await after_invoke(context)
 
-        await self.dispatch(events.CommandCompletionEvent(app=self, command=command, context=context))
+        await self.dispatch(events.CommandCompletionEvent(bot=self, command=command, context=context))
 
     async def handle(self, event: hikari.MessageCreateEvent) -> None:
         """

@@ -90,7 +90,7 @@ async def test_guild_owner_passes(ctx):
     ctx.author.id = 12345
     ctx.guild.owner_id = 12345
     ctx.bot.intents = Intents.GUILDS
-    assert await checks._has_guild_permissions(ctx, permissions=[Permissions.ADMINISTRATOR])
+    assert await checks._has_guild_permissions(ctx, permissions=Permissions.ADMINISTRATOR)
 
 
 def test_add_check_called_with_guild_only():

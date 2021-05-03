@@ -48,7 +48,7 @@ class LightbulbEvent(hikari.Event, abc.ABC):
 
     @property
     def bot(self) -> command_handler.Bot:
-        """Bot instance for this event. Alias for :obj:`~LightbulbEvent.app"""
+        """Bot instance for this event. Alias for :obj:`~LightbulbEvent.app`."""
         return self.app
 
 

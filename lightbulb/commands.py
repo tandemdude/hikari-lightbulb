@@ -433,7 +433,7 @@ class Command:
         """
 
         if typing.get_origin(type) is typing.Union:
-            for typename in (types := typing.get_args(type)) :
+            for typename in (types := typing.get_args(type)):
                 try:
                     if typename is not None:
                         new_arg = await maybe_await(typename, arg)

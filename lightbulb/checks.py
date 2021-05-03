@@ -135,7 +135,6 @@ async def _has_roles(ctx: context.Context, *, role_check):
 
 def _get_missing_perms(permissions: hikari.Permissions, roles: typing.Sequence[hikari.Role]) -> hikari.Permissions:
     missing_perms = hikari.Permissions.NONE
-<<<<<<< HEAD
     user_permissions = set([role.permissions for role in roles])
 
     if hikari.Permissions.ADMINISTRATOR in user_permissions:
@@ -145,15 +144,6 @@ def _get_missing_perms(permissions: hikari.Permissions, roles: typing.Sequence[h
         if required_permission not in user_permissions:
             missing_perms |= required_permission
 
-=======
-    for perm in permissions:
-        if perm is hikari.Permissions.ADMINISTRATOR:
-            return hikari.Permissions.NONE
-
-        # Now it check if the role has admin. If it has admin, it doesn't count it as missing perm
-        if not any(role.permissions & perm or role.permissions & hikari.Permissions.ADMINISTRATOR for role in roles):
-            missing_perms |= perm
->>>>>>> 16a6166 (Fixed admin perm check on has_guild_permissions)
     return missing_perms
 
 

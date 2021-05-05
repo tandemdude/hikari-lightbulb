@@ -174,8 +174,12 @@ async def _bot_has_guild_permissions(ctx: context.Context, *, permissions: hikar
 
     await _guild_only(ctx)
 
+    if ctx.guild.owner_id == ctx.bot.cache.get_me().id:
+        return True
+
     roles = ctx.bot.cache.get_roles_view_for_guild(ctx.guild_id).values()
     bot_member = ctx.bot.cache.get_member(ctx.guild_id, ctx.bot.cache.get_me().id)
+
     missing_perms = _get_missing_perms(permissions, [role for role in roles if role.id in bot_member.role_ids])
 
     if missing_perms:

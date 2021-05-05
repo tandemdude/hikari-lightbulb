@@ -26,12 +26,15 @@ import importlib
 import inspect
 import logging
 import re
+import os
 import sys
 import typing
+import pathlib
 
 import hikari
 from hikari.internal import ux
 from multidict import CIMultiDict
+from watchgod import Change, awatch
 
 from lightbulb import commands
 from lightbulb import context as context_
@@ -129,6 +132,8 @@ class Bot(hikari.BotApp):
         help_class (:obj:`~.help.HelpCommand`): The **uninstantiated** class the bot should use for it's help command.
             Defaults to :obj:`~.help.HelpCommand`. Any class passed should always be this class or subclass of
             this class.
+        extensions_path (:obj:`str`): The path to the bot's extensions. If set, this enables auto-reloading
+            extensions in real-time.
         **kwargs: Other parameters passed to the :class:`hikari.impl.bot.BotAppImpl` constructor.
     """
 
@@ -140,6 +145,7 @@ class Bot(hikari.BotApp):
         ignore_bots: bool = True,
         owner_ids: typing.Iterable[int] = (),
         help_class: typing.Type[help_.HelpCommand] = help_.HelpCommand,
+        extensions_path: str = None,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
@@ -168,6 +174,27 @@ class Bot(hikari.BotApp):
         self._checks = []
 
         self._help_impl = help_class(self)
+
+        self.extensions_path = extensions_path
+        if self.extensions_path:
+            self.full_extensions_path = pathlib.Path.cwd() / self.extensions_path.replace(".", os.sep)
+
+            self.subscribe(hikari.StartedEvent, self.start_extension_watch)
+
+    async def start_extension_watch(self, _) -> None:
+        async for changes in awatch(self.full_extensions_path):
+            for change in changes:
+                change_type = change[0]
+                change_path = change[1]
+
+                file_changed = (change_path.split(os.sep)[-1]).split(".")[0]
+                extension_path = self.extensions_path + "." + file_changed
+
+                if change_type == Change.deleted:
+                    self.unload_extension(extension_path)
+
+                if change_type == Change.modified:
+                    self.reload_extension(extension_path)
 
     @staticmethod
     def print_banner(banner: typing.Optional[str], allow_color: bool, force_color: bool) -> None:

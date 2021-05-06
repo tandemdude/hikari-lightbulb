@@ -25,11 +25,8 @@ import functools
 import importlib
 import inspect
 import logging
-<<<<<<< HEAD
-=======
 import os
 import pathlib
->>>>>>> acd9233 (Made requested changes)
 import re
 import sys
 import typing
@@ -37,11 +34,8 @@ import typing
 import hikari
 from hikari.internal import ux
 from multidict import CIMultiDict
-<<<<<<< HEAD
-=======
 from watchgod import Change
 from watchgod import awatch
->>>>>>> acd9233 (Made requested changes)
 
 from lightbulb import commands
 from lightbulb import context as context_

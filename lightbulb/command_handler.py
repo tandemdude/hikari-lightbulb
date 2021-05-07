@@ -175,20 +175,23 @@ class Bot(hikari.BotApp):
 
         self._help_impl = help_class(self)
 
-        self.extensions_path = extensions_path
+        self._extensions_path = extensions_path
         if extensions_path:
             self.subscribe(hikari.StartedEvent, self.start_extension_watch)
 
     async def start_extension_watch(self, _) -> None:
-        async for changes in awatch(self.extensions_path):
+        async for changes in awatch(self._extensions_path):
             for change in changes:
                 change_type = change[0]
                 change_path = change[1]
 
                 file_changed = (change_path.split(os.sep)[-1]).split(".")[0]
-                extension_path = self.extensions_path.replace(os.sep, ".") + "." + file_changed
+                extension_path = self._extensions_path.replace(os.sep, ".") + "." + file_changed
 
                 try:
+                    if change_type == Change.added:
+                        self.load_extension(extension_path)
+
                     if change_type == Change.deleted:
                         self.unload_extension(extension_path)
 
@@ -199,6 +202,7 @@ class Bot(hikari.BotApp):
                     errors.ExtensionMissingLoad,
                     errors.ExtensionMissingUnload,
                     errors.ExtensionNotLoaded,
+                    errors.ExtensionAlreadyLoaded
                 ):
                     pass
 

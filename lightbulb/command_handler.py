@@ -132,6 +132,8 @@ class Bot(hikari.BotApp):
         help_class (:obj:`~.help.HelpCommand`): The **uninstantiated** class the bot should use for it's help command.
             Defaults to :obj:`~.help.HelpCommand`. Any class passed should always be this class or subclass of
             this class.
+        extensions_path (:obj:`str`): The path to the bot's extensions. If set, this enables auto-reloading
+            extensions in real-time.
         **kwargs: Other parameters passed to the :class:`hikari.impl.bot.BotAppImpl` constructor.
     """
 

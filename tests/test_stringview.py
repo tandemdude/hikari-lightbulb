@@ -26,9 +26,10 @@ def test_stringview_splits_normal_args():
     assert sv.deconstruct_str() == (["I", "am", "thommo"], "")
 
 
-def test_stringview_splits_quoted_args():
-    sv = stringview.StringView('I "am thommo"')
-    assert sv.deconstruct_str() == (["I", "am thommo"], "")
+@pytest.mark.parametrize("text", ['I "am" thommo', "I 「am」 thommo"])
+def test_stringview_splits_quoted_args(text):
+    sv = stringview.StringView(text)
+    assert sv.deconstruct_str() == (["I", "am", "thommo"], "")
 
 
 def test_stringview_raises_UnclosedQuotes():
@@ -36,3 +37,17 @@ def test_stringview_raises_UnclosedQuotes():
     with pytest.raises(errors.UnclosedQuotes) as exc_info:
         sv.deconstruct_str()
     assert exc_info.type is errors.UnclosedQuotes
+
+
+def test_stringview_raises_UnexpectedQuotes():
+    sv = stringview.StringView('I"am" thommo')
+    with pytest.raises(errors.UnexpectedQuotes) as exc_info:
+        sv.deconstruct_str()
+    assert exc_info.type is errors.UnexpectedQuotes
+
+
+def test_stringview_raises_ExpectedSpaces():
+    sv = stringview.StringView('I "am"thommo')
+    with pytest.raises(errors.ExpectedSpaces) as exc_info:
+        sv.deconstruct_str()
+    assert exc_info.type is errors.ExpectedSpaces

@@ -179,6 +179,28 @@ class UnclosedQuotes(CommandSyntaxError):
         """The text that caused the error to be raised."""
 
 
+class UnexpectedQuotes(CommandSyntaxError):
+    """
+    Error raised when a quote mark is found in non-quoted string.
+    """
+
+    def __init__(self, quote: str) -> None:
+        super().__init__()
+        self.quote = quote
+        """The quote mark that caused the error to be raised."""
+
+
+class ExpectedSpaces(CommandSyntaxError):
+    """
+    Error raised when no spaces found in the end of a quoted string
+    """
+
+    def __init__(self, char: str) -> None:
+        super().__init__()
+        self.char = char
+        """The character that's expected to be a space character"""
+
+
 class CheckFailure(CommandError):
     """
     Base error that is raised when a check fails for a command. Anything raised by a check

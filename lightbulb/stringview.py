@@ -64,29 +64,39 @@ class StringView:
 
     def _next_str(self) -> str:
         buff = []
+        previous = None
         while self.index < len(self.text):
             char = self.text[self.index]
-            if char.isspace() and self.expect_quote is None:
-                self.index += 1
-                return "".join(buff)
-            elif not self.expect_quote and char in _quotes:
-                self.expect_quote = char
-                self.index += 1
-                continue
-            elif char == self.expect_quote:
-                self.expect_quote = None
-                self.index += 1
-                return "".join(buff)
-            elif char == "\\":
-                self.index += 1
-                if self.index < len(self.text):
-                    buff.append(self.text[self.index])
+            try:
+                if char.isspace() and self.expect_quote is None:
+                    self.index += 1
+                    if not buff:
+                        continue
+                    return "".join(buff)
+                elif not self.expect_quote and char in _quotes:
+                    if previous and not previous.isspace():
+                        raise errors.UnexpectedQuotes(char)
+                    self.expect_quote = _quotes[char]
                     self.index += 1
                     continue
-                raise errors.PrematureEOF()
-            else:
-                buff.append(char)
-                self.index += 1
+                elif char == self.expect_quote:
+                    self.index += 1
+                    if self.index < len(self.text) and not (next_char := self.text[self.index]).isspace():
+                        raise errors.ExpectedSpaces(next_char)
+                    self.expect_quote = None
+                    return "".join(buff)
+                elif char == "\\":
+                    self.index += 1
+                    if self.index < len(self.text):
+                        buff.append(self.text[self.index])
+                        self.index += 1
+                        continue
+                    raise errors.PrematureEOF()
+                else:
+                    buff.append(char)
+                    self.index += 1
+            finally:
+                previous = char
 
         if self.expect_quote:
             raise errors.UnclosedQuotes("".join(buff))

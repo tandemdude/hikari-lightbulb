@@ -474,6 +474,10 @@ class Command:
                 raise errors.ConverterFailure(
                     text=f"Failed converting {arg} with converter: {getattr(details.annotation, '__name__', repr(details.annotation))}"
                 )
+
+        if self.arg_details.has_var_positional:
+            new_args.extend(args[len(new_args) :])
+
         return new_args
 
     async def invoke(self, context: context_.Context, *args: str, **kwargs: str) -> typing.Any:

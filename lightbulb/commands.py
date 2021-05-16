@@ -471,12 +471,15 @@ class Command:
             try:
                 new_arg = await self.handle_types(arg, details.annotation)
                 new_args.append(new_arg)
-            except (errors.ConverterFailure, ValueError):
+            except (errors.ConverterFailure, ValueError) as exc:
                 _LOGGER.error(
                     "Failed converting %s with converter: %s",
                     arg,
                     getattr(details.annotation, "__name__", repr(details.annotation)),
                 )
+                if isinstance(exc, errors.ConverterFailure) and exc.text:
+                    raise  # don't override the preset text
+
                 raise errors.ConverterFailure(
                     text=f"Failed converting {arg} with converter: {getattr(details.annotation, '__name__', repr(details.annotation))}"
                 )

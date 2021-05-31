@@ -322,7 +322,7 @@ def dynamic_cooldown(
             @bot.command()
             async def ping(ctx):
                 await ctx.respond("Pong!")
-        This would make it so that owners bypass the cooldown and general user can only use the ``ping`` command once every ten seconds.
+        This would make it so that owners bypass the cooldown and general users can only use the ``ping`` command once every ten seconds.
     """
 
     def decorate(command: commands.Command) -> commands.Command:

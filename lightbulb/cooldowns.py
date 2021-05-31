@@ -26,6 +26,7 @@ __all__: typing.Final[typing.List[str]] = [
     "GuildBucket",
     "CooldownManager",
     "cooldown",
+    "dynamic_cooldown",
 ]
 
 import abc
@@ -265,7 +266,6 @@ class CooldownManager:
         del self.cooldowns[self.bucket.extract_hash(context)]
 
 
-@typing.overload
 def cooldown(
     length: float,
     usages: int,
@@ -273,59 +273,60 @@ def cooldown(
     *,
     manager_cls: typing.Type[CooldownManager] = CooldownManager,
 ):
-    ...
-
-
-@typing.overload
-def cooldown(
-    *,
-    callback: typing.Callable[[context_.Context], Bucket],
-    manager_cls: typing.Type[CooldownManager] = CooldownManager,
-):
-    ...
-
-
-def cooldown(
-    length: typing.Optional[float] = None,
-    usages: typing.Optional[int] = None,
-    bucket: typing.Optional[typing.Type[Bucket]] = None,
-    *,
-    callback: typing.Optional[typing.Callable[[context_.Context], Bucket]] = None,
-    manager_cls: typing.Type[CooldownManager] = CooldownManager,
-):
     """
     Decorator which adds a cooldown to a command.
-
     Args:
         length (:obj:`float`): The amount of time before the cooldown expires.
         usages (:obj:`int`): The amount of usages of the command allowed before the cooldown activates.
         bucket (Type[ :obj:`~Bucket` ]): The bucket that the cooldown should be evaluated under.
-
     Keyword Args:
         manager_cls (Type[ :obj:`~CooldownManager` ]): The **uninstantiated** class to use as the command's
             cooldown manager. Defaults to :obj:`~CooldownManager`.
-
     Example:
-
         .. code-block:: python
-
             @lightbulb.cooldown(10, 1, lightbulb.UserBucket)
             @bot.command()
             async def ping(ctx):
                 await ctx.respond("Pong!")
-
         This would make it so that each user can only use the ``ping`` command once every ten seconds.
     """
 
     def decorate(command: commands.Command) -> commands.Command:
-        # should we even validate the arguments here?
-        if callback is not None:
-            cooldown_manager = manager_cls(callback=callback)
-        elif length is not None and usages is not None and bucket is not None:
-            cooldown_manager = manager_cls(length=length, usages=usages, bucket=bucket)
-        else:
-            raise TypeError("Bad arguments...")
-        command.cooldown_manager = cooldown_manager
+        command.cooldown_manager = manager_cls(length, usages, bucket)
+        return command
+
+    return decorate
+
+
+def dynamic_cooldown(
+    callback: typing.Callable[[context_.Context], Bucket],
+    *,
+    manager_cls: typing.Type[CooldownManager] = CooldownManager,
+):
+    """
+    Decorator which adds a more customized cooldown to a command.
+    Args:
+        callback (Callable[[ :obj:`~Context` ], :obj: `~Bucket`]): The callback that takes a Context object and returns a Bucket object.
+    Keyword Args:
+        manager_cls (Type[ :obj:`~CooldownManager` ]): The **uninstantiated** class to use as the command's
+            cooldown manager. Defaults to :obj:`~CooldownManager`.
+    Example:
+        .. code-block:: python
+            def callback(ctx):
+                if ctx.author.id in ctx.bot.owner_ids:
+                    return lightbulb.UserBucket(0, 1)
+
+                return lightbulb.UserBucket(10, 1)
+
+            @lightbulb.dynamic_cooldown(callback)
+            @bot.command()
+            async def ping(ctx):
+                await ctx.respond("Pong!")
+        This would make it so that owners bypass the cooldown and general user can only use the ``ping`` command once every ten seconds.
+    """
+
+    def decorate(command: commands.Command) -> commands.Command:
+        command.cooldown_manager = manager_cls(callback=callback)
         return command
 
     return decorate

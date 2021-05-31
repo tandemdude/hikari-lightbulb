@@ -35,6 +35,7 @@ import typing
 from hikari.internal import enums
 
 from lightbulb import errors
+from lightbulb import utils
 
 if typing.TYPE_CHECKING:
     from lightbulb import commands
@@ -184,14 +185,45 @@ class CooldownManager:
         bucket (:obj:`Bucket`): The bucket that the cooldown should be evaluated under.
     """
 
+    @typing.overload
     def __init__(self, length: float, usages: int, bucket: typing.Type[Bucket]) -> None:
-        self.length = length
-        self.usages = usages
-        self.bucket = bucket
+        ...
+
+    @typing.overload
+    def __init__(self, *, callback: typing.Callable[[context_.Context], Bucket]) -> None:
+        ...
+
+    def __init__(
+        self,
+        length: typing.Optional[float] = None,
+        usages: typing.Optional[int] = None,
+        bucket: typing.Optional[typing.Type[Bucket]] = None,
+        *,
+        callback: typing.Optional[typing.Callable[[context_.Context], Bucket]] = None,
+    ) -> None:
+        if callback is not None:
+            self.callback = callback
+        elif length is not None and usages is not None and bucket is not None:
+            self.length = length
+            self.usages = usages
+            self.bucket = bucket
+        else:
+            raise TypeError("Bad arguments...")
         self.cooldowns: typing.MutableMapping[typing.Hashable, Bucket] = {}
         """Mapping of a hashable to a :obj:`~Bucket` representing the currently stored cooldowns."""
 
-    def add_cooldown(self, context: context_.Context) -> None:
+    async def _get_bucket(self, context: context_.Context) -> Bucket:
+        if not self.callback:
+            return self.bucket(self.length, self.usages)
+
+        bucket = await utils.maybe_await(self.callback, context)
+
+        if not isinstance(bucket, Bucket):
+            raise TypeError("Bucket should derive the Bucket class")
+
+        return bucket
+
+    async def add_cooldown(self, context: context_.Context) -> None:
         """
         Add a cooldown under the given context. If an expired bucket already exists then it
         will be overwritten.
@@ -202,7 +234,8 @@ class CooldownManager:
         Returns:
             ``None``
         """
-        cooldown_hash = self.bucket.extract_hash(context)
+        bucket = await self._get_bucket(context)
+        cooldown_hash = bucket.extract_hash(context)
         cooldown_bucket = self.cooldowns.get(cooldown_hash)
         if cooldown_bucket is not None:
             cooldown_status = cooldown_bucket.acquire()
@@ -216,7 +249,7 @@ class CooldownManager:
             elif cooldown_status == CooldownStatus.INACTIVE:
                 # Cooldown has not yet been activated.
                 return
-        self.cooldowns[cooldown_hash] = self.bucket(self.length, self.usages)
+        self.cooldowns[cooldown_hash] = bucket
         self.cooldowns[cooldown_hash].acquire()
 
     def reset_cooldown(self, context: context_.Context) -> None:
@@ -232,11 +265,32 @@ class CooldownManager:
         del self.cooldowns[self.bucket.extract_hash(context)]
 
 
+@typing.overload
 def cooldown(
     length: float,
     usages: int,
     bucket: typing.Type[Bucket],
     *,
+    manager_cls: typing.Type[CooldownManager] = CooldownManager,
+):
+    ...
+
+
+@typing.overload
+def cooldown(
+    *,
+    callback: typing.Callable[[context_.Context], Bucket],
+    manager_cls: typing.Type[CooldownManager] = CooldownManager,
+):
+    ...
+
+
+def cooldown(
+    length: typing.Optional[float] = None,
+    usages: typing.Optional[int] = None,
+    bucket: typing.Optional[typing.Type[Bucket]] = None,
+    *,
+    callback: typing.Optional[typing.Callable[[context_.Context], Bucket]] = None,
     manager_cls: typing.Type[CooldownManager] = CooldownManager,
 ):
     """
@@ -264,7 +318,14 @@ def cooldown(
     """
 
     def decorate(command: commands.Command) -> commands.Command:
-        command.cooldown_manager = manager_cls(length, usages, bucket)
+        # should we even validate the arguments here?
+        if callback is not None:
+            cooldown_manager = manager_cls(callback=callback)
+        elif length is not None and usages is not None and bucket is not None:
+            cooldown_manager = manager_cls(length=length, usages=usages, bucket=bucket)
+        else:
+            raise TypeError("Bad arguments...")
+        command.cooldown_manager = cooldown_manager
         return command
 
     return decorate

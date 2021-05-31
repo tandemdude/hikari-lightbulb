@@ -73,7 +73,7 @@ def _bind_prototype(instance: typing.Any, command_template: _CommandT):
 
         async def invoke(self, context: context_.Context, *args: str, **kwargs: str) -> typing.Any:
             if self.cooldown_manager is not None:
-                self.cooldown_manager.add_cooldown(context)
+                await self.cooldown_manager.add_cooldown(context)
             # Add the start slice on to the length to offset the section of arg_details being extracted
             new_args = await self._convert_args(context, args, list(self.arg_details.args.values())[2 : len(args) + 2])
 
@@ -490,7 +490,7 @@ class Command:
 
         """
         if self.cooldown_manager is not None:
-            self.cooldown_manager.add_cooldown(context)
+            await self.cooldown_manager.add_cooldown(context)
         # Add the start slice on to the length to offset the section of arg_details being extracted
         arg_details = list(self.arg_details.args.values())[1 : len(args) + 1]
         new_args = await self._convert_args(context, args[: len(arg_details)], arg_details)

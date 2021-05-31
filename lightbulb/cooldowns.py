@@ -284,10 +284,12 @@ def cooldown(
             cooldown manager. Defaults to :obj:`~CooldownManager`.
     Example:
         .. code-block:: python
+
             @lightbulb.cooldown(10, 1, lightbulb.UserBucket)
             @bot.command()
             async def ping(ctx):
                 await ctx.respond("Pong!")
+
         This would make it so that each user can only use the ``ping`` command once every ten seconds.
     """
 
@@ -312,6 +314,7 @@ def dynamic_cooldown(
             cooldown manager. Defaults to :obj:`~CooldownManager`.
     Example:
         .. code-block:: python
+
             def callback(ctx):
                 if ctx.author.id in ctx.bot.owner_ids:
                     return lightbulb.UserBucket(0, 1)
@@ -322,6 +325,7 @@ def dynamic_cooldown(
             @bot.command()
             async def ping(ctx):
                 await ctx.respond("Pong!")
+
         This would make it so that owners bypass the cooldown and general users can only use the ``ping`` command once every ten seconds.
     """
 

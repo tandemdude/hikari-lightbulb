@@ -213,7 +213,7 @@ class CooldownManager:
         """Mapping of a hashable to a :obj:`~Bucket` representing the currently stored cooldowns."""
 
     async def _get_bucket(self, context: context_.Context) -> Bucket:
-        if not self.callback:
+        if not hasattr(self, "callback"):
             return self.bucket(self.length, self.usages)
 
         bucket = await utils.maybe_await(self.callback, context)

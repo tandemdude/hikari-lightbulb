@@ -135,11 +135,15 @@ async def _has_roles(ctx: context.Context, *, role_check):
 
 def _get_missing_perms(permissions: hikari.Permissions, roles: typing.Sequence[hikari.Role]) -> hikari.Permissions:
     missing_perms = hikari.Permissions.NONE
-    for perm in permissions:
-        if perm is hikari.Permissions.ADMINISTRATOR:
-            return hikari.Permissions.NONE
-        if not any(role.permissions & perm for role in roles):
-            missing_perms |= perm
+    user_permissions = set([role.permissions for role in roles])
+
+    if hikari.Permissions.ADMINISTRATOR in user_permissions:
+        return hikari.Permissions.NONE
+
+    for required_permission in permissions:
+        if required_permission not in user_permissions:
+            missing_perms |= required_permission
+
     return missing_perms
 
 
@@ -149,7 +153,12 @@ async def _has_guild_permissions(ctx: context.Context, *, permissions: hikari.Pe
 
     await _guild_only(ctx)
 
+    # Checks if the author is the server owner
+    if ctx.guild.owner_id == ctx.author.id:
+        return True
+
     roles = ctx.bot.cache.get_roles_view_for_guild(ctx.guild_id).values()
+
     missing_perms = _get_missing_perms(permissions, [role for role in roles if role.id in ctx.member.role_ids])
 
     if missing_perms:
@@ -165,8 +174,12 @@ async def _bot_has_guild_permissions(ctx: context.Context, *, permissions: hikar
 
     await _guild_only(ctx)
 
+    if ctx.guild.owner_id == ctx.bot.cache.get_me().id:
+        return True
+
     roles = ctx.bot.cache.get_roles_view_for_guild(ctx.guild_id).values()
     bot_member = ctx.bot.cache.get_member(ctx.guild_id, ctx.bot.cache.get_me().id)
+
     missing_perms = _get_missing_perms(permissions, [role for role in roles if role.id in bot_member.role_ids])
 
     if missing_perms:

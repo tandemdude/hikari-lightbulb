@@ -29,6 +29,7 @@ from hikari.events import base_events as hikari_base_events
 if typing.TYPE_CHECKING:
     import types
 
+    from lightbulb import command_handler
     from lightbulb import commands
     from lightbulb import context as context_
     from lightbulb import errors
@@ -42,8 +43,13 @@ class LightbulbEvent(hikari.Event, abc.ABC):
     will be an instance of a subclass of this.
     """
 
-    app: hikari.BotAware = attr.ib()
-    """App instance for this application."""
+    app: command_handler.Bot = attr.ib()
+    """Bot instance for this event."""
+
+    @property
+    def bot(self) -> command_handler.Bot:
+        """Bot instance for this event. Alias for :obj:`~LightbulbEvent.app`."""
+        return self.app
 
 
 @attr.s(kw_only=True, slots=True, weakref_slot=False)

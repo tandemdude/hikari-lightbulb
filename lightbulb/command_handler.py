@@ -864,7 +864,10 @@ class Bot(hikari.BotApp):
 
         try:
             positional_args, keyword_arg = self.resolve_args_for_command(command, final_args)
-            await self._evaluate_checks(command, context)
+            if not await maybe_await(command._check_exempt_predicate, context):
+                await self._evaluate_checks(command, context)
+            else:
+                _LOGGER.debug("Checks bypassed for command: %s", context.message.content)
         except (
             errors.NotEnoughArguments,
             errors.TooManyArguments,

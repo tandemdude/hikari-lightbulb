@@ -35,6 +35,7 @@ __all__: typing.Final[typing.List[str]] = [
     "bot_has_permissions",
     "has_attachment",
     "check",
+    "check_exempt",
 ]
 
 import functools
@@ -561,6 +562,34 @@ def check(check_func: typing.Callable[[context.Context], typing.Coroutine[typing
     def decorate(command: T_inv) -> T_inv:
         _check_check_decorator_above_commands_decorator(command)
         command.add_check(check_func)
+        return command
+
+    return decorate
+
+
+def check_exempt(predicate):
+    """
+    A decorator which allows checks to be bypassed if the ``predicate`` conditions are met. Predicate can
+    be a coroutine or a normal function but must take a single argument - ``context`` - and must return a
+    boolean - ``True`` if checks should be bypassed or ``False`` if not.
+
+    Args:
+        predicate: The callable which determines if command checks should be bypassed or not.
+
+    Example:
+
+        .. code-block:: python
+
+            @checks.check_exempt(lambda ctx: ctx.author.id == 1234)
+            @checks.guild_only()
+            @bot.command()
+            async def foo(ctx):
+                await ctx.respond("foo")
+    """
+
+    def decorate(command: T_inv) -> T_inv:
+        _check_check_decorator_above_commands_decorator(command)
+        command._check_exempt_predicate = predicate
         return command
 
     return decorate

@@ -473,15 +473,21 @@ class Bot(hikari.BotApp):
         Returns:
             Optional[ :obj:`str` ]: Name of the command that was removed.
         """
-        command = self._commands.pop(name)
+        command = self._commands.pop(name, None)
+
+        if command is None:
+            return None
+
         self.commands.remove(command)
+
         if command is not None:
             keys_to_remove = [command.name, *command._aliases]
             keys_to_remove.remove(name)
             for key in keys_to_remove:
                 self._commands.pop(key)
             _LOGGER.debug("command removed: %s", command.name)
-        return command.name if command is not None else None
+
+        return command.name
 
     def remove_plugin(self, name: str) -> typing.Optional[str]:
         """
@@ -493,7 +499,11 @@ class Bot(hikari.BotApp):
         Returns:
             Optional[ :obj:`str` ]: Name of the plugin that was removed.
         """
-        plugin = self.plugins.pop(name)
+        plugin = self.plugins.pop(name, None)
+
+        if plugin is None:
+            return None
+
         plugin.plugin_remove()
 
         if plugin is not None:
@@ -507,7 +517,8 @@ class Bot(hikari.BotApp):
                     _LOGGER.debug("listener removed: %s (%s)", callback.__name__, listener.event_type.__name__)
 
             _LOGGER.debug("plugin removed: %s", plugin.name)
-        return plugin.name if plugin is not None else None
+
+        return plugin.name
 
     def load_extension(self, extension: str) -> None:
         """

@@ -480,12 +480,11 @@ class Bot(hikari.BotApp):
 
         self.commands.remove(command)
 
-        if command is not None:
-            keys_to_remove = [command.name, *command._aliases]
-            keys_to_remove.remove(name)
-            for key in keys_to_remove:
-                self._commands.pop(key)
-            _LOGGER.debug("command removed: %s", command.name)
+        keys_to_remove = [command.name, *command._aliases]
+        keys_to_remove.remove(name)
+        for key in keys_to_remove:
+            self._commands.pop(key)
+        _LOGGER.debug("command removed: %s", command.name)
 
         return command.name
 
@@ -506,17 +505,16 @@ class Bot(hikari.BotApp):
 
         plugin.plugin_remove()
 
-        if plugin is not None:
-            for k in plugin._commands.keys():
-                self.remove_command(k)
+        for k in plugin._commands.keys():
+            self.remove_command(k)
 
-            for event_type, listeners in plugin.listeners.items():
-                for listener in listeners:
-                    callback = listener.__get__(plugin, type(plugin))
-                    self.unsubscribe(listener.event_type, callback)
-                    _LOGGER.debug("listener removed: %s (%s)", callback.__name__, listener.event_type.__name__)
+        for event_type, listeners in plugin.listeners.items():
+            for listener in listeners:
+                callback = listener.__get__(plugin, type(plugin))
+                self.unsubscribe(listener.event_type, callback)
+                _LOGGER.debug("listener removed: %s (%s)", callback.__name__, listener.event_type.__name__)
 
-            _LOGGER.debug("plugin removed: %s", plugin.name)
+        _LOGGER.debug("plugin removed: %s", plugin.name)
 
         return plugin.name
 

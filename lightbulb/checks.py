@@ -569,9 +569,9 @@ def check(check_func: typing.Callable[[context.Context], typing.Coroutine[typing
 
 def check_exempt(predicate):
     """
-    A decorator which allows checks to be bypassed if the ``predicate`` conditions are met. Predicate can
-    be a coroutine or a normal function but must take a single argument - ``context`` - and must return a
-    boolean - ``True`` if checks should be bypassed or ``False`` if not.
+    A decorator which allows **all** checks to be bypassed if the ``predicate`` conditions are met.
+    Predicate can be a coroutine or a normal function but must take a single
+    argument - ``context`` - and must return a boolean - ``True`` if checks should be bypassed or ``False`` if not.
 
     Args:
         predicate: The callable which determines if command checks should be bypassed or not.

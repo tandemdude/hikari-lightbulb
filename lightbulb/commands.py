@@ -221,6 +221,7 @@ class Command:
         self._aliases = aliases
         self.hidden = hidden
         self._checks = []
+        self._check_exempt_predicate = lambda ctx: False
         self._raw_error_listener = None
         self._raw_before_invoke = None
         self._raw_after_invoke = None
@@ -351,7 +352,7 @@ class Command:
         return self._callback
 
     @property
-    def checks(self) -> typing.Iterable[typing.Callable[[context.Context], bool]]:
+    def checks(self) -> typing.Iterable[typing.Callable[[context_.Context], bool]]:
         """
         The command's checks.
 
@@ -403,8 +404,8 @@ class Command:
         """
 
         def decorate(
-            func: typing.Callable[[context.Context], typing.Coroutine[None, None, typing.Any]]
-        ) -> typing.Callable[[context.Context], typing.Coroutine[None, None, typing.Any]]:
+            func: typing.Callable[[context_.Context], typing.Coroutine[None, None, typing.Any]]
+        ) -> typing.Callable[[context_.Context], typing.Coroutine[None, None, typing.Any]]:
             self._raw_before_invoke = func
             return func
 
@@ -419,8 +420,8 @@ class Command:
         """
 
         def decorate(
-            func: typing.Callable[[context.Context], typing.Coroutine[None, None, typing.Any]]
-        ) -> typing.Callable[[context.Context], typing.Coroutine[None, None, typing.Any]]:
+            func: typing.Callable[[context_.Context], typing.Coroutine[None, None, typing.Any]]
+        ) -> typing.Callable[[context_.Context], typing.Coroutine[None, None, typing.Any]]:
             self._raw_after_invoke = func
             return func
 
@@ -514,7 +515,7 @@ class Command:
 
         return await self._callback(context, *new_args, **kwargs)
 
-    def add_check(self, check_func: typing.Callable[[context.Context], typing.Coroutine[None, None, bool]]) -> None:
+    def add_check(self, check_func: typing.Callable[[context_.Context], typing.Coroutine[None, None, bool]]) -> None:
         """
         Add a check to an instance of :obj:`~.commands.Command` or a subclass. The check passed must
         be an awaitable function taking a single argument which will be an instance of :obj:`~.context.Context`.

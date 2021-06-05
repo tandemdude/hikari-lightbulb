@@ -316,6 +316,17 @@ class BotMissingRequiredPermission(CheckFailure):
         """Permission(s) the bot is missing."""
 
 
+class MissingRequiredAttachment(CheckFailure):
+    """
+    Error raised when the command invocation message is missing an attachment, or an
+    attachment with the correct file extension.
+    """
+
+    def __init__(self, text) -> None:
+        self.text: str = text
+        """The error text."""
+
+
 class CommandInvocationError(CommandError):
     """
     Error raised if an error is encountered during command invocation. This will only be raised

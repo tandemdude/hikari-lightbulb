@@ -33,6 +33,7 @@ __all__: typing.Final[typing.List[str]] = [
     "bot_has_guild_permissions",
     "has_permissions",
     "bot_has_permissions",
+    "has_attachment",
     "check",
 ]
 
@@ -231,6 +232,22 @@ async def _bot_has_permissions(ctx: context.Context, *, permissions: hikari.Perm
         raise errors.MissingRequiredPermission(
             "I am missing one or more permissions required in order to run this command", missing_perms
         )
+    return True
+
+
+async def _has_attachment(
+        ctx: context.Context,
+        *,
+        allowed_extensions: typing.Optional[typing.Sequence[str]] = None
+) -> bool:
+    if not ctx.attachments:
+        raise errors.MissingRequiredAttachment("Missing attachment(s) required to run the command")
+
+    if allowed_extensions is not None:
+        for attachment in ctx.attachments:
+            if not any(attachment.filename.endswith(ext) for ext in allowed_extensions):
+                raise errors.MissingRequiredAttachment("Missing attachment(s) required to run the command")
+
     return True
 
 
@@ -479,6 +496,36 @@ def bot_has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissi
         command.user_required_permissions = total_perms
 
         command.add_check(functools.partial(_bot_has_permissions, permissions=total_perms))
+        return command
+
+    return decorate
+
+
+def has_attachment(*extensions: str):
+    """
+    A decorator that prevents the command from being used if the invocation message
+    does not include any attachments.
+
+    Args:
+        *extensions (:obj:`str`): If specified, attachments with a different file extension
+            will cause the check to fail.
+
+    Example:
+
+        .. code-block:: python
+
+            @checks.has_attachment(".yaml", ".json")
+            @bot.command()
+            async def foobar(ctx):
+                print(ctx.attachments[0].filename)
+
+    Note:
+        If ``extensions`` is specified then all attachments must conform to the restriction.
+    """
+
+    def decorate(command: T_inv) -> T_inv:
+        _check_check_decorator_above_commands_decorator(command)
+        command.add_check(functools.partial(_has_attachment, allowed_extensions=extensions if extensions else None))
         return command
 
     return decorate

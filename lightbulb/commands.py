@@ -558,7 +558,13 @@ class Command:
             :obj:`~.errors.CheckFailure`: If the command is not runnable in the context given.
         """
         for check in self._checks:
-            result = await check(context)
+            try:
+                result = await check(context)
+            except errors.MissingRequiredAttachment:
+                # Bypass attachment check because we still want the command to show for the help
+                # overview and it is unlikely that someone will call the help command with an attachment
+                # to the message.
+                result = True
             if result is False:
                 raise errors.CheckFailure(f"Check {check.__name__} failed for command {self.name}")
         return True

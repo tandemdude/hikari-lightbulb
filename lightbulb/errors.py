@@ -43,6 +43,7 @@ __all__: typing.Final[typing.List[str]] = [
     "MissingRequiredRole",
     "MissingRequiredPermission",
     "BotMissingRequiredPermission",
+    "MissingRequiredAttachment",
     "CommandInvocationError",
 ]
 

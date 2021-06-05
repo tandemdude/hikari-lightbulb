@@ -46,6 +46,8 @@ already exists for your bug or feature.
 
 - `M.A#4999 <https://gitlab.com/MonAaraj>`_
 
+- `norizon#2612 <https://github.com/norinorin>`_
+
 **Index:**
 
 .. toctree::

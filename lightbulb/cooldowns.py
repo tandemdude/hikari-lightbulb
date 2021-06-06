@@ -308,7 +308,7 @@ def dynamic_cooldown(
     """
     Decorator which adds a more customized cooldown to a command.
     Args:
-        callback (Callable[[ :obj:`~Context` ], :obj: `~Bucket`]): The callback that takes a Context object and returns a Bucket object.
+        callback (Callable[[ :obj:`~Context` ], :obj:`~Bucket`]): The callback that takes a Context object and returns a Bucket object.
     Keyword Args:
         manager_cls (Type[ :obj:`~CooldownManager` ]): The **uninstantiated** class to use as the command's
             cooldown manager. Defaults to :obj:`~CooldownManager`.

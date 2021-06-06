@@ -237,9 +237,7 @@ async def _bot_has_permissions(ctx: context.Context, *, permissions: hikari.Perm
 
 
 async def _has_attachment(
-        ctx: context.Context,
-        *,
-        allowed_extensions: typing.Optional[typing.Sequence[str]] = None
+    ctx: context.Context, *, allowed_extensions: typing.Optional[typing.Sequence[str]] = None
 ) -> bool:
     if not ctx.attachments:
         raise errors.MissingRequiredAttachment("Missing attachment(s) required to run the command")

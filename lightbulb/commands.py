@@ -41,7 +41,8 @@ from lightbulb import converters
 from lightbulb import cooldowns
 from lightbulb import errors
 from lightbulb import events
-from lightbulb.utils import maybe_await, get
+from lightbulb.utils import get
+from lightbulb.utils import maybe_await
 
 if typing.TYPE_CHECKING:
     from lightbulb import plugins

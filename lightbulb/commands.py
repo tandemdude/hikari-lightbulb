@@ -38,11 +38,10 @@ from multidict import CIMultiDict
 
 from lightbulb import context as context_
 from lightbulb import converters
+from lightbulb.converters import _Converter, _UnionConverter, _DefaultingConverter, _GreedyConverter, _ConsumeRestConverter
 from lightbulb import cooldowns
 from lightbulb import errors
 from lightbulb import events
-from lightbulb.utils import get
-from lightbulb.utils import maybe_await
 
 if typing.TYPE_CHECKING:
     from lightbulb import plugins
@@ -77,20 +76,8 @@ def _bind_prototype(instance: typing.Any, command_template: _CommandT):
             if self.cooldown_manager is not None:
                 await self.cooldown_manager.add_cooldown(context)
             # Add the start slice on to the length to offset the section of arg_details being extracted
-            arg_details = list(self.arg_details.args.values())[2 : len(args) + 2]
-            new_args = await self._convert_args(
-                context, args if self.arg_details.has_var_positional else args[: len(arg_details)], arg_details
-            )
 
-            if kwargs:
-                new_kwarg = (
-                    await self._convert_args(
-                        context, kwargs.values(), [self.arg_details.args[self.arg_details.kwarg_name]]
-                    )
-                )[0]
-                kwargs = {self.arg_details.kwarg_name: new_kwarg}
-
-            return await self._callback(instance, context, *new_args, **kwargs)
+            return await self._callback(instance, context, *args, **kwargs)
 
     prototype = BoundCommand()
 
@@ -146,48 +133,40 @@ class SignatureInspector:
         self.command = command
         self.has_self = isinstance(command, _BoundCommandMarker)
         self.kwarg_name = None
-        self.args = {}
         signature = inspect.signature(command._callback)
-        for index, (name, arg) in enumerate(signature.parameters.items()):
-            self.args[name] = self.parse_arg(index, arg)
+        self.converters = self.parse_signature(signature)
 
-        self.number_positional_args = 0
-        for arg in self.args.values():
-            if (
-                arg.argtype == inspect.Parameter.POSITIONAL_OR_KEYWORD
-                or arg.argtype == inspect.Parameter.POSITIONAL_ONLY
-            ) and not arg.ignore:
-                self.number_positional_args += 1
-
-        self.minimum_arguments = sum(1 for a in self.args.values() if not a.ignore and a.required)
-        self.maximum_arguments = (
-            float("inf")
-            if any(a.kind == inspect.Parameter.VAR_POSITIONAL for a in signature.parameters.values())
-            else self.number_positional_args
-        )
-        self.has_var_positional = any(a.kind == inspect.Parameter.VAR_POSITIONAL for a in signature.parameters.values())
-
-    def parse_arg(self, index: int, arg: inspect.Parameter) -> ArgInfo:
-        if index == 0:
-            ignore = True
-        elif index == 1 and self.has_self:
-            ignore = True
+    def get_converter(self, annotation) -> typing.Union[_Converter, _UnionConverter, _DefaultingConverter, _GreedyConverter]:
+        if typing.get_origin(annotation) is typing.Union:
+            args = [self.get_converter(conv for conv in typing.get_args(annotation))]
+            return _UnionConverter(*args)
+        elif typing.get_origin(annotation) is typing.Optional:
+            return _DefaultingConverter(self.get_converter(typing.get_args(annotation)[0]), None)
+        elif typing.get_origin(annotation) is converters.Greedy:
+            return _GreedyConverter(self.get_converter(typing.get_args(annotation)[0]))
         else:
-            ignore = False
+            return _Converter(annotation if annotation is not inspect.Parameter.empty else str)
 
-        argtype = arg.kind
-        annotation = arg.annotation
-        required = arg.default is inspect.Parameter.empty
-        default = arg.default
+    def parse_signature(self, signature: inspect.Signature):
+        arg_converters = []
 
-        if arg.kind == inspect.Parameter.KEYWORD_ONLY and self.kwarg_name is None:
-            self.kwarg_name = arg.name
+        params = list(signature.parameters.values())
+        for arg_i in range(len(signature.parameters)):
+            if arg_i == 0 or (arg_i == 1 and self.has_self):
+                continue
 
-        return ArgInfo(ignore, argtype, annotation, required, default)
+            converter = self.get_converter(params[arg_i].annotation)
 
-    def get_missing_args(self, args: typing.List[str]) -> typing.List[str]:
-        required_command_args = [name for name, arg in self.args.items() if not arg.ignore and arg.required]
-        return required_command_args[len(args) :]
+            if params[arg_i].kind is inspect.Parameter.KEYWORD_ONLY:
+                converter = _ConsumeRestConverter(converter, params[arg_i].name)
+            elif params[arg_i].kind is inspect.Parameter.VAR_POSITIONAL:
+                converter = _GreedyConverter(converter)
+
+            if params[arg_i].default is not inspect.Parameter.empty and not isinstance(converter, _DefaultingConverter):
+                converter = _DefaultingConverter(converter, params[arg_i].default)
+
+            arg_converters.append(converter)
+        return arg_converters
 
 
 class Command:
@@ -428,65 +407,6 @@ class Command:
 
         return decorate
 
-    @staticmethod
-    async def handle_types(arg: str, type: typing.Any):
-        """
-        A method which handles converting Union (and therefore Optional) into objects usable by command functions.
-
-        Args:
-            arg (:obj:`str`): The argument's value to be converted.
-            type (:obj:`typing.Any`): Any type for the converter.
-        """
-
-        if typing.get_origin(type) is typing.Union:
-            for typename in (types := typing.get_args(type)):
-                try:
-                    if typename is not None:
-                        new_arg = await maybe_await(typename, arg)
-                    else:
-                        new_arg = typename(arg)
-                    return new_arg
-                except (ValueError, TypeError, errors.ConverterFailure):
-                    if typename == types[-1]:
-                        raise errors.ConverterFailure
-                    else:
-                        continue
-        else:
-            new_arg = await maybe_await(type, arg)
-            return new_arg
-
-    async def _convert_args(
-        self,
-        context: context_.Context,
-        args: typing.Sequence[str],
-        arg_details: typing.Sequence[ArgInfo],
-    ) -> typing.Sequence[typing.Any]:
-        new_args = []
-
-        for arg, details in zip_longest(
-            args, arg_details, fillvalue=get(arg_details, argtype=inspect.Parameter.VAR_POSITIONAL)
-        ):
-            arg = converters.WrappedArg(arg, context)
-            if details.annotation is inspect.Parameter.empty or isinstance(details.annotation, str):
-                new_args.append(str(arg))
-                continue
-            try:
-                new_arg = await self.handle_types(arg, details.annotation)
-                new_args.append(new_arg)
-            except (errors.ConverterFailure, ValueError) as exc:
-                _LOGGER.error(
-                    "Failed converting %s with converter: %s",
-                    arg,
-                    getattr(details.annotation, "__name__", repr(details.annotation)),
-                )
-                if isinstance(exc, errors.ConverterFailure) and exc.text:
-                    raise  # don't override the preset text
-
-                raise errors.ConverterFailure(
-                    text=f"Failed converting {arg} with converter: {getattr(details.annotation, '__name__', repr(details.annotation))}"
-                )
-        return new_args
-
     async def invoke(self, context: context_.Context, *args: str, **kwargs: str) -> typing.Any:
         """
         Invoke the command with given args and kwargs. Cooldowns and converters will
@@ -502,19 +422,8 @@ class Command:
         """
         if self.cooldown_manager is not None:
             await self.cooldown_manager.add_cooldown(context)
-        # Add the start slice on to the length to offset the section of arg_details being extracted
-        arg_details = list(self.arg_details.args.values())[1 : len(args) + 1]
-        new_args = await self._convert_args(
-            context, args if self.arg_details.has_var_positional else args[: len(arg_details)], arg_details
-        )
 
-        if kwargs:
-            new_kwarg = (
-                await self._convert_args(context, kwargs.values(), [self.arg_details.args[self.arg_details.kwarg_name]])
-            )[0]
-            kwargs = {self.arg_details.kwarg_name: new_kwarg}
-
-        return await self._callback(context, *new_args, **kwargs)
+        return await self._callback(context, *args, **kwargs)
 
     def add_check(self, check_func: typing.Callable[[context_.Context], typing.Coroutine[None, None, bool]]) -> None:
         """

@@ -135,15 +135,21 @@ class SignatureInspector:
         self.kwarg_name = None
         signature = inspect.signature(command._callback)
         self.converters = self.parse_signature(signature)
+        self.arguments = [p.name for p in signature.parameters.values()]
+        self.arguments.pop(0)
+        if self.has_self:
+            self.arguments.pop(0)
 
     def get_converter(self, annotation) -> typing.Union[_Converter, _UnionConverter, _DefaultingConverter, _GreedyConverter]:
-        if typing.get_origin(annotation) is typing.Union:
-            args = [self.get_converter(conv for conv in typing.get_args(annotation))]
+        origin = typing.get_origin(annotation)
+        args = typing.get_args(annotation)
+        if origin is typing.Union:
+            if args[1] is type(None):
+                return _DefaultingConverter(self.get_converter(args[0]), None)
+            args = [self.get_converter(conv) for conv in args]
             return _UnionConverter(*args)
-        elif typing.get_origin(annotation) is typing.Optional:
-            return _DefaultingConverter(self.get_converter(typing.get_args(annotation)[0]), None)
-        elif typing.get_origin(annotation) is converters.Greedy:
-            return _GreedyConverter(self.get_converter(typing.get_args(annotation)[0]))
+        elif origin is converters.Greedy:
+            return _GreedyConverter(self.get_converter(args[0]))
         else:
             return _Converter(annotation if annotation is not inspect.Parameter.empty else str)
 

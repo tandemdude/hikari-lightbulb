@@ -60,6 +60,7 @@ __all__: typing.Final[typing.List[str]] = [
     "invite_converter",
     "colour_converter",
     "color_converter",
+    "Greedy",
 ]
 
 import collections
@@ -72,6 +73,7 @@ import hikari
 from lightbulb import context as context_
 from lightbulb import errors
 from lightbulb import utils
+from lightbulb import stringview
 
 T = typing.TypeVar("T")
 
@@ -416,6 +418,112 @@ async def colour_converter(arg: WrappedArg) -> hikari.Colour:
 async def color_converter(arg: WrappedArg) -> hikari.Color:
     """Alias for :obj:`~colour_converter`"""
     return await colour_converter(arg)
+
+
+class Greedy(typing.Generic[T]):
+    pass
+
+
+_converter_T = typing.Union[
+    typing.Callable[[WrappedArg], T],
+    typing.Callable[[WrappedArg], typing.Coroutine[None, None, T]]
+]
+
+
+class _Converter:
+    __slots__ = ("conversion_func",)
+
+    def __init__(self, conversion_func: _converter_T) -> None:
+        self.conversion_func = conversion_func
+
+    async def convert(self, context: context_.Context, arg_string: str, *, parse=True) -> typing.Tuple[T, str]:
+        args, remainder = arg_string, ""
+        if parse:
+            sv = stringview.StringView(arg_string)
+            args, remainder = sv.deconstruct_str(max_parse=1)
+
+        converted_arg = await utils.maybe_await(self.conversion_func, WrappedArg(" ".join(args), context))
+        return converted_arg, remainder
+
+
+class _UnionConverter:
+    __slots__ = ("converters",)
+
+    def __init__(self, *converters: _Converter) -> None:
+        self.converters = converters
+
+    async def convert(self, context: context_.Context, arg_string: str) -> typing.Tuple[T, str]:
+        sv = stringview.StringView(arg_string)
+        args, remainder = sv.deconstruct_str(max_parse=1)
+
+        converted = False
+        for converter in self.converters:
+            try:
+                converted_arg, _ = await converter.convert(context, " ".join(args), parse=False)
+                converted = True
+            except (ValueError, TypeError, errors.ConverterFailure):
+                continue
+
+        if not converted:
+            raise errors.ConverterFailure
+
+        return converted_arg, remainder
+
+
+class _GreedyConverter:
+    __slots__ = ("converter",)
+
+    def __init__(self, converter: _Converter) -> None:
+        self.converter = converter
+
+    async def convert(self, context: context_.Context, arg_string: str) -> typing.Tuple[typing.List[T], str]:
+        prev = arg_string
+        sv = stringview.StringView(arg_string)
+        converted = []
+
+        while True:
+            args, remainder = sv.deconstruct_str(max_parse=1)
+            if not args:
+                break
+
+            try:
+                converted_arg, _ = await self.converter.convert(context, " ".join(args), parse=False)
+                converted.append(converted_arg)
+                prev = remainder
+            except (ValueError, TypeError, errors.ConverterFailure):
+                break
+
+        return converted, prev
+
+
+class _DefaultingConverter:
+    __slots__ = ("converter", "default")
+
+    def __init__(self, converter: _Converter, default: typing.Any):
+        self.converter = converter
+        self.default = default
+
+    async def convert(self, context: context_.Context, arg_string: str) -> typing.Tuple[T, str]:
+        sv = stringview.StringView(arg_string)
+        args, remainder = sv.deconstruct_str(max_parse=1)
+
+        if not args:
+            return self.default, ""
+
+        converted_arg, _ = await self.converter.convert(context, " ".join(args), parse=False)
+        return converted_arg, remainder
+
+
+class _ConsumeRestConverter:
+    __slots__ = ("converter", "param_name")
+
+    def __init__(self, converter: _Converter, param_name: str):
+        self.converter = converter
+        self.param_name = param_name
+
+    async def convert(self, context: context_.Context, arg_string: str):
+        converted_arg = await self.converter.convert(context, arg_string, parse=False)
+        return {self.param_name: converted_arg}, ""
 
 
 if typing.TYPE_CHECKING:

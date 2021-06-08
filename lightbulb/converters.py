@@ -441,8 +441,9 @@ class _Converter:
         if parse:
             sv = stringview.StringView(arg_string)
             args, remainder = sv.deconstruct_str(max_parse=1)
+            args = " ".join(args)
 
-        converted_arg = await utils.maybe_await(self.conversion_func, WrappedArg(" ".join(args), context))
+        converted_arg = await utils.maybe_await(self.conversion_func, WrappedArg(args, context))
         return converted_arg, remainder
 
 
@@ -461,6 +462,7 @@ class _UnionConverter:
             try:
                 converted_arg, _ = await converter.convert(context, " ".join(args), parse=False)
                 converted = True
+                break
             except (ValueError, TypeError, errors.ConverterFailure):
                 continue
 
@@ -522,7 +524,7 @@ class _ConsumeRestConverter:
         self.param_name = param_name
 
     async def convert(self, context: context_.Context, arg_string: str):
-        converted_arg = await self.converter.convert(context, arg_string, parse=False)
+        converted_arg, _ = await self.converter.convert(context, arg_string, parse=False)
         return {self.param_name: converted_arg}, ""
 
 

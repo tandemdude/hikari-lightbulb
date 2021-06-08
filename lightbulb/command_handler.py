@@ -35,11 +35,11 @@ from multidict import CIMultiDict
 
 from lightbulb import commands
 from lightbulb import context as context_
+from lightbulb.converters import _DefaultingConverter
 from lightbulb import errors
 from lightbulb import events
 from lightbulb import help as help_
 from lightbulb import plugins
-from lightbulb import stringview
 from lightbulb.utils import maybe_await
 
 _LOGGER = logging.getLogger("lightbulb")
@@ -768,6 +768,7 @@ class Bot(hikari.BotApp):
         and which are optional or required.
 
         Args:
+            context (:obj:`~.context.Context`): The invocation context for the command.
             command (:obj:`~.commands.Command`): The command to resolve the arguments for.
             raw_arg_string (:obj:`str`): String containing the raw, unparsed arguments.
 
@@ -782,17 +783,29 @@ class Bot(hikari.BotApp):
                 all required argument fields.
         """
         converters = command.arg_details.converters[:]
+        arg_names = command.arg_details.arguments[:]
         args, kwargs = [], {}
 
         arg_string = raw_arg_string
         while converters:
             conv = converters.pop(0)
-            conv_out, arg_string = await conv.convert(context, arg_string)
+            arg_name = arg_names.pop(0)
+
+            if not isinstance(conv, _DefaultingConverter) and not arg_string:
+                raise errors.NotEnoughArguments(command, [arg_name, *arg_names])
+
+            try:
+                conv_out, arg_string = await conv.convert(context, arg_string)
+            except (ValueError, TypeError, errors.ConverterFailure):
+                raise errors.ConverterFailure("")
 
             if isinstance(conv_out, dict):
                 kwargs.update(conv_out)
             else:
                 args.append(conv_out)
+
+        if arg_string and not command._allow_extra_arguments:
+            raise errors.TooManyArguments(command)
 
         return args, kwargs
 
@@ -869,6 +882,7 @@ class Bot(hikari.BotApp):
             errors.TooManyArguments,
             errors.CheckFailure,
             errors.CommandSyntaxError,
+            errors.ConverterFailure,
         ) as ex:
             await self._dispatch_command_error_event_from_exception(ex, event.message, context, command)
             return

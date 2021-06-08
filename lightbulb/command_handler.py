@@ -750,8 +750,8 @@ class Bot(hikari.BotApp):
             return command
         raise errors.CommandNotFound(invoked_with)
 
-    def resolve_args_for_command(
-        self, command: commands.Command, raw_arg_string: str
+    async def resolve_args_for_command(
+        self, context: context_.Context, command: commands.Command, raw_arg_string: str
     ) -> typing.Tuple[typing.List[str], typing.Dict[str, str]]:
         """
         Resolve the appropriate command arguments from an unparsed string
@@ -781,33 +781,29 @@ class Bot(hikari.BotApp):
             :obj:`~.errors.NotEnoughArguments`: Not enough arguments were provided by the user to fill
                 all required argument fields.
         """
-        sv = stringview.StringView(raw_arg_string)
-        positional_args, remainder = sv.deconstruct_str(max_parse=command.arg_details.maximum_arguments)
-        if remainder and command.arg_details.kwarg_name is None and not command._allow_extra_arguments:
-            raise errors.TooManyArguments(command)
-        if (len(positional_args) + bool(remainder)) < command.arg_details.minimum_arguments:
-            missing_args = command.arg_details.get_missing_args([*positional_args, *([remainder] if remainder else [])])
-            raise errors.NotEnoughArguments(command, missing_args)
+        converters = command.arg_details.converters[:]
+        args, kwargs = [], {}
 
-        if not remainder:
-            remainder = {}
-        if remainder and command.arg_details.kwarg_name is not None:
-            remainder = {command.arg_details.kwarg_name: remainder}
-        return positional_args, remainder
+        arg_string = raw_arg_string
+        while converters:
+            conv = converters.pop(0)
+            conv_out, arg_string = await conv.convert(context, arg_string)
+
+            if isinstance(conv_out, dict):
+                kwargs.update(conv_out)
+            else:
+                args.append(conv_out)
+
+        return args, kwargs
 
     async def _invoke_command(
         self,
         command: commands.Command,
         context: context_.Context,
         args: typing.Sequence[str],
-        kwarg: typing.Mapping[str, str],
+        kwargs: typing.Mapping[str, str],
     ) -> None:
-        if kwarg and command.arg_details.kwarg_name:
-            await command.invoke(context, *args, **kwarg)
-        elif args:
-            await command.invoke(context, *args)
-        else:
-            await command.invoke(context)
+        await command.invoke(context, *args, **kwargs)
 
     async def process_commands_for_event(self, event: hikari.MessageCreateEvent) -> None:
         """
@@ -863,7 +859,7 @@ class Bot(hikari.BotApp):
             await before_invoke(context)
 
         try:
-            positional_args, keyword_arg = self.resolve_args_for_command(command, final_args)
+            positional_args, keyword_arg = await self.resolve_args_for_command(context, command, final_args)
             if not await maybe_await(command._check_exempt_predicate, context):
                 await self._evaluate_checks(command, context)
             else:

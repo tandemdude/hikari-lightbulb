@@ -35,11 +35,11 @@ from multidict import CIMultiDict
 
 from lightbulb import commands
 from lightbulb import context as context_
-from lightbulb.converters import _DefaultingConverter
 from lightbulb import errors
 from lightbulb import events
 from lightbulb import help as help_
 from lightbulb import plugins
+from lightbulb.converters import _DefaultingConverter
 from lightbulb.utils import maybe_await
 
 _LOGGER = logging.getLogger("lightbulb")
@@ -755,11 +755,12 @@ class Bot(hikari.BotApp):
     ) -> typing.Tuple[typing.List[str], typing.Dict[str, str]]:
         """
         Resolve the appropriate command arguments from an unparsed string
-        containing the raw command arguments.
+        containing the raw command arguments and attempt to convert them into
+        the appropriate types given the type hint.
 
         This method can be overridden if you wish to customise how arguments
-        are parsed for all the commands. If you override this then it is important that
-        it at least returns a tuple containing an empty list if no positional arguments
+        are parsed and converted for all the commands. If you override this then it is important
+        that it at least returns a tuple containing an empty list if no positional arguments
         were resolved, and an empty dict if no keyword arguments were resolved.
 
         If you override this method then you may find the :obj:`~.stringview.StringView`
@@ -781,6 +782,7 @@ class Bot(hikari.BotApp):
                 arguments were supplied by the user.
             :obj:`~.errors.NotEnoughArguments`: Not enough arguments were provided by the user to fill
                 all required argument fields.
+            :obj:`~.errors.ConverterFailure`: Argument value conversion failed.
         """
         converters = command.arg_details.converters[:]
         arg_names = command.arg_details.arguments[:]
@@ -797,7 +799,7 @@ class Bot(hikari.BotApp):
             try:
                 conv_out, arg_string = await conv.convert(context, arg_string)
             except (ValueError, TypeError, errors.ConverterFailure):
-                raise errors.ConverterFailure("")
+                raise errors.ConverterFailure(f"Converting failed for argument: {arg_name}")
 
             if isinstance(conv_out, dict):
                 kwargs.update(conv_out)

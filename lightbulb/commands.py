@@ -18,7 +18,6 @@
 from __future__ import annotations
 
 __all__: typing.Final[typing.List[str]] = [
-    "ArgInfo",
     "SignatureInspector",
     "Command",
     "Group",
@@ -26,22 +25,24 @@ __all__: typing.Final[typing.List[str]] = [
     "group",
 ]
 
-import dataclasses
 import functools
 import inspect
 import logging
 import typing
-from itertools import zip_longest
 
 import hikari
 from multidict import CIMultiDict
 
 from lightbulb import context as context_
 from lightbulb import converters
-from lightbulb.converters import _Converter, _UnionConverter, _DefaultingConverter, _GreedyConverter, _ConsumeRestConverter
 from lightbulb import cooldowns
 from lightbulb import errors
 from lightbulb import events
+from lightbulb.converters import _ConsumeRestConverter
+from lightbulb.converters import _Converter
+from lightbulb.converters import _DefaultingConverter
+from lightbulb.converters import _GreedyConverter
+from lightbulb.converters import _UnionConverter
 
 if typing.TYPE_CHECKING:
     from lightbulb import plugins
@@ -49,6 +50,21 @@ if typing.TYPE_CHECKING:
 _LOGGER = logging.getLogger("lightbulb")
 
 _CommandT = typing.TypeVar("_CommandT", bound="Command")
+
+_CONVERTER_CLASS_MAPPING = {
+    hikari.User: converters.user_converter,
+    hikari.Member: converters.member_converter,
+    hikari.TextChannel: converters.text_channel_converter,
+    hikari.GuildVoiceChannel: converters.guild_voice_channel_converter,
+    hikari.GuildCategory: converters.category_converter,
+    hikari.Role: converters.role_converter,
+    hikari.Emoji: converters.emoji_converter,
+    hikari.GuildPreview: converters.guild_converter,
+    hikari.Message: converters.message_converter,
+    hikari.Invite: converters.invite_converter,
+    hikari.Colour: converters.colour_converter,
+    hikari.Color: converters.colour_converter,
+}
 
 
 class _BoundCommandMarker:
@@ -102,24 +118,6 @@ def _bind_prototype(instance: typing.Any, command_template: _CommandT):
     return typing.cast(_CommandT, prototype)
 
 
-@dataclasses.dataclass
-class ArgInfo:
-    """
-    Dataclass representing information for a single command argument.
-    """
-
-    ignore: bool
-    """:obj:`True` if the argument is ``self`` or ``context`` else :obj:`False`."""
-    argtype: int
-    """The type of the argument. See :attr:`inspect.Parameter.kind` for possible types."""
-    annotation: typing.Any
-    """The type annotation of the argument."""
-    required: bool
-    """Whether or not the argument is required during invocation."""
-    default: typing.Any
-    """Default value for an argument."""
-
-
 class SignatureInspector:
     """
     Contains information about the arguments that a command takes when
@@ -132,7 +130,6 @@ class SignatureInspector:
     def __init__(self, command: Command) -> None:
         self.command = command
         self.has_self = isinstance(command, _BoundCommandMarker)
-        self.kwarg_name = None
         signature = inspect.signature(command._callback)
         self.converters = self.parse_signature(signature)
         self.arguments = [p.name for p in signature.parameters.values()]
@@ -140,20 +137,45 @@ class SignatureInspector:
         if self.has_self:
             self.arguments.pop(0)
 
-    def get_converter(self, annotation) -> typing.Union[_Converter, _UnionConverter, _DefaultingConverter, _GreedyConverter]:
+    def get_converter(
+        self, annotation
+    ) -> typing.Union[_Converter, _UnionConverter, _DefaultingConverter, _GreedyConverter]:
+        """
+        Resolve the converter order for a given type annotation recursively.
+
+        Args:
+            annotation: The parameter's type annotation.
+
+        Returns:
+            The top level converter for the parameter
+        """
+        annotation = _CONVERTER_CLASS_MAPPING.get(annotation, annotation)
+
         origin = typing.get_origin(annotation)
         args = typing.get_args(annotation)
+
         if origin is typing.Union:
             if args[1] is type(None):
                 return _DefaultingConverter(self.get_converter(args[0]), None)
             args = [self.get_converter(conv) for conv in args]
             return _UnionConverter(*args)
-        elif origin is converters.Greedy:
+
+        if origin is converters.Greedy:
             return _GreedyConverter(self.get_converter(args[0]))
-        else:
-            return _Converter(annotation if annotation is not inspect.Parameter.empty else str)
+
+        return _Converter(annotation if annotation is not inspect.Parameter.empty else str)
 
     def parse_signature(self, signature: inspect.Signature):
+        """
+        Parse the command's callback signature into a list of the converters used
+        for each command argument.
+
+        Args:
+            signature (:obj:`inspect.Signature`): The signature of the command callback.
+
+        Returns:
+            List of converters for command arguments in the correct order.
+        """
         arg_converters = []
 
         params = list(signature.parameters.values())

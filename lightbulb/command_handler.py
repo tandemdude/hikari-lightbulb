@@ -806,7 +806,6 @@ class Bot(hikari.BotApp):
             except (ValueError, TypeError, errors.ConverterFailure):
                 raise errors.ConverterFailure(f"Converting failed for argument: {arg_name}")
 
-            print(conv_out)
             if isinstance(conv_out, dict):
                 kwargs.update(conv_out)
             elif isinstance(conv, _GreedyConverter) and conv.unpack:

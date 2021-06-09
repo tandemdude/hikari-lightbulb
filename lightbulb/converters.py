@@ -471,9 +471,7 @@ class _ConverterT(typing.Protocol[T_co]):
 
 
 class _BaseConverter(typing.Protocol[T_co]):
-    async def convert(
-        self, context: context_.Context, arg_string: str, *, parse: bool
-    ) -> typing.Tuple[typing.Union[T_co, typing.List[T_co]], str]:
+    async def convert(self, context: context_.Context, arg_string: str, *, parse: bool) -> typing.Tuple[T_co, str]:
         ...
 
 
@@ -574,8 +572,8 @@ class _DefaultingConverter:
 
             return self.default, ""
 
-        converted_arg, _ = await self.converter.convert(context, " ".join(args), parse=False)
-        return converted_arg, remainder
+        converted_arg = await self.converter.convert(context, " ".join(args), parse=False)
+        return converted_arg[0], remainder
 
 
 class _ConsumeRestConverter:

@@ -156,8 +156,15 @@ class SignatureInspector:
         args = typing.get_args(annotation)
 
         if origin is typing.Union:
-            arguments: typing.List[_ConverterT] = [self.get_converter(conv) for conv in args]
-            return _UnionConverter(*arguments, has_none_type=None.__class__ in args)
+            convs: typing.List[_ConverterT] = []
+
+            for arg in args:
+                if arg is None.__class__:
+                    return _DefaultingConverter(_UnionConverter(*convs), None, raise_on_fail=False)
+
+                convs.append(self.get_converter(arg))
+
+            return _UnionConverter(*convs)
 
         if origin is converters.Greedy:
             return _GreedyConverter(self.get_converter(args[0]))
@@ -188,8 +195,11 @@ class SignatureInspector:
             elif param.kind is inspect.Parameter.VAR_POSITIONAL:
                 converter = _GreedyConverter(converter, unpack=True)
 
-            if param.default is not inspect.Parameter.empty and not isinstance(converter, _DefaultingConverter):
-                converter = _DefaultingConverter(converter, param.default)
+            if param.default is not inspect.Parameter.empty:
+                if not isinstance(converter, _DefaultingConverter):
+                    converter = _DefaultingConverter(converter, param.default)
+                else:
+                    converter.default = param.default
 
             arg_converters.append(converter)
         return arg_converters

@@ -541,11 +541,12 @@ class _GreedyConverter:
 
 
 class _DefaultingConverter:
-    __slots__ = ("converter", "default")
+    __slots__ = ("converter", "default", "raise_on_fail")
 
-    def __init__(self, converter: _Converter, default: typing.Any):
+    def __init__(self, converter: _Converter, default: typing.Any, raise_on_fail: bool = True):
         self.converter = converter
         self.default = default
+        self.raise_on_fail = raise_on_fail
 
     async def convert(self, context: context_.Context, arg_string: str) -> typing.Tuple[T, str]:
         sv = stringview.StringView(arg_string)
@@ -557,6 +558,9 @@ class _DefaultingConverter:
         try:
             converted_arg, _ = await self.converter.convert(context, " ".join(args), parse=False)
         except (ValueError, TypeError, errors.ConverterFailure):
+            if self.raise_on_fail:
+                raise
+
             return self.default, arg_string
 
         return converted_arg, remainder

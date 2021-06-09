@@ -492,7 +492,7 @@ class _Converter:
         if self.conversion_func is not type(None):
             arguments.append(WrappedArg(args, context))
         else:
-            remainder = arg_string
+            remainder = args
 
         converted_arg = await utils.maybe_await(self.conversion_func, *arguments)
         return converted_arg, remainder

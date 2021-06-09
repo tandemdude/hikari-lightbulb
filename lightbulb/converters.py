@@ -489,7 +489,7 @@ class _Converter:
             args = " ".join(parsed)
 
         arguments = []
-        if self.conversion_func is not type(None):
+        if self.conversion_func is not None.__class__:
             arguments.append(WrappedArg(args, context))
         else:
             remainder = args
@@ -515,7 +515,7 @@ class _UnionConverter:
                 converted_arg = await converter.convert(context, " ".join(args), parse=False)
                 converted = True
 
-                if getattr(converter, "conversion_func", None) is type(None):
+                if getattr(converter, "conversion_func", None) is None.__class__:
                     remainder = converted_arg[1]
 
                 break

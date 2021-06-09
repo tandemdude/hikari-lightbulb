@@ -519,7 +519,7 @@ class _UnionConverter:
                     remainder = converted_arg[1]
 
                 break
-            except (ValueError, TypeError, errors.ConverterFailure):
+            except Exception:
                 continue
 
         if not converted:
@@ -551,7 +551,7 @@ class _GreedyConverter:
                 converted_arg = await self.converter.convert(context, " ".join(args), parse=False)
                 converted.append(converted_arg[0])
                 prev = remainder
-            except (ValueError, TypeError, errors.ConverterFailure):
+            except Exception:
                 break
 
         return converted, prev

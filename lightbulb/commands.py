@@ -187,7 +187,7 @@ class SignatureInspector:
             if param.kind is inspect.Parameter.KEYWORD_ONLY:
                 converter = _ConsumeRestConverter(converter, param.name)
             elif param.kind is inspect.Parameter.VAR_POSITIONAL:
-                converter = _GreedyConverter(converter)
+                converter = _GreedyConverter(converter, unpack=True)
 
             if param.default is not inspect.Parameter.empty:
                 if not isinstance(converter, _DefaultingConverter):

@@ -39,7 +39,7 @@ from lightbulb import errors
 from lightbulb import events
 from lightbulb import help as help_
 from lightbulb import plugins
-from lightbulb.converters import _DefaultingConverter
+from lightbulb.converters import _DefaultingConverter, _GreedyConverter
 from lightbulb.utils import maybe_await
 
 _LOGGER = logging.getLogger("lightbulb")
@@ -803,6 +803,8 @@ class Bot(hikari.BotApp):
 
             if isinstance(conv_out, dict):
                 kwargs.update(conv_out)
+            elif isinstance(conv, _GreedyConverter) and conv.unpack:
+                args.extend(conv_out)
             else:
                 args.append(conv_out)
 

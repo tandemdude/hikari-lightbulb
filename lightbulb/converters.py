@@ -553,7 +553,11 @@ class _DefaultingConverter:
         if not args:
             return self.default, ""
 
-        converted_arg, _ = await self.converter.convert(context, " ".join(args), parse=False)
+        try:
+            converted_arg, _ = await self.converter.convert(context, " ".join(args), parse=False)
+        except (ValueError, TypeError, errors.ConverterFailure):
+            return self.default, arg_string
+
         return converted_arg, remainder
 
 

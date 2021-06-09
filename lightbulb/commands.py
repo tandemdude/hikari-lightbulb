@@ -157,7 +157,7 @@ class SignatureInspector:
 
         if origin is typing.Union:
             arguments: typing.List[_ConverterT] = [self.get_converter(conv) for conv in args]
-            return _UnionConverter(*arguments, has_none_type=type(None) in args)
+            return _UnionConverter(*arguments, has_none_type=None.__class__ in args)
 
         if origin is converters.Greedy:
             return _GreedyConverter(self.get_converter(args[0]))

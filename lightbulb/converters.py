@@ -514,10 +514,11 @@ class _UnionConverter:
 
 
 class _GreedyConverter:
-    __slots__ = ("converter",)
+    __slots__ = ("converter", "unpack")
 
-    def __init__(self, converter: _Converter) -> None:
+    def __init__(self, converter: _Converter, unpack: bool = False) -> None:
         self.converter = converter
+        self.unpack = unpack
 
     async def convert(self, context: context_.Context, arg_string: str) -> typing.Tuple[typing.List[T], str]:
         prev = arg_string

@@ -488,41 +488,27 @@ class _Converter:
             parsed, remainder = sv.deconstruct_str(max_parse=1)
             args = " ".join(parsed)
 
-        arguments = []
-        if self.conversion_func is not None.__class__:
-            arguments.append(WrappedArg(args, context))
-        else:
-            remainder = args
-
-        converted_arg = await utils.maybe_await(self.conversion_func, *arguments)
+        converted_arg = await utils.maybe_await(self.conversion_func, WrappedArg(args, context))
         return converted_arg, remainder
 
 
 class _UnionConverter:
-    __slots__ = ("converters", "has_none_type")
+    __slots__ = ("converters",)
 
-    def __init__(self, *converters: _BaseConverter[T], has_none_type: bool) -> None:
+    def __init__(self, *converters: _BaseConverter[T]) -> None:
         self.converters = converters
-        self.has_none_type = has_none_type
 
     async def convert(self, context: context_.Context, arg_string: str, *, parse: bool = False) -> typing.Tuple[T, str]:
         sv = stringview.StringView(arg_string)
         args, remainder = sv.deconstruct_str(max_parse=1)
 
-        converted = False
         for converter in self.converters:
             try:
                 converted_arg = await converter.convert(context, " ".join(args), parse=False)
-                converted = True
-
-                if getattr(converter, "conversion_func", None) is None.__class__:
-                    remainder = converted_arg[1]
-
                 break
             except Exception:
                 continue
-
-        if not converted:
+        else:
             raise errors.ConverterFailure
 
         return converted_arg[0], remainder
@@ -558,11 +544,35 @@ class _GreedyConverter:
 
 
 class _DefaultingConverter:
-    __slots__ = ("converter", "default")
+    __slots__ = ("converter", "_default", "raise_on_fail")
 
-    def __init__(self, converter: _BaseConverter[T], default: typing.Any):
+    def __init__(self, converter: _BaseConverter[T], default: typing.Any, raise_on_fail: bool = True):
         self.converter = converter
-        self.default = default
+        self.raise_on_fail = raise_on_fail
+        self._default = default
+        self.apply_default_recursively(self.converter, default)
+
+    @property
+    def default(self) -> typing.Any:
+        if isinstance(self.converter, _ConsumeRestConverter):
+            # can't do the ternary here as for some reason, mypy can't tell if converter has "param_name" attr
+            return {self.converter.param_name: self._default}
+
+        return self._default
+
+    @default.setter
+    def default(self, default: typing.Any) -> None:
+        self._default = default
+
+    @staticmethod
+    def apply_default_recursively(converter: typing.Optional[_BaseConverter], default: typing.Any) -> None:
+        if converter is None:
+            return None
+
+        if isinstance(converter, _DefaultingConverter):
+            converter._default = default
+
+        return _DefaultingConverter.apply_default_recursively(getattr(converter, "converter", None), default)
 
     async def convert(
         self, context: context_.Context, arg_string: str, *, parse: bool = False
@@ -571,12 +581,16 @@ class _DefaultingConverter:
         args, remainder = sv.deconstruct_str(max_parse=1)
 
         if not args:
-            if isinstance(self.converter, _ConsumeRestConverter):
-                return {self.converter.param_name: self.default}, ""
-
             return self.default, ""
 
-        converted_arg = await self.converter.convert(context, " ".join(args), parse=False)
+        try:
+            converted_arg = await self.converter.convert(context, " ".join(args), parse=False)
+        except Exception:
+            if self.raise_on_fail:
+                raise
+
+            return self.default, arg_string
+
         return converted_arg[0], remainder
 
 

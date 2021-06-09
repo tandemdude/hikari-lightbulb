@@ -8,11 +8,14 @@ def assert_converters_recursively(
     converter: typing.Optional[converters._BaseConverter],
     types: typing.Sequence[typing.Type[converters._BaseConverter]],
     idx: int = 0,
+    *,
+    default: typing.Any,
 ) -> None:
     if converter is None:
         return
 
     assert isinstance(converter, types[idx])
+    assert getattr(converter, "_default", default) is default
 
     try:
         return getattr(converter, "converter", None)
@@ -30,10 +33,10 @@ async def union_test2(ctx, test_arg: typing.Optional[int] = 1):
     ...
 
 
-@pytest.mark.parametrize("command", [union_test1, union_test2])
-def test_has_union_converter_wrapped_in_defaulting_converter(command):
+@pytest.mark.parametrize("command, default", [(union_test1, None), (union_test2, 1)])
+def test_has_union_converter_wrapped_in_defaulting_converter(command, default):
     converter_types = [converters._DefaultingConverter, converters._UnionConverter]
-    assert_converters_recursively(command.arg_details.converters[0], converter_types)
+    assert_converters_recursively(command.arg_details.converters[0], converter_types, default=default)
 
 
 def test_has_union_converter_wrapped_in_consume_rest_converter_in_defaulting_converter():
@@ -47,7 +50,7 @@ def test_has_union_converter_wrapped_in_consume_rest_converter_in_defaulting_con
         converters._DefaultingConverter,
         converters._UnionConverter,
     ]
-    assert_converters_recursively(test.arg_details.converters[0], converter_types)
+    assert_converters_recursively(test.arg_details.converters[0], converter_types, default=1)
 
 
 def test_has_consume_rest_converter():
@@ -64,7 +67,7 @@ def test_has_defaulting_converter():
         ...
 
     converter_types = [converters._DefaultingConverter, converters._ConsumeRestConverter]
-    assert_converters_recursively(test.arg_details.converters[0], converter_types)
+    assert_converters_recursively(test.arg_details.converters[0], converter_types, default="test")
 
 
 @commands.command()

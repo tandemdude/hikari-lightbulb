@@ -4,22 +4,36 @@ import pytest
 from lightbulb import commands, converters
 
 
-def test_has_union_converter():
-    @commands.command()
-    async def test(ctx, test_arg: typing.Optional[int]):
-        ...
+def assert_converters_recursively(
+    converter: typing.Optional[converters._BaseConverter],
+    types: typing.Sequence[typing.Type[converters._BaseConverter]],
+    idx: int = 0,
+) -> None:
+    if converter is None:
+        return
 
-    assert isinstance(test.arg_details.converters[0], converters._UnionConverter)
+    assert isinstance(converter, types[idx])
+
+    try:
+        return getattr(converter, "converter", None)
+    finally:
+        idx += 1
 
 
-def test_has_union_converter_wrapped_in_defaulting_converter():
-    @commands.command()
-    async def test(ctx, test_arg: typing.Optional[int] = 1):
-        ...
+@commands.command()
+async def union_test1(ctx, test_arg: typing.Optional[int]):
+    ...
 
-    converter = test.arg_details.converters[0]
-    assert isinstance(converter, converters._DefaultingConverter)
-    assert isinstance(converter.converter, converters._UnionConverter)
+
+@commands.command()
+async def union_test2(ctx, test_arg: typing.Optional[int] = 1):
+    ...
+
+
+@pytest.mark.parametrize("command", [union_test1, union_test2])
+def test_has_union_converter_wrapped_in_defaulting_converter(command):
+    converter_types = [converters._DefaultingConverter, converters._UnionConverter]
+    assert_converters_recursively(command.arg_details.converters[0], converter_types)
 
 
 def test_has_union_converter_wrapped_in_consume_rest_converter_in_defaulting_converter():
@@ -27,10 +41,13 @@ def test_has_union_converter_wrapped_in_consume_rest_converter_in_defaulting_con
     async def test(ctx, *, test_arg: typing.Optional[int] = 1):
         ...
 
-    converter = test.arg_details.converters[0]
-    assert isinstance(converter, converters._DefaultingConverter)
-    assert isinstance(converter.converter, converters._ConsumeRestConverter)
-    assert isinstance(converter.converter.converter, converters._UnionConverter)
+    converter_types = [
+        converters._DefaultingConverter,
+        converters._ConsumeRestConverter,
+        converters._DefaultingConverter,
+        converters._UnionConverter,
+    ]
+    assert_converters_recursively(test.arg_details.converters[0], converter_types)
 
 
 def test_has_consume_rest_converter():
@@ -46,9 +63,8 @@ def test_has_defaulting_converter():
     async def test(ctx, *, test_arg: str = "test"):
         ...
 
-    converter = test.arg_details.converters[0]
-    assert isinstance(converter, converters._DefaultingConverter)
-    assert isinstance(converter.converter, converters._ConsumeRestConverter)
+    converter_types = [converters._DefaultingConverter, converters._ConsumeRestConverter]
+    assert_converters_recursively(test.arg_details.converters[0], converter_types)
 
 
 @commands.command()

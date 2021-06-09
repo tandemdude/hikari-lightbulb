@@ -38,6 +38,7 @@ from lightbulb import converters
 from lightbulb import cooldowns
 from lightbulb import errors
 from lightbulb import events
+from lightbulb.converters import _BaseConverter
 from lightbulb.converters import _ConsumeRestConverter
 from lightbulb.converters import _Converter
 from lightbulb.converters import _DefaultingConverter
@@ -50,6 +51,7 @@ if typing.TYPE_CHECKING:
 _LOGGER = logging.getLogger("lightbulb")
 
 _CommandT = typing.TypeVar("_CommandT", bound="Command")
+T = typing.TypeVar("T")
 
 _CONVERTER_CLASS_MAPPING = {
     hikari.User: converters.user_converter,
@@ -137,9 +139,7 @@ class SignatureInspector:
         if self.has_self:
             self.arguments.pop(0)
 
-    def get_converter(
-        self, annotation
-    ) -> typing.Union[_Converter, _UnionConverter, _DefaultingConverter, _GreedyConverter]:
+    def get_converter(self, annotation) -> _BaseConverter[T]:
         """
         Resolve the converter order for a given type annotation recursively.
 
@@ -155,10 +155,8 @@ class SignatureInspector:
         args = typing.get_args(annotation)
 
         if origin is typing.Union:
-            if args[1] is type(None):
-                return _DefaultingConverter(self.get_converter(args[0]), None, raise_on_fail=False)
-            args = [self.get_converter(conv) for conv in args]
-            return _UnionConverter(*args)
+            arguments = [self.get_converter(conv) for conv in args]
+            return _UnionConverter(*arguments, has_none_type=type(None) in args)
 
         if origin is converters.Greedy:
             return _GreedyConverter(self.get_converter(args[0]))
@@ -182,18 +180,15 @@ class SignatureInspector:
             if idx == 0 or (idx == 1 and self.has_self):
                 continue
 
-            converter = self.get_converter(param.annotation)
+            converter: _BaseConverter = self.get_converter(param.annotation)
 
             if param.kind is inspect.Parameter.KEYWORD_ONLY:
                 converter = _ConsumeRestConverter(converter, param.name)
             elif param.kind is inspect.Parameter.VAR_POSITIONAL:
                 converter = _GreedyConverter(converter, unpack=True)
 
-            if param.default is not inspect.Parameter.empty:
-                if not isinstance(converter, _DefaultingConverter):
-                    converter = _DefaultingConverter(converter, param.default)
-                else:
-                    converter.default = param.default
+            if param.default is not inspect.Parameter.empty and not isinstance(converter, _DefaultingConverter):
+                converter = _DefaultingConverter(converter, param.default)
 
             arg_converters.append(converter)
         return arg_converters

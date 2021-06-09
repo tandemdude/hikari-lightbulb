@@ -514,6 +514,10 @@ class _UnionConverter:
             try:
                 converted_arg = await converter.convert(context, " ".join(args), parse=False)
                 converted = True
+
+                if getattr(converter, "conversion_func", None) is type(None):
+                    remainder = converted_arg[1]
+
                 break
             except (ValueError, TypeError, errors.ConverterFailure):
                 continue

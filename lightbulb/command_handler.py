@@ -39,7 +39,7 @@ from lightbulb import errors
 from lightbulb import events
 from lightbulb import help as help_
 from lightbulb import plugins
-from lightbulb.converters import _DefaultingConverter, _GreedyConverter
+from lightbulb.converters import _DefaultingConverter, _GreedyConverter, _UnionConverter
 from lightbulb.utils import maybe_await
 
 _LOGGER = logging.getLogger("lightbulb")
@@ -793,7 +793,10 @@ class Bot(hikari.BotApp):
             conv = converters.pop(0)
             arg_name = arg_names.pop(0)
 
-            if not isinstance(conv, _DefaultingConverter) and not arg_string:
+            if (
+                not isinstance(conv, (_DefaultingConverter, _UnionConverter))
+                or (isinstance(conv, _UnionConverter) and not conv.has_none_type)
+            ) and not arg_string:
                 raise errors.NotEnoughArguments(command, [arg_name, *arg_names])
 
             try:
@@ -801,6 +804,7 @@ class Bot(hikari.BotApp):
             except (ValueError, TypeError, errors.ConverterFailure):
                 raise errors.ConverterFailure(f"Converting failed for argument: {arg_name}")
 
+            print(conv_out)
             if isinstance(conv_out, dict):
                 kwargs.update(conv_out)
             elif isinstance(conv, _GreedyConverter) and conv.unpack:

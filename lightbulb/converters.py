@@ -103,6 +103,7 @@ from lightbulb import stringview
 from lightbulb import utils
 
 T = typing.TypeVar("T")
+T_co = typing.TypeVar("T_co", covariant=True)
 
 USER_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<@!?(\d+)>")
 CHANNEL_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<#(\d+)>")
@@ -463,45 +464,57 @@ class Greedy(typing.Generic[T]):
                 ...
     """
 
-    pass
+
+class _ConverterT(typing.Protocol[T_co]):
+    def __call__(self, arg: WrappedArg) -> typing.Union[T_co, typing.Coroutine[None, None, T_co]]:
+        ...
 
 
-_converter_T = typing.Union[
-    typing.Callable[[WrappedArg], T], typing.Callable[[WrappedArg], typing.Coroutine[None, None, T]]
-]
+class _BaseConverter(typing.Protocol[T_co]):
+    async def convert(
+        self, context: context_.Context, arg_string: str, *, parse: bool
+    ) -> typing.Tuple[typing.Union[T_co, typing.List[T_co]], str]:
+        ...
 
 
 class _Converter:
     __slots__ = ("conversion_func",)
 
-    def __init__(self, conversion_func: _converter_T) -> None:
+    def __init__(self, conversion_func: _ConverterT) -> None:
         self.conversion_func = conversion_func
 
-    async def convert(self, context: context_.Context, arg_string: str, *, parse=True) -> typing.Tuple[T, str]:
+    async def convert(self, context: context_.Context, arg_string: str, *, parse: bool = True) -> typing.Tuple[T, str]:
         args, remainder = arg_string, ""
         if parse:
             sv = stringview.StringView(arg_string)
-            args, remainder = sv.deconstruct_str(max_parse=1)
-            args = " ".join(args)
+            parsed, remainder = sv.deconstruct_str(max_parse=1)
+            args = " ".join(parsed)
 
-        converted_arg = await utils.maybe_await(self.conversion_func, WrappedArg(args, context))
+        arguments = []
+        if self.conversion_func is not type(None):
+            arguments.append(WrappedArg(args, context))
+        else:
+            remainder = arg_string
+
+        converted_arg = await utils.maybe_await(self.conversion_func, *arguments)
         return converted_arg, remainder
 
 
 class _UnionConverter:
-    __slots__ = ("converters",)
+    __slots__ = ("converters", "has_none_type")
 
-    def __init__(self, *converters: _Converter) -> None:
+    def __init__(self, *converters: _BaseConverter[T], has_none_type: bool) -> None:
         self.converters = converters
+        self.has_none_type = has_none_type
 
-    async def convert(self, context: context_.Context, arg_string: str) -> typing.Tuple[T, str]:
+    async def convert(self, context: context_.Context, arg_string: str, *, parse: bool = False) -> typing.Tuple[T, str]:
         sv = stringview.StringView(arg_string)
         args, remainder = sv.deconstruct_str(max_parse=1)
 
         converted = False
         for converter in self.converters:
             try:
-                converted_arg, _ = await converter.convert(context, " ".join(args), parse=False)
+                converted_arg = await converter.convert(context, " ".join(args), parse=False)
                 converted = True
                 break
             except (ValueError, TypeError, errors.ConverterFailure):
@@ -510,17 +523,19 @@ class _UnionConverter:
         if not converted:
             raise errors.ConverterFailure
 
-        return converted_arg, remainder
+        return converted_arg[0], remainder
 
 
 class _GreedyConverter:
     __slots__ = ("converter", "unpack")
 
-    def __init__(self, converter: _Converter, unpack: bool = False) -> None:
+    def __init__(self, converter: _BaseConverter[T], unpack: bool = False) -> None:
         self.converter = converter
         self.unpack = unpack
 
-    async def convert(self, context: context_.Context, arg_string: str) -> typing.Tuple[typing.List[T], str]:
+    async def convert(
+        self, context: context_.Context, arg_string: str, *, parse: bool = False
+    ) -> typing.Tuple[typing.List[T], str]:
         prev = arg_string
         sv = stringview.StringView(arg_string)
         converted = []
@@ -531,8 +546,8 @@ class _GreedyConverter:
                 break
 
             try:
-                converted_arg, _ = await self.converter.convert(context, " ".join(args), parse=False)
-                converted.append(converted_arg)
+                converted_arg = await self.converter.convert(context, " ".join(args), parse=False)
+                converted.append(converted_arg[0])
                 prev = remainder
             except (ValueError, TypeError, errors.ConverterFailure):
                 break
@@ -541,41 +556,40 @@ class _GreedyConverter:
 
 
 class _DefaultingConverter:
-    __slots__ = ("converter", "default", "raise_on_fail")
+    __slots__ = ("converter", "default")
 
-    def __init__(self, converter: _Converter, default: typing.Any, raise_on_fail: bool = True):
+    def __init__(self, converter: _BaseConverter[T], default: typing.Any):
         self.converter = converter
         self.default = default
-        self.raise_on_fail = raise_on_fail
 
-    async def convert(self, context: context_.Context, arg_string: str) -> typing.Tuple[T, str]:
+    async def convert(
+        self, context: context_.Context, arg_string: str, *, parse: bool = False
+    ) -> typing.Tuple[typing.Union[dict, T], str]:
         sv = stringview.StringView(arg_string)
         args, remainder = sv.deconstruct_str(max_parse=1)
 
         if not args:
+            if isinstance(self.converter, _ConsumeRestConverter):
+                return {self.converter.param_name: self.default}, ""
+
             return self.default, ""
 
-        try:
-            converted_arg, _ = await self.converter.convert(context, " ".join(args), parse=False)
-        except (ValueError, TypeError, errors.ConverterFailure):
-            if self.raise_on_fail:
-                raise
-
-            return self.default, arg_string
-
+        converted_arg, _ = await self.converter.convert(context, " ".join(args), parse=False)
         return converted_arg, remainder
 
 
 class _ConsumeRestConverter:
     __slots__ = ("converter", "param_name")
 
-    def __init__(self, converter: _Converter, param_name: str):
+    def __init__(self, converter: _BaseConverter[T], param_name: str):
         self.converter = converter
         self.param_name = param_name
 
-    async def convert(self, context: context_.Context, arg_string: str):
-        converted_arg, _ = await self.converter.convert(context, arg_string, parse=False)
-        return {self.param_name: converted_arg}, ""
+    async def convert(
+        self, context: context_.Context, arg_string: str, *, parse: bool = False
+    ) -> typing.Tuple[typing.Dict[str, T], str]:
+        converted_arg = await self.converter.convert(context, arg_string, parse=False)
+        return {self.param_name: converted_arg[0]}, ""
 
 
 if typing.TYPE_CHECKING:

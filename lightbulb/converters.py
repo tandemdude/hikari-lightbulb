@@ -36,6 +36,24 @@ You can also write your own converters. A converter can be any callable and shou
 will be an instance of the :obj:`~lightbulb.converters.WrappedArg` class. The arg value and command invocation
 context can be accessed through this instance from the attributes ``data`` and ``context`` respectively.
 
+Hikari classes are also available as type hints in place of the lightbulb converters and will be internally
+converted into the necessary converter for the command to behave as expected. A list of all available classes
+along with the converters they 'replace' can be seen below:
+
+- :obj:`hikari.User` (:obj:`~.user_converter`)
+- :obj:`hikari.Member` (:obj:`~.member_converter`)
+- :obj:`hikari.TextChannel` (:obj:`~.text_channel_converter`)
+- :obj:`hikari.GuildVoiceChannel` (:obj:`~.guild_voice_channel_converter`)
+- :obj:`hikari.GuildCategory` (:obj:`~.category_converter`)
+- :obj:`hikari.Role` (:obj:`~.role_converter`)
+- :obj:`hikari.Emoji` (:obj:`~.emoji_converter`)
+- :obj:`hikari.GuildPreview` (:obj:`~.guild_converter`)
+- :obj:`hikari.Message` (:obj:`~.message_converter`)
+- :obj:`hikari.Invite` (:obj:`~.invite_converter`)
+- :obj:`hikari.Colour` (:obj:`~.colour_converter`)
+- :obj:`hikari.Color` (:obj:`~.color_converter`)
+
+
 .. warning:: For the supplied converters, some functionality will not be possible depending on the intents and/or
     cache settings of your bot application and object. If the bot does not have a cache then the converters can
     only work for arguments of ID or mention and **not** any form of name.
@@ -43,6 +61,15 @@ context can be accessed through this instance from the attributes ``data`` and `
 .. warning:: If you use ``from __future__ import annotations`` then you **will not** be able to use converters
     in your commands. Instead of converting the arguments, the raw, unconverted arguments will be passed back
     to the command.
+
+.. error:: In the current state, var positional arguments **are not** supported. To achieve the same functionality
+    you should use an argument with the :obj:`~.Greedy` converter as seen below
+    ::
+
+        @bot.command()
+        async def foo(ctx, arg: lightbulb.Greedy[str]):
+            ....
+
 """
 from __future__ import annotations
 
@@ -72,8 +99,8 @@ import hikari
 
 from lightbulb import context as context_
 from lightbulb import errors
-from lightbulb import utils
 from lightbulb import stringview
+from lightbulb import utils
 
 T = typing.TypeVar("T")
 
@@ -421,12 +448,26 @@ async def color_converter(arg: WrappedArg) -> hikari.Color:
 
 
 class Greedy(typing.Generic[T]):
+    """
+    A special converter that greedily consumes arguments until it either runs out of arguments, or a parser error
+    is encountered. Due to this behaviour, most input errors will be silently ignored.
+
+    Example:
+
+        .. code-block:: python
+
+            @bot.command()
+            async def foo(ctx, foo: Greedy[int]):
+                # if called with <p>foo 1 2 3 4 5
+                # then the arg foo would contain [1, 2, 3, 4, 5]
+                ...
+    """
+
     pass
 
 
 _converter_T = typing.Union[
-    typing.Callable[[WrappedArg], T],
-    typing.Callable[[WrappedArg], typing.Coroutine[None, None, T]]
+    typing.Callable[[WrappedArg], T], typing.Callable[[WrappedArg], typing.Coroutine[None, None, T]]
 ]
 
 

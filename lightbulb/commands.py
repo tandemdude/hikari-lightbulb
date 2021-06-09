@@ -52,6 +52,7 @@ _LOGGER = logging.getLogger("lightbulb")
 
 _CommandT = typing.TypeVar("_CommandT", bound="Command")
 T = typing.TypeVar("T")
+_ConverterT = typing.Union[_BaseConverter[T], _BaseConverter[typing.List[T]]]
 
 _CONVERTER_CLASS_MAPPING = {
     hikari.User: converters.user_converter,
@@ -139,7 +140,7 @@ class SignatureInspector:
         if self.has_self:
             self.arguments.pop(0)
 
-    def get_converter(self, annotation) -> _BaseConverter[T]:
+    def get_converter(self, annotation) -> _ConverterT:
         """
         Resolve the converter order for a given type annotation recursively.
 
@@ -155,7 +156,7 @@ class SignatureInspector:
         args = typing.get_args(annotation)
 
         if origin is typing.Union:
-            arguments = [self.get_converter(conv) for conv in args]
+            arguments: typing.List[_ConverterT] = [self.get_converter(conv) for conv in args]
             return _UnionConverter(*arguments, has_none_type=type(None) in args)
 
         if origin is converters.Greedy:

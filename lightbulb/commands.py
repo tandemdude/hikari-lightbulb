@@ -178,20 +178,22 @@ class SignatureInspector:
         """
         arg_converters = []
 
-        params = list(signature.parameters.values())
-        for arg_i in range(len(signature.parameters)):
-            if arg_i == 0 or (arg_i == 1 and self.has_self):
+        for idx, param in enumerate(signature.parameters.values()):
+            if idx == 0 or (idx == 1 and self.has_self):
                 continue
 
-            converter = self.get_converter(params[arg_i].annotation)
+            converter = self.get_converter(param.annotation)
 
-            if params[arg_i].kind is inspect.Parameter.KEYWORD_ONLY:
-                converter = _ConsumeRestConverter(converter, params[arg_i].name)
-            elif params[arg_i].kind is inspect.Parameter.VAR_POSITIONAL:
+            if param.kind is inspect.Parameter.KEYWORD_ONLY:
+                converter = _ConsumeRestConverter(converter, param.name)
+            elif param.kind is inspect.Parameter.VAR_POSITIONAL:
                 converter = _GreedyConverter(converter)
 
-            if params[arg_i].default is not inspect.Parameter.empty and not isinstance(converter, _DefaultingConverter):
-                converter = _DefaultingConverter(converter, params[arg_i].default)
+            if param.default is not inspect.Parameter.empty:
+                if not isinstance(converter, _DefaultingConverter):
+                    converter = _DefaultingConverter(converter, param.default)
+                else:
+                    converter.default = param.default
 
             arg_converters.append(converter)
         return arg_converters

@@ -39,7 +39,9 @@ from lightbulb import errors
 from lightbulb import events
 from lightbulb import help as help_
 from lightbulb import plugins
-from lightbulb.converters import _DefaultingConverter, _GreedyConverter, _UnionConverter
+from lightbulb.converters import _DefaultingConverter
+from lightbulb.converters import _GreedyConverter
+from lightbulb.converters import _UnionConverter
 from lightbulb.utils import maybe_await
 
 _LOGGER = logging.getLogger("lightbulb")

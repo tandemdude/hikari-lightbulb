@@ -156,7 +156,7 @@ class SignatureInspector:
 
         if origin is typing.Union:
             if args[1] is type(None):
-                return _DefaultingConverter(self.get_converter(args[0]), None)
+                return _DefaultingConverter(self.get_converter(args[0]), None, raise_on_fail=False)
             args = [self.get_converter(conv) for conv in args]
             return _UnionConverter(*args)
 

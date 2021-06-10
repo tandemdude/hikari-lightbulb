@@ -794,7 +794,7 @@ class Bot(hikari.BotApp):
             conv = converters.pop(0)
             arg_name = arg_names.pop(0)
 
-            if not isinstance(conv, (_DefaultingConverter, _GreedyConverter)) and not arg_string:
+            if not isinstance(conv, _DefaultingConverter) and not getattr(conv, "unpack", False) and not arg_string:
                 raise errors.NotEnoughArguments(command, [arg_name, *arg_names])
 
             try:

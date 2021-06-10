@@ -580,21 +580,18 @@ class _DefaultingConverter:
     async def convert(
         self, context: context_.Context, arg_string: str, *, parse: bool = False
     ) -> typing.Tuple[typing.Union[dict, T], str]:
-        sv = stringview.StringView(arg_string)
-        args, remainder = sv.deconstruct_str(max_parse=1)
-
-        if not args:
+        if not arg_string:
             return self.default, ""
 
         try:
-            converted_arg = await self.converter.convert(context, " ".join(args), parse=False)
+            converted_arg = await self.converter.convert(context, arg_string, parse=True)
         except Exception:
             if self.raise_on_fail:
                 raise
 
             return self.default, arg_string
 
-        return converted_arg[0], remainder
+        return converted_arg
 
 
 class _ConsumeRestConverter:

@@ -540,9 +540,6 @@ class _GreedyConverter:
             except Exception:
                 break
 
-        if not converted and not self.unpack:
-            raise errors.ConverterFailure
-
         return converted, prev
 
 

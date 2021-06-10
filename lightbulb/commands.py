@@ -188,7 +188,7 @@ class SignatureInspector:
             if idx == 0 or (idx == 1 and self.has_self):
                 continue
 
-            converter = base_converter = self.get_converter(param.annotation)
+            converter: _BaseConverter = self.get_converter(param.annotation)
 
             if param.kind is inspect.Parameter.KEYWORD_ONLY:
                 converter = _ConsumeRestConverter(converter, param.name)
@@ -197,9 +197,7 @@ class SignatureInspector:
 
             if param.default is not inspect.Parameter.empty:
                 if not isinstance(converter, _DefaultingConverter):
-                    converter = _DefaultingConverter(
-                        converter, param.default, raise_on_fail=not isinstance(base_converter, _GreedyConverter)
-                    )
+                    converter = _DefaultingConverter(converter, param.default)
                 else:
                     converter.default = param.default
 

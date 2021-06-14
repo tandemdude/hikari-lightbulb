@@ -8,12 +8,41 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 0.0.61
+==============
+
+**Breaking Changes**
+
+- Removed ``ArgInfo`` dataclass.
+
+- Rewritten :obj:`~lightbulb.commands.SignatureInspector` class.
+
+- :obj:`~lightbulb.command_handler.Bot.resolve_args_for_command` now takes an additional argument ``context``.
+
+- Calling :obj:`~lightbulb.commands.Command.invoke` will no longer process converters.
+
+- Changed :obj:`~lightbulb.cooldowns.CooldownManager.add_cooldown` into a coroutine.
+
+**Other Changes**
+
+- Added :obj:`~lightbulb.checks.has_attachment`.
+
+- Added :obj:`~lightbulb.checks.check_exempt`.
+
+- Fixed :obj:`KeyError` being raised when attempting to remove a command/plugin that doesn't exist
+
+- Created class mapping for converters. See :ref:`converters` for details.
+
+- Added support for custom cooldowns through the :obj:`~lightbulb.cooldowns.dynamic_cooldown` decorator.
+
+- Added :obj:`lightbulb.converters.Greedy` converter.
+
 Version 0.0.60
 ==============
 
-- Added :obj:`~lightbulb.events.LightbulbEvent.bot` property
+- Added :obj:`~lightbulb.events.LightbulbEvent.bot` property.
 
-- Fixed admin permission checks not working as expected
+- Fixed admin permission checks not working as expected.
 
 Version 0.0.59
 ==============

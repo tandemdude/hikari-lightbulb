@@ -31,7 +31,8 @@ from lightbulb import commands
 from lightbulb import errors
 from lightbulb import plugins
 from lightbulb import utils
-from lightbulb.converters import _DefaultingConverter, _ConsumeRestConverter
+from lightbulb.converters import _ConsumeRestConverter
+from lightbulb.converters import _DefaultingConverter
 
 if typing.TYPE_CHECKING:
     from lightbulb import command_handler

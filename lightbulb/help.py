@@ -67,7 +67,7 @@ def get_command_signature(command: commands.Command) -> str:
     """
     Get the command signature (usage) for a command or command group.
     The signature is returned in the format:
-    ``<command name> <required arg> [optional arg] (consume rest arg...)``
+    ``<command name> <required arg> [optional arg]``
 
     Args:
         command (:obj:`~.commands.Command`): The command or group to get the signature for.

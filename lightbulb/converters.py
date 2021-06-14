@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 """
+.. _converters:
+
 Lightbulb will attempt to convert command arguments using the type or function specified by the type
 hints of each argument. By default, any types that can be converted to from a string are supported - eg int or
 float.

@@ -61,15 +61,6 @@ along with the converters they 'replace' can be seen below:
 .. warning:: If you use ``from __future__ import annotations`` then you **will not** be able to use converters
     in your commands. Instead of converting the arguments, the raw, unconverted arguments will be passed back
     to the command.
-
-.. error:: In the current state, var positional arguments **are not** supported. To achieve the same functionality
-    you should use an argument with the :obj:`~.Greedy` converter as seen below
-    ::
-
-        @bot.command()
-        async def foo(ctx, arg: lightbulb.Greedy[str]):
-            ....
-
 """
 from __future__ import annotations
 

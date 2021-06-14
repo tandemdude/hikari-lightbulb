@@ -151,6 +151,8 @@ class SignatureInspector:
             The top level converter for the parameter
         """
         annotation = _CONVERTER_CLASS_MAPPING.get(annotation, annotation)
+        if isinstance(annotation, str):
+            annotation = str
 
         origin = typing.get_origin(annotation)
         args = typing.get_args(annotation)

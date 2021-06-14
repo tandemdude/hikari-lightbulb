@@ -31,6 +31,7 @@ from lightbulb import commands
 from lightbulb import errors
 from lightbulb import plugins
 from lightbulb import utils
+from lightbulb.converters import _DefaultingConverter, _ConsumeRestConverter
 
 if typing.TYPE_CHECKING:
     from lightbulb import command_handler
@@ -66,7 +67,7 @@ def get_command_signature(command: commands.Command) -> str:
     """
     Get the command signature (usage) for a command or command group.
     The signature is returned in the format:
-    ``<command name> <required arg> [optional arg]``
+    ``<command name> <required arg> [optional arg] (consume rest arg...)``
 
     Args:
         command (:obj:`~.commands.Command`): The command or group to get the signature for.
@@ -75,16 +76,17 @@ def get_command_signature(command: commands.Command) -> str:
         :obj:`str`: Signature for the command.
     """
     items = [command.qualified_name]
-    for argname, arginfo in command.arg_details.args.items():
-        if arginfo.ignore:
-            continue
+    for argname, converter in zip(command.arg_details.arguments, command.arg_details.converters):
+        if isinstance(converter, _DefaultingConverter):
+            default = converter.default
+            if isinstance(default, dict):
+                default = default.get(argname)
 
-        if arginfo.default is inspect.Parameter.empty:
-            items.append(f"<{argname}>")
+            items.append(f"[{argname}={default}]")
         else:
-            items.append(f"[{argname}={arginfo.default}]")
+            items.append(f"<{argname}>")
 
-        if arginfo.argtype is inspect.Parameter.KEYWORD_ONLY:
+        if isinstance(converter, _ConsumeRestConverter):
             break
     return " ".join(items)
 

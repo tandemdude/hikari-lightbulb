@@ -105,7 +105,7 @@ def _return_prefix(_: typing.Any, __: typing.Any, *, prefixes: typing.Iterable[s
     return prefixes
 
 
-class Bot(hikari.BotApp):
+class Bot(hikari.GatewayBot):
     """
     A subclassed implementation of :class:`hikari.impl.bot.BotAppImpl` which contains a command handler.
     This should be instantiated instead of the superclass if you want to be able to use
@@ -848,6 +848,11 @@ class Bot(hikari.BotApp):
 
         split_args = ARG_SEP_REGEX.split(new_content, maxsplit=1)
         invoked_with, command_args = split_args[0], "".join(split_args[1:])
+
+        if not invoked_with:
+            # Return if the character immediately following the command prefix
+            # is whitespace to prevent IndexError later on
+            return
 
         try:
             command = self._validate_command_exists(invoked_with)

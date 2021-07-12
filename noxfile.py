@@ -49,7 +49,7 @@ def format_fix(session):
 # noinspection PyShadowingBuiltins
 @nox.session()
 def format(session):
-    session.run("pip", "install", "-U", "black")
+    session.install("-U", "black")
     session.run("python", "-m", "black", *SCRIPT_PATHS, "--check")
 
 
@@ -58,3 +58,10 @@ def sphinx(session):
     session.install("-U", "sphinx", "sphinx_rtd_theme")
     session.install("-Ur", "requirements.txt")
     session.run("python", "-m", "sphinx.cmd.build", "docs/source", "docs/build", "-b", "html")
+
+
+@nox.session(reuse_venv=True)
+def mypy(session):
+    session.install("-Ur", "requirements.txt")
+    session.install("-U", "mypy")
+    session.run("python", "-m", "mypy", "lightbulb", "--html-report", "mypy_report")

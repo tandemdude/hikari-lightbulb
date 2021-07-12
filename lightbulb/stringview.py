@@ -56,15 +56,15 @@ class StringView:
     __slots__: typing.Sequence[str] = ("text", "index", "final_args", "current_arg", "expect_quote")
 
     def __init__(self, raw_string: str) -> None:
-        self.text = raw_string
-        self.index = 0
-        self.final_args = []
-        self.current_arg = []
-        self.expect_quote = None
+        self.text: str = raw_string
+        self.index: int = 0
+        self.final_args: typing.List[str] = []
+        self.current_arg: typing.List[str] = []
+        self.expect_quote: typing.Optional[str] = None
 
     def _next_str(self) -> str:
-        buff = []
-        previous = None
+        buff: typing.List[str] = []
+        previous: typing.Optional[str] = None
         while self.index < len(self.text):
             char = self.text[self.index]
             try:
@@ -120,14 +120,15 @@ class StringView:
             Tuple[ List[ :obj:`str` ], :obj:`str`]: The arguments extracted from the string, as well as any
                 remainder if ``max_parse`` was supplied.
         """
-        max_parse = max_parse if max_parse is not None else float("inf")
+        max_parse: typing.Union[int, float] = max_parse if max_parse is not None else float("inf")
 
-        finished = False
-        args_list = []
+        finished: bool = False
+        args_list: typing.List[str] = []
         while not finished and len(args_list) < max_parse:
             arg = self._next_str()
             if arg is not None:
                 args_list.append(arg)
             else:
-                finished = True
+                finished: bool = True
+
         return args_list, self.text[self.index :].strip()

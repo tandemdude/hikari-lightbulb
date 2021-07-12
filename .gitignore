@@ -39,3 +39,6 @@ testext/
 
 # Stupid OSX files
 .DS_Store
+
+# MyPy report
+mypy_report/

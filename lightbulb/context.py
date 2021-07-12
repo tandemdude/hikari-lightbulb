@@ -130,17 +130,17 @@ class Context:
     @property
     def user_mentions(self) -> typing.Collection[hikari.Snowflake]:
         """The users mentioned in the context message."""
-        return self._message.user_mentions
+        return self._message.mentions.users
 
     @property
     def role_mentions(self) -> typing.Collection[hikari.Snowflake]:
         """The roles mentioned in the context message."""
-        return self._message.role_mentions
+        return self._message.mentions.roles
 
     @property
     def channel_mentions(self) -> typing.Collection[hikari.Snowflake]:
         """The channels mentioned in the context message."""
-        return self._message.channel_mentions
+        return self._message.mentions.channels
 
     @property
     def attachments(self) -> typing.Sequence[hikari.Attachment]:
@@ -159,7 +159,7 @@ class Context:
         returns the raw prefix.
         """
 
-        def replace(match):
+        def replace(match: re.Match) -> str:
             user = self.bot.cache.get_user(hikari.Snowflake(match.group(1)))
             return f"@{user}" if user is not None else self.prefix
 

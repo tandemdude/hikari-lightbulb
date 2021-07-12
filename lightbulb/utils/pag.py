@@ -29,6 +29,11 @@ import hikari
 T = typing.TypeVar("T")
 
 
+class _Line(typing.Protocol):
+    def __str__(self) -> str:
+        ...
+
+
 class Paginator(abc.ABC, typing.Generic[T]):
     @abc.abstractmethod
     def __init__(
@@ -94,7 +99,7 @@ class Paginator(abc.ABC, typing.Generic[T]):
         for i, page in enumerate(self._pages, start=page_number_start):
             yield self._page_factory(i, page)
 
-    def add_line(self, line: typing.Any) -> None:
+    def add_line(self, line: _Line) -> None:
         """
         Add a line to the paginator.
 

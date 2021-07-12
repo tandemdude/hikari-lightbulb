@@ -323,7 +323,7 @@ class MissingRequiredAttachment(CheckFailure):
     attachment with the correct file extension.
     """
 
-    def __init__(self, text) -> None:
+    def __init__(self, text: str) -> None:
         self.text: str = text
         """The error text."""
 

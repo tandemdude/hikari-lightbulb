@@ -35,8 +35,8 @@ if typing.TYPE_CHECKING:
     from lightbulb import errors
 
 
-@attr.s(slots=True, weakref_slot=False)
 @hikari_base_events.requires_intents(hikari.Intents.DM_MESSAGES, hikari.Intents.GUILD_MESSAGES)
+@attr.s(slots=True, weakref_slot=False)
 class LightbulbEvent(hikari.Event, abc.ABC):
     """
     The base class for all lightbulb events. Every event dispatched by lightbulb
@@ -52,8 +52,8 @@ class LightbulbEvent(hikari.Event, abc.ABC):
         return self.app
 
 
-@attr.s(kw_only=True, slots=True, weakref_slot=False)
 @hikari_base_events.requires_intents(hikari.Intents.DM_MESSAGES, hikari.Intents.GUILD_MESSAGES)
+@attr.s(kw_only=True, slots=True, weakref_slot=False)
 class CommandErrorEvent(LightbulbEvent):
     """
     Event type to subscribe to for the processing of all command errors raised by the handler.
@@ -94,8 +94,8 @@ class CommandErrorEvent(LightbulbEvent):
         return self.exception.__traceback__
 
 
-@attr.s(kw_only=True, slots=True, weakref_slot=False)
 @hikari_base_events.requires_intents(hikari.Intents.DM_MESSAGES, hikari.Intents.GUILD_MESSAGES)
+@attr.s(kw_only=True, slots=True, weakref_slot=False)
 class CommandInvocationEvent(LightbulbEvent):
     """
     Event dispatched when a command is invoked, regardless of whether or not the checks
@@ -108,8 +108,8 @@ class CommandInvocationEvent(LightbulbEvent):
     """The context that this event was triggered for."""
 
 
-@attr.s(kw_only=True, slots=True, weakref_slot=False)
 @hikari_base_events.requires_intents(hikari.Intents.DM_MESSAGES, hikari.Intents.GUILD_MESSAGES)
+@attr.s(kw_only=True, slots=True, weakref_slot=False)
 class CommandCompletionEvent(LightbulbEvent):
     """
     Event type dispatched when a command invocation occurred and was completed successfully. This means

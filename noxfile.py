@@ -63,5 +63,5 @@ def sphinx(session):
 @nox.session(reuse_venv=True)
 def mypy(session):
     session.install("-Ur", "requirements.txt")
-    session.install("-U", "mypy")
+    session.install("-U", "mypy", "lxml")
     session.run("python", "-m", "mypy", "lightbulb", "--html-report", "mypy_report")

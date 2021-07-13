@@ -45,6 +45,15 @@ from lightbulb.utils import maybe_await
 
 _LOGGER = logging.getLogger("lightbulb")
 
+
+class LightbulbModuleT(typing.Protocol):
+    def load(self, bot: Bot) -> None:
+        ...
+
+    def unload(self, bot: Bot) -> None:
+        ...
+
+
 # XXX: can't we use `str.split()` here, which splits on all whitespace in the same way?
 ARG_SEP_REGEX = re.compile(r"(?:\s+|\n)")
 
@@ -372,6 +381,8 @@ class Bot(hikari.GatewayBot):
                 insensitive_commands=kwargs.get("insensitive_commands", False),
             )
 
+        func = typing.cast(commands.Group, func)
+
         if set(self._commands.keys()).intersection({func.name, *func._aliases}):
             raise AttributeError(f"Command {func.name} has name or alias already registered.")
 
@@ -380,7 +391,7 @@ class Bot(hikari.GatewayBot):
         for alias in func._aliases:
             self._commands[alias] = func
         _LOGGER.debug("new group registered: %s", func.name)
-        return self._commands[func.name]
+        return func
 
     def add_check(self, func: typing.Callable[[context_.Context], typing.Coroutine[None, None, bool]]) -> None:
         """
@@ -553,7 +564,7 @@ class Bot(hikari.GatewayBot):
         if extension in self.extensions:
             raise errors.ExtensionAlreadyLoaded(text=f"{extension} is already loaded.")
 
-        module = importlib.import_module(extension)
+        module = typing.cast(LightbulbModuleT, importlib.import_module(extension))
 
         if not hasattr(module, "load"):
             raise errors.ExtensionMissingLoad(text=f"{extension} is missing a load function")
@@ -596,7 +607,7 @@ class Bot(hikari.GatewayBot):
         if extension not in self.extensions:
             raise errors.ExtensionNotLoaded(text=f"{extension} is not loaded.")
 
-        module = importlib.import_module(extension)
+        module = typing.cast(LightbulbModuleT, importlib.import_module(extension))
 
         if not hasattr(module, "unload"):
             raise errors.ExtensionMissingUnload(text=f"{extension} is missing an unload function")
@@ -643,7 +654,7 @@ class Bot(hikari.GatewayBot):
                 yield from command.walk_commands()
 
     async def send_help(
-        self, context: context_.Context, obj: typing.Union[commands.Command, plugins.Plugin] = None
+        self, context: context_.Context, obj: typing.Optional[typing.Union[commands.Command, plugins.Plugin]] = None
     ) -> None:
         """
         Send help to the provided context to the specified object, or send the bot's help overview if
@@ -699,7 +710,7 @@ class Bot(hikari.GatewayBot):
             except Exception as ex:
                 error = errors.CheckFailure(str(ex))
                 error.__cause__ = ex
-                failed_checks.append(ex)
+                failed_checks.append(error)
 
         if len(failed_checks) > 1:
             raise errors.CheckFailure("Multiple checks failed: " + ", ".join(str(ex) for ex in failed_checks))
@@ -746,7 +757,7 @@ class Bot(hikari.GatewayBot):
                 break
         return prefix
 
-    def _validate_command_exists(self, invoked_with) -> commands.Command:
+    def _validate_command_exists(self, invoked_with: str) -> commands.Command:
         if (command := self.get_command(invoked_with)) is not None:
             return command
         raise errors.CommandNotFound(invoked_with)
@@ -837,6 +848,9 @@ class Bot(hikari.GatewayBot):
         Returns:
             ``None``
         """
+        if event.message.content is None:
+            return
+
         prefix = await self._resolve_prefix(event.message)
         if prefix is None:
             return

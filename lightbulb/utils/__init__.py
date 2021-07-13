@@ -28,8 +28,13 @@ from lightbulb.utils.search import *
 
 __all__: typing.Final[typing.List[str]] = [*nav.__all__, *pag.__all__, *search.__all__, "maybe_await"]
 
+T_in = typing.TypeVar("T_in")
+T = typing.TypeVar("T")
 
-async def maybe_await(callable_, *args, **kwargs):
+
+async def maybe_await(
+    callable_: typing.Callable[[T_in], typing.Union[T, typing.Coroutine[T, None, None]]], *args: T_in, **kwargs: T_in
+) -> T:
     result = callable_(*args, **kwargs)
     if inspect.iscoroutine(result):
         result = await result

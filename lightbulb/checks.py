@@ -53,6 +53,8 @@ if typing.TYPE_CHECKING:
     from hikari import snowflakes
 
 T_inv = typing.TypeVar("T_inv", bound=commands.Command)
+command_coro_T = typing.Callable[[context.Context], typing.Coroutine[None, None, None]]
+
 
 _CHECK_DECORATOR_BELOW_COMMAND_DECORATOR_MESSAGE = """Check decorators MUST be above the commands decorator in order for them to work.
 
@@ -74,7 +76,9 @@ See https://hikari-lightbulb.readthedocs.io/en/latest/api-reference.html#module-
 """
 
 
-def _check_check_decorator_above_commands_decorator(func_or_command) -> None:
+def _check_check_decorator_above_commands_decorator(
+    func_or_command: typing.Union[command_coro_T, commands.Command]
+) -> None:
     if inspect.isfunction(func_or_command) or inspect.ismethod(func_or_command):
         raise SyntaxError(_CHECK_DECORATOR_BELOW_COMMAND_DECORATOR_MESSAGE)
 
@@ -124,11 +128,18 @@ async def _nsfw_channel_only(ctx: context.Context) -> bool:
     return True
 
 
-def _role_check(member_roles: typing.Sequence[hikari.Snowflake], *, roles: typing.Sequence[int], func) -> bool:
+def _role_check(
+    member_roles: typing.Sequence[hikari.Snowflake],
+    *,
+    roles: typing.Sequence[int],
+    func: typing.Callable[[typing.Iterable[bool]], bool],
+) -> bool:
     return func(r in member_roles for r in roles)
 
 
-async def _has_roles(ctx: context.Context, *, role_check):
+async def _has_roles(
+    ctx: context.Context, *, role_check: typing.Callable[[typing.Iterable[hikari.Snowflake]], bool]
+) -> bool:
     await _guild_only(ctx)
     if not role_check(ctx.member.role_ids):
         raise errors.MissingRequiredRole("You are missing one or more roles required in order to run this command.")
@@ -149,7 +160,7 @@ def _get_missing_perms(permissions: hikari.Permissions, roles: typing.Sequence[h
     return missing_perms
 
 
-async def _has_guild_permissions(ctx: context.Context, *, permissions: hikari.Permissions):
+async def _has_guild_permissions(ctx: context.Context, *, permissions: hikari.Permissions) -> bool:
     if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
         raise hikari.MissingIntentError(hikari.Intents.GUILDS)
 
@@ -170,7 +181,7 @@ async def _has_guild_permissions(ctx: context.Context, *, permissions: hikari.Pe
     return True
 
 
-async def _bot_has_guild_permissions(ctx: context.Context, *, permissions: hikari.Permissions):
+async def _bot_has_guild_permissions(ctx: context.Context, *, permissions: hikari.Permissions) -> bool:
     if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
         raise hikari.MissingIntentError(hikari.Intents.GUILDS)
 

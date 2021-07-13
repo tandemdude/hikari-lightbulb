@@ -45,14 +45,7 @@ from lightbulb.utils import maybe_await
 
 _LOGGER = logging.getLogger("lightbulb")
 
-
-class LightbulbModuleT(typing.Protocol):
-    def load(self, bot: Bot) -> None:
-        ...
-
-    def unload(self, bot: Bot) -> None:
-        ...
-
+T = typing.TypeVar("T")
 
 # XXX: can't we use `str.split()` here, which splits on all whitespace in the same way?
 ARG_SEP_REGEX = re.compile(r"(?:\s+|\n)")
@@ -86,7 +79,7 @@ def when_mentioned_or(prefix_provider):
             bot = lightbulb.Bot(prefix=lightbulb.when_mentioned_or(get_prefix), ...)
     """
 
-    async def get_prefixes(bot, message):
+    async def get_prefixes(bot: Bot, message: hikari.Message) -> typing.List[str]:
         mentions = [f"<@{bot.me.id}> ", f"<@!{bot.me.id}> "]
 
         if callable(prefix_provider):
@@ -110,7 +103,7 @@ def when_mentioned_or(prefix_provider):
 
 # Prefixes may be a string or iterable of strings. A string is a sequence of strings too by definition,
 # so this type hint _is_ correct.
-def _return_prefix(_: typing.Any, __: typing.Any, *, prefixes: typing.Iterable[str]) -> typing.Sequence[str]:
+def _return_prefix(_: Bot, __: hikari.Message, *, prefixes: typing.Iterable[str]) -> typing.Sequence[str]:
     return prefixes
 
 
@@ -287,7 +280,11 @@ class Bot(hikari.GatewayBot):
 
         return decorate
 
-    def add_command(self, func: typing.Union[typing.Callable, commands.Command], **kwargs) -> commands.Command:
+    def add_command(
+        self,
+        func: typing.Union[typing.Callable[[context_.Context], typing.Coroutine[None, None, None]], commands.Command],
+        **kwargs: typing.Any,
+    ) -> commands.Command:
         """
         Adds a command to the bot. Similar to the ``command`` decorator.
 
@@ -331,6 +328,8 @@ class Bot(hikari.GatewayBot):
                 kwargs.get("hidden", False),
             )
 
+        func = typing.cast(commands.Command, func)
+
         if self.insensitive_commands:
             if set([name.casefold() for name in self._commands.keys()]).intersection(
                 {func.name.casefold(), *[a.casefold() for a in func._aliases]}
@@ -345,9 +344,13 @@ class Bot(hikari.GatewayBot):
         for alias in func._aliases:
             self._commands[alias] = func
         _LOGGER.debug("new command registered: %s", func.name)
-        return self._commands[func.name]
+        return func
 
-    def add_group(self, func: typing.Union[typing.Callable, commands.Group], **kwargs) -> commands.Group:
+    def add_group(
+        self,
+        func: typing.Union[typing.Callable[[context_.Context], typing.Coroutine[None, None, None]], commands.Group],
+        **kwargs: typing.Any,
+    ) -> commands.Group:
         """
         Adds a command group to the bot. Similar to the ``group`` decorator.
 
@@ -564,12 +567,12 @@ class Bot(hikari.GatewayBot):
         if extension in self.extensions:
             raise errors.ExtensionAlreadyLoaded(text=f"{extension} is already loaded.")
 
-        module = typing.cast(LightbulbModuleT, importlib.import_module(extension))
+        module = importlib.import_module(extension)
 
         if not hasattr(module, "load"):
             raise errors.ExtensionMissingLoad(text=f"{extension} is missing a load function")
         else:
-            module.load(self)
+            getattr(module, "load")(self)
             self.extensions.append(extension)
             _LOGGER.debug("new extension loaded: %s", extension)
 
@@ -607,12 +610,12 @@ class Bot(hikari.GatewayBot):
         if extension not in self.extensions:
             raise errors.ExtensionNotLoaded(text=f"{extension} is not loaded.")
 
-        module = typing.cast(LightbulbModuleT, importlib.import_module(extension))
+        module = importlib.import_module(extension)
 
         if not hasattr(module, "unload"):
             raise errors.ExtensionMissingUnload(text=f"{extension} is missing an unload function")
         else:
-            module.unload(self)
+            getattr(module, "unload")(self)
             self.extensions.remove(extension)
             del sys.modules[extension]
             _LOGGER.debug("extension unloaded: %s", extension)

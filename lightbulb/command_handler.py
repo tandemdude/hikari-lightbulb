@@ -132,7 +132,7 @@ class Bot(hikari.GatewayBot):
         help_class (:obj:`~.help.HelpCommand`): The **uninstantiated** class the bot should use for it's help command.
             Defaults to :obj:`~.help.HelpCommand`. Any class passed should always be this class or subclass of
             this class.
-        **kwargs: Other parameters passed to the :class:`hikari.impl.bot.BotAppImpl` constructor.
+        **kwargs: Other parameters passed to the :class:`hikari.impl.bot.GatewayBot` constructor.
     """
 
     def __init__(

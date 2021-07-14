@@ -272,7 +272,7 @@ def cooldown(
     bucket: typing.Type[Bucket],
     *,
     manager_cls: typing.Type[CooldownManager] = CooldownManager,
-):
+) -> typing.Callable[[commands.Command], commands.Command]:
     """
     Decorator which adds a cooldown to a command.
     Args:
@@ -304,7 +304,7 @@ def dynamic_cooldown(
     callback: typing.Callable[[context_.Context], Bucket],
     *,
     manager_cls: typing.Type[CooldownManager] = CooldownManager,
-):
+) -> typing.Callable[[commands.Command], commands.Command]:
     """
     Decorator which adds a more customized cooldown to a command.
     Args:

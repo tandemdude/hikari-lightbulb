@@ -98,10 +98,10 @@ from lightbulb import utils
 T = typing.TypeVar("T")
 T_co = typing.TypeVar("T_co", covariant=True)
 
-USER_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<@!?(\d+)>")
-CHANNEL_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<#(\d+)>")
-ROLE_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<@&(\d+)>")
-EMOJI_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<a?:\w+:(\d+)>")
+USER_MENTION_REGEX: typing.Final[re.Pattern[str]] = re.compile(r"<@!?(\d+)>")
+CHANNEL_MENTION_REGEX: typing.Final[re.Pattern[str]] = re.compile(r"<#(\d+)>")
+ROLE_MENTION_REGEX: typing.Final[re.Pattern[str]] = re.compile(r"<@&(\d+)>")
+EMOJI_MENTION_REGEX: typing.Final[re.Pattern[str]] = re.compile(r"<a?:\w+:(\d+)>")
 
 
 class WrappedArg(collections.UserString):
@@ -126,11 +126,11 @@ class WrappedArg(collections.UserString):
         super().__init__(seq)
         self.context: context_.Context = context
 
-    def __iter__(self):
+    def __iter__(self) -> typing.Iterable[str]:
         return iter(self.data)
 
 
-def _resolve_id_from_arg(arg_string: str, regex: typing.Pattern) -> hikari.Snowflake:
+def _resolve_id_from_arg(arg_string: str, regex: typing.Pattern[str]) -> hikari.Snowflake:
     if match := regex.match(arg_string):
         arg_string = match.group(1)
     return hikari.Snowflake(arg_string)
@@ -263,16 +263,6 @@ async def guild_voice_channel_converter(arg: WrappedArg) -> hikari.GuildVoiceCha
     if not isinstance(channel, hikari.GuildVoiceChannel):
         raise errors.ConverterFailure
     return channel
-
-
-# Deprecated, as this may change in the future to not just be a GuildVoiceChannel should Discord add new features,
-# so this shouldn't be used as it may cause breaking changes later.
-def voice_channel_converter(arg: WrappedArg) -> typing.Coroutine[typing.Any, typing.Any, hikari.GuildVoiceChannel]:
-    warnings.warn(
-        "voice_channel_converter is deprecated, use guild_voice_channel_converter instead",
-        category=DeprecationWarning,
-    )
-    return guild_voice_channel_converter(arg)
 
 
 async def category_converter(arg: WrappedArg) -> hikari.GuildCategory:
@@ -603,7 +593,6 @@ if typing.TYPE_CHECKING:
     member_converter = hikari.Member
     text_channel_converter = hikari.TextChannel
     guild_voice_channel_converter = hikari.GuildVoiceChannel
-    voice_channel_converter = guild_voice_channel_converter
     category_converter = hikari.GuildCategory
     role_converter = hikari.Role
     emoji_converter = hikari.Emoji

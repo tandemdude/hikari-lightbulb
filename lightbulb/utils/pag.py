@@ -260,16 +260,21 @@ class EmbedPaginator(Paginator[hikari.Embed]):
         suffix: str = "",
         line_separator: str = "\n",
     ) -> None:
+        def default_embed_factory(index: int, content: str) -> hikari.Embed:
+            return hikari.Embed(description=content).set_footer(text=f"Page {index}")
+
         super().__init__(
             max_lines=max_lines,
             max_chars=max_chars,
             prefix=prefix,
             suffix=suffix,
             line_separator=line_separator,
-            page_factory=lambda i, s: hikari.Embed(description=s).set_footer(text=f"Page {i}"),
+            page_factory=default_embed_factory,
         )
 
-    def embed_factory(self):
+    def embed_factory(
+        self,
+    ) -> typing.Callable[[typing.Callable[[int, str], hikari.Embed]], typing.Callable[[int, str], hikari.Embed]]:
         """
         A decorator to mark a function as the paginator's embed factory. The page index and page content
         will be passed to the function when a new page is to be created.
@@ -294,7 +299,7 @@ class EmbedPaginator(Paginator[hikari.Embed]):
             :meth:`set_embed_factory`
         """
 
-        def decorate(func):
+        def decorate(func: typing.Callable[[int, str], hikari.Embed]) -> typing.Callable[[int, str], hikari.Embed]:
             self.set_embed_factory(func)
             return func
 

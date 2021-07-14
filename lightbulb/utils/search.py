@@ -23,9 +23,15 @@ import typing
 from operator import attrgetter
 
 T = typing.TypeVar("T")
+T_out = typing.TypeVar("T_out")
 
 
-def get(sequence: typing.Iterable[T], **attrs) -> typing.Optional[T]:
+class SearchableT(typing.Protocol):
+    def __eq__(self, other: SearchableT) -> bool:
+        ...
+
+
+def get(sequence: typing.Iterable[T], **attrs: SearchableT) -> typing.Optional[T]:
     """
     Get the first item from an iterable that matches all the parameters
     specified, or return ``None`` if no matching item was found.
@@ -47,7 +53,9 @@ def get(sequence: typing.Iterable[T], **attrs) -> typing.Optional[T]:
     See Also:
         :obj:`~find`
     """
-    flattened = [(attrgetter(attr), value) for attr, value in attrs.items()]
+    flattened: typing.List[typing.Tuple[typing.Callable[[SearchableT], T_out], SearchableT]] = [
+        (attrgetter(attr), value) for attr, value in attrs.items()
+    ]
 
     for item in sequence:
         if all([getter(item) == value for getter, value in flattened]):

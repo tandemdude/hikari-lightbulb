@@ -42,6 +42,8 @@ if typing.TYPE_CHECKING:
     from lightbulb import commands
     from lightbulb import context as context_
 
+    DynamicCallback = typing.Callable[[context_.Context], typing.Optional["Bucket"]]
+
 
 class CooldownStatus(int, enums.Enum):
     """The status of a cooldown bucket"""
@@ -191,7 +193,7 @@ class CooldownManager:
         ...
 
     @typing.overload
-    def __init__(self, *, callback: typing.Callable[[context_.Context], Bucket]) -> None:
+    def __init__(self, *, callback: DynamicCallback) -> None:
         ...
 
     def __init__(
@@ -200,7 +202,7 @@ class CooldownManager:
         usages: typing.Optional[int] = None,
         bucket: typing.Optional[typing.Type[Bucket]] = None,
         *,
-        callback: typing.Optional[typing.Callable[[context_.Context], Bucket]] = None,
+        callback: typing.Optional[DynamicCallback] = None,
     ) -> None:
         if callback is not None:
             self.callback = callback
@@ -213,11 +215,13 @@ class CooldownManager:
         self.cooldowns: typing.MutableMapping[typing.Hashable, Bucket] = {}
         """Mapping of a hashable to a :obj:`~Bucket` representing the currently stored cooldowns."""
 
-    async def _get_bucket(self, context: context_.Context) -> Bucket:
+    async def _get_bucket(self, context: context_.Context) -> typing.Optional[Bucket]:
         if not hasattr(self, "callback"):
             return self.bucket(self.length, self.usages)
 
         bucket = await utils.maybe_await(self.callback, context)
+        if bucket is None:
+            return
 
         if not isinstance(bucket, Bucket):
             raise TypeError("Bucket should derive the Bucket class")
@@ -236,6 +240,9 @@ class CooldownManager:
             ``None``
         """
         bucket = await self._get_bucket(context)
+        if bucket is None:
+            return
+
         cooldown_hash = bucket.extract_hash(context)
         cooldown_bucket = self.cooldowns.get(cooldown_hash)
         if cooldown_bucket is not None:
@@ -301,7 +308,7 @@ def cooldown(
 
 
 def dynamic_cooldown(
-    callback: typing.Callable[[context_.Context], Bucket],
+    callback: DynamicCallback,
     *,
     manager_cls: typing.Type[CooldownManager] = CooldownManager,
 ):

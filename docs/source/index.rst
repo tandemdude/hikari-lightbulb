@@ -48,6 +48,8 @@ already exists for your bug or feature.
 
 - `norizon#2612 <https://github.com/norinorin>`_
 
+- `Tmpod#2525 <https://tmpod.dev>`_
+
 **Index:**
 
 .. toctree::

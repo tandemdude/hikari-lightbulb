@@ -42,7 +42,20 @@ if typing.TYPE_CHECKING:
     from lightbulb import commands
     from lightbulb import context as context_
 
-    DynamicCallback = typing.Callable[[context_.Context], typing.Optional["Bucket"]]
+    BucketOrNoBucketOption = typing.Union["Bucket", "NoBucketOption"]
+    DynamicCallback = typing.Callable[[context_.Context], BucketOrNoBucketOption]
+
+
+class NoBucketOption(int, enums.Enum):
+    """
+    What to do when a dynamic cooldown callback should not return a new bucket.
+    This is useful in case you want to bypass cooldowns or reset them in certain conditions.
+    """
+
+    RESET = 0
+    """Resets all existing cooldowns"""
+    PASS = 1
+    """Simply bypasses all existing cooldowns, but lets them remain active"""
 
 
 class CooldownStatus(int, enums.Enum):
@@ -215,15 +228,13 @@ class CooldownManager:
         self.cooldowns: typing.MutableMapping[typing.Hashable, Bucket] = {}
         """Mapping of a hashable to a :obj:`~Bucket` representing the currently stored cooldowns."""
 
-    async def _get_bucket(self, context: context_.Context) -> typing.Optional[Bucket]:
+    async def _get_bucket(self, context: context_.Context) -> BucketOrNoBucketOption:
         if not hasattr(self, "callback"):
             return self.bucket(self.length, self.usages)
 
         bucket = await utils.maybe_await(self.callback, context)
-        if bucket is None:
-            return
 
-        if not isinstance(bucket, Bucket):
+        if not isinstance(bucket, Bucket) and not isinstance(bucket, NoBucketOption):
             raise TypeError("Bucket should derive the Bucket class")
 
         return bucket
@@ -240,7 +251,9 @@ class CooldownManager:
             ``None``
         """
         bucket = await self._get_bucket(context)
-        if bucket is None:
+        if isinstance(bucket, NoBucketOption):
+            if bucket == NoBucketOption.RESET:
+                self.reset_cooldown(context)
             return
 
         cooldown_hash = bucket.extract_hash(context)

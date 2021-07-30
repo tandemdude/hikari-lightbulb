@@ -62,7 +62,7 @@ class StringView:
         self.current_arg: typing.List[str] = []
         self.expect_quote: typing.Optional[str] = None
 
-    def _next_str(self) -> str:
+    def _next_str(self) -> typing.Optional[str]:
         buff: typing.List[str] = []
         previous: typing.Optional[str] = None
         while self.index < len(self.text):
@@ -103,6 +103,8 @@ class StringView:
         if buff:
             return "".join(buff)
 
+        return None
+
     def deconstruct_str(self, *, max_parse: typing.Optional[int] = None) -> typing.Tuple[typing.List[str], str]:
         """
         Method called to deconstruct the string passed in at instantiation into
@@ -129,6 +131,6 @@ class StringView:
             if arg is not None:
                 args_list.append(arg)
             else:
-                finished: bool = True
+                finished = True
 
         return args_list, self.text[self.index :].strip()

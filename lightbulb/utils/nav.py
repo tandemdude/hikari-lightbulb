@@ -53,7 +53,9 @@ class NavButton:
     def __init__(
         self,
         emoji: typing.Union[str, hikari.Emoji],
-        callback: typing.Callable[[Navigator, hikari.ReactionAddEvent], typing.Coroutine[typing.Any, typing.Any, None]],
+        callback: typing.Callable[
+            [Navigator[typing.Any], hikari.ReactionAddEvent], typing.Coroutine[typing.Any, typing.Any, None]
+        ],
     ) -> None:
         if isinstance(emoji, str):
             emoji = hikari.Emoji.parse(emoji)
@@ -72,7 +74,9 @@ class NavButton:
         """
         return event.emoji.mention == self.emoji.mention
 
-    def press(self, nav: Navigator, event: hikari.ReactionAddEvent) -> typing.Coroutine[typing.Any, typing.Any, None]:
+    def press(
+        self, nav: Navigator[typing.Any], event: hikari.ReactionAddEvent
+    ) -> typing.Coroutine[typing.Any, typing.Any, None]:
         """
         Call the button's callback coroutine and return the awaitable.
 
@@ -82,10 +86,7 @@ class NavButton:
         return self.callback(nav, event)
 
 
-T = typing.TypeVar("T")
-
-
-async def next_page(nav: Navigator, _) -> None:
+async def next_page(nav: Navigator[typing.Any], _: hikari.ReactionEvent) -> None:
     """
     :obj:`NavButton` callback to make the navigator go to the next page.
     """
@@ -93,7 +94,7 @@ async def next_page(nav: Navigator, _) -> None:
     nav.current_page_index %= len(nav.pages)
 
 
-async def prev_page(nav: Navigator, _) -> None:
+async def prev_page(nav: Navigator[typing.Any], _: hikari.ReactionEvent) -> None:
     """
     :obj:`NavButton` callback to make the navigator go to the previous page.
     """
@@ -102,27 +103,37 @@ async def prev_page(nav: Navigator, _) -> None:
         nav.current_page_index = len(nav.pages) - 1
 
 
-async def first_page(nav: Navigator, _) -> None:
+async def first_page(nav: Navigator[typing.Any], _: hikari.ReactionEvent) -> None:
     """
     :obj:`NavButton` callback to make the navigator go to the first page.
     """
     nav.current_page_index = 0
 
 
-async def last_page(nav: Navigator, _) -> None:
+async def last_page(nav: Navigator[typing.Any], _: hikari.ReactionEvent) -> None:
     """
     :obj:`NavButton` callback to make the navigator go to the last page.
     """
     nav.current_page_index = len(nav.pages) - 1
 
 
-async def stop(nav: Navigator, _) -> None:
+async def stop(nav: Navigator[typing.Any], event: hikari.ReactionEvent) -> None:
     """
     :obj:`NavButton` callback to make the navigator stop navigation.
     """
-    nav._msg.app.unsubscribe(hikari.ReactionAddEvent, nav._process_reaction_add)
+    # FIXME: Would it be better to pass certain arguments to the buttons instead of accessing
+    # private values
+
+    # We will always know the context and message by now
+    assert nav._context is not None, "context is not set"
+    assert nav._msg is not None, "message is not set"
+
+    nav._context.bot.unsubscribe(hikari.ReactionAddEvent, nav._process_reaction_add)
     await nav._msg.delete()
     nav._msg = None
+
+
+T = typing.TypeVar("T")
 
 
 class Navigator(abc.ABC, typing.Generic[T]):
@@ -141,16 +152,21 @@ class Navigator(abc.ABC, typing.Generic[T]):
             if any(not isinstance(btn, NavButton) for btn in buttons):
                 raise TypeError("Buttons must be an instance of NavButton")
 
-        if len(self.pages) == 1 and not buttons:
+        self.buttons: typing.Sequence[NavButton]
+        if buttons:
+            self.buttons = buttons
+
+        elif len(self.pages) == 1:
             self.buttons = [NavButton("\N{BLACK SQUARE FOR STOP}\N{VARIATION SELECTOR-16}", stop)]
+
         else:
-            self.buttons: typing.Sequence[NavButton] = buttons if buttons is not None else self.create_default_buttons()
+            self.buttons = self.create_default_buttons()
 
         self._timeout: float = timeout
         self.current_page_index: int = 0
         self._context: typing.Optional[Context] = None
         self._msg: typing.Optional[hikari.Message] = None
-        self._timeout_task = None
+        self._timeout_task: typing.Optional[asyncio.Task[None]] = None
 
     @abc.abstractmethod
     async def _edit_msg(self, message: hikari.Message, page: T) -> hikari.Message:
@@ -171,6 +187,9 @@ class Navigator(abc.ABC, typing.Generic[T]):
         return buttons
 
     async def _process_reaction_add(self, event: hikari.ReactionAddEvent) -> None:
+        assert self._context is not None, "context is not set"
+        assert self._msg is not None, "message is not set"
+
         if (
             event.user_id != self._context.message.author.id
             or event.channel_id != self._context.channel_id
@@ -189,14 +208,17 @@ class Navigator(abc.ABC, typing.Generic[T]):
                         pass
                 break
 
-    async def _remove_reaction_listener(self):
+    async def _remove_reaction_listener(self) -> None:
+        assert self._context is not None, "context is not set"
+        assert self._msg is not None, "message is not set"
+
         self._context.bot.unsubscribe(hikari.ReactionAddEvent, self._process_reaction_add)
         try:
             await self._msg.remove_all_reactions()
         except (hikari.ForbiddenError, hikari.NotFoundError):
             pass
 
-    async def _timeout_coro(self):
+    async def _timeout_coro(self) -> None:
         try:
             await asyncio.sleep(self._timeout)
             await self._remove_reaction_listener()
@@ -281,6 +303,7 @@ class StringNavigator(Navigator[str]):
         return await message.edit(page)
 
     async def _send_initial_msg(self, page: str) -> hikari.Message:
+        assert self._context is not None, "context is not set"
         return await self._context.respond(page)
 
 
@@ -305,4 +328,5 @@ class EmbedNavigator(Navigator[hikari.Embed]):
         return await message.edit(embed=page)
 
     async def _send_initial_msg(self, page: hikari.Embed) -> hikari.Message:
+        assert self._context is not None, "context is not set"
         return await self._context.respond(embed=page)

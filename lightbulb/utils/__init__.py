@@ -16,26 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 
-import inspect
-import typing
-
-from lightbulb.utils import nav
-from lightbulb.utils import pag
-from lightbulb.utils import search
+from lightbulb.utils.aio import *
 from lightbulb.utils.nav import *
 from lightbulb.utils.pag import *
 from lightbulb.utils.search import *
-
-__all__: typing.Final[typing.List[str]] = [*nav.__all__, *pag.__all__, *search.__all__, "maybe_await"]
-
-T_in = typing.TypeVar("T_in")
-T = typing.TypeVar("T")
-
-
-async def maybe_await(
-    callable_: typing.Callable[[T_in], typing.Union[T, typing.Coroutine[T, None, None]]], *args: T_in, **kwargs: T_in
-) -> T:
-    result = callable_(*args, **kwargs)
-    if inspect.iscoroutine(result):
-        result = await result
-    return result

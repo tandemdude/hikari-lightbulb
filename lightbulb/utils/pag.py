@@ -34,8 +34,12 @@ class _Line(typing.Protocol):
         ...
 
 
-class Paginator(abc.ABC, typing.Generic[T]):
-    @abc.abstractmethod
+def _default_page_factory(num: int, contents: str) -> T:
+    contents = typing.cast(T, contents)
+    return contents
+
+
+class Paginator(typing.Generic[T]):
     def __init__(
         self,
         *,
@@ -44,7 +48,7 @@ class Paginator(abc.ABC, typing.Generic[T]):
         prefix: str = "",
         suffix: str = "",
         line_separator: str = "\n",
-        page_factory: typing.Callable[[int, str], T] = lambda i, s: s,
+        page_factory: typing.Callable[[int, str], T] = _default_page_factory,
     ) -> None:
         self._page_prefix: str = prefix
         self._page_suffix: str = suffix
@@ -66,10 +70,8 @@ class Paginator(abc.ABC, typing.Generic[T]):
         if max_chars < min_total_len:
             raise ValueError(f"This configuration requires at least {min_total_len} characters per page.")
 
-        self._max_total_chars = max_chars
-        self._max_total_lines = max_lines if max_lines is not None else float("inf")
         self._max_content_chars = max_chars - prefix_len
-        self._max_content_lines = max_lines - extra_lines if max_lines is not None else float("inf")
+        self._max_content_lines = max_lines - extra_lines if max_lines is not None else None
         self._line_separator = line_separator
         self._next_page: io.StringIO = io.StringIO()
         self._pages: typing.List[str] = []
@@ -118,7 +120,7 @@ class Paginator(abc.ABC, typing.Generic[T]):
     def _add_one_line(self, line: str) -> None:
         existing_chars, existing_lines = self._sizes()
         remaining_chars = self._max_content_chars - existing_chars
-        remaining_lines = self._max_content_lines - existing_lines
+        remaining_lines = self._max_content_lines - existing_lines if self._max_content_lines else float("inf")
         this_char_count = len(line)
 
         if not self._next_page.tell():

@@ -36,7 +36,7 @@ import typing
 from hikari.internal import enums
 
 from lightbulb import errors
-from lightbulb import utils
+from lightbulb.utils import aio
 
 if typing.TYPE_CHECKING:
     from lightbulb import commands
@@ -73,7 +73,7 @@ class Bucket(abc.ABC):
         self.commands_run: int = 0
         """Commands run for this bucket since it was created."""
         self.activated = False
-        self.start_time: typing.Optional[float] = None
+        self.start_time: float = float("nan")
         """The start time of the bucket cooldown. This is relative to :meth:`time.perf_counter`."""
 
     @classmethod
@@ -121,7 +121,7 @@ class Bucket(abc.ABC):
         """
         Whether or not the cooldown represented by the bucket has expired.
         """
-        if self.start_time is not None:
+        if self.start_time != float("nan"):
             return time.perf_counter() >= (self.start_time + self.length)
         return True
 
@@ -217,7 +217,7 @@ class CooldownManager:
         if not hasattr(self, "callback"):
             return self.bucket(self.length, self.usages)
 
-        bucket = await utils.maybe_await(self.callback, context)
+        bucket = await aio.maybe_await(self.callback, context)
 
         if not isinstance(bucket, Bucket):
             raise TypeError("Bucket should derive the Bucket class")
@@ -242,6 +242,8 @@ class CooldownManager:
             cooldown_status = cooldown_bucket.acquire()
             if cooldown_status == CooldownStatus.ACTIVE:
                 # Cooldown has been activated
+                #
+                # cooldown_bucket will never be float("nan") here
                 raise errors.CommandIsOnCooldown(
                     "This command is on cooldown",
                     context.command,

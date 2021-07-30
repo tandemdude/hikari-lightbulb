@@ -20,7 +20,6 @@ from __future__ import annotations
 __all__: typing.Final[typing.List[str]] = ["Context"]
 
 import datetime
-import functools
 import re
 import typing
 
@@ -101,7 +100,7 @@ class Context:
         return self._message.channel_id
 
     @property
-    def content(self) -> str:
+    def content(self) -> typing.Optional[str]:
         """Raw content of the invocation message."""
         return self._message.content
 
@@ -125,20 +124,20 @@ class Context:
         """Optional timestamp of the previous edit of the context message."""
         return self._message.edited_timestamp
 
-    # XXX: these are at the time of writing typing.Sequence objects, but will
-    # be refactored to use typing.AbstractSet as part of https://github.com/nekokatt/hikari/issues/273.
     @property
-    def user_mentions(self) -> typing.Collection[hikari.Snowflake]:
+    def user_mentions(self) -> hikari.UndefinedOr[typing.Mapping[hikari.Snowflake, hikari.User]]:
         """The users mentioned in the context message."""
         return self._message.mentions.users
 
+    # XXX: Might want to rename this to a function as well as all the other cache calls to
+    # keep consistent with hikari
     @property
-    def role_mentions(self) -> typing.Collection[hikari.Snowflake]:
+    def role_mentions(self) -> hikari.UndefinedOr[typing.Mapping[hikari.Snowflake, hikari.Role]]:
         """The roles mentioned in the context message."""
-        return self._message.mentions.roles
+        return self._message.mentions.get_roles()
 
     @property
-    def channel_mentions(self) -> typing.Collection[hikari.Snowflake]:
+    def channel_mentions(self) -> hikari.UndefinedOr[typing.Mapping[hikari.Snowflake, hikari.PartialChannel]]:
         """The channels mentioned in the context message."""
         return self._message.mentions.channels
 
@@ -159,7 +158,7 @@ class Context:
         returns the raw prefix.
         """
 
-        def replace(match: re.Match) -> str:
+        def replace(match: typing.Match[str]) -> str:
             user = self.bot.cache.get_user(hikari.Snowflake(match.group(1)))
             return f"@{user}" if user is not None else self.prefix
 
@@ -178,19 +177,24 @@ class Context:
         return None
 
     @property
-    def channel(self) -> typing.Optional[hikari.TextChannel]:
+    def channel(self) -> typing.Optional[hikari.TextableChannel]:
         """
-        The cached :obj:`hikari.TextChannel` instance for the context's channel ID.
+        The cached :obj:`hikari.TextableChannel` instance for the context's channel ID.
 
-        This will be None if the bot is stateless, the channel is not found in the cache,
-        or the context is for a command run in DMs.
+        This will be None if the bot is stateless or the channel is not found in the cache..
         """
         if self.guild_id is not None:
-            return self.bot.cache.get_guild_channel(self.channel_id)
-        return None
+            channel = self.bot.cache.get_guild_channel(self.channel_id)
 
-    @functools.wraps(hikari.Message.respond)
-    async def respond(self, *args, **kwargs) -> hikari.Message:
+        # XXX: Add to hikari before merging this
+        # This is not existent for now, but will be in the future
+        # else:
+        # channel = self.bot.cache.get_dm_channel(self.channel_id)
+
+        assert channel is None or isinstance(channel, hikari.TextableChannel)
+        return channel
+
+    async def respond(self, *args: typing.Any, **kwargs: typing.Any) -> hikari.Message:
         """
         Alias for ``ctx.message.respond(...)``.
         Replies to the message in the current context.
@@ -201,13 +205,12 @@ class Context:
         """
         return await self.message.respond(*args, **kwargs)
 
-    async def send_help(self, obj: typing.Union[commands.Command, plugins.Plugin] = None) -> None:
+    async def send_help(self, obj: typing.Union[commands.Command, plugins.Plugin, None] = None) -> None:
         """
         Send help for the given object or the bot's help overview if no object
         is supplied to the current context.
 
-        Args:
-            obj (Union[ :obj:`~.commands.Command`, :obj:`~.plugins.Plugin` ]): The object to send help for.
+        Args: obj (Union[ :obj:`~.commands.Command`, :obj:`~.plugins.Plugin`, `:obj:`~None]) The object to send help for.
                 Defaults to ``None``.
 
         Returns:

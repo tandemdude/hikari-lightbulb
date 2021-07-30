@@ -335,12 +335,12 @@ class CommandInvocationError(CommandError):
     This effectively acts as a wrapper for the original exception for easier handling in an error handler.
     """
 
-    def __init__(self, text: str, original: Exception) -> None:
-        self.text: str = text
+    def __init__(self, text: str, original: BaseException) -> None:
+        self.text = text
         """The error text."""
-        self.original: Exception = original
+        self.original = original
         """The original exception that caused this to be raised."""
 
     @property
-    def __cause__(self) -> Exception:
+    def __cause__(self) -> typing.Optional[BaseException]:
         return self.original

@@ -91,6 +91,7 @@ class CommandErrorEvent(LightbulbEvent):
     @property
     def traceback(self) -> types.TracebackType:
         """The traceback for this event's exception."""
+        assert self.exception.__traceback__ is not None
         return self.exception.__traceback__
 
 

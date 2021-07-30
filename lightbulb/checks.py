@@ -147,11 +147,12 @@ async def _has_roles(
 
 
 def _get_missing_perms(permissions: hikari.Permissions, roles: typing.Sequence[hikari.Role]) -> hikari.Permissions:
-    missing_perms = hikari.Permissions.NONE
     user_permissions = set([role.permissions for role in roles])
 
     if hikari.Permissions.ADMINISTRATOR in user_permissions:
         return hikari.Permissions.NONE
+
+    missing_perms = hikari.Permissions.NONE
 
     for required_permission in permissions:
         if required_permission not in user_permissions:

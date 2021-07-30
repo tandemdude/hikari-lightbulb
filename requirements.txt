@@ -1,1 +1,3 @@
-hikari~=2.0.0.dev98
+#hikari~=2.0.0.dev98
+git+https://github.com/hikari-py/hikari@master#egg=hikari==2.0.0.dev101
+

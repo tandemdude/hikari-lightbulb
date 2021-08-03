@@ -747,8 +747,8 @@ class Bot(hikari.GatewayBot):
 
         if self.insensitive_prefix:
             for prefix in prefixes:
-                if message.content.lower().startswith(prefix.lower()):
-                    return prefix
+                if (content := message.content).lower().startswith(prefix.lower()):
+                    return content[:len(prefix)]
             return None
 
         for prefix in prefixes:

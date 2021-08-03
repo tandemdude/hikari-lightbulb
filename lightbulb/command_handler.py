@@ -741,12 +741,10 @@ class Bot(hikari.GatewayBot):
             
         prefixes.sort(key=len, reverse=True)
 
-        prefix = None
-        for p in prefixes:
-            if message.content.startswith(p):
-                prefix = p
-                break
-        return prefix
+        for prefix in prefixes:
+            if message.content.startswith(prefix):
+                return prefix
+        return None
 
     def _validate_command_exists(self, invoked_with) -> commands.Command:
         if (command := self.get_command(invoked_with)) is not None:

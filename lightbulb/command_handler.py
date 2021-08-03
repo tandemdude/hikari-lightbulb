@@ -124,6 +124,8 @@ class Bot(hikari.GatewayBot):
             a prefix or iterable of prefixes.
         insensitive_commands (:obj:`bool`): Whether or not commands should be case-insensitive or not.
             Defaults to False (commands are case-sensitive).
+        insensitive_prefix (:obj:`bool`): Whether or not prefixes should be handled as case-insensitive or not.
+            Defaults to False (prefixes are case-sensitive).
         ignore_bots (:obj:`bool`): Ignore other bot's messages invoking your bot's commands if True (default), else not.
             invoked by other bots. Defaults to ``True``.
         owner_ids (List[ :obj:`int` ]): IDs that the bot should treat as owning the bot.
@@ -138,6 +140,7 @@ class Bot(hikari.GatewayBot):
         *,
         prefix,
         insensitive_commands: bool = False,
+        insensitive_prefix: bool = False,
         ignore_bots: bool = True,
         owner_ids: typing.Iterable[int] = (),
         help_class: typing.Type[help_.HelpCommand] = help_.HelpCommand,
@@ -157,6 +160,7 @@ class Bot(hikari.GatewayBot):
         self.owner_ids: typing.Iterable[int] = owner_ids
         """Iterable of the bot's owner IDs. This can be set by :meth:`Bot.fetch_owner_ids` if not given in the constructor."""
         self.insensitive_commands = insensitive_commands
+        self.insensitive_prefix = insensitive_prefix
         self.extensions: typing.List[str] = []
         """A list of extensions currently loaded to the bot."""
         self.plugins: typing.MutableMapping[str, plugins.Plugin] = {}
@@ -740,6 +744,12 @@ class Bot(hikari.GatewayBot):
             prefixes = [prefixes]
             
         prefixes.sort(key=len, reverse=True)
+
+        if self.insensitive_prefix:
+            for prefix in prefixes:
+                if message.content.lower().startswith(prefix.lower()):
+                    return prefix
+            return None
 
         for prefix in prefixes:
             if message.content.startswith(prefix):

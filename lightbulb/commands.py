@@ -326,7 +326,7 @@ class Command:
     @property
     def qualified_name(self) -> str:
         """
-        The fully qualified name of the command, taking into  account
+        The fully qualified name of the command, taking into account
         whether or not the command is a subcommand.
 
         Returns:

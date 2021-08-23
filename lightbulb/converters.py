@@ -44,7 +44,7 @@ along with the converters they 'replace' can be seen below:
 
 - :obj:`hikari.User` (:obj:`~.user_converter`)
 - :obj:`hikari.Member` (:obj:`~.member_converter`)
-- :obj:`hikari.TextChannel` (:obj:`~.text_channel_converter`)
+- :obj:`hikari.TextableChannel` (:obj:`~.text_channel_converter`)
 - :obj:`hikari.GuildVoiceChannel` (:obj:`~.guild_voice_channel_converter`)
 - :obj:`hikari.GuildCategory` (:obj:`~.category_converter`)
 - :obj:`hikari.Role` (:obj:`~.role_converter`)
@@ -206,7 +206,9 @@ async def member_converter(arg: WrappedArg) -> hikari.Member:
         members = arg.context.bot.cache.get_members_view_for_guild(arg.context.guild_id)
         member = search.find(
             members.values(),
-            lambda m: m.username == arg.data or m.nickname == arg.data or f"{m.username}#{m.discriminator}" == arg.data,
+            lambda m: m.username == arg.data
+            or m.nickname == arg.data
+            or f"{m.username}#{m.discriminator}" == arg.data,
         )
         # XXX: There is a search endpoint that can be used if this fails
         # await arg.context.bot.rest.search_member(arg.context.guild_id, arg.data)
@@ -502,7 +504,9 @@ class _UnionConverter:
     def __init__(self, *converters: _BaseConverter[T]) -> None:
         self.converters = converters
 
-    async def convert(self, context: context_.Context, arg_string: str, *, parse: bool = False) -> typing.Tuple[T, str]:
+    async def convert(
+        self, context: context_.Context, arg_string: str, *, parse: bool = False
+    ) -> typing.Tuple[T, str]:
         sv = stringview.StringView(arg_string)
         args, remainder = sv.deconstruct_str(max_parse=1)
 
@@ -612,7 +616,7 @@ class _ConsumeRestConverter:
 if typing.TYPE_CHECKING:
     user_converter = hikari.User
     member_converter = hikari.Member
-    text_channel_converter = hikari.TextChannel
+    text_channel_converter = hikari.TextableChannel
     guild_voice_channel_converter = hikari.GuildVoiceChannel
     category_converter = hikari.GuildCategory
     role_converter = hikari.Role

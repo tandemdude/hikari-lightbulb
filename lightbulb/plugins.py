@@ -17,7 +17,7 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__: typing.Final[typing.Tuple[str]] = [
+__all__: typing.Final[typing.List[str]] = [
     "EventListenerDescriptor",
     "listener",
     "Plugin",
@@ -176,7 +176,7 @@ class Plugin:
             bot.add_plugin(MyPlugin())
     """
 
-    def __init__(self, *, name: str = None) -> None:
+    def __init__(self, *, name: typing.Optional[str] = None) -> None:
         self.name = self.__class__.__name__ if name is None else name
         """The plugin's registered name."""
         self.commands = set()

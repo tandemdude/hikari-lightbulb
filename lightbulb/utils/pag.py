@@ -19,7 +19,6 @@ from __future__ import annotations
 
 __all__: typing.Final[typing.List[str]] = ["StringPaginator", "EmbedPaginator", "Paginator"]
 
-import abc
 import io
 import textwrap
 import typing

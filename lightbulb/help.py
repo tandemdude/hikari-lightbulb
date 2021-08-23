@@ -17,7 +17,7 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__: typing.Final[typing.Tuple[str]] = [
+__all__: typing.Final[typing.List[str]] = [
     "get_help_text",
     "get_command_signature",
     "filter_commands",
@@ -238,21 +238,21 @@ class HelpCommand:
             ``None``
         """
         plugin_commands = [
-            [plugin.name, await filter_commands(context, plugin._commands.values())]
+            (plugin.name, await filter_commands(context, plugin._commands.values()))
             for plugin in self.bot.plugins.values()
         ]
-        all_plugin_commands = []
+        all_plugin_commands: typing.List[commands.Command] = []
         for _, cmds in plugin_commands:
             all_plugin_commands.extend(cmds)
         uncategorised_commands = await filter_commands(context, self.bot.commands.difference(set(all_plugin_commands)))
-        plugin_commands.insert(0, ["Uncategorised", uncategorised_commands])
+        plugin_commands.insert(0, ("Uncategorised", uncategorised_commands))
 
         help_text = ["> __**Bot help**__\n"]
-        for plugin, commands in plugin_commands:
-            if not commands:
+        for plugin, cmds in plugin_commands:
+            if not cmds:
                 continue
             help_text.append(f"> **{plugin}**")
-            for c in sorted(commands, key=lambda c: c.name):
+            for c in sorted(cmds, key=lambda c: c.name):
                 short_help = get_help_text(c).split("\n")[0]
                 help_text.append(f"> • `{c.name}` - {short_help}")
         help_text.append(f"> \n> Use `{context.clean_prefix}help [command]` for more information.")
@@ -273,7 +273,7 @@ class HelpCommand:
         help_text = [
             f"> **Help for category `{plugin.name}`**",
             get_help_text(plugin).replace("\n", "\n> ") or "No help text provided.",
-            f"Commands:",
+            "Commands:",
             ", ".join(f"`{c.name}`" for c in sorted(plugin._commands.values(), key=lambda c: c.name))
             or "No commands in the category",
         ]
@@ -293,7 +293,7 @@ class HelpCommand:
         """
         help_text = [
             f"> **Help for command `{command.name}`**",
-            f"Usage:",
+            "Usage:",
             f"```{context.clean_prefix}{get_command_signature(command)}```",
             get_help_text(command).replace("\n", "\n> ") or "No help text provided.",
         ]

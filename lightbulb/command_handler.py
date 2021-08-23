@@ -166,7 +166,7 @@ class Bot(hikari.GatewayBot):
         self._commands: typing.MutableMapping[str, commands.Command] = (
             dict() if not self.insensitive_commands else CIMultiDict()
         )
-        self.commands: typing.Set[commands.Command] = set()
+        self.commands: typing.Set[commands.Command, commands.Group] = set()
         """A set containing all commands and groups registered to the bot."""
         self._checks: typing.List[typing.Callable[[context_.Context], typing.Coroutine[None, None, bool]]] = []
 

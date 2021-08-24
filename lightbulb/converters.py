@@ -601,7 +601,7 @@ class _ConsumeRestConverter:
 if typing.TYPE_CHECKING:
     user_converter = hikari.User
     member_converter = hikari.Member
-    text_channel_converter = hikari.TextChannel
+    text_channel_converter = hikari.TextableChannel
     guild_voice_channel_converter = hikari.GuildVoiceChannel
     voice_channel_converter = guild_voice_channel_converter
     category_converter = hikari.GuildCategory

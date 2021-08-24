@@ -57,7 +57,7 @@ _ConverterT = typing.Union[_BaseConverter[T], _BaseConverter[typing.List[T]]]
 _CONVERTER_CLASS_MAPPING = {
     hikari.User: converters.user_converter,
     hikari.Member: converters.member_converter,
-    hikari.TextChannel: converters.text_channel_converter,
+    hikari.TextableChannel: converters.text_channel_converter,
     hikari.GuildVoiceChannel: converters.guild_voice_channel_converter,
     hikari.GuildCategory: converters.category_converter,
     hikari.Role: converters.role_converter,

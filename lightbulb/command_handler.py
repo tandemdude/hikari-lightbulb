@@ -39,6 +39,7 @@ from lightbulb import errors
 from lightbulb import events
 from lightbulb import help as help_
 from lightbulb import plugins
+from lightbulb import slash_commands
 from lightbulb.converters import _DefaultingConverter
 from lightbulb.converters import _GreedyConverter
 from lightbulb.utils import maybe_await
@@ -130,6 +131,10 @@ class Bot(hikari.GatewayBot):
         help_class (:obj:`~.help.HelpCommand`): The **uninstantiated** class the bot should use for it's help command.
             Defaults to :obj:`~.help.HelpCommand`. Any class passed should always be this class or subclass of
             this class.
+        delete_unbound_slash_commands (:obj:`bool`): Whether or not to delete unbound slash commands when the
+            bot starts. This will remove any slash commands that do not have a
+            :obj:`~lightbulb.slash_commands.SlashCommand` object bound to them when the bot starts but are registered
+            according to  discord's API. Defaults to ``True``
         **kwargs: Other parameters passed to the :class:`hikari.impl.bot.BotAppImpl` constructor.
     """
 
@@ -141,10 +146,13 @@ class Bot(hikari.GatewayBot):
         ignore_bots: bool = True,
         owner_ids: typing.Iterable[int] = (),
         help_class: typing.Type[help_.HelpCommand] = help_.HelpCommand,
+        delete_unbound_slash_commands: bool = True,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
         self.subscribe(hikari.MessageCreateEvent, self.handle)
+        self.subscribe(hikari.InteractionCreateEvent, self.handle_slash_commands)
+        self.subscribe(hikari.StartingEvent, self._manage_slash_commands)
 
         if isinstance(prefix, str):
             self.get_prefix = functools.partial(_return_prefix, prefixes=[prefix])
@@ -167,6 +175,11 @@ class Bot(hikari.GatewayBot):
         self.commands: typing.Set[commands.Command] = set()
         """A set containing all commands and groups registered to the bot."""
         self._checks = []
+
+        self._delete_unbound_slash_commands = delete_unbound_slash_commands
+        self._slash_commands: typing.MutableMapping[str, slash_commands.SlashCommandBase] = {}
+        self.slash_commands: typing.Set[slash_commands.SlashCommandBase] = set()
+        """A set containing all slash commands registered to the bot."""
 
         self._help_impl = help_class(self)
 
@@ -937,3 +950,83 @@ class Bot(hikari.GatewayBot):
             return
 
         await self.process_commands_for_event(event)
+
+    def add_slash_command(self, command: typing.Type[slash_commands.SlashCommandBase]) -> None:
+        """
+        Registers a slash command with the bot.
+
+        Args:
+            command (Type[:obj:`~lightbulb.slash_commands.SlashCommandBase`]): The slash command class to register
+                to the bot. This should **not** be instantiated.
+
+        Returns:
+            ``None``
+        """
+        cmd = command(self)
+        self._slash_commands[cmd.name] = cmd
+
+    def get_slash_command(self, name: str) -> typing.Optional[slash_commands.SlashCommandBase]:
+        """
+        Gets the slash command with the given name, or ``None`` if one with that name does
+        not exist.
+
+        Args:
+            name (:obj:`str`): The name of the slash command to get the object for.
+
+        Returns:
+            Optional[:obj:`~lightbulb.slash_commands.SlashCommandBase`]: Retrieved slash command or ``None`` if not
+                found.
+        """
+        return self._slash_commands.get(name)
+
+    async def handle_slash_commands(self, event: hikari.InteractionCreateEvent) -> None:
+        """
+        The InteractionCreateEvent listener that handles slash command invocations and
+        resolves and invokes the correct callback from the event payload.
+
+        Args:
+            event (:obj:`hikari.InteractionCreateEvent`): The InteractionCreateEvent for the slash command
+                invocation.
+        Returns:
+            ``None``
+        """
+        if not isinstance(event.interaction, hikari.CommandInteraction):
+            return
+
+        command = self.get_slash_command(event.interaction.command_name)
+        if command is None:
+            return
+
+        context = slash_commands.SlashCommandContext(self, event.interaction, command)
+        _LOGGER.debug("Invoking slash command %s", command.name)
+        await command(context)
+
+    async def _manage_slash_commands(self, _):
+        app = await self.rest.fetch_application()
+
+        if self._delete_unbound_slash_commands:
+            _LOGGER.debug("Purging unbound slash commands")
+            global_slash_cmds = await self.rest.fetch_application_commands(app)
+            for cmd in global_slash_cmds:
+                if cmd.name not in self._slash_commands:
+                    _LOGGER.debug("Deleting slash command %s", cmd.name)
+                    await cmd.delete()
+
+            guild_ids = []
+            for cmd in self._slash_commands.values():
+                if cmd.enabled_guilds is not None:
+                    guild_ids.extend(cmd.enabled_guilds)
+
+            guild_slash_cmds = {}
+            for guild_id in guild_ids:
+                guild_slash_cmds[guild_id] = await self.rest.fetch_application_commands(app, guild_id)
+
+            for guild_id, cmds in guild_slash_cmds.items():
+                for cmd in cmds:
+                    if cmd.name not in self._slash_commands:
+                        _LOGGER.debug("Deleting slash command %s from guild %s", cmd.name, str(guild_id))
+                        await cmd.delete()
+
+        for cmd in self._slash_commands.values():
+            _LOGGER.debug("Creating slash command %s", cmd.name)
+            await cmd.auto_create(app)

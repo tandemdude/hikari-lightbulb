@@ -56,6 +56,7 @@ syntax. `GitHub <https://github.com/FasterSpeeding/Tanjun>`_
    getting-started
    api-reference
    utils-api-reference
+   slash-commands
    custom-help
    changelog
 

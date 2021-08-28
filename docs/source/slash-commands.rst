@@ -7,7 +7,7 @@ Slash Commands Primer
 
 As Discord has now decided to ban bots from reading messages without the intent enabled, you should now be using slash commands wherever possible.
 
-Read more about this on the `discord documentation <https://discord.com/developers/docs/interactions/slash-commands>`_ yourself.
+Read more about this on the `discord documentation <https://discord.com/developers/docs/interactions/application-commands>`_ yourself.
 
 Creating Slash Commands
 =======================

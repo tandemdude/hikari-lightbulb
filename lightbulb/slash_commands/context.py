@@ -47,6 +47,9 @@ class SlashCommandContext:
         self._interaction = interaction
         self._command = command
 
+        self.options: typing.Mapping[str, hikari.CommandOption] = {option.name: option for option in self._interaction.options} if self._interaction.options is not None else {}
+        """A mapping of :obj:`str` option name to :obj:`hikari.CommandInteractionOption` containing the options the command was invoked with."""
+
     @property
     def interaction(self) -> hikari.CommandInteraction:
         """The interaction for this slash command invocation."""
@@ -101,14 +104,6 @@ class SlashCommandContext:
     def guild(self) -> typing.Optional[hikari.GatewayGuild]:
         """The cached guild that the command was invoked in, or ``None`` if not found."""
         return self.bot.cache.get_guild(self.guild_id)
-
-    @functools.cached_property
-    def options(self) -> typing.Mapping[str, hikari.CommandInteractionOption]:
-        """
-        A mapping of :obj:`str` option name to :obj:`hikari.CommandInteractionOption` containing the options
-        the command was invoked with.
-        """
-        return {option.name: option for option in self._interaction.options}
 
     @property
     def resolved(self) -> typing.Optional[hikari.ResolvedOptionData]:

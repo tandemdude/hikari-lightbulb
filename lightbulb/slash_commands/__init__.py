@@ -22,6 +22,9 @@ from lightbulb.slash_commands.context import *
 
 __all__: typing.Final[typing.List[str]] = [
     "SlashCommandBase",
+    "TopLevelSlashCommandBase",
     "SlashCommand",
+    "SlashCommandGroup",
+    "SlashSubCommand",
     "SlashCommandContext",
 ]

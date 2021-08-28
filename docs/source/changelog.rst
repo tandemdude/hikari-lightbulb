@@ -8,6 +8,11 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 1.0.1
+=============
+
+- Fixed ``AttributeError`` when using :obj:`~lightbulb.command_handler.when_mentioned_or`.
+
 Version 1.0.0
 =============
 

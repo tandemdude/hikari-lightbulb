@@ -17,7 +17,13 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__: typing.Final[typing.List[str]] = ["SlashCommandBase", "TopLevelSlashCommandBase", "SlashCommand", "SlashCommandGroup", "SlashSubCommand"]
+__all__: typing.Final[typing.List[str]] = [
+    "SlashCommandBase",
+    "TopLevelSlashCommandBase",
+    "SlashCommand",
+    "SlashCommandGroup",
+    "SlashSubCommand",
+]
 
 import abc
 import typing
@@ -36,6 +42,7 @@ class SlashCommandBase(abc.ABC):
     Args:
         bot (:obj:`~lightbulb.command_handler.Bot`): The bot instance the command will be added to.
     """
+
     __slots__: typing.Sequence[str] = ("_bot", "_instances")
 
     def __init__(self, bot: command_handler.Bot) -> None:
@@ -152,6 +159,7 @@ class SlashCommand(TopLevelSlashCommandBase, abc.ABC):
 
     All abstract methods **must** be implemented by your custom slash command class.
     """
+
     __slots__: typing.Sequence[str] = ()
 
     async def __call__(self, context: context_.SlashCommandContext) -> None:
@@ -263,12 +271,18 @@ class SlashCommandGroup(TopLevelSlashCommandBase, abc.ABC):
         """
         Decorator which registers a subcommand to the slash command group.
         """
+
         def decorate(subcommand_class: typing.Type[SlashSubCommand]) -> typing.Type[SlashSubCommand]:
             cls._subcommand_list.append(subcommand_class)
             return subcommand_class
+
         return decorate
 
-    async def create(self, app: hikari.SnowflakeishOr[hikari.PartialApplication], guild_id: typing.Optional[hikari.Snowflakeish] = None) -> hikari.Command:
+    async def create(
+        self,
+        app: hikari.SnowflakeishOr[hikari.PartialApplication],
+        guild_id: typing.Optional[hikari.Snowflakeish] = None,
+    ) -> hikari.Command:
         created_command = await self._bot.rest.create_application_command(
             app,
             self.name,

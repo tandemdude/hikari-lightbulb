@@ -47,7 +47,11 @@ class SlashCommandContext:
         self._interaction = interaction
         self._command = command
 
-        self.options: typing.Mapping[str, hikari.CommandOption] = {option.name: option for option in self._interaction.options} if self._interaction.options is not None else {}
+        self.options: typing.Mapping[str, hikari.CommandOption] = (
+            {option.name: option for option in self._interaction.options}
+            if self._interaction.options is not None
+            else {}
+        )
         """A mapping of :obj:`str` option name to :obj:`hikari.CommandInteractionOption` containing the options the command was invoked with."""
 
     @property

@@ -235,7 +235,7 @@ class SlashCommand(TopLevelSlashCommandBase, abc.ABC):
 
 class SlashSubCommand(SlashCommandBase, abc.ABC):
     """
-    Abstract base class slash subcommands. All slash subcommands should inherit from this class.
+    Abstract base class for slash subcommands. All slash subcommands should inherit from this class.
 
     All abstract methods **must** be implemented by your custom slash subcommand class.
     """
@@ -286,6 +286,12 @@ class SlashSubCommand(SlashCommandBase, abc.ABC):
 
 
 class SlashSubGroup(SlashCommandBase, abc.ABC):
+    """
+    Abstract base class for slash subgroups. All slash subgroups should inherit from this class.
+
+    All abstract methods **must** be implemented by your custom slash subgroup class.
+    """
+
     __slots__: typing.Sequence[str] = ("_subcommands",)
 
     _subcommand_list: typing.List[typing.Type[SlashSubCommand]] = []
@@ -322,6 +328,13 @@ class SlashSubGroup(SlashCommandBase, abc.ABC):
         return decorate
 
     def as_option(self):
+        """
+        Creates and returns the appropriate :obj:`hikari.CommandOption` representation for this
+        subgroup class.
+
+        Returns:
+            :obj:`hikari.CommandOption`: The ``CommandOption`` version of the subgroup class.
+        """
         return hikari.CommandOption(
             name=self.name,
             description=self.description,

@@ -112,6 +112,44 @@ slash command group:
             await context.respond(context.options["baz"].value)
 
 
+Creating a Slash Command Subgroup
+================================
+
+To create a slash command subgroup, you must first create a slash command group as seen in the previous
+section. The :obj`~lightbulb.slash_commands.SlashCommandGroup` class provides a ``subgroup`` decorator that
+should be used in place of the ``subcommand`` decorator when adding a subgroup to the parent group. The subgroup
+should inherit from the :obj:`~lightbulb.slash_commands.SlashSubGroup` base class.
+
+Adding a subcommand to the subgroup is the exact same as adding a subcommand to the parent group as was seen in the
+stage above. Below is a simple example of a subgroup implementation, with some of the implementation left out
+as you may refer to the previous sections for more details.
+::
+
+    # Import the command handler
+    import lightbulb
+    # Import the slash_commands submodule
+    from lightbulb import slash_commands
+
+    # Instantiate a Bot instance
+    bot = lightbulb.Bot(token="your_token_here", prefix="your_prefix_here")
+
+
+    class Foo(slash_commands.SlashCommandGroup):
+        ...
+
+
+    @Foo.subgroup()
+    class Bar(slash_commands.SlashSubGroup):
+        @property
+        def description(self):
+            return "Test subgroup."
+
+
+    @Bar.subcommand()
+    class Baz(slash_commands.SlashSubCommand):
+        ...
+
+
 API Reference
 =============
 

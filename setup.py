@@ -71,7 +71,7 @@ setup(
     install_requires=parse_requirements_file("requirements.txt"),
     python_requires=">=3.8.0,<3.10",
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 5 - Production/Stable",
         "Framework :: AsyncIO",
         "Intended Audience :: Developers",
         "Natural Language :: English",
@@ -79,7 +79,6 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: Implementation :: CPython",
-        "Programming Language :: Python :: Implementation :: Stackless",
         "Programming Language :: Python :: 3 :: Only",
         "Topic :: Software Development :: Libraries",
         "Topic :: Software Development :: Libraries :: Application Frameworks",

@@ -204,6 +204,14 @@ class SlashCommand(TopLevelSlashCommandBase, abc.ABC):
 
 
 class SlashSubCommand(SlashCommandBase):
+    """
+    Abstract base class slash subcommands. All slash subcommands should inherit from this class.
+
+    All abstract methods **must** be implemented by your custom slash subcommand class.
+    """
+
+    __slots__: typing.Sequence[str] = ()
+
     async def __call__(self, context: context_.SlashCommandContext) -> None:
         return await self.callback(context)
 
@@ -243,6 +251,12 @@ class SlashSubCommand(SlashCommandBase):
 
 
 class SlashCommandGroup(TopLevelSlashCommandBase, abc.ABC):
+    """
+    Abstract base class for slash command groups. All slash command groups should inherit from this class.
+
+    All abstract methods **must** be implemented by your custom slash command group class.
+    """
+
     __slots__: typing.Sequence[str] = ("_subcommands",)
 
     _subcommand_list: typing.List[typing.Type[SlashSubCommand]] = []

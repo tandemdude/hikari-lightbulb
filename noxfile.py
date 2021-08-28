@@ -32,14 +32,14 @@ options.sessions = ["format_fix", "test", "sphinx"]
 
 
 @nox.session()
-def test(session):
+def test(session: nox.Session) -> None:
     session.install("-r", "test_requirements.txt")
     session.install("-r", "requirements.txt")
     session.run("python", "-m", "pytest", "tests", "--testdox")
 
 
 @nox.session()
-def format_fix(session):
+def format_fix(session: nox.Session) -> None:
     session.install("black")
     session.install("isort")
     session.run("python", "-m", "black", *SCRIPT_PATHS)
@@ -48,20 +48,20 @@ def format_fix(session):
 
 # noinspection PyShadowingBuiltins
 @nox.session()
-def format(session):
+def format(session: nox.Session) -> None:
     session.install("-U", "black")
     session.run("python", "-m", "black", *SCRIPT_PATHS, "--check")
 
 
 @nox.session(reuse_venv=True)
-def sphinx(session):
+def sphinx(session: nox.Session) -> None:
     session.install("-U", "sphinx", "sphinx_rtd_theme")
     session.install("-Ur", "requirements.txt")
     session.run("python", "-m", "sphinx.cmd.build", "docs/source", "docs/build", "-b", "html")
 
 
 @nox.session(reuse_venv=True)
-def mypy(session):
+def mypy(session: nox.Session) -> None:
     # XXX: Re-enable these when done, too much of a waste of data
     # session.install("-Ur", "requirements.txt")
     # session.install("-U", "mypy", "lxml")

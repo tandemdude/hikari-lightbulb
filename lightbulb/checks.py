@@ -123,6 +123,8 @@ async def _human_only(ctx: context.Context) -> bool:
 
 
 async def _nsfw_channel_only(ctx: context.Context) -> bool:
+    if ctx.channel is None:
+        raise errors.NotCached("channel is not cached")
     if not ctx.channel.is_nsfw:
         raise errors.NSFWChannelOnly(f"{ctx.invoked_with} can only be used in an NSFW channel")
     return True
@@ -141,6 +143,8 @@ async def _has_roles(
     ctx: context.Context, *, role_check: typing.Callable[[typing.Iterable[hikari.Snowflake]], bool]
 ) -> bool:
     await _guild_only(ctx)
+    if ctx.member is None:
+        raise errors.NotCached("member is not cached")
     if not role_check(ctx.member.role_ids):
         raise errors.MissingRequiredRole("You are missing one or more roles required in order to run this command.")
     return True
@@ -164,6 +168,12 @@ def _get_missing_perms(permissions: hikari.Permissions, roles: typing.Sequence[h
 async def _has_guild_permissions(ctx: context.Context, *, permissions: hikari.Permissions) -> bool:
     if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
         raise hikari.MissingIntentError(hikari.Intents.GUILDS)
+    if ctx.guild is None:
+        raise errors.NotCached("guild is not cached")
+    if ctx.guild_id is None:
+        raise errors.NotCached("guild_id is not cached")
+    if ctx.member is None:
+        raise errors.NotCached("member is not cached")
 
     await _guild_only(ctx)
 
@@ -185,14 +195,25 @@ async def _has_guild_permissions(ctx: context.Context, *, permissions: hikari.Pe
 async def _bot_has_guild_permissions(ctx: context.Context, *, permissions: hikari.Permissions) -> bool:
     if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
         raise hikari.MissingIntentError(hikari.Intents.GUILDS)
-
     await _guild_only(ctx)
 
-    if ctx.guild.owner_id == ctx.bot.cache.get_me().id:
+    if ctx.guild is None:
+        raise errors.NotCached("guild is not cached")
+    if ctx.guild_id is None:
+        raise errors.NotCached("guild_id is not cached")
+
+    bot = ctx.bot.cache.get_me()
+    if bot is None:
+        raise errors.NotCached("bot is not cached")
+
+    if ctx.guild.owner_id == bot.id:
         return True
 
     roles = ctx.bot.cache.get_roles_view_for_guild(ctx.guild_id).values()
-    bot_member = ctx.bot.cache.get_member(ctx.guild_id, ctx.bot.cache.get_me().id)
+    bot_member = ctx.bot.cache.get_member(ctx.guild_id, bot.id)
+
+    if bot_member is None:
+        raise errors.NotCached("bot_member is not cached")
 
     missing_perms = _get_missing_perms(permissions, [role for role in roles if role.id in bot_member.role_ids])
 
@@ -209,8 +230,14 @@ async def _has_permissions(ctx: context.Context, *, permissions: hikari.Permissi
 
     await _guild_only(ctx)
 
+    if ctx.channel is None:
+        raise errors.NotCached("channel is not cached")
+
     perm_over = ctx.channel.permission_overwrites.values()
     perm_none = hikari.Permissions.NONE
+
+    if ctx.member is None:
+        raise errors.NotCached("member is not cached")
 
     allowed_perms = functools.reduce(
         operator.or_, (override.allow if override.id in ctx.member.role_ids else perm_none for override in perm_over)
@@ -231,9 +258,23 @@ async def _bot_has_permissions(ctx: context.Context, *, permissions: hikari.Perm
 
     await _guild_only(ctx)
 
+    if ctx.channel is None:
+        raise errors.NotCached("channel is not cached")
+
     perm_over = ctx.channel.permission_overwrites.values()
     perm_none = hikari.Permissions.NONE
-    bot_member = ctx.bot.cache.get_member(ctx.guild_id, ctx.bot.cache.get_me().id)
+
+    if ctx.guild_id is None:
+        raise errors.NotCached("guild_id is not cached")
+
+    bot = ctx.bot.cache.get_me()
+    if bot is None:
+        raise errors.NotCached("bot is not cached")
+
+    bot_member = ctx.bot.cache.get_member(ctx.guild_id, bot.id)
+
+    if bot_member is None:
+        raise errors.NotCached("bot_member is not cached")
 
     allowed_perms = functools.reduce(
         operator.or_, (override.allow if override.id in bot_member.role_ids else perm_none for override in perm_over)
@@ -386,7 +427,7 @@ def has_roles(
     def decorate(command: T_inv) -> T_inv:
         _check_check_decorator_above_commands_decorator(command)
         check_func = functools.partial(
-            _role_check, roles=[int(role1), *[int(r) for r in role_ids]], func=all if mode == "all" else any
+            _role_check, roles=[int(role1), *[int(r) for r in role_ids]], func=(all if mode == "all" else any)
         )
         command.add_check(functools.partial(_has_roles, role_check=check_func))
         return command
@@ -489,7 +530,9 @@ def has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions)
     return decorate
 
 
-def bot_has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions) -> typing.Callable[[T_inv], T_inv]:
+def bot_has_permissions(
+    perm1: hikari.Permissions, *permissions: hikari.Permissions
+) -> typing.Callable[[T_inv], T_inv]:
     """
     A decorator that prevents the command from being used if the bot is missing any of the required
     channel permissions (permissions granted by a permission overwrite).

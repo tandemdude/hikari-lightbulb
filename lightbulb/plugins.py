@@ -120,7 +120,9 @@ class EventListenerDescriptor:
 
 def listener(
     event_type: typing.Optional[typing.Type[EventT_co]] = None,
-) -> typing.Callable[[T], EventListenerDescriptor]:
+) -> typing.Callable[
+    [typing.Callable[[typing.Any, EventT_co], typing.Coroutine[typing.Any, typing.Any, None]]], EventListenerDescriptor
+]:
     """
     A decorator that registers a plugin method as an event listener.
 
@@ -141,7 +143,9 @@ def listener(
                     print(event.message.content)
     """
 
-    def decorator(listener: T) -> EventListenerDescriptor:
+    def decorator(
+        listener: typing.Callable[[typing.Any, EventT_co], typing.Coroutine[typing.Any, typing.Any, None]]
+    ) -> EventListenerDescriptor:
         return EventListenerDescriptor(event_type, listener)
 
     return decorator

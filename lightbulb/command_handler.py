@@ -80,6 +80,8 @@ def when_mentioned_or(prefix_provider) -> typing.Callable[[Bot, hikari.Message],
     """
 
     async def get_prefixes(bot: Bot, message: hikari.Message) -> typing.List[str]:
+        if bot.me is None:
+            raise errors.NotCached("me (the bot user) is not cached")
         mentions = [f"<@{bot.me.id}> ", f"<@!{bot.me.id}> "]
 
         if callable(prefix_provider):
@@ -755,6 +757,8 @@ class Bot(hikari.GatewayBot):
 
         prefix = None
         for p in prefixes:
+            if message.content is None:
+                raise errors.NotCached("message content is not cached")
             if message.content.startswith(p):
                 prefix = p
                 break

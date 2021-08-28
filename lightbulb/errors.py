@@ -59,6 +59,16 @@ class LightbulbError(Exception):
     """Base for any exception raised by lightbulb."""
 
 
+class NotCached(LightbulbError):
+    """
+    Error raised when a check fails because something is not cached.
+    """
+
+    def __init__(self, text: str) -> None:
+        self.text: str = text
+        """The error text."""
+
+
 class ExtensionError(LightbulbError):
     """Base exception for errors incurred during the loading and unloading of extensions."""
 
@@ -341,6 +351,4 @@ class CommandInvocationError(CommandError):
         self.original = original
         """The original exception that caused this to be raised."""
 
-    @property
-    def __cause__(self) -> typing.Optional[BaseException]:
-        return self.original
+        self.__cause__ = self.original

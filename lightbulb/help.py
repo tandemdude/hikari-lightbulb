@@ -61,7 +61,7 @@ def get_help_text(obj: typing.Union[commands.Command, plugins.Plugin]) -> str:
         return _format_help_text(doc if doc is not None else "")
     else:
         doc = inspect.getdoc(obj)
-        return _format_help_text(doc if doc != inspect.getdoc(plugins.Plugin) else "")
+        return _format_help_text(doc if doc != inspect.getdoc(plugins.Plugin) and doc is not None else "")
 
 
 def get_command_signature(command: commands.Command) -> str:
@@ -127,6 +127,8 @@ async def _help_cmd(ctx: context_.Context) -> None:
     If no object is specified with the command then a help menu
     for the bot as a whole is displayed instead.
     """
+    if ctx.message.content is None:
+        raise errors.NotCached("message content is not cached")
     obj = ctx.message.content[len(f"{ctx.prefix}{ctx.invoked_with}") :].strip().split()
     await ctx.bot.help_command.resolve_help_obj(ctx, obj)
 

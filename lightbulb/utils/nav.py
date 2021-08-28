@@ -178,11 +178,15 @@ class Navigator(abc.ABC, typing.Generic[T]):
 
     def create_default_buttons(self) -> typing.Sequence[NavButton]:
         buttons = (
-            NavButton("\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}", first_page),
+            NavButton(
+                "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}", first_page
+            ),
             NavButton("\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", prev_page),
             NavButton("\N{BLACK SQUARE FOR STOP}\N{VARIATION SELECTOR-16}", stop),
             NavButton("\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", next_page),
-            NavButton("\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}", last_page),
+            NavButton(
+                "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}", last_page
+            ),
         )
         return buttons
 

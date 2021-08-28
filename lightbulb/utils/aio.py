@@ -16,7 +16,7 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__: typing.List[str] = ["maybe_await"]
+__all__: typing.Final[typing.List[str]] = ["maybe_await"]
 
 import typing
 

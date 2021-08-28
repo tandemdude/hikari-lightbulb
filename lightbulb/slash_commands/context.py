@@ -19,7 +19,6 @@ from __future__ import annotations
 
 __all__: typing.Final[typing.List[str]] = ["SlashCommandContext"]
 
-import functools
 import typing
 
 import hikari
@@ -39,8 +38,13 @@ class SlashCommandContext:
         command (:obj:`~lightbulb.slash_commands.SlashCommand`): The :obj:`~SlashCommand` object that was invoked.
     """
 
+    __slots__: typing.Sequence[str] = ("bot", "_interaction", "_command", "options")
+
     def __init__(
-        self, bot: command_handler.Bot, interaction: hikari.CommandInteraction, command: commands.SlashCommandBase
+        self,
+        bot: command_handler.Bot,
+        interaction: hikari.CommandInteraction,
+        command: commands.TopLevelSlashCommandBase,
     ) -> None:
         self.bot = bot
         """The bot instance that received the slash command."""

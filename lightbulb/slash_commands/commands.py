@@ -37,7 +37,7 @@ if typing.TYPE_CHECKING:
 
 class SlashCommandBase(abc.ABC):
     """
-    Abstract base class for slash commands and slash command groups.
+    Abstract base class for slash command-like classes.
 
     Args:
         bot (:obj:`~lightbulb.command_handler.Bot`): The bot instance the command will be added to.
@@ -71,6 +71,10 @@ class SlashCommandBase(abc.ABC):
 
 
 class TopLevelSlashCommandBase(SlashCommandBase, abc.ABC):
+    """
+    Abstract base class for top level slash commands and slash command groups.
+    """
+
     @property
     @abc.abstractmethod
     def enabled_guilds(self) -> typing.Optional[hikari.SnowflakeishSequence]:

@@ -9,8 +9,8 @@ As Discord has now decided to ban bots from reading messages without the intent 
 
 Read more about this on the `discord documentation <https://discord.com/developers/docs/interactions/application-commands>`_ yourself.
 
-Creating Slash Commands
-=======================
+Creating a Basic Slash Command
+==============================
 
 Your first slash command can be written very easily:
 ::
@@ -22,6 +22,7 @@ Your first slash command can be written very easily:
 
     # Instantiate a Bot instance
     bot = lightbulb.Bot(token="your_token_here", prefix="your_prefix_here")
+
 
     # Create a custom slash command class and implement
     # the abstract methods
@@ -48,12 +49,67 @@ Your first slash command can be written very easily:
         async def callback(self, context):
             await context.respond(context.options["text"].value)
 
+
     # Add the slash command to the bot
     bot.add_slash_command(Echo)
     # Run the bot
     # Note that this is blocking meaning no code after this line will run
     # until the bot is shut off
     bot.run()
+
+
+Creating a Slash Command Group
+==============================
+
+Creating a slash command group is very similar to creating a normal slash command in that all it requires is for you to
+create your own subclass of the base class :obj:`~lightbulb.slash_commands.SlashCommandGroup` and implement all the
+required abstract methods.
+
+To add a subcommand to your group, you must create your own subclass of the base class
+:obj:`~lightbulb.slash_commands.SlashSubCommand` and, as you've probably guessed, implement all the required
+abstract methods. In order to link it to the slash command group, you must decorate the subcommand with the decorator
+:obj:`~lightbulb.slash_commands.SlashCommandGroup.subcommand`. An example can be seen below of a very simple
+slash command group:
+::
+
+    # Import the command handler
+    import lightbulb
+    # Import the slash_commands submodule
+    from lightbulb import slash_commands
+
+    # Instantiate a Bot instance
+    bot = lightbulb.Bot(token="your_token_here", prefix="your_prefix_here")
+
+
+    class Foo(slash_commands.SlashCommandGroup):
+        @property
+        def description(self):
+            return "Test slash command group."
+
+        @property
+        def enabled_guilds(self):
+            return None
+
+
+    @Foo.subcommand()
+    class Bar(slash_commands.SlashSubCommand):
+        @property
+        def description(self):
+            return "Test subcommand."
+
+        @property
+        def options(self):
+            return [
+                hikari.CommandOption(
+                    name="baz",
+                    description="Test subcommand option.",
+                    is_required=True,
+                    type=hikari.OptionType.STRING,
+                )
+            ]
+
+        async def callback(self, context):
+            await context.respond(context.options["baz"].value)
 
 
 API Reference

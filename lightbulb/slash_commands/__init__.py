@@ -25,6 +25,7 @@ __all__: typing.Final[typing.List[str]] = [
     "TopLevelSlashCommandBase",
     "SlashCommand",
     "SlashCommandGroup",
+    "SlashSubGroup",
     "SlashSubCommand",
     "SlashCommandContext",
 ]

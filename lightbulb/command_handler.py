@@ -901,7 +901,7 @@ class Bot(hikari.GatewayBot):
             if not await maybe_await(command._check_exempt_predicate, context):
                 await self._evaluate_checks(command, context)
             else:
-                _LOGGER.debug("Checks bypassed for command: %s", context.message.content)
+                _LOGGER.debug("checks bypassed for command: %s", context.message.content)
         except (
             errors.NotEnoughArguments,
             errors.TooManyArguments,
@@ -1045,18 +1045,18 @@ class Bot(hikari.GatewayBot):
             return
 
         context = slash_commands.SlashCommandContext(self, event.interaction, command)
-        _LOGGER.debug("Invoking slash command %s", command.name)
+        _LOGGER.debug("invoking slash command %s", command.name)
         await command(context)
 
     async def _manage_slash_commands(self, _):
         self._app = await self.rest.fetch_application()
 
         if self._delete_unbound_slash_commands:
-            _LOGGER.debug("Purging unbound slash commands")
+            _LOGGER.debug("purging unbound slash commands")
             global_slash_cmds = await self.rest.fetch_application_commands(self._app)
             for cmd in global_slash_cmds:
                 if cmd.name not in self._slash_commands:
-                    _LOGGER.debug("Deleting slash command %s", cmd.name)
+                    _LOGGER.debug("deleting slash command %s", cmd.name)
                     await cmd.delete()
 
             guild_ids = []
@@ -1071,9 +1071,9 @@ class Bot(hikari.GatewayBot):
             for guild_id, cmds in guild_slash_cmds.items():
                 for cmd in cmds:
                     if cmd.name not in self._slash_commands:
-                        _LOGGER.debug("Deleting slash command %s from guild %s", cmd.name, str(guild_id))
+                        _LOGGER.debug("deleting slash command %s from guild %s", cmd.name, str(guild_id))
                         await cmd.delete()
 
         for cmd in self._slash_commands.values():
-            _LOGGER.debug("Creating slash command %s", cmd.name)
+            _LOGGER.debug("creating slash command %s", cmd.name)
             await cmd.auto_create(self._app)

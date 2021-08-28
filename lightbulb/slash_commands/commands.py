@@ -22,10 +22,12 @@ __all__: typing.Final[typing.List[str]] = [
     "TopLevelSlashCommandBase",
     "SlashCommand",
     "SlashCommandGroup",
+    "SlashSubGroup",
     "SlashSubCommand",
 ]
 
 import abc
+import logging
 import typing
 
 import hikari
@@ -33,6 +35,19 @@ import hikari
 if typing.TYPE_CHECKING:
     from lightbulb import command_handler
     from lightbulb.slash_commands import context as context_
+
+_LOGGER = logging.getLogger("lightbulb")
+
+
+def _resolve_subcommand(
+    context: context_.SlashCommandContext, subcommands: typing.MutableMapping[str, SlashCommandBase]
+) -> typing.Optional[str]:
+    option_name = None
+    for option in context.options:
+        if option in subcommands:
+            option_name = option
+            break
+    return option_name
 
 
 class SlashCommandBase(abc.ABC):
@@ -152,7 +167,18 @@ class TopLevelSlashCommandBase(SlashCommandBase, abc.ABC):
             for guild_id in self.enabled_guilds:
                 await self.delete(app, guild_id)
 
-    def get_command(self, guild_id: hikari.Snowflakeish) -> typing.Optional[hikari.Command]:
+    def get_command(self, guild_id: typing.Optional[hikari.Snowflakeish] = None) -> typing.Optional[hikari.Command]:
+        """
+        Gets the :obj:`hikari.Command` instance of this command class for a given ``guild_id``, or the global
+        instance if no ``guild_id`` is provided. Returns ``None`` if no instance is found for the given ``guild_id``.
+
+        Args:
+            guild_id (Optional[:obj:`hikari.Snowflakeish`): The guild ID to get the :obj:`hikari.Command` instance
+                for.
+
+        Returns:
+            Optional[:obj:`hikari.Command`]: Command instance for that guild, or ``None`` if no instance exists.
+        """
         return self._instances.get(guild_id)
 
 
@@ -207,19 +233,24 @@ class SlashCommand(TopLevelSlashCommandBase, abc.ABC):
         ...
 
 
-class SlashSubCommand(SlashCommandBase):
+class SlashSubCommand(SlashCommandBase, abc.ABC):
     """
     Abstract base class slash subcommands. All slash subcommands should inherit from this class.
 
     All abstract methods **must** be implemented by your custom slash subcommand class.
     """
 
-    __slots__: typing.Sequence[str] = ()
-
     async def __call__(self, context: context_.SlashCommandContext) -> None:
         return await self.callback(context)
 
     def as_option(self) -> hikari.CommandOption:
+        """
+        Creates and returns the appropriate :obj:`hikari.CommandOption` representation for this
+        subcommand class.
+
+        Returns:
+            :obj:`hikari.CommandOption`: The ``CommandOption`` version of the subcommand class.
+        """
         return hikari.CommandOption(
             name=self.name,
             description=self.description,
@@ -254,13 +285,7 @@ class SlashSubCommand(SlashCommandBase):
         ...
 
 
-class SlashCommandGroup(TopLevelSlashCommandBase, abc.ABC):
-    """
-    Abstract base class for slash command groups. All slash command groups should inherit from this class.
-
-    All abstract methods **must** be implemented by your custom slash command group class.
-    """
-
+class SlashSubGroup(SlashCommandBase, abc.ABC):
     __slots__: typing.Sequence[str] = ("_subcommands",)
 
     _subcommand_list: typing.List[typing.Type[SlashSubCommand]] = []
@@ -273,11 +298,11 @@ class SlashCommandGroup(TopLevelSlashCommandBase, abc.ABC):
             self._subcommands[cmd.name] = cmd
 
     async def __call__(self, context: context_.SlashCommandContext) -> None:
-        for option in context.options:
-            if option in self._subcommands:
-                option_name = option
-                break
+        option_name = _resolve_subcommand(context, self._subcommands)
+        if option_name is None:
+            return
 
+        _LOGGER.debug("invoking slash subcommand %s", option_name)
         # Replace the context options with the options for the subcommand, the old options
         # can still be accessed through context.interaction.options
         new_options = context.options[option_name].options
@@ -287,12 +312,76 @@ class SlashCommandGroup(TopLevelSlashCommandBase, abc.ABC):
     @classmethod
     def subcommand(cls) -> typing.Callable[[typing.Type[SlashSubCommand]], typing.Type[SlashSubCommand]]:
         """
-        Decorator which registers a subcommand to the slash command group.
+        Decorator which registers a subcommand to this slash command group.
         """
 
         def decorate(subcommand_class: typing.Type[SlashSubCommand]) -> typing.Type[SlashSubCommand]:
             cls._subcommand_list.append(subcommand_class)
             return subcommand_class
+
+        return decorate
+
+    def as_option(self):
+        return hikari.CommandOption(
+            name=self.name,
+            description=self.description,
+            type=hikari.OptionType.SUB_COMMAND_GROUP,
+            options=[cmd.as_option() for cmd in self._subcommands.values()],
+            is_required=False,
+        )
+
+
+class SlashCommandGroup(TopLevelSlashCommandBase, abc.ABC):
+    """
+    Abstract base class for slash command groups. All slash command groups should inherit from this class.
+
+    All abstract methods **must** be implemented by your custom slash command group class.
+    """
+
+    __slots__: typing.Sequence[str] = ("_subcommands",)
+
+    _subcommand_list: typing.List[typing.Union[typing.Type[SlashSubCommand], typing.Type[SlashSubGroup]]] = []
+
+    def __init__(self, bot: command_handler.Bot):
+        super().__init__(bot)
+        self._subcommands: typing.MutableMapping[str, SlashSubCommand] = {}
+        for cmd_class in self._subcommand_list:
+            cmd = cmd_class(bot)
+            self._subcommands[cmd.name] = cmd
+
+    async def __call__(self, context: context_.SlashCommandContext) -> None:
+        option_name = _resolve_subcommand(context, self._subcommands)
+        if option_name is None:
+            return
+
+        _LOGGER.debug("invoking slash subcommand %s", option_name)
+        # Replace the context options with the options for the subcommand, the old options
+        # can still be accessed through context.interaction.options
+        new_options = context.options[option_name].options
+        context.options = {option.name: option for option in new_options} if new_options is not None else {}
+        return await self._subcommands[option_name](context)
+
+    @classmethod
+    def subcommand(cls) -> typing.Callable[[typing.Type[SlashSubCommand]], typing.Type[SlashSubCommand]]:
+        """
+        Decorator which registers a subcommand to this slash command group.
+        """
+
+        def decorate(subcommand_class: typing.Type[SlashSubCommand]) -> typing.Type[SlashSubCommand]:
+            cls._subcommand_list.append(subcommand_class)
+            return subcommand_class
+
+        return decorate
+
+    @classmethod
+    def subgroup(cls) -> typing.Callable[[typing.Type[SlashSubGroup]], typing.Type[SlashSubGroup]]:
+        """
+        Decorator which registers a subgroup to this slash command group.
+        """
+
+        def decorate(subgroup_class: typing.Type[SlashSubGroup]) -> typing.Type[SlashSubGroup]:
+            cls._subcommand_list.append(subgroup_class)
+            return subgroup_class
 
         return decorate
 

@@ -113,7 +113,7 @@ slash command group:
 
 
 Creating a Slash Command Subgroup
-================================
+=================================
 
 To create a slash command subgroup, you must first create a slash command group as seen in the previous
 section. The :obj`~lightbulb.slash_commands.SlashCommandGroup` class provides a ``subgroup`` decorator that

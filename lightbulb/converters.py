@@ -44,7 +44,7 @@ along with the converters they 'replace' can be seen below:
 
 - :obj:`hikari.User` (:obj:`~.user_converter`)
 - :obj:`hikari.Member` (:obj:`~.member_converter`)
-- :obj:`hikari.TextChannel` (:obj:`~.text_channel_converter`)
+- :obj:`hikari.TextableChannel` (:obj:`~.text_channel_converter`)
 - :obj:`hikari.GuildVoiceChannel` (:obj:`~.guild_voice_channel_converter`)
 - :obj:`hikari.GuildCategory` (:obj:`~.category_converter`)
 - :obj:`hikari.Role` (:obj:`~.role_converter`)
@@ -212,16 +212,15 @@ async def member_converter(arg: WrappedArg) -> hikari.Member:
     return _raise_if_not_none(member)
 
 
-async def text_channel_converter(arg: WrappedArg) -> hikari.TextChannel:
+async def text_channel_converter(arg: WrappedArg) -> hikari.TextableChannel:
     """
-    Converter to transform a command argument into a :obj:`~hikari.GuildTextChannel` or
-    :obj:`~hikari.channels.GuildNewsChannel` object.
+    Converter to transform a command argument into a :obj:`~hikari.TextableChannel` object.
 
     Args:
         arg (:obj:`WrappedArg`): Argument to transform.
 
     Returns:
-        :obj:`hikari.TextChannel`: The channel object resolved from the argument.
+        :obj:`hikari.TextableChannel`: The channel object resolved from the argument.
 
     Raises:
         :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a channel object.
@@ -234,7 +233,7 @@ async def text_channel_converter(arg: WrappedArg) -> hikari.TextChannel:
     else:
         channel = await _get_or_fetch_guild_channel_from_id(arg, channel_id)
 
-    if not isinstance(channel, hikari.TextChannel):
+    if not isinstance(channel, hikari.TextableChannel):
         raise errors.ConverterFailure
     return channel
 
@@ -601,7 +600,7 @@ class _ConsumeRestConverter:
 if typing.TYPE_CHECKING:
     user_converter = hikari.User
     member_converter = hikari.Member
-    text_channel_converter = hikari.TextChannel
+    text_channel_converter = hikari.TextableChannel
     guild_voice_channel_converter = hikari.GuildVoiceChannel
     voice_channel_converter = guild_voice_channel_converter
     category_converter = hikari.GuildCategory

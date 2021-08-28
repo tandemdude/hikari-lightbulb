@@ -8,6 +8,15 @@ If you think anything is missing, make a merge request to add it, or contact tho
 
 ----
 
+Version 1.0.0
+=============
+
+**Stable Release**
+
+- Compatibility with hikari 2.0.0dev101.
+
+- From now on the project will use semantic versioning.
+
 Version 0.0.61
 ==============
 

@@ -178,9 +178,9 @@ class Context:
         return None
 
     @property
-    def channel(self) -> typing.Optional[hikari.TextChannel]:
+    def channel(self) -> typing.Optional[hikari.TextableChannel]:
         """
-        The cached :obj:`hikari.TextChannel` instance for the context's channel ID.
+        The cached :obj:`hikari.TextableChannel` instance for the context's channel ID.
 
         This will be None if the bot is stateless, the channel is not found in the cache,
         or the context is for a command run in DMs.

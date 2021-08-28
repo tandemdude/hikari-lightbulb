@@ -142,7 +142,7 @@ class Navigator(abc.ABC, typing.Generic[T]):
                 raise TypeError("Buttons must be an instance of NavButton")
 
         if len(self.pages) == 1 and not buttons:
-            self.buttons = [NavButton("\N{BLACK SQUARE FOR STOP}", stop)]
+            self.buttons = [NavButton("\N{BLACK SQUARE FOR STOP}\N{VARIATION SELECTOR-16}", stop)]
         else:
             self.buttons: typing.Sequence[NavButton] = buttons if buttons is not None else self.create_default_buttons()
 
@@ -162,11 +162,11 @@ class Navigator(abc.ABC, typing.Generic[T]):
 
     def create_default_buttons(self) -> typing.Sequence[NavButton]:
         buttons = (
-            NavButton("\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}", first_page),
-            NavButton("\N{BLACK LEFT-POINTING TRIANGLE}", prev_page),
-            NavButton("\N{BLACK SQUARE FOR STOP}", stop),
-            NavButton("\N{BLACK RIGHT-POINTING TRIANGLE}", next_page),
-            NavButton("\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}", last_page),
+            NavButton("\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}", first_page),
+            NavButton("\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", prev_page),
+            NavButton("\N{BLACK SQUARE FOR STOP}\N{VARIATION SELECTOR-16}", stop),
+            NavButton("\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", next_page),
+            NavButton("\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}", last_page),
         )
         return buttons
 
@@ -242,15 +242,15 @@ class StringNavigator(Navigator[str]):
 
     Default buttons:
 
-    - ``\\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}`` (Go to first page)
+    - ``\\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\\N{VARIATION SELECTOR-16}`` (Go to first page)
 
-    - ``\\N{BLACK LEFT-POINTING TRIANGLE}`` (Go to previous page)
+    - ``\\N{BLACK LEFT-POINTING TRIANGLE}\\N{VARIATION SELECTOR-16}`` (Go to previous page)
 
-    - ``\\N{BLACK SQUARE FOR STOP}`` (Stop navigation)
+    - ``\\N{BLACK SQUARE FOR STOP}\\N{VARIATION SELECTOR-16}`` (Stop navigation)
 
-    - ``\\N{BLACK RIGHT-POINTING TRIANGLE}`` (Go to next page)
+    - ``\\N{BLACK RIGHT-POINTING TRIANGLE}\\N{VARIATION SELECTOR-16}`` (Go to next page)
 
-    - ``\\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}`` (Go to last page)
+    - ``\\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\\N{VARIATION SELECTOR-16}`` (Go to last page)
 
     Args:
         pages (Sequence[ :obj:`str` ]): Pages to navigate through.

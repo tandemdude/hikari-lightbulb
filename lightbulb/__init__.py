@@ -27,6 +27,7 @@ from lightbulb import errors
 from lightbulb import events
 from lightbulb import help
 from lightbulb import plugins
+from lightbulb import slash_commands
 from lightbulb import stringview
 from lightbulb import utils
 from lightbulb.checks import *

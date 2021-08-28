@@ -181,6 +181,8 @@ class Bot(hikari.GatewayBot):
         self.slash_commands: typing.Set[slash_commands.SlashCommandBase] = set()
         """A set containing all slash commands registered to the bot."""
 
+        self._app: typing.Optional[hikari.PartialApplication] = None
+
         self._help_impl = help_class(self)
 
     @staticmethod
@@ -971,9 +973,12 @@ class Bot(hikari.GatewayBot):
         cmd = command(self)
         self._slash_commands[cmd.name] = cmd
         self.slash_commands.add(cmd)
-        if create:
-            app = await self.rest.fetch_application()
-            await cmd.auto_create(app)
+
+        if create and self._app is not None:
+            _LOGGER.debug("Creating slash command %s", cmd.name)
+            asyncio.create_task(cmd.auto_create(self._app))
+        elif create and self._app is None:
+            _LOGGER.debug("Not adding slash command %s as the bot has not started", cmd.name)
 
     def remove_slash_command(self, name: str, delete: bool = False) -> typing.Optional[str]:
         """
@@ -990,9 +995,13 @@ class Bot(hikari.GatewayBot):
         cmd = self._slash_commands.pop(name)
         if cmd is not None:
             self.slash_commands.remove(cmd)
-            if delete:
-                app = await self.rest.fetch_application()
-                await cmd.auto_delete(app)
+
+            if delete and self._app is not None:
+                _LOGGER.debug("Purging slash command %s", cmd.name)
+                asyncio.create_task(cmd.auto_delete(self._app))
+            elif delete and self._app is None:
+                _LOGGER.debug("Not purging slash command %s as the bot has not started", cmd.name)
+
         return cmd.name if cmd is not None else None
 
     def get_slash_command(self, name: str) -> typing.Optional[slash_commands.SlashCommandBase]:
@@ -1032,11 +1041,11 @@ class Bot(hikari.GatewayBot):
         await command(context)
 
     async def _manage_slash_commands(self, _):
-        app = await self.rest.fetch_application()
+        self._app = await self.rest.fetch_application()
 
         if self._delete_unbound_slash_commands:
             _LOGGER.debug("Purging unbound slash commands")
-            global_slash_cmds = await self.rest.fetch_application_commands(app)
+            global_slash_cmds = await self.rest.fetch_application_commands(self._app)
             for cmd in global_slash_cmds:
                 if cmd.name not in self._slash_commands:
                     _LOGGER.debug("Deleting slash command %s", cmd.name)
@@ -1059,4 +1068,4 @@ class Bot(hikari.GatewayBot):
 
         for cmd in self._slash_commands.values():
             _LOGGER.debug("Creating slash command %s", cmd.name)
-            await cmd.auto_create(app)
+            await cmd.auto_create(self._app)

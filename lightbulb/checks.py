@@ -530,9 +530,7 @@ def has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions)
     return decorate
 
 
-def bot_has_permissions(
-    perm1: hikari.Permissions, *permissions: hikari.Permissions
-) -> typing.Callable[[T_inv], T_inv]:
+def bot_has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions) -> typing.Callable[[T_inv], T_inv]:
     """
     A decorator that prevents the command from being used if the bot is missing any of the required
     channel permissions (permissions granted by a permission overwrite).

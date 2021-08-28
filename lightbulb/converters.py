@@ -44,7 +44,7 @@ along with the converters they 'replace' can be seen below:
 
 - :obj:`hikari.User` (:obj:`~.user_converter`)
 - :obj:`hikari.Member` (:obj:`~.member_converter`)
-- :obj:`hikari.TextChannel` (:obj:`~.text_channel_converter`)
+- :obj:`hikari.TextableChannel` (:obj:`~.text_channel_converter`)
 - :obj:`hikari.GuildVoiceChannel` (:obj:`~.guild_voice_channel_converter`)
 - :obj:`hikari.GuildCategory` (:obj:`~.category_converter`)
 - :obj:`hikari.Role` (:obj:`~.role_converter`)
@@ -612,7 +612,7 @@ class _ConsumeRestConverter:
 if typing.TYPE_CHECKING:
     user_converter = hikari.User
     member_converter = hikari.Member
-    text_channel_converter = hikari.TextChannel
+    text_channel_converter = hikari.TextableChannel
     guild_voice_channel_converter = hikari.GuildVoiceChannel
     category_converter = hikari.GuildCategory
     role_converter = hikari.Role

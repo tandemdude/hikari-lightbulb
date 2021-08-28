@@ -362,7 +362,7 @@ def has_roles(
     role1: snowflakes.SnowflakeishOr[hikari.PartialRole],
     *role_ids: snowflakes.SnowflakeishOr[hikari.PartialRole],
     mode: typing.Literal["all", "any"] = "all",
-):
+) -> typing.Callable[[T_inv], T_inv]:
     """
     A decorator that prevents a command from being used by anyone missing roles according
     to the given mode.
@@ -394,7 +394,9 @@ def has_roles(
     return decorate
 
 
-def has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+def has_guild_permissions(
+    perm1: hikari.Permissions, *permissions: hikari.Permissions
+) -> typing.Callable[[T_inv], T_inv]:
     """
     A decorator that prevents the command from being used by a member missing any of the required
     guild permissions (permissions granted by a role).
@@ -426,7 +428,9 @@ def has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permis
     return decorate
 
 
-def bot_has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+def bot_has_guild_permissions(
+    perm1: hikari.Permissions, *permissions: hikari.Permissions
+) -> typing.Callable[[T_inv], T_inv]:
     """
     A decorator that prevents the command from being used if the bot is missing any of the required
     guild permissions (permissions granted by a role).
@@ -458,7 +462,7 @@ def bot_has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Pe
     return decorate
 
 
-def has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+def has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions) -> typing.Callable[[T_inv], T_inv]:
     """
     A decorator that prevents the command from being used by a member missing any of the required
     channel permissions (permissions granted by a permission overwrite).
@@ -485,7 +489,7 @@ def has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions)
     return decorate
 
 
-def bot_has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+def bot_has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions) -> typing.Callable[[T_inv], T_inv]:
     """
     A decorator that prevents the command from being used if the bot is missing any of the required
     channel permissions (permissions granted by a permission overwrite).
@@ -512,7 +516,7 @@ def bot_has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissi
     return decorate
 
 
-def has_attachment(*extensions: str):
+def has_attachment(*extensions: str) -> typing.Callable[[T_inv], T_inv]:
     """
     A decorator that prevents the command from being used if the invocation message
     does not include any attachments.
@@ -542,7 +546,9 @@ def has_attachment(*extensions: str):
     return decorate
 
 
-def check(check_func: typing.Callable[[context.Context], typing.Coroutine[typing.Any, typing.Any, bool]]):
+def check(
+    check_func: typing.Callable[[context.Context], typing.Coroutine[typing.Any, typing.Any, bool]]
+) -> typing.Callable[[T_inv], T_inv]:
     """
     A decorator which adds a custom check function to a command. The check function must be a coroutine (async def)
     and take a single argument, which will be the command context.
@@ -577,7 +583,7 @@ def check(check_func: typing.Callable[[context.Context], typing.Coroutine[typing
     return decorate
 
 
-def check_exempt(predicate):
+def check_exempt(predicate: typing.Callable[[context.Context], bool]) -> typing.Callable[[T_inv], T_inv]:
     """
     A decorator which allows **all** checks to be bypassed if the ``predicate`` conditions are met.
     Predicate can be a coroutine or a normal function but must take a single

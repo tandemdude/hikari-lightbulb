@@ -51,7 +51,7 @@ T = typing.TypeVar("T")
 ARG_SEP_REGEX = re.compile(r"(?:\s+|\n)")
 
 
-def when_mentioned_or(prefix_provider):
+def when_mentioned_or(prefix_provider) -> typing.Callable[[Bot, hikari.Message], typing.List[str]]:
     """
     Helper function which allows the bot's mentions to be used as the command prefix, as well
     as any other prefix(es) passed in or supplied by the ``prefix_provider``.
@@ -166,9 +166,9 @@ class Bot(hikari.GatewayBot):
         self._commands: typing.MutableMapping[str, commands.Command] = (
             dict() if not self.insensitive_commands else CIMultiDict()
         )
-        self.commands: typing.Set[commands.Command] = set()
+        self.commands: typing.Set[typing.Union[commands.Command, commands.Group]] = set()
         """A set containing all commands and groups registered to the bot."""
-        self._checks = []
+        self._checks: typing.List[typing.Callable[[context_.Context], typing.Coroutine[None, None, bool]]] = []
 
         self._help_impl = help_class(self)
 
@@ -179,12 +179,12 @@ class Bot(hikari.GatewayBot):
             sys.stdout.write(f"Thank you for using lightbulb!\n")
 
     @property
-    def help_command(self):
+    def help_command(self) -> help_.HelpCommand:
         """The instance of the help class used by the bot."""
         return self._help_impl
 
     @help_command.setter
-    def help_command(self, new_help_instance: help_.HelpCommand):
+    def help_command(self, new_help_instance: help_.HelpCommand) -> None:
         self._help_impl = new_help_instance
 
     async def fetch_owner_ids(self) -> None:

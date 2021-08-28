@@ -57,7 +57,7 @@ _ConverterT = typing.Union[_BaseConverter[T], _BaseConverter[typing.List[T]]]
 _CONVERTER_CLASS_MAPPING = {
     hikari.User: converters.user_converter,
     hikari.Member: converters.member_converter,
-    hikari.TextChannel: converters.text_channel_converter,
+    hikari.TextableChannel: converters.text_channel_converter,
     hikari.GuildVoiceChannel: converters.guild_voice_channel_converter,
     hikari.GuildCategory: converters.category_converter,
     hikari.Role: converters.role_converter,
@@ -88,7 +88,7 @@ def _bind_prototype(instance: typing.Any, command_template: _CommandT):
         def __hash__(self) -> int:
             return hash(self.name)
 
-        def __eq__(self, other) -> bool:
+        def __eq__(self, other: typing.Any) -> bool:
             return isinstance(other, (type(self), Command)) and other.name == self.name
 
         async def invoke(self, context: context_.Context, *args: str, **kwargs: str) -> typing.Any:
@@ -379,7 +379,12 @@ class Command:
         """
         return self._checks
 
-    def command_error(self):
+    def command_error(
+        self,
+    ) -> typing.Callable[
+        [typing.Callable[[events.CommandErrorEvent], typing.Coroutine[None, None, typing.Any]]],
+        typing.Callable[[events.CommandErrorEvent], typing.Coroutine[None, None, typing.Any]],
+    ]:
         """
         A decorator to register a coroutine as the command's error handler. Any return from the error handler
         will be used to determine whether or not the error was handled successfully. A return of any truthy
@@ -413,7 +418,12 @@ class Command:
 
         return decorate
 
-    def before_invoke(self):
+    def before_invoke(
+        self,
+    ) -> typing.Callable[
+        [typing.Callable[[context_.Context], typing.Coroutine[None, None, typing.Any]]],
+        typing.Callable[[context_.Context], typing.Coroutine[None, None, typing.Any]],
+    ]:
         """
         A decorator to register a coroutine to be run before the command is invoked.
 
@@ -429,7 +439,12 @@ class Command:
 
         return decorate
 
-    def after_invoke(self):
+    def after_invoke(
+        self,
+    ) -> typing.Callable[
+        [typing.Callable[[context_.Context], typing.Coroutine[None, None, typing.Any]]],
+        typing.Callable[[context_.Context], typing.Coroutine[None, None, typing.Any]],
+    ]:
         """
         A decorator to register a coroutine to be run after the command is invoked.
 
@@ -542,7 +557,9 @@ class Group(Command):
         self.subcommands: typing.Set[Command] = set()
         """A set containing all subcommands registered to the group."""
 
-    def _resolve_subcommand(self, args) -> typing.Tuple[typing.Union[Command, Group], typing.Iterable[str]]:
+    def _resolve_subcommand(
+        self, args: typing.Iterable[str]
+    ) -> typing.Tuple[typing.Union[Command, Group], typing.Iterable[str]]:
         this = self
 
         args.pop(0)
@@ -575,7 +592,7 @@ class Group(Command):
                 c.add_check(check_func)
         super().add_check(check_func)
 
-    def get_subcommand(self, name: str) -> Command:
+    def get_subcommand(self, name: str) -> typing.Optional[Command]:
         """
         Get a command object for a subcommand of the group from it's registered name.
 

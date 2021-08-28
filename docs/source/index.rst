@@ -15,9 +15,6 @@ Lightbulb is a command handler library designed for use with `Hikari <https://gi
 
 It aims to provide an easy to use interface for building commands with your bot.
 
-This library is currently unfinished but you can help speed up the development by contributing and submitting merge requests to the repository.
-It is working in its current state but I'd love to see more functionality added further down the line!
-
 Repository: `View on GitHub <https://github.com/tandemdude/hikari-lightbulb>`_
 
 Docs: `View Here <https://hikari-lightbulb.readthedocs.io/>`_
@@ -28,6 +25,9 @@ If you think you have found a bug or other problem with the library, or you woul
 you should submit an issue on the GitHub repository `here <https://github.com/tandemdude/hikari-lightbulb/issues>`_.
 Before doing so you should make sure you are on the latest version of the library and check to see if an issue
 already exists for your bug or feature.
+
+Also see `Tanjun <https://fasterspeeding.github.io/Tanjun/master/>`_ if you would prefer different command handler
+syntax. `GitHub <https://github.com/FasterSpeeding/Tanjun>`_
 
 
 **Contributors:**

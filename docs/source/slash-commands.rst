@@ -9,6 +9,8 @@ As Discord has now decided to ban bots from reading messages without the intent 
 
 Read more about this on the `discord documentation <https://discord.com/developers/docs/interactions/application-commands>`_ yourself.
 
+----
+
 Creating a Basic Slash Command
 ==============================
 
@@ -57,6 +59,8 @@ Your first slash command can be written very easily:
     # until the bot is shut off
     bot.run()
 
+
+----
 
 Creating a Slash Command Group
 ==============================
@@ -112,6 +116,8 @@ slash command group:
             await context.respond(context.options["baz"].value)
 
 
+----
+
 Creating a Slash Command Subgroup
 =================================
 
@@ -149,6 +155,8 @@ as you may refer to the previous sections for more details.
     class Baz(slash_commands.SlashSubCommand):
         ...
 
+
+----
 
 API Reference
 =============

@@ -738,7 +738,7 @@ class Bot(hikari.GatewayBot):
 
         if isinstance(prefixes, str):
             prefixes = [prefixes]
-            
+
         prefixes.sort(key=len, reverse=True)
 
         for prefix in prefixes:

@@ -971,14 +971,20 @@ class Bot(hikari.GatewayBot):
             the bot has started (i.e. ``bot.run()`` has not yet been called).
         """
         cmd = command(self)
+
+        if cmd.name in self._slash_commands:
+            raise NameError(f"Slash command {cmd.name} has a name already registered.")
+
         self._slash_commands[cmd.name] = cmd
         self.slash_commands.add(cmd)
 
         if create and self._app is not None:
-            _LOGGER.debug("Creating slash command %s", cmd.name)
+            _LOGGER.debug("creating slash command %s", cmd.name)
             asyncio.create_task(cmd.auto_create(self._app))
         elif create and self._app is None:
-            _LOGGER.debug("Not adding slash command %s as the bot has not started", cmd.name)
+            _LOGGER.debug("not adding slash command %s as the bot has not started", cmd.name)
+
+        _LOGGER.debug("slash command added %s", cmd.name)
 
     def remove_slash_command(self, name: str, delete: bool = False) -> typing.Optional[str]:
         """
@@ -997,10 +1003,12 @@ class Bot(hikari.GatewayBot):
             self.slash_commands.remove(cmd)
 
             if delete and self._app is not None:
-                _LOGGER.debug("Purging slash command %s", cmd.name)
+                _LOGGER.debug("purging slash command %s", cmd.name)
                 asyncio.create_task(cmd.auto_delete(self._app))
             elif delete and self._app is None:
-                _LOGGER.debug("Not purging slash command %s as the bot has not started", cmd.name)
+                _LOGGER.debug("not purging slash command %s as the bot has not started", cmd.name)
+
+            _LOGGER.debug("slash command removed %s", cmd.name)
 
         return cmd.name if cmd is not None else None
 
@@ -1058,7 +1066,7 @@ class Bot(hikari.GatewayBot):
 
             guild_slash_cmds = {}
             for guild_id in guild_ids:
-                guild_slash_cmds[guild_id] = await self.rest.fetch_application_commands(app, guild_id)
+                guild_slash_cmds[guild_id] = await self.rest.fetch_application_commands(self._app, guild_id)
 
             for guild_id, cmds in guild_slash_cmds.items():
                 for cmd in cmds:

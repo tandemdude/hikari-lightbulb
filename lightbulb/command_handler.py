@@ -78,7 +78,7 @@ def when_mentioned_or(prefix_provider):
     """
 
     async def get_prefixes(bot, message):
-        mentions = [f"<@{bot.me.id}> ", f"<@!{bot.me.id}> "]
+        mentions = [f"<@{bot.get_me().id}> ", f"<@!{bot.get_me().id}> "]
 
         if callable(prefix_provider):
             prefixes = prefix_provider(bot, message)

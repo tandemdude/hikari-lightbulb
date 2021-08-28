@@ -951,19 +951,49 @@ class Bot(hikari.GatewayBot):
 
         await self.process_commands_for_event(event)
 
-    def add_slash_command(self, command: typing.Type[slash_commands.SlashCommandBase]) -> None:
+    def add_slash_command(self, command: typing.Type[slash_commands.SlashCommandBase], create: bool = False) -> None:
         """
         Registers a slash command with the bot.
 
         Args:
             command (Type[:obj:`~lightbulb.slash_commands.SlashCommandBase`]): The slash command class to register
                 to the bot. This should **not** be instantiated.
+            create (:obj:`bool`): Whether or not to send a create request to discord when the command is added.
+                Defaults to ``False``.
 
         Returns:
             ``None``
+
+        Warning:
+            The ``create`` argument **must** be ``False`` if the command is being added to the bot before
+            the bot has started (i.e. ``bot.run()`` has not yet been called).
         """
         cmd = command(self)
         self._slash_commands[cmd.name] = cmd
+        self.slash_commands.add(cmd)
+        if create:
+            app = await self.rest.fetch_application()
+            await cmd.auto_create(app)
+
+    def remove_slash_command(self, name: str, delete: bool = False) -> typing.Optional[str]:
+        """
+        Remove a slash command from the bot and return its name or ``None`` if no command was removed.
+
+        Args:
+            name (:obj:`str`): The name of the slash command to remove.
+            delete (:obj:`bool`): Whether or not to delete the command from discord when it is removed. Defaults
+                to ``False``.
+
+        Returns:
+            Optional[ :obj:`str` ]: Name of the slash command that was removed.
+        """
+        cmd = self._slash_commands.pop(name)
+        if cmd is not None:
+            self.slash_commands.remove(cmd)
+            if delete:
+                app = await self.rest.fetch_application()
+                await cmd.auto_delete(app)
+        return cmd.name if cmd is not None else None
 
     def get_slash_command(self, name: str) -> typing.Optional[slash_commands.SlashCommandBase]:
         """

@@ -112,7 +112,7 @@ class SlashCommandBase(abc.ABC):
 
     async def auto_create(self, app: hikari.SnowflakeishOr[hikari.PartialApplication]) -> None:
         """
-        Creates the command in the required scopes (guilds, global) automatically.
+        Creates the command in the appropriate scopes (guilds, global) automatically.
 
         Args:
             app (hikari.SnowflakeishOr[hikari.PartialApplication]): The application to add the command to.
@@ -122,9 +122,25 @@ class SlashCommandBase(abc.ABC):
         """
         if self.enabled_guilds is None:
             await self.create(app)
-            return
-        for guild_id in self.enabled_guilds:
-            await self.create(app, guild_id)
+        else:
+            for guild_id in self.enabled_guilds:
+                await self.create(app, guild_id)
+
+    async def auto_delete(self, app: hikari.SnowflakeishOr[hikari.PartialApplication]) -> None:
+        """
+        Deletes the command from the appropriate scopes (guilds, global) automatically.
+
+        Args:
+            app (hikari.SnowflakeishOr[hikari.PartialApplication]): The application to remove the command from.
+
+        Returns:
+            ``None``
+        """
+        if self.enabled_guilds is None:
+            await self.delete(app)
+        else:
+            for guild_id in self.enabled_guilds:
+                await self.delete(app, guild_id)
 
 
 class SlashCommand(SlashCommandBase, abc.ABC):

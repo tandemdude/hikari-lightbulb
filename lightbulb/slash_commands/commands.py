@@ -58,10 +58,10 @@ class SlashCommandBase(abc.ABC):
         bot (:obj:`~lightbulb.command_handler.Bot`): The bot instance the command will be added to.
     """
 
-    __slots__: typing.Sequence[str] = ("_bot", "_instances")
+    __slots__: typing.Sequence[str] = ("bot", "_instances")
 
     def __init__(self, bot: command_handler.Bot) -> None:
-        self._bot = bot
+        self.bot = bot
         self._instances: typing.MutableMapping[hikari.Snowflakeish, hikari.Command] = {}
 
     @abc.abstractmethod
@@ -130,7 +130,7 @@ class TopLevelSlashCommandBase(SlashCommandBase, abc.ABC):
         Returns:
             ``None``
         """
-        await self._bot.rest.delete_application_command(
+        await self.bot.rest.delete_application_command(
             app, self._instances[guild_id], **({"guild": guild_id} if guild_id is not None else {})
         )
         self._instances.pop(guild_id)
@@ -200,7 +200,7 @@ class SlashCommand(TopLevelSlashCommandBase, abc.ABC):
         app: hikari.SnowflakeishOr[hikari.PartialApplication],
         guild_id: typing.Optional[hikari.Snowflakeish] = None,
     ) -> hikari.Command:
-        created_command = await self._bot.rest.create_application_command(
+        created_command = await self.bot.rest.create_application_command(
             app,
             self.name,
             self.description,
@@ -403,7 +403,7 @@ class SlashCommandGroup(TopLevelSlashCommandBase, abc.ABC):
         app: hikari.SnowflakeishOr[hikari.PartialApplication],
         guild_id: typing.Optional[hikari.Snowflakeish] = None,
     ) -> hikari.Command:
-        created_command = await self._bot.rest.create_application_command(
+        created_command = await self.bot.rest.create_application_command(
             app,
             self.name,
             self.description,

@@ -124,9 +124,11 @@ class TopLevelSlashCommandBase(SlashCommandBase, abc.ABC):
     ) -> None:
         """
         Deletes the command for a specific guild, or globally if no guild ID is given.
+
         Args:
             app (hikari.SnowflakeishOr[hikari.PartialApplication]): The application to delete the command from.
             guild_id (Optional[hikari.Snowflakeish]): The ID of the guild to delete the command for.
+
         Returns:
             ``None``
         """
@@ -187,7 +189,13 @@ class SlashCommand(TopLevelSlashCommandBase, abc.ABC):
     Abstract base class for top level slash commands. All slash commands that are not groups
     should inherit from this class.
 
-    All abstract methods **must** be implemented by your custom slash command class.
+    All abstract methods **must** be implemented by your custom slash command class. A list of the abstract
+    methods and properties you are required to implement for this class can be seen below:
+
+    - :obj:`~lightbulb.slash_commands.SlashCommandBase.description`
+    - :obj:`~lightbulb.slash_commands.SlashCommand.options`
+    - :obj:`~lightbulb.slash_commands.TopLevelSlashCommandBase.enabled_guilds`
+    - :obj:`~lightbulb.slash_commands.SlashCommand.callback`
     """
 
     __slots__: typing.Sequence[str] = ()
@@ -237,7 +245,12 @@ class SlashSubCommand(SlashCommandBase, abc.ABC):
     """
     Abstract base class for slash subcommands. All slash subcommands should inherit from this class.
 
-    All abstract methods **must** be implemented by your custom slash subcommand class.
+    All abstract methods **must** be implemented by your custom slash subcommand class. A list of the abstract
+    methods and properties you are required to implement for this class can be seen below:
+
+    - :obj:`~lightbulb.slash_commands.SlashCOmmandBase.description`
+    - :obj:`~lightbulb.slash_commands.SlashSubCommand.options`
+    - :obj:`~lightbulb.slash_commands.SlashSubCommand.callback`
     """
 
     async def __call__(self, context: context_.SlashCommandContext) -> None:
@@ -289,7 +302,10 @@ class SlashSubGroup(SlashCommandBase, abc.ABC):
     """
     Abstract base class for slash subgroups. All slash subgroups should inherit from this class.
 
-    All abstract methods **must** be implemented by your custom slash subgroup class.
+    All abstract methods **must** be implemented by your custom slash subgroup class. A list of the abstract
+    methods and properties you are required to implement for this class can be seen below:
+
+    - :obj:`~lightbulb.slash_commands.SlashCommandBase.description`
     """
 
     __slots__: typing.Sequence[str] = ("_subcommands",)
@@ -348,7 +364,11 @@ class SlashCommandGroup(TopLevelSlashCommandBase, abc.ABC):
     """
     Abstract base class for slash command groups. All slash command groups should inherit from this class.
 
-    All abstract methods **must** be implemented by your custom slash command group class.
+    All abstract methods **must** be implemented by your custom slash command group class. A list of the abstract
+    methods and properties you are required to implement for this class can be seen below:
+
+    - :obj:`~lightbulb.slash_commands.SlashCommandBase.description`
+    - :obj:`~lightbulb.slash_commands.TopLevelSlashCommandBase.enabled_guilds`
     """
 
     __slots__: typing.Sequence[str] = ("_subcommands",)

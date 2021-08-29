@@ -998,6 +998,8 @@ class Bot(hikari.GatewayBot):
         Returns:
             Optional[ :obj:`str` ]: Name of the slash command that was removed.
         """
+        name = name.lower()
+
         cmd = self._slash_commands.pop(name)
         if cmd is not None:
             self.slash_commands.remove(cmd)

@@ -6,6 +6,16 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 1.2.0
+=============
+
+- Made the ``bot`` attribute of slash commands public.
+
+- Added :obj:`~lightbulb.slash_commands.SlashCommandContext.option_values`
+
+- Added :obj:`~lightbulb.slash_commands.SlashCommandOptionsWrapper`
+
+
 Version 1.1.0
 =============
 

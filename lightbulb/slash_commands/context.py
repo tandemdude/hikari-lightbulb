@@ -17,8 +17,9 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__: typing.Final[typing.List[str]] = ["SlashCommandContext"]
+__all__: typing.Final[typing.List[str]] = ["SlashCommandOptionsWrapper", "SlashCommandContext"]
 
+import functools
 import typing
 
 import hikari
@@ -26,6 +27,29 @@ import hikari
 if typing.TYPE_CHECKING:
     from lightbulb import command_handler
     from lightbulb.slash_commands import commands
+
+
+class SlashCommandOptionsWrapper:
+    """
+    A wrapper class for :obj:`~lightbulb.slash_commands.SlashCommandContext.options` which allows the user
+    to access the option values through a more user_friendly, attribute syntax.
+    :obj:`~lightbulb.slash_commands.SlashCommandOptionsWrapper.option_name` will return either the option's value,
+    or ``None`` if the option was not provided in the slash command invocation.
+
+    This is accessible through :obj:`~lightbulb.slash_commands.SlashCommandContext.option_values`
+
+    Args:
+        options (Mapping[:obj:`str`, :obj:`hikari.CommandInteractionOption`): The options that the slash command
+            was called with.
+    """
+    __slots__: typing.Sequence[str] = ("_options",)
+
+    def __init__(self, options: typing.Mapping[str, hikari.CommandInteractionOption]) -> None:
+        self._options = options
+
+    def __getattr__(self, item: str) -> typing.Optional[typing.Union[str, int, bool, float]]:
+        option = self._options.get(item)
+        return option.value if option is not None else None
 
 
 class SlashCommandContext:
@@ -38,7 +62,7 @@ class SlashCommandContext:
         command (:obj:`~lightbulb.slash_commands.SlashCommand`): The :obj:`~SlashCommand` object that was invoked.
     """
 
-    __slots__: typing.Sequence[str] = ("bot", "_interaction", "_command", "options")
+    __slots__: typing.Sequence[str] = ("bot", "_interaction", "_command", "options", "arg_values")
 
     def __init__(
         self,
@@ -51,7 +75,7 @@ class SlashCommandContext:
         self._interaction = interaction
         self._command = command
 
-        self.options: typing.Mapping[str, hikari.CommandOption] = (
+        self.options: typing.Mapping[str, hikari.CommandInteractionOption] = (
             {option.name: option for option in self._interaction.options}
             if self._interaction.options is not None
             else {}
@@ -117,6 +141,11 @@ class SlashCommandContext:
     def resolved(self) -> typing.Optional[hikari.ResolvedOptionData]:
         """Mappings of the objects resolved for the provided command options."""
         return self._interaction.resolved
+
+    @functools.cached_property
+    def option_values(self) -> SlashCommandOptionsWrapper:
+        """The values for the slash command's various options."""
+        return SlashCommandOptionsWrapper(self.options)
 
     async def respond(self, content: hikari.UndefinedType = hikari.UNDEFINED, **kwargs: hikari.UndefinedType) -> None:
         """

@@ -412,12 +412,16 @@ class Bot(hikari.GatewayBot):
         """
         self._checks.append(func)
 
-    def add_plugin(self, plugin: plugins.Plugin) -> None:
+    def add_plugin(self, plugin: typing.Union[plugins.Plugin, typing.Type[plugins.Plugin]]) -> None:
         """
-        Add a :obj:`~.plugins.Plugin` to the bot including all of the plugin commands.
+        Add a :obj:`~.plugins.Plugin` instance or class to the bot, including all of the plugin commands.
+
+        If a class is passed in instead of a plugin instance, then the bot will attempt to instantiate it and
+        then add the newly-created plugin instance to the bot.
 
         Args:
-            plugin (:obj:`~.plugins.Plugin`): Plugin to add to the bot.
+            plugin (Union[:obj:`~.plugins.Plugin`, Type[:obj:`~.plugins.Plugin`]]): Plugin instance or plugin
+                subclass to add to the bot.
 
         Returns:
             ``None``
@@ -426,6 +430,9 @@ class Bot(hikari.GatewayBot):
             :obj:`NameError`: If the name of the plugin being added conflicts with an
                 existing plugin.
         """
+        if inspect.isclass(plugin) and issubclass(plugin, plugins.Plugin):
+            return self.add_plugin(plugin())
+
         if plugin.name in self.plugins:
             raise NameError(f"A plugin named {plugin.name} is already registered.")
 

@@ -62,8 +62,6 @@ class SlashCommandContext:
         command (:obj:`~lightbulb.slash_commands.SlashCommand`): The :obj:`~SlashCommand` object that was invoked.
     """
 
-    __slots__: typing.Sequence[str] = ("bot", "_interaction", "_command", "options", "arg_values")
-
     def __init__(
         self,
         bot: command_handler.Bot,

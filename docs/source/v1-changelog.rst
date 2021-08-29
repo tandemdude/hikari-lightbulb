@@ -17,6 +17,8 @@ Version 1.2.0
 
 - Added :obj:`~lightbulb.command_handler.Bot.purge_slash_commands`.
 
+- Added support for calling :obj:`~lightbulb.command_handler.Bot.add_plugin` with a plugin class instead of an instance.
+
 
 Version 1.1.0
 =============

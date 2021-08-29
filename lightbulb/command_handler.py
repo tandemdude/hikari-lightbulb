@@ -177,8 +177,8 @@ class Bot(hikari.GatewayBot):
         self._checks = []
 
         self._delete_unbound_slash_commands = delete_unbound_slash_commands
-        self._slash_commands: typing.MutableMapping[str, slash_commands.SlashCommandBase] = {}
-        self.slash_commands: typing.Set[slash_commands.SlashCommandBase] = set()
+        self._slash_commands: typing.MutableMapping[str, slash_commands.TopLevelSlashCommandBase] = {}
+        self.slash_commands: typing.Set[slash_commands.TopLevelSlashCommandBase] = set()
         """A set containing all slash commands registered to the bot."""
 
         self._app: typing.Optional[hikari.PartialApplication] = None
@@ -953,7 +953,9 @@ class Bot(hikari.GatewayBot):
 
         await self.process_commands_for_event(event)
 
-    def add_slash_command(self, command: typing.Type[slash_commands.SlashCommandBase], create: bool = False) -> None:
+    def add_slash_command(
+        self, command: typing.Type[slash_commands.TopLevelSlashCommandBase], create: bool = False
+    ) -> None:
         """
         Registers a slash command with the bot.
 
@@ -1014,7 +1016,7 @@ class Bot(hikari.GatewayBot):
 
         return cmd.name if cmd is not None else None
 
-    def get_slash_command(self, name: str) -> typing.Optional[slash_commands.SlashCommandBase]:
+    def get_slash_command(self, name: str) -> typing.Optional[slash_commands.TopLevelSlashCommandBase]:
         """
         Gets the slash command with the given name, or ``None`` if one with that name does
         not exist.
@@ -1023,10 +1025,40 @@ class Bot(hikari.GatewayBot):
             name (:obj:`str`): The name of the slash command to get the object for.
 
         Returns:
-            Optional[:obj:`~lightbulb.slash_commands.SlashCommandBase`]: Retrieved slash command or ``None`` if not
-                found.
+            Optional[:obj:`~lightbulb.slash_commands.TopLevelSlashCommandBase`]: Retrieved slash command or ``None``
+                if not found.
         """
         return self._slash_commands.get(name)
+
+    async def purge_slash_commands(self, *guild_ids: hikari.Snowflakeish, global_commands: bool = False) -> None:
+        """
+        Purges all slash commands from the guilds with the specified IDs, and all the global slash
+        commands if ``global_commands`` is ``True``. Useful if you want to teardown old slash commands from
+        the bot and cannot be bothered to fetch them individually yourself. If neither `guild_ids` nor `global_commands`
+        is specified then this method will do nothing.
+
+        Args:
+            *guild_ids (:obj:`hikari.Snowflakeish`): IDs for the guilds to purge slash commands from.
+
+        Keyword Args:
+            global_commands (:obj:`bool`): Whether or not to purge global slash commands from the bot.
+
+        Returns:
+            ``None``
+        """
+        commands_to_remove = []
+        if global_commands:
+            commands_to_remove.extend(await self.rest.fetch_application_commands(self._app))
+        if guild_ids:
+            for guild_id in guild_ids:
+                commands_to_remove.extend(await self.rest.fetch_application_commands(self._app, guild_id))
+
+        for command in commands_to_remove:
+            if command.guild_id is None:
+                _LOGGER.debug("deleting global slash command %s", command.name)
+            else:
+                _LOGGER.debug("deleting slash command %s from guild %s", command.name, str(command.guild_id))
+            await command.delete()
 
     async def handle_slash_commands(self, event: hikari.InteractionCreateEvent) -> None:
         """
@@ -1054,7 +1086,11 @@ class Bot(hikari.GatewayBot):
         self._app = await self.rest.fetch_application()
 
         if self._delete_unbound_slash_commands:
+            # Note that the purge_slash_commands method is not used here as the bot only purges
+            # commands that appear not to have an implementation registered, as opposed to just
+            # purging every command.
             _LOGGER.debug("purging unbound slash commands")
+            await self.purge_slash_commands(global_commands=True)
             global_slash_cmds = await self.rest.fetch_application_commands(self._app)
             for cmd in global_slash_cmds:
                 if cmd.name not in self._slash_commands:

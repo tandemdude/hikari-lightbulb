@@ -11,9 +11,11 @@ Version 1.2.0
 
 - Made the ``bot`` attribute of slash commands public.
 
-- Added :obj:`~lightbulb.slash_commands.SlashCommandContext.option_values`
+- Added :obj:`~lightbulb.slash_commands.SlashCommandContext.option_values`.
 
-- Added :obj:`~lightbulb.slash_commands.SlashCommandOptionsWrapper`
+- Added :obj:`~lightbulb.slash_commands.SlashCommandOptionsWrapper`.
+
+- Added :obj:`~lightbulb.command_handler.Bot.purge_slash_commands`.
 
 
 Version 1.1.0

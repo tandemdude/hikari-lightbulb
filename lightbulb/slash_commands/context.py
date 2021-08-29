@@ -42,6 +42,7 @@ class SlashCommandOptionsWrapper:
         options (Mapping[:obj:`str`, :obj:`hikari.CommandInteractionOption`): The options that the slash command
             was called with.
     """
+
     __slots__: typing.Sequence[str] = ("_options",)
 
     def __init__(self, options: typing.Mapping[str, hikari.CommandInteractionOption]) -> None:

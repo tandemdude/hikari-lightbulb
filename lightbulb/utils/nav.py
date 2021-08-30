@@ -70,7 +70,9 @@ class NavButton:
         Returns:
             :obj:`bool`: Whether or not the button is pressed in the given event.
         """
-        return event.emoji.mention == self.emoji.mention
+        if event.emoji_id is not None and isinstance(self.emoji, hikari.CustomEmoji):
+            return event.emoji_id == self.emoji.id
+        return event.emoji_name == self.emoji.name
 
     def press(self, nav: Navigator, event: hikari.ReactionAddEvent) -> typing.Coroutine[typing.Any, typing.Any, None]:
         """

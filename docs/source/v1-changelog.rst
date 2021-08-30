@@ -21,6 +21,7 @@ Version 1.2.0
 
 - Added ability for a bot to be slash commands only by passing the ``slash_commands_only`` flag into the constructor.
 
+- Fixed ``AttributeError`` when using navigators.
 
 Version 1.1.0
 =============

@@ -135,22 +135,31 @@ class Bot(hikari.GatewayBot):
             bot starts. This will remove any slash commands that do not have a
             :obj:`~lightbulb.slash_commands.SlashCommand` object bound to them when the bot starts but are registered
             according to  discord's API. Defaults to ``True``
+        slash_commands_only (:obj:`bool`): Whether or not the bot will only be using slash commands to interact
+            with discord. Defaults to ``False``. If this is ``False`` and no prefix is provided then an error will
+            be raised. If ``True``, then you do not need to provide a prefix.
         **kwargs: Other parameters passed to the :class:`hikari.impl.bot.BotAppImpl` constructor.
     """
 
     def __init__(
         self,
         *,
-        prefix,
+        prefix=None,
         insensitive_commands: bool = False,
         ignore_bots: bool = True,
         owner_ids: typing.Iterable[int] = (),
         help_class: typing.Type[help_.HelpCommand] = help_.HelpCommand,
         delete_unbound_slash_commands: bool = True,
+        slash_commands_only: bool = False,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
-        self.subscribe(hikari.MessageCreateEvent, self.handle)
+
+        if prefix is None and slash_commands_only is False:
+            raise TypeError("slash_commands_only is False but no prefix was provided.")
+
+        if not slash_commands_only:
+            self.subscribe(hikari.MessageCreateEvent, self.handle)
         self.subscribe(hikari.InteractionCreateEvent, self.handle_slash_commands)
         self.subscribe(hikari.StartingEvent, self._manage_slash_commands)
 

@@ -19,6 +19,8 @@ Version 1.2.0
 
 - Added support for calling :obj:`~lightbulb.command_handler.Bot.add_plugin` with a plugin class instead of an instance.
 
+- Added ability for a bot to be slash commands only by passing the ``slash_commands_only`` flag into the constructor.
+
 
 Version 1.1.0
 =============

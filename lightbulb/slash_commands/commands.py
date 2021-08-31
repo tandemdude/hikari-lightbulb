@@ -96,6 +96,9 @@ class TopLevelSlashCommandBase(SlashCommandBase, abc.ABC):
         """
         The guilds that the slash command is enabled in. If ``None``, the command will be added as
         a global command.
+
+        Returns:
+            :obj:`Optional[hikari.SnowflakeishSequence]`: The guilds to add the command to.
         """
         ...
 

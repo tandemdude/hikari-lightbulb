@@ -13,6 +13,12 @@ Read more about this on the `discord documentation <https://discord.com/develope
 
 Creating a Basic Slash Command
 ==============================
+.. warning::
+
+   To make slash commands work you need to add the scope : applications.commands to your bot invite
+   
+.. warning::
+    You also need to wait about 1 hour after bot creation to use global slash commands
 
 Your first slash command can be written very easily:
 ::

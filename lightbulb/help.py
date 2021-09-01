@@ -306,7 +306,7 @@ class HelpCommand:
 
         Args:
             context (:obj:`~.context.Context`): Context to send the help to.
-            command (:obj:`~.commands.Group`): Group object to send help for.
+            group (:obj:`~.commands.Group`): Group object to send help for.
 
         Returns:
             ``None``

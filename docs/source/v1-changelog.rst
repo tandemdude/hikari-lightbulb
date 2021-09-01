@@ -6,6 +6,13 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 1.2.1
+=============
+
+- Made the bot now only send a slash command create request to discord if it detects that the version discord holds is out of date. This can be disabled using the ``recreate_changed_slash_commands`` flag in the bot constructor.
+
+- Various documentation improvements.
+
 Version 1.2.0
 =============
 

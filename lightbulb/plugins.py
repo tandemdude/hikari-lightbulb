@@ -180,7 +180,7 @@ class Plugin:
         self.name = self.__class__.__name__ if name is None else name
         """The plugin's registered name."""
         self.commands = set()
-        """"A set containing all commands and groups registered to the plugin."""
+        """A set containing all commands and groups registered to the plugin."""
         self._commands: typing.MutableMapping[str, typing.Union[commands.Command, commands.Group]] = {}
         self.listeners: typing.MutableMapping[
             typing.Type[hikari.Event],

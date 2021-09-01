@@ -126,13 +126,11 @@ class SlashCommandContext:
         """The :obj:`hikari.Command` object for this specific context."""
         return self._command.get_command(self.guild_id)
 
-    @property
-    def channel(self) -> typing.Optional[hikari.GuildChannel]:
+    def get_channel(self) -> typing.Optional[hikari.GuildChannel]:
         """The cached channel that the command was invoked in, or ``None`` if not found."""
         return self._interaction.get_channel()
 
-    @property
-    def guild(self) -> typing.Optional[hikari.GatewayGuild]:
+    def get_guild(self) -> typing.Optional[hikari.GatewayGuild]:
         """The cached guild that the command was invoked in, or ``None`` if not found."""
         return self.bot.cache.get_guild(self.guild_id)
 

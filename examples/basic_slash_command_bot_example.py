@@ -23,25 +23,19 @@ bot = lightbulb.Bot(prefix="!", token="YOUR_TOKEN", intents=hikari.Intents.ALL)
 
 
 class Ping(lightbulb.slash_commands.SlashCommand):
-    @property
-    def description(self):
-        return "Checks that the bot is alive"
+    description = "Checks that the bot is alive"
+    # None here means that the slash command is global. To enable for specific guilds,
+    # it should instead be a sequence of guild IDs.
+    enabled_guilds = None
+    options = []
 
-    @property
-    def options(self):
-        return []
-
+    # This function is called when the slash command is invoked by a user. It **must** be called "callback"
+    # otherwise the interaction **will** fail.
     async def callback(self, context):
         # To send an ephemeral message instead pass the kwarg:
         # flags=hikari.MessageFlag.EPHEMERAL
         # e.g. await context.respond("Pong!", flags=hikari.MessageFlag.EPHEMERAL)
         await context.respond("Pong!")
-
-    @property
-    def enabled_guilds(self):
-        # Returning None here means that the slash command is global.
-        # To enable for specific guilds, a sequence of guild IDs should be returned instead
-        return None
 
 
 bot.add_slash_command(Ping)

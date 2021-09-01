@@ -42,6 +42,7 @@ from lightbulb import plugins
 from lightbulb import slash_commands
 from lightbulb.converters import _DefaultingConverter
 from lightbulb.converters import _GreedyConverter
+from lightbulb.slash_commands.commands import _serialise_command
 from lightbulb.utils import maybe_await
 
 _LOGGER = logging.getLogger("lightbulb")
@@ -134,7 +135,10 @@ class Bot(hikari.GatewayBot):
         delete_unbound_slash_commands (:obj:`bool`): Whether or not to delete unbound slash commands when the
             bot starts. This will remove any slash commands that do not have a
             :obj:`~lightbulb.slash_commands.SlashCommand` object bound to them when the bot starts but are registered
-            according to  discord's API. Defaults to ``True``
+            according to  discord's API. Defaults to ``True``.
+        recreate_changed_slash_commands (:obj:`bool`): Whether or not to send the new version of the slash command
+            to discord if the bot detects that the version on discord does not match the local version. Defaults
+            to ``True``.
         slash_commands_only (:obj:`bool`): Whether or not the bot will only be using slash commands to interact
             with discord. Defaults to ``False``. If this is ``False`` and no prefix is provided then an error will
             be raised. If ``True``, then you do not need to provide a prefix.
@@ -150,6 +154,7 @@ class Bot(hikari.GatewayBot):
         owner_ids: typing.Iterable[int] = (),
         help_class: typing.Type[help_.HelpCommand] = help_.HelpCommand,
         delete_unbound_slash_commands: bool = True,
+        recreate_changed_slash_commands: bool = True,
         slash_commands_only: bool = False,
         **kwargs,
     ) -> None:
@@ -186,6 +191,7 @@ class Bot(hikari.GatewayBot):
         self._checks = []
 
         self._delete_unbound_slash_commands = delete_unbound_slash_commands
+        self._recreate_changed_slash_commands = recreate_changed_slash_commands
         self._slash_commands: typing.MutableMapping[str, slash_commands.TopLevelSlashCommandBase] = {}
         self.slash_commands: typing.Set[slash_commands.TopLevelSlashCommandBase] = set()
         """A set containing all slash commands registered to the bot."""
@@ -350,16 +356,16 @@ class Bot(hikari.GatewayBot):
             if set([name.casefold() for name in self._commands.keys()]).intersection(
                 {func.name.casefold(), *[a.casefold() for a in func._aliases]}
             ):
-                raise NameError(f"Command {func.name} has name or alias already registered.")
+                raise NameError(f"Command {func.name!r} has name or alias already registered.")
         else:
             if set(self._commands.keys()).intersection({func.name, *func._aliases}):
-                raise NameError(f"Command {func.name} has name or alias already registered.")
+                raise NameError(f"Command {func.name!r} has name or alias already registered.")
 
         self.commands.add(func)
         self._commands[func.name] = func
         for alias in func._aliases:
             self._commands[alias] = func
-        _LOGGER.debug("new command registered: %s", func.name)
+        _LOGGER.debug("new command registered %r", func.name)
         return self._commands[func.name]
 
     def add_group(self, func: typing.Union[typing.Callable, commands.Group], **kwargs) -> commands.Group:
@@ -397,13 +403,13 @@ class Bot(hikari.GatewayBot):
             )
 
         if set(self._commands.keys()).intersection({func.name, *func._aliases}):
-            raise AttributeError(f"Command {func.name} has name or alias already registered.")
+            raise AttributeError(f"Command {func.name!r} has name or alias already registered.")
 
         self.commands.add(func)
         self._commands[func.name] = func
         for alias in func._aliases:
             self._commands[alias] = func
-        _LOGGER.debug("new group registered: %s", func.name)
+        _LOGGER.debug("new group registered %r", func.name)
         return self._commands[func.name]
 
     def add_check(self, func: typing.Callable[[context_.Context], typing.Coroutine[None, None, bool]]) -> None:
@@ -443,7 +449,7 @@ class Bot(hikari.GatewayBot):
             return self.add_plugin(plugin())
 
         if plugin.name in self.plugins:
-            raise NameError(f"A plugin named {plugin.name} is already registered.")
+            raise NameError(f"A plugin named {plugin.name!r} is already registered.")
 
         self.plugins[plugin.name] = plugin
         for command in plugin._commands.values():
@@ -456,9 +462,9 @@ class Bot(hikari.GatewayBot):
             for listener in listeners:
                 callback = listener.__get__(plugin, type(plugin))
                 self.subscribe(listener.event_type, callback)
-                _LOGGER.debug("new listener registered: %s (%s)", callback.__name__, listener.event_type.__name__)
+                _LOGGER.debug("new listener registered %r (%s)", callback.__name__, listener.event_type.__name__)
 
-        _LOGGER.debug("new plugin registered: %s", plugin.name)
+        _LOGGER.debug("new plugin registered %r", plugin.name)
 
     def get_command(self, name: str) -> typing.Optional[commands.Command]:
         """
@@ -516,7 +522,7 @@ class Bot(hikari.GatewayBot):
         keys_to_remove.remove(name)
         for key in keys_to_remove:
             self._commands.pop(key)
-        _LOGGER.debug("command removed: %s", command.name)
+        _LOGGER.debug("command removed %r", command.name)
 
         return command.name
 
@@ -544,9 +550,9 @@ class Bot(hikari.GatewayBot):
             for listener in listeners:
                 callback = listener.__get__(plugin, type(plugin))
                 self.unsubscribe(listener.event_type, callback)
-                _LOGGER.debug("listener removed: %s (%s)", callback.__name__, listener.event_type.__name__)
+                _LOGGER.debug("listener removed %r (%s)", callback.__name__, listener.event_type.__name__)
 
-        _LOGGER.debug("plugin removed: %s", plugin.name)
+        _LOGGER.debug("plugin removed %r", plugin.name)
 
         return plugin.name
 
@@ -582,16 +588,16 @@ class Bot(hikari.GatewayBot):
                     bot.add_plugin(MyPlugin())
         """
         if extension in self.extensions:
-            raise errors.ExtensionAlreadyLoaded(text=f"{extension} is already loaded.")
+            raise errors.ExtensionAlreadyLoaded(text=f"Extension {extension!r} is already loaded.")
 
         module = importlib.import_module(extension)
 
         if not hasattr(module, "load"):
-            raise errors.ExtensionMissingLoad(text=f"{extension} is missing a load function")
+            raise errors.ExtensionMissingLoad(text=f"Extension {extension!r} is missing a load function")
         else:
             module.load(self)
             self.extensions.append(extension)
-            _LOGGER.debug("new extension loaded: %s", extension)
+            _LOGGER.debug("new extension loaded %r", extension)
 
     def unload_extension(self, extension: str) -> None:
         """
@@ -625,17 +631,17 @@ class Bot(hikari.GatewayBot):
                     bot.remove_plugin("MyPlugin")
         """
         if extension not in self.extensions:
-            raise errors.ExtensionNotLoaded(text=f"{extension} is not loaded.")
+            raise errors.ExtensionNotLoaded(text=f"Extension {extension!r} is not loaded.")
 
         module = importlib.import_module(extension)
 
         if not hasattr(module, "unload"):
-            raise errors.ExtensionMissingUnload(text=f"{extension} is missing an unload function")
+            raise errors.ExtensionMissingUnload(text=f"Extension {extension!r} is missing an unload function")
         else:
             module.unload(self)
             self.extensions.remove(extension)
             del sys.modules[extension]
-            _LOGGER.debug("extension unloaded: %s", extension)
+            _LOGGER.debug("extension unloaded %r", extension)
 
     def reload_extension(self, extension: str) -> None:
         """
@@ -649,7 +655,7 @@ class Bot(hikari.GatewayBot):
         Returns:
             ``None``
         """
-        _LOGGER.debug("reloading extension: %s", extension)
+        _LOGGER.debug("reloading extension %r", extension)
         old = sys.modules[extension]
         try:
             self.unload_extension(extension)
@@ -831,7 +837,7 @@ class Bot(hikari.GatewayBot):
             try:
                 conv_out, arg_string = await conv.convert(context, arg_string)
             except (ValueError, TypeError, errors.ConverterFailure):
-                raise errors.ConverterFailure(f"Converting failed for argument: {arg_name}")
+                raise errors.ConverterFailure(f"Converting failed for argument {arg_name!r}")
 
             if isinstance(conv_out, dict):
                 kwargs.update(conv_out)
@@ -917,7 +923,7 @@ class Bot(hikari.GatewayBot):
             if not await maybe_await(command._check_exempt_predicate, context):
                 await self._evaluate_checks(command, context)
             else:
-                _LOGGER.debug("checks bypassed for command: %s", context.message.content)
+                _LOGGER.debug("checks bypassed for command %r", context.message.content)
         except (
             errors.NotEnoughArguments,
             errors.TooManyArguments,
@@ -991,18 +997,18 @@ class Bot(hikari.GatewayBot):
         cmd = command(self)
 
         if cmd.name in self._slash_commands:
-            raise NameError(f"Slash command {cmd.name} has a name already registered.")
+            raise NameError(f"Slash command {cmd.name!r} has a name already registered.")
 
         self._slash_commands[cmd.name] = cmd
         self.slash_commands.add(cmd)
 
         if create and self._app is not None:
-            _LOGGER.debug("creating slash command %s", cmd.name)
+            _LOGGER.debug("creating slash command %r", cmd.name)
             asyncio.create_task(cmd.auto_create(self._app))
         elif create and self._app is None:
-            _LOGGER.debug("not adding slash command %s as the bot has not started", cmd.name)
+            _LOGGER.debug("not adding slash command %r as the bot has not started", cmd.name)
 
-        _LOGGER.debug("slash command added %s", cmd.name)
+        _LOGGER.debug("slash command added %r", cmd.name)
 
     def remove_slash_command(self, name: str, delete: bool = False) -> typing.Optional[str]:
         """
@@ -1023,12 +1029,12 @@ class Bot(hikari.GatewayBot):
             self.slash_commands.remove(cmd)
 
             if delete and self._app is not None:
-                _LOGGER.debug("purging slash command %s", cmd.name)
+                _LOGGER.debug("purging slash command %r", cmd.name)
                 asyncio.create_task(cmd.auto_delete(self._app))
             elif delete and self._app is None:
-                _LOGGER.debug("not purging slash command %s as the bot has not started", cmd.name)
+                _LOGGER.debug("not purging slash command %r as the bot has not started", cmd.name)
 
-            _LOGGER.debug("slash command removed %s", cmd.name)
+            _LOGGER.debug("slash command removed %r", cmd.name)
 
         return cmd.name if cmd is not None else None
 
@@ -1071,9 +1077,9 @@ class Bot(hikari.GatewayBot):
 
         for command in commands_to_remove:
             if command.guild_id is None:
-                _LOGGER.debug("deleting global slash command %s", command.name)
+                _LOGGER.debug("deleting global slash command %r", command.name)
             else:
-                _LOGGER.debug("deleting slash command %s from guild %s", command.name, str(command.guild_id))
+                _LOGGER.debug("deleting slash command %r from guild %r", command.name, str(command.guild_id))
             await command.delete()
 
     async def handle_slash_commands(self, event: hikari.InteractionCreateEvent) -> None:
@@ -1095,39 +1101,125 @@ class Bot(hikari.GatewayBot):
             return
 
         context = slash_commands.SlashCommandContext(self, event.interaction, command)
-        _LOGGER.debug("invoking slash command %s", command.name)
+        _LOGGER.debug("invoking slash command %r", command.name)
         await command(context)
 
     async def _manage_slash_commands(self, _):
         self._app = await self.rest.fetch_application()
 
-        if self._delete_unbound_slash_commands:
-            # Note that the purge_slash_commands method is not used here as the bot only purges
-            # commands that appear not to have an implementation registered, as opposed to just
-            # purging every command.
-            _LOGGER.debug("purging unbound slash commands")
-            await self.purge_slash_commands(global_commands=True)
-            global_slash_cmds = await self.rest.fetch_application_commands(self._app)
-            for cmd in global_slash_cmds:
-                if cmd.name not in self._slash_commands:
-                    _LOGGER.debug("deleting slash command %s", cmd.name)
-                    await cmd.delete()
+        global_slash_commands = {c.name: c for c in await self.rest.fetch_application_commands(self._app)}
 
-            guild_ids = []
-            for cmd in self._slash_commands.values():
-                if cmd.enabled_guilds is not None:
-                    guild_ids.extend(cmd.enabled_guilds)
-
-            guild_slash_cmds = {}
-            for guild_id in guild_ids:
-                guild_slash_cmds[guild_id] = await self.rest.fetch_application_commands(self._app, guild_id)
-
-            for guild_id, cmds in guild_slash_cmds.items():
-                for cmd in cmds:
-                    if cmd.name not in self._slash_commands:
-                        _LOGGER.debug("deleting slash command %s from guild %s", cmd.name, str(guild_id))
-                        await cmd.delete()
-
+        guilds = set()
         for cmd in self._slash_commands.values():
-            _LOGGER.debug("creating slash command %s", cmd.name)
-            await cmd.auto_create(self._app)
+            if cmd.enabled_guilds is not None:
+                guilds.update(cmd.enabled_guilds)
+
+        _guild_slash_commands = {
+            g_id: {c.name: c for c in await self.rest.fetch_application_commands(self._app, g_id)} for g_id in guilds
+        }
+        guild_slash_commands = collections.defaultdict(list)
+        for g_id, cmd_info in _guild_slash_commands.items():
+            for cmd in cmd_info.values():
+                guild_slash_commands[cmd.name].append([cmd, g_id])
+
+        # Note that the purge_slash_commands method is not used here as the bot only purges
+        # commands that appear not to have an implementation registered, as opposed to just
+        # purging every command.
+        remaining_globals = {} if self._delete_unbound_slash_commands is True else global_slash_commands
+        if self._delete_unbound_slash_commands:
+            _LOGGER.debug("purging unbound slash commands")
+            for cmd in global_slash_commands.values():
+                # if an implementation of the slash command is not found
+                if self._slash_commands.get(cmd.name) is None:
+                    _LOGGER.debug("deleting global slash command %r", cmd.name)
+                    await cmd.delete()
+                # if our implementation of the slash command is specific to guilds
+                elif self._slash_commands[cmd.name].enabled_guilds is not None:
+                    _LOGGER.debug("deleting global slash command %r", cmd.name)
+                    await cmd.delete()
+                else:
+                    remaining_globals[cmd.name] = cmd
+
+        remaining_guild_cmds = {}
+        if self._delete_unbound_slash_commands:
+            for cmd_name, cmds in guild_slash_commands.items():
+                for cmd, guild_id in cmds:
+                    # if an implementation of the slash command is not found
+                    if self._slash_commands.get(cmd.name) is None:
+                        _LOGGER.debug("deleting slash command %r from guild %r", cmd.name, str(cmd.guild_id))
+                        await cmd.delete()
+                    # if our implementation of the slash command doesn't contain an entry for this guild
+                    elif cmd.guild_id not in self._slash_commands[cmd.name].enabled_guilds:
+                        _LOGGER.debug("deleting slash command %r from guild %r", cmd.name, str(cmd.guild_id))
+                        await cmd.delete()
+                    else:
+                        # We are assuming here that all the guild commands with the same name have the same
+                        # implementation so that we don't have to do a million more checks
+                        if cmd.name in remaining_guild_cmds:
+                            remaining_guild_cmds[cmd.name][1].append(cmd.guild_id)
+                        else:
+                            remaining_guild_cmds[cmd.name] = [cmd, [cmd.guild_id]]
+        else:
+            for cmd_name, cmds in guild_slash_commands.items():
+                for cmd, guild_id in cmds:
+                    if cmd.name in remaining_guild_cmds:
+                        remaining_guild_cmds[cmd.name][1].append(guild_id)
+                    else:
+                        remaining_guild_cmds[cmd.name] = [cmd, [guild_id]]
+
+        def compare_commands(
+            lb_cmd: slash_commands.TopLevelSlashCommandBase,
+            hk_cmd: hikari.Command,
+            _guild_ids: typing.Optional[typing.List] = None,
+        ) -> bool:
+            # If one command is global and the other isn't
+            if lb_cmd.enabled_guilds != guild_ids and (lb_cmd.enabled_guilds is None or _guild_ids is None):
+                return False
+
+            # If both commands are global
+            if _guild_ids is None and lb_cmd.enabled_guilds is None:
+                return _serialise_command(lb_cmd) == _serialise_command(hk_cmd)
+
+            # If both commands are guild commands and for the same guilds
+            if set(lb_cmd.enabled_guilds) == set(_guild_ids):
+                return _serialise_command(lb_cmd) == _serialise_command(hk_cmd)
+
+            # None of the above
+            return False
+
+        # Check if existing slash commands have changed before creating any. If a command does not appear
+        # to have changed then we don't send the api request to discord to prevent unnecessary rate-limiting and
+        # to prevent the 1h wait period when creating global commands
+        if self._recreate_changed_slash_commands:
+            for cmd in remaining_globals.values():
+                if cmd.name not in self._slash_commands:
+                    continue
+
+                if not compare_commands(self._slash_commands[cmd.name], cmd):
+                    _LOGGER.debug("recreating global slash command %r as it appears to have changed", cmd.name)
+                    await self._slash_commands[cmd.name].auto_create(self._app)
+                else:
+                    _LOGGER.debug(
+                        "not recreating global slash command %r as it doesn't appear to have changed", cmd.name
+                    )
+
+            for cmd, guild_ids in remaining_guild_cmds.values():
+                if cmd.name not in self._slash_commands:
+                    continue
+
+                if not compare_commands(self._slash_commands[cmd.name], cmd, guild_ids):
+                    _LOGGER.debug("recreating guild slash command %r as it appears to have changed", cmd.name)
+                    await self._slash_commands[cmd.name].auto_create(self._app)
+                else:
+                    _LOGGER.debug(
+                        "not recreating guild slash command %r as it doesn't appear to have changed", cmd.name
+                    )
+
+        all_cmd_names = [
+            *[c.name for c in remaining_globals.values()],
+            *[c.name for c, _ in remaining_guild_cmds.values()],
+        ]
+        for cmd_name, cmd in self._slash_commands.items():
+            if cmd_name not in all_cmd_names:
+                _LOGGER.debug("creating slash command %r as it does not seem to exist yet", cmd_name)
+                await cmd.auto_create(self._app)

@@ -11,6 +11,8 @@ Read more about this on the `discord documentation <https://discord.com/develope
 
 ----
 
+For example slash command code see the `examples directory <https://github.com/tandemdude/hikari-lightbulb/tree/development/examples>`_
+
 Creating a Basic Slash Command
 ==============================
 
@@ -29,24 +31,16 @@ Your first slash command can be written very easily:
     # Create a custom slash command class and implement
     # the abstract methods
     class Echo(slash_commands.SlashCommand):
-        @property
-        def options(self):
-            return [
-                hikari.CommandOption(
-                    name="text",
-                    description="Text to repeat",
-                    type=hikari.OptionType.STRING,
-                    is_required=True
-                ),
-            ]
-
-        @property
-        def description(self):
-            return "Repeats your input."
-
-        @property
-        def enabled_guilds(self):
-            return None
+        description = "Repeats your input."
+        enabled_guilds = None
+        options = [
+            hikari.CommandOption(
+                name="text",
+                description="Text to repeat",
+                type=hikari.OptionType.STRING,
+                is_required=True
+            ),
+        ]
 
         async def callback(self, context):
             await context.respond(context.options["text"].value)
@@ -86,31 +80,21 @@ slash command group:
 
 
     class Foo(slash_commands.SlashCommandGroup):
-        @property
-        def description(self):
-            return "Test slash command group."
-
-        @property
-        def enabled_guilds(self):
-            return None
+        description = "Test slash command group."
+        enabled_guilds = None
 
 
     @Foo.subcommand()
     class Bar(slash_commands.SlashSubCommand):
-        @property
-        def description(self):
-            return "Test subcommand."
-
-        @property
-        def options(self):
-            return [
-                hikari.CommandOption(
-                    name="baz",
-                    description="Test subcommand option.",
-                    is_required=True,
-                    type=hikari.OptionType.STRING,
-                )
-            ]
+        description = "Test subcommand."
+        options = [
+            hikari.CommandOption(
+                name="baz",
+                description="Test subcommand option.",
+                is_required=True,
+                type=hikari.OptionType.STRING,
+            )
+        ]
 
         async def callback(self, context):
             await context.respond(context.options["baz"].value)
@@ -146,9 +130,7 @@ as you may refer to the previous sections for more details.
 
     @Foo.subgroup()
     class Bar(slash_commands.SlashSubGroup):
-        @property
-        def description(self):
-            return "Test subgroup."
+        description = "Test subgroup."
 
 
     @Bar.subcommand()

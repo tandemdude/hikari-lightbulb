@@ -165,8 +165,7 @@ class Context:
 
         return re.sub(r"<@!?(\d+)>", replace, self.prefix)
 
-    @property
-    def guild(self) -> typing.Optional[hikari.Guild]:
+    def get_guild(self) -> typing.Optional[hikari.Guild]:
         """
         The cached :obj:`hikari.Guild` instance for the context's guild ID.
 
@@ -177,8 +176,7 @@ class Context:
             return self.bot.cache.get_available_guild(self.guild_id)
         return None
 
-    @property
-    def channel(self) -> typing.Optional[hikari.TextableChannel]:
+    def get_channel(self) -> typing.Optional[hikari.TextableChannel]:
         """
         The cached :obj:`hikari.TextableChannel` instance for the context's channel ID.
 

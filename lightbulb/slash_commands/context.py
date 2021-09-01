@@ -157,6 +157,10 @@ class SlashCommandContext:
 
         Returns:
             ``None``
+
+        Note:
+            This can only be called **once** for each interaction. To add more information to the response
+            you should use :obj:`~lightbulb.slash_commands.SlashCommandContext.edit_response`
         """
         await self._interaction.create_initial_response(hikari.ResponseType.MESSAGE_CREATE, content, **kwargs)
 

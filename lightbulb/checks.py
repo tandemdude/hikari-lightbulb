@@ -119,7 +119,7 @@ async def _human_only(ctx: context.Context) -> bool:
 
 
 async def _nsfw_channel_only(ctx: context.Context) -> bool:
-    if not ctx.channel.is_nsfw:
+    if not ctx.get_channel().is_nsfw:
         raise errors.NSFWChannelOnly(f"{ctx.invoked_with} can only be used in an NSFW channel")
     return True
 
@@ -155,7 +155,8 @@ async def _has_guild_permissions(ctx: context.Context, *, permissions: hikari.Pe
 
     await _guild_only(ctx)
 
-    if ctx.guild.owner_id == ctx.author.id:
+    # Checks if the author is the server owner
+    if ctx.get_guild().owner_id == ctx.author.id:
         return True
 
     guild_roles = ctx.bot.cache.get_roles_view_for_guild(ctx.guild_id).values()
@@ -180,7 +181,7 @@ async def _bot_has_guild_permissions(ctx: context.Context, *, permissions: hikar
 
     await _guild_only(ctx)
 
-    if ctx.guild.owner_id == ctx.bot.cache.get_me().id:
+    if ctx.get_guild().owner_id == ctx.bot.cache.get_me().id:
         return True
 
     guild_roles = ctx.bot.cache.get_roles_view_for_guild(ctx.guild_id).values()
@@ -206,10 +207,10 @@ async def _has_permissions(ctx: context.Context, *, permissions: hikari.Permissi
 
     await _guild_only(ctx)
 
-    if ctx.guild.owner_id == ctx.author.id:
+    if ctx.get_guild().owner_id == ctx.author.id:
         return True
 
-    perm_over = ctx.channel.permission_overwrites.values()
+    perm_over = ctx.get_channel().permission_overwrites.values()
     perm_none = hikari.Permissions.NONE
 
     allowed_perms = functools.reduce(
@@ -231,10 +232,10 @@ async def _bot_has_permissions(ctx: context.Context, *, permissions: hikari.Perm
 
     await _guild_only(ctx)
 
-    if ctx.guild.owner_id == ctx.bot.cache.get_me().id:
+    if ctx.get_guild().owner_id == ctx.bot.cache.get_me().id:
         return True
 
-    perm_over = ctx.channel.permission_overwrites.values()
+    perm_over = ctx.get_channel().permission_overwrites.values()
     perm_none = hikari.Permissions.NONE
     bot_member = ctx.bot.cache.get_member(ctx.guild_id, ctx.bot.cache.get_me().id)
 

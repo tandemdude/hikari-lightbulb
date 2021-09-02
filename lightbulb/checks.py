@@ -230,7 +230,7 @@ async def _bot_has_permissions(ctx: context.Context, *, permissions: hikari.Perm
     missing_perms = allowed_perms ^ permissions
 
     if missing_perms:
-        raise errors.MissingRequiredPermission(
+        raise errors.BotMissingRequiredPermission(
             "I am missing one or more permissions required in order to run this command", missing_perms
         )
     return True

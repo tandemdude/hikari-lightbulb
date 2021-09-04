@@ -15,18 +15,19 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-"""
-.. error::
-    The implementation of slash commands within a Plugin class is not supported.
-"""
 import typing
 
 from lightbulb.slash_commands.commands import *
 from lightbulb.slash_commands.context import *
 
 __all__: typing.Final[typing.List[str]] = [
-    "SlashCommandBase",
-    "TopLevelSlashCommandBase",
+    "Option",
+    "BaseSlashCommand",
+    "WithAsyncCallback",
+    "WithGetCommand",
+    "WithCreationMethods",
+    "WithGetOptions",
+    "WithAsOption",
     "SlashCommand",
     "SlashCommandGroup",
     "SlashSubGroup",

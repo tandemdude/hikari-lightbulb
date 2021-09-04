@@ -18,8 +18,13 @@
 from __future__ import annotations
 
 __all__: typing.Final[typing.List[str]] = [
-    "SlashCommandBase",
-    "TopLevelSlashCommandBase",
+    "Option",
+    "BaseSlashCommand",
+    "WithAsyncCallback",
+    "WithGetCommand",
+    "WithCreationMethods",
+    "WithGetOptions",
+    "WithAsOption",
     "SlashCommand",
     "SlashCommandGroup",
     "SlashSubGroup",
@@ -27,8 +32,12 @@ __all__: typing.Final[typing.List[str]] = [
 ]
 
 import abc
+import collections.abc
+import dataclasses
+import functools
 import logging
 import typing
+import warnings
 
 import hikari
 
@@ -37,6 +46,17 @@ if typing.TYPE_CHECKING:
     from lightbulb.slash_commands import context as context_
 
 _LOGGER = logging.getLogger("lightbulb")
+
+OPTION_TYPE_MAPPING = {
+    str: hikari.OptionType.STRING,
+    int: hikari.OptionType.INTEGER,
+    bool: hikari.OptionType.BOOLEAN,
+    hikari.User: hikari.OptionType.USER,
+    hikari.TextableChannel: hikari.OptionType.CHANNEL,
+    hikari.Role: hikari.OptionType.ROLE,
+    hikari.Snowflake: hikari.OptionType.MENTIONABLE,
+    float: hikari.OptionType.FLOAT,
+}
 
 
 def _serialise_option(opt: hikari.CommandOption):
@@ -61,18 +81,20 @@ def _serialise_option(opt: hikari.CommandOption):
     return data
 
 
-def _serialise_command(cmd: typing.Union[hikari.Command, TopLevelSlashCommandBase]):
+def _serialise_command(cmd: typing.Union[hikari.Command, typing.Union[SlashCommand, SlashCommandGroup]]):
+    opts = cmd.options if isinstance(cmd, hikari.Command) else cmd.get_options()
     return {
         "name": cmd.name.lower(),
         "description": cmd.description,
-        "options": list(sorted((_serialise_option(opt) for opt in cmd.options), key=lambda o: o["name"]))
-        if cmd.options is not None
+        "options": list(sorted((_serialise_option(opt) for opt in opts), key=lambda o: o["name"]))
+        if opts is not None
         else [],
     }
 
 
 def _resolve_subcommand(
-    context: context_.SlashCommandContext, subcommands: typing.MutableMapping[str, SlashCommandBase]
+    context: context_.SlashCommandContext,
+    subcommands: typing.MutableMapping[str, typing.Union[SlashSubCommand, SlashSubGroup]],
 ) -> typing.Optional[str]:
     option_name = None
     for option in context.options:
@@ -82,7 +104,71 @@ def _resolve_subcommand(
     return option_name
 
 
-class SlashCommandBase(abc.ABC):
+@dataclasses.dataclass
+class Option:
+    """
+    Dataclass representing a command option.
+
+    Examples:
+        Usage in a slash command:
+
+        .. code-block:: python
+
+            class Echo(SlashCommand):
+                description = "Repeats the input"
+                # Options
+                text: str = Option("Text to repeat")
+
+                async def callback(self, context):
+                    await context.respond(context.option_values.text)
+
+    """
+
+    description: str
+    """The description of the option."""
+    name: str = None
+    """The name of the option. If ``None`` then this will be the name of the attribute."""
+    required: bool = None
+    """Whether or not the option is required. If ``None`` then it will be inferred from the attribute's typehint."""
+
+
+def _get_type_and_required_from_option(hint, opt: Option) -> typing.Tuple[hikari.OptionType, bool]:
+    type_ = OPTION_TYPE_MAPPING[typing.get_args(hint)[0] if typing.get_args(hint) else hint]
+    required = opt.required if opt.required is not None else (type(None) in typing.get_args(hint))
+    return type_, required
+
+
+def _get_options_for_command_instance(
+    cmd: typing.Union[SlashCommand, SlashSubCommand]
+) -> typing.Sequence[hikari.CommandOption]:
+    if (
+        hasattr(cmd, "options")
+        and isinstance(cmd.options, collections.abc.Sequence)
+        and not isinstance(cmd.options, str)
+    ):
+        warnings.warn(
+            "Definition of command options in the 'options' attribute is deprecated and "
+            "scheduled for removal in version 1.4. You should define options using class variables instead.",
+            DeprecationWarning,
+        )
+        return cmd.options
+
+    all_attrs = [[attr_name, getattr(cmd, attr_name)] for attr_name in dir(cmd)]
+    opts = filter(lambda opt: type(opt[1]) is Option, all_attrs)
+    hints = typing.get_type_hints(cmd)
+
+    hk_options = []
+    for attr_name, option in opts:
+        type_, required = _get_type_and_required_from_option(hints.get(attr_name), option)
+        hk_options.append(
+            hikari.CommandOption(
+                name=option.name or attr_name, description=option.description, type=type_, is_required=required
+            )
+        )
+    return hk_options
+
+
+class BaseSlashCommand(abc.ABC):
     """
     Abstract base class for slash command-like classes.
 
@@ -94,17 +180,17 @@ class SlashCommandBase(abc.ABC):
 
     def __init__(self, bot: command_handler.Bot) -> None:
         self.bot = bot
+        """The bot instance that the slash command is registered to."""
         self._instances: typing.MutableMapping[hikari.Snowflakeish, hikari.Command] = {}
-
-    @abc.abstractmethod
-    async def __call__(self, context: context_.SlashCommandContext) -> None:
-        ...
 
     @property
     def name(self) -> str:
         """
         The name of the slash command. Defaults to the class name converted to lowercase. Can be a maximum
         of 32 characters long.
+
+        Returns:
+            :obj:`str`: Slash command name.
         """
         return self.__class__.__name__.lower()
 
@@ -113,24 +199,73 @@ class SlashCommandBase(abc.ABC):
     def description(self) -> str:
         """
         The description of the slash command. Can be a maximum of 100 characters long.
+
+        Returns:
+            :obj:`str`: Slash command description.
         """
         ...
 
 
-class TopLevelSlashCommandBase(SlashCommandBase, abc.ABC):
-    """
-    Abstract base class for top level slash commands and slash command groups.
-    """
-
-    @property
+class WithAsyncCallback(abc.ABC):
     @abc.abstractmethod
-    def enabled_guilds(self) -> typing.Optional[hikari.SnowflakeishSequence]:
+    async def callback(self, context: context_.SlashCommandContext) -> None:
         """
-        The guilds that the slash command is enabled in. If ``None``, the command will be added as
-        a global command.
+        The slash command callback method. This method will be called whenever the slash command is invoked.
+
+        If the slash command being invoked is a subcommand then the
+        :obj:`~lightbulb.slash_commands.SlashCommandContext.options`  attribute will have been replaced by the options
+        that the subcommand was invoked with, instead of those that the command as a whole was invoked with  (they can
+        still be accessed through :obj:`~lightbulb.slash_commands.SlashCommandContext.interaction.options` if necessary).
+
+        Args:
+            context (:obj:`~lightbulb.slash_commands.SlashCommandContext`): The context that the slash command
+                was invoked under.
+
+        Returns:
+            ``None``
         """
         ...
 
+
+class WithAsOption(abc.ABC):
+    @abc.abstractmethod
+    def as_option(self) -> hikari.CommandOption:
+        """
+        Creates and returns the appropriate :obj:`hikari.CommandOption` representation for this
+        subcommand class.
+
+        Returns:
+            :obj:`hikari.CommandOption`: The ``CommandOption`` version of the subcommand class.
+        """
+        ...
+
+
+class WithGetOptions(abc.ABC):
+    @property
+    def enabled_guilds(self) -> typing.Optional[typing.Union[hikari.Snowflakeish, hikari.SnowflakeishSequence]]:
+        """
+        The guilds that the slash command is enabled in. If ``None`` or an empty sequence, the command will be
+        added as a global command. Defaults to an empty list, therefore making the command global unless otherwise
+        specified.
+
+        Returns:
+            Optional[Union[:obj:`hikari.Snowflakeish`, :obj:`hikari.SnowflakeishSequence`]]: Guilds that the command
+                is enabled in, or ``None`` or empty sequence if the command is global.
+        """
+        return []
+
+    @abc.abstractmethod
+    def get_options(self) -> typing.Sequence[hikari.CommandOption]:
+        """
+        Get the options for the command.
+
+        Returns:
+            Sequence[:obj:`hikari.CommandOption`]: Options for the command.
+        """
+        ...
+
+
+class WithCreationMethods(abc.ABC):
     @abc.abstractmethod
     async def create(
         self,
@@ -179,7 +314,7 @@ class TopLevelSlashCommandBase(SlashCommandBase, abc.ABC):
         Returns:
             ``None``
         """
-        if self.enabled_guilds is None:
+        if not self.enabled_guilds:
             await self.create(app)
         else:
             for guild_id in self.enabled_guilds:
@@ -195,12 +330,14 @@ class TopLevelSlashCommandBase(SlashCommandBase, abc.ABC):
         Returns:
             ``None``
         """
-        if self.enabled_guilds is None:
+        if not self.enabled_guilds:
             await self.delete(app)
         else:
             for guild_id in self.enabled_guilds:
                 await self.delete(app, guild_id)
 
+
+class WithGetCommand(abc.ABC):
     def get_command(self, guild_id: typing.Optional[hikari.Snowflakeish] = None) -> typing.Optional[hikari.Command]:
         """
         Gets the :obj:`hikari.Command` instance of this command class for a given ``guild_id``, or the global
@@ -216,7 +353,7 @@ class TopLevelSlashCommandBase(SlashCommandBase, abc.ABC):
         return self._instances.get(guild_id)
 
 
-class SlashCommand(TopLevelSlashCommandBase, abc.ABC):
+class SlashCommand(BaseSlashCommand, WithGetOptions, WithAsyncCallback, WithCreationMethods, WithGetCommand, abc.ABC):
     """
     Abstract base class for top level slash commands. All slash commands that are not groups
     should inherit from this class.
@@ -224,16 +361,19 @@ class SlashCommand(TopLevelSlashCommandBase, abc.ABC):
     All abstract methods **must** be implemented by your custom slash command class. A list of the abstract
     methods and properties you are required to implement for this class can be seen below:
 
-    - :obj:`~lightbulb.slash_commands.SlashCommandBase.description` (class variable/property)
-    - :obj:`~lightbulb.slash_commands.SlashCommand.options` (class variable/property)
-    - :obj:`~lightbulb.slash_commands.TopLevelSlashCommandBase.enabled_guilds` (class variable/property)
-    - :obj:`~lightbulb.slash_commands.SlashCommand.callback` (instance method)
+    - :obj:`~lightbulb.slash_commands.BaseSlashCommand.description` (class variable)
+    - :obj:`~lightbulb.slash_commands.WithAsyncCallback.callback` (instance method)
     """
 
-    __slots__: typing.Sequence[str] = ()
+    __slots__ = ()
 
-    async def __call__(self, context: context_.SlashCommandContext) -> None:
-        return await self.callback(context)
+    async def __call__(self, *args, **kwargs):
+        return await self.callback(*args, **kwargs)
+
+    @functools.lru_cache
+    def get_options(self) -> typing.Sequence[hikari.CommandOption]:
+        hk_options = _get_options_for_command_instance(self)
+        return hk_options[::-1]
 
     async def create(
         self,
@@ -244,163 +384,21 @@ class SlashCommand(TopLevelSlashCommandBase, abc.ABC):
             app,
             self.name,
             self.description,
-            options=self.options,
+            options=self.get_options(),
             **({"guild": guild_id} if guild_id is not None else {}),
         )
         self._instances[guild_id] = created_command
         return created_command
 
-    @property
-    @abc.abstractmethod
-    def options(self) -> typing.Sequence[hikari.CommandOption]:
-        """
-        The slash command options. Can include up to a maximum of 25 options.
-        """
-        ...
 
-    @abc.abstractmethod
-    async def callback(self, context: context_.SlashCommandContext) -> None:
-        """
-        The slash command callback method. This method will be called whenever the slash command is invoked.
-
-        Args:
-            context (:obj:`~lightbulb.slash_commands.SlashCommandContext`): The context that the slash command
-                was invoked under.
-
-        Returns:
-            ``None``
-        """
-        ...
-
-
-class SlashSubCommand(SlashCommandBase, abc.ABC):
-    """
-    Abstract base class for slash subcommands. All slash subcommands should inherit from this class.
-
-    All abstract methods **must** be implemented by your custom slash subcommand class. A list of the abstract
-    methods and properties you are required to implement for this class can be seen below:
-
-    - :obj:`~lightbulb.slash_commands.SlashCOmmandBase.description` (class variable/property)
-    - :obj:`~lightbulb.slash_commands.SlashSubCommand.options` (class variable/property)
-    - :obj:`~lightbulb.slash_commands.SlashSubCommand.callback` (instance method)
-    """
-
-    async def __call__(self, context: context_.SlashCommandContext) -> None:
-        return await self.callback(context)
-
-    def as_option(self) -> hikari.CommandOption:
-        """
-        Creates and returns the appropriate :obj:`hikari.CommandOption` representation for this
-        subcommand class.
-
-        Returns:
-            :obj:`hikari.CommandOption`: The ``CommandOption`` version of the subcommand class.
-        """
-        return hikari.CommandOption(
-            name=self.name,
-            description=self.description,
-            type=hikari.OptionType.SUB_COMMAND,
-            options=self.options,
-            is_required=False,
-        )
-
-    @abc.abstractmethod
-    async def callback(self, context: context_.SlashCommandContext) -> None:
-        """
-        The subcommand callback method. This method will be called whenever the  subcommand is invoked.
-
-        Args:
-            context (:obj:`~lightbulb.slash_commands.SlashCommandContext`): The context that the subcommand
-                was invoked under. The :obj:`~lightbulb.slash_commands.SlashCommandContext.options` attribute
-                will have been replaced by the options that the subcommand was invoked with, instead of those that
-                the command as a whole was invoked with  (they can still be accessed through
-                :obj:`~lightbulb.slash_commands.SlashCommandContext.interaction.options` if necessary).
-
-        Returns:
-            ``None``
-        """
-        ...
-
-    @property
-    @abc.abstractmethod
-    def options(self) -> typing.Sequence[hikari.CommandOption]:
-        """
-        The subcommand options. Can include up to a maximum of 25 options.
-        """
-        ...
-
-
-class SlashSubGroup(SlashCommandBase, abc.ABC):
-    """
-    Abstract base class for slash subgroups. All slash subgroups should inherit from this class.
-
-    All abstract methods **must** be implemented by your custom slash subgroup class. A list of the abstract
-    methods and properties you are required to implement for this class can be seen below:
-
-    - :obj:`~lightbulb.slash_commands.SlashCommandBase.description` (class variable/property)
-    """
-
-    __slots__: typing.Sequence[str] = ("_subcommands",)
-
-    _subcommand_list: typing.List[typing.Type[SlashSubCommand]] = []
-
-    def __init__(self, bot: command_handler.Bot):
-        super().__init__(bot)
-        self._subcommands: typing.MutableMapping[str, SlashSubCommand] = {}
-        for cmd_class in self._subcommand_list:
-            cmd = cmd_class(bot)
-            self._subcommands[cmd.name] = cmd
-
-    async def __call__(self, context: context_.SlashCommandContext) -> None:
-        option_name = _resolve_subcommand(context, self._subcommands)
-        if option_name is None:
-            return
-
-        _LOGGER.debug("invoking slash subcommand %r", option_name)
-        # Replace the context options with the options for the subcommand, the old options
-        # can still be accessed through context.interaction.options
-        new_options = context.options[option_name].options
-        context.options = {option.name: option for option in new_options} if new_options is not None else {}
-        return await self._subcommands[option_name](context)
-
-    @classmethod
-    def subcommand(cls) -> typing.Callable[[typing.Type[SlashSubCommand]], typing.Type[SlashSubCommand]]:
-        """
-        Decorator which registers a subcommand to this slash command group.
-        """
-
-        def decorate(subcommand_class: typing.Type[SlashSubCommand]) -> typing.Type[SlashSubCommand]:
-            cls._subcommand_list.append(subcommand_class)
-            return subcommand_class
-
-        return decorate
-
-    def as_option(self) -> hikari.CommandOption:
-        """
-        Creates and returns the appropriate :obj:`hikari.CommandOption` representation for this
-        subgroup class.
-
-        Returns:
-            :obj:`hikari.CommandOption`: The ``CommandOption`` version of the subgroup class.
-        """
-        return hikari.CommandOption(
-            name=self.name,
-            description=self.description,
-            type=hikari.OptionType.SUB_COMMAND_GROUP,
-            options=[cmd.as_option() for cmd in self._subcommands.values()],
-            is_required=False,
-        )
-
-
-class SlashCommandGroup(TopLevelSlashCommandBase, abc.ABC):
+class SlashCommandGroup(BaseSlashCommand, WithGetOptions, WithCreationMethods, WithGetCommand, abc.ABC):
     """
     Abstract base class for slash command groups. All slash command groups should inherit from this class.
 
     All abstract methods **must** be implemented by your custom slash command group class. A list of the abstract
     methods and properties you are required to implement for this class can be seen below:
 
-    - :obj:`~lightbulb.slash_commands.SlashCommandBase.description` (class variable/property)
-    - :obj:`~lightbulb.slash_commands.TopLevelSlashCommandBase.enabled_guilds` (class variable/property)
+    - :obj:`~lightbulb.slash_commands.BaseSlashCommand.description` (class variable)
     """
 
     __slots__: typing.Sequence[str] = ("_subcommands",)
@@ -413,6 +411,10 @@ class SlashCommandGroup(TopLevelSlashCommandBase, abc.ABC):
         for cmd_class in self._subcommand_list:
             cmd = cmd_class(bot)
             self._subcommands[cmd.name] = cmd
+
+    @functools.lru_cache
+    def get_options(self) -> typing.Sequence[hikari.CommandOption]:
+        return [cmd.as_option() for cmd in self._subcommands.values()]
 
     async def __call__(self, context: context_.SlashCommandContext) -> None:
         option_name = _resolve_subcommand(context, self._subcommands)
@@ -450,13 +452,6 @@ class SlashCommandGroup(TopLevelSlashCommandBase, abc.ABC):
 
         return decorate
 
-    @property
-    def options(self) -> typing.Sequence[hikari.CommandOption]:
-        """
-        A list of the group's subcommands as hikari ``CommandOption`` objects.
-        """
-        return [cmd.as_option() for cmd in self._subcommands.values()]
-
     async def create(
         self,
         app: hikari.SnowflakeishOr[hikari.PartialApplication],
@@ -466,8 +461,92 @@ class SlashCommandGroup(TopLevelSlashCommandBase, abc.ABC):
             app,
             self.name,
             self.description,
-            options=[cmd.as_option() for cmd in self._subcommands.values()],
+            options=self.get_options(),
             **({"guild": guild_id} if guild_id is not None else {}),
         )
         self._instances[guild_id] = created_command
         return created_command
+
+
+class SlashSubGroup(BaseSlashCommand, WithAsOption, abc.ABC):
+    """
+    Abstract base class for slash subgroups. All slash subgroups should inherit from this class.
+
+    All abstract methods **must** be implemented by your custom slash subgroup class. A list of the abstract
+    methods and properties you are required to implement for this class can be seen below:
+
+    - :obj:`~lightbulb.slash_commands.BaseSlashCommand.description` (class variable)
+    """
+
+    __slots__: typing.Sequence[str] = ("_subcommands",)
+
+    _subcommand_list: typing.List[typing.Type[SlashSubCommand]] = []
+
+    def __init__(self, bot: command_handler.Bot):
+        super().__init__(bot)
+        self._subcommands: typing.MutableMapping[str, SlashSubCommand] = {}
+        for cmd_class in self._subcommand_list:
+            cmd = cmd_class(bot)
+            self._subcommands[cmd.name] = cmd
+
+    async def __call__(self, context: context_.SlashCommandContext) -> None:
+        option_name = _resolve_subcommand(context, self._subcommands)
+        if option_name is None:
+            return
+
+        _LOGGER.debug("invoking slash subcommand %r", option_name)
+        # Replace the context options with the options for the subcommand, the old options
+        # can still be accessed through context.interaction.options
+        new_options = context.options[option_name].options
+        context.options = {option.name: option for option in new_options} if new_options is not None else {}
+        return await self._subcommands[option_name](context)
+
+    @classmethod
+    def subcommand(cls) -> typing.Callable[[typing.Type[SlashSubCommand]], typing.Type[SlashSubCommand]]:
+        """
+        Decorator which registers a subcommand to this slash command group.
+        """
+
+        def decorate(subcommand_class: typing.Type[SlashSubCommand]) -> typing.Type[SlashSubCommand]:
+            cls._subcommand_list.append(subcommand_class)
+            return subcommand_class
+
+        return decorate
+
+    @functools.lru_cache
+    def as_option(self) -> hikari.CommandOption:
+        return hikari.CommandOption(
+            name=self.name,
+            description=self.description,
+            type=hikari.OptionType.SUB_COMMAND_GROUP,
+            options=[cmd.as_option() for cmd in self._subcommands.values()],
+            is_required=False,
+        )
+
+
+class SlashSubCommand(BaseSlashCommand, WithAsOption, WithAsyncCallback, abc.ABC):
+    """
+    Abstract base class for slash subcommands. All slash subcommands should inherit from this class.
+
+    All abstract methods **must** be implemented by your custom slash subcommand class. A list of the abstract
+    methods and properties you are required to implement for this class can be seen below:
+
+    - :obj:`~lightbulb.slash_commands.BaseSlashCommand.description` (class variable)
+    - :obj:`~lightbulb.slash_commands.WithAsyncCallback.callback` (instance method)
+    """
+
+    __slots__ = ()
+
+    async def __call__(self, *args, **kwargs):
+        return await self.callback(*args, **kwargs)
+
+    @functools.lru_cache
+    def as_option(self) -> hikari.CommandOption:
+        hk_options = _get_options_for_command_instance(self)
+        return hikari.CommandOption(
+            name=self.name,
+            description=self.description,
+            type=hikari.OptionType.SUB_COMMAND,
+            options=hk_options[::-1],
+            is_required=False,
+        )

@@ -67,7 +67,7 @@ class SlashCommandContext:
         self,
         bot: command_handler.Bot,
         interaction: hikari.CommandInteraction,
-        command: commands.TopLevelSlashCommandBase,
+        command: commands.BaseSlashCommand,
     ) -> None:
         self.bot = bot
         """The bot instance that received the slash command."""

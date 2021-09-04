@@ -6,6 +6,13 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 1.2.3
+=============
+
+- Fix incorrect ordering of command options when being sent to discord.
+
+- Fix optional arguments being required and required arguments being optional.
+
 Version 1.2.2
 =============
 

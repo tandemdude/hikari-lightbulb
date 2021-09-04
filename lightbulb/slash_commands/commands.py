@@ -134,7 +134,7 @@ class Option:
 
 def _get_type_and_required_from_option(hint, opt: Option) -> typing.Tuple[hikari.OptionType, bool]:
     type_ = OPTION_TYPE_MAPPING[typing.get_args(hint)[0] if typing.get_args(hint) else hint]
-    required = opt.required if opt.required is not None else (type(None) in typing.get_args(hint))
+    required = opt.required if opt.required is not None else (type(None) not in typing.get_args(hint))
     return type_, required
 
 
@@ -373,7 +373,7 @@ class SlashCommand(BaseSlashCommand, WithGetOptions, WithAsyncCallback, WithCrea
     @functools.lru_cache
     def get_options(self) -> typing.Sequence[hikari.CommandOption]:
         hk_options = _get_options_for_command_instance(self)
-        return hk_options[::-1]
+        return list(sorted(hk_options, key=lambda o: o.is_required, reverse=True))
 
     async def create(
         self,
@@ -547,6 +547,6 @@ class SlashSubCommand(BaseSlashCommand, WithAsOption, WithAsyncCallback, abc.ABC
             name=self.name,
             description=self.description,
             type=hikari.OptionType.SUB_COMMAND,
-            options=hk_options[::-1],
+            options=list(sorted(hk_options, key=lambda o: o.is_required, reverse=True)),
             is_required=False,
         )

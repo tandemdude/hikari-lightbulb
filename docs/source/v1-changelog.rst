@@ -6,6 +6,13 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 1.2.2
+=============
+
+- Reimplemented slash commands to improve construction of slash command classes. See the documentation for more information.
+
+- Fixed incorrect error being raised by ``bot_has_permissions``
+
 Version 1.2.1
 =============
 

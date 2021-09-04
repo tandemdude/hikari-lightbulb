@@ -173,7 +173,7 @@ Top level classes
 =================
 
 .. automodule:: lightbulb.slash_commands
-    :members: Option, SlashCommand, SlashCommandGroup, SlashSubGroup, SlashSubCommand
+    :members: Option, SlashCommand, SlashCommandGroup, SlashSubGroup, SlashSubCommand, SlashCommandContext, SlashCommandOptionsWrapper
     :show-inheritance:
 
 Template classes

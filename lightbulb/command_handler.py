@@ -192,8 +192,12 @@ class Bot(hikari.GatewayBot):
 
         self._delete_unbound_slash_commands = delete_unbound_slash_commands
         self._recreate_changed_slash_commands = recreate_changed_slash_commands
-        self._slash_commands: typing.MutableMapping[str, slash_commands.TopLevelSlashCommandBase] = {}
-        self.slash_commands: typing.Set[slash_commands.TopLevelSlashCommandBase] = set()
+        self._slash_commands: typing.MutableMapping[
+            str, typing.Union[slash_commands.SlashCommand, slash_commands.SlashCommandGroup]
+        ] = {}
+        self.slash_commands: typing.Set[
+            typing.Union[slash_commands.SlashCommand, slash_commands.SlashCommandGroup]
+        ] = set()
         """A set containing all slash commands registered to the bot."""
 
         self._app: typing.Optional[hikari.PartialApplication] = None
@@ -975,9 +979,7 @@ class Bot(hikari.GatewayBot):
 
         await self.process_commands_for_event(event)
 
-    def add_slash_command(
-        self, command: typing.Type[slash_commands.TopLevelSlashCommandBase], create: bool = False
-    ) -> None:
+    def add_slash_command(self, command: typing.Type[slash_commands.BaseSlashCommand], create: bool = False) -> None:
         """
         Registers a slash command with the bot.
 
@@ -1038,7 +1040,9 @@ class Bot(hikari.GatewayBot):
 
         return cmd.name if cmd is not None else None
 
-    def get_slash_command(self, name: str) -> typing.Optional[slash_commands.TopLevelSlashCommandBase]:
+    def get_slash_command(
+        self, name: str
+    ) -> typing.Optional[typing.Union[slash_commands.SlashCommand, slash_commands.SlashCommandGroup]]:
         """
         Gets the slash command with the given name, or ``None`` if one with that name does
         not exist.
@@ -1047,7 +1051,7 @@ class Bot(hikari.GatewayBot):
             name (:obj:`str`): The name of the slash command to get the object for.
 
         Returns:
-            Optional[:obj:`~lightbulb.slash_commands.TopLevelSlashCommandBase`]: Retrieved slash command or ``None``
+            Optional[:obj:`~lightbulb.slash_commands.BaseSlashCommand`]: Retrieved slash command or ``None``
                 if not found.
         """
         return self._slash_commands.get(name)
@@ -1168,12 +1172,12 @@ class Bot(hikari.GatewayBot):
                         remaining_guild_cmds[cmd.name] = [cmd, [guild_id]]
 
         def compare_commands(
-            lb_cmd: slash_commands.TopLevelSlashCommandBase,
+            lb_cmd: typing.Union[slash_commands.SlashCommand, slash_commands.SlashCommandGroup],
             hk_cmd: hikari.Command,
             _guild_ids: typing.Optional[typing.List] = None,
         ) -> bool:
             # If one command is global and the other isn't
-            if lb_cmd.enabled_guilds != guild_ids and (lb_cmd.enabled_guilds is None or _guild_ids is None):
+            if lb_cmd.enabled_guilds != _guild_ids and (lb_cmd.enabled_guilds is None or _guild_ids is None):
                 return False
 
             # If both commands are global

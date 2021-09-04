@@ -28,10 +28,8 @@ class ExamplePlugin(lightbulb.Plugin):
 class ExampleSlashCommand(lightbulb.slash_commands.SlashCommand):
     name = "ping"
     description = "Checks that the bot is alive"
-    enabled_guilds = None
-    options = []
 
-    async def callback(self, context) -> None:
+    async def callback(self, context):
         await context.respond("Pong!")
 
 

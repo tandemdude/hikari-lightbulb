@@ -24,10 +24,10 @@ bot = lightbulb.Bot(prefix="!", token="YOUR_TOKEN", intents=hikari.Intents.ALL)
 
 class Ping(lightbulb.slash_commands.SlashCommand):
     description = "Checks that the bot is alive"
-    # None here means that the slash command is global. To enable for specific guilds,
-    # it should instead be a sequence of guild IDs.
-    enabled_guilds = None
-    options = []
+    # enabled_guilds is set to an empty list by default - this means that the command
+    # will be global. To restrict the command to certain guilds only you would set enabled_guilds
+    # to a sequence of guild IDs as seen below:
+    # enabled_guilds = [123456, 92649673]
 
     # This function is called when the slash command is invoked by a user. It **must** be called "callback"
     # otherwise the interaction **will** fail.
@@ -36,6 +36,21 @@ class Ping(lightbulb.slash_commands.SlashCommand):
         # flags=hikari.MessageFlag.EPHEMERAL
         # e.g. await context.respond("Pong!", flags=hikari.MessageFlag.EPHEMERAL)
         await context.respond("Pong!")
+
+
+class Echo(lightbulb.slash_commands.SlashCommand):
+    description = "Repeats the user's input"
+    # Defining command options
+    text: str = lightbulb.slash_commands.Option("Text to repeat")
+    # To create an optional command option you would need to typehint the attribute
+    # as Optional. See below:
+    # text: typing.Optional[str] = Option(...)
+    # available option types can be seen in the documentation:
+    # https://hikari-lightbulb.readthedocs.io/en/latest/slash-commands.html
+
+    async def callback(self, context):
+        # Respond with the value of the 'text' option - the text that the user input.
+        await context.respond(context.option_values.text)
 
 
 bot.add_slash_command(Ping)

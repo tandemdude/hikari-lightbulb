@@ -5,9 +5,15 @@ Slash Commands
 Slash Commands Primer
 =====================
 
-As Discord has now decided to ban bots from reading messages without the intent enabled, you should now be using slash commands wherever possible.
+As Discord has now decided to ban bots from reading messages without the intent enabled, you should now be using `slash commands <https://discord.com/developers/docs/interactions/application-commands#slash-commands>`_ wherever possible.
 
 Read more about this on the `discord documentation <https://discord.com/developers/docs/interactions/application-commands>`_ yourself.
+
+You should at least have a basic idea of:
+
+- interactions
+- `global <https://discord.com/developers/docs/interactions/application-commands#making-a-global-command>`_ & `guild <https://discord.com/developers/docs/interactions/application-commands#making-a-guild-command>`_ commands
+- the ``applications.commands`` `OAuth scope <https://discord.com/developers/docs/interactions/application-commands#authorizing-your-application>`_
 
 ----
 
@@ -32,15 +38,8 @@ Your first slash command can be written very easily:
     # the abstract methods
     class Echo(slash_commands.SlashCommand):
         description = "Repeats your input."
-        enabled_guilds = None
-        options = [
-            hikari.CommandOption(
-                name="text",
-                description="Text to repeat",
-                type=hikari.OptionType.STRING,
-                is_required=True
-            ),
-        ]
+        # Options
+        text: str = slash_commands.Option("Text to repeat")
 
         async def callback(self, context):
             await context.respond(context.options["text"].value)
@@ -81,20 +80,13 @@ slash command group:
 
     class Foo(slash_commands.SlashCommandGroup):
         description = "Test slash command group."
-        enabled_guilds = None
 
 
     @Foo.subcommand()
     class Bar(slash_commands.SlashSubCommand):
         description = "Test subcommand."
-        options = [
-            hikari.CommandOption(
-                name="baz",
-                description="Test subcommand option.",
-                is_required=True,
-                type=hikari.OptionType.STRING,
-            )
-        ]
+        # Options
+        baz: str = slash_commands.Option("Test subcommand option.")
 
         async def callback(self, context):
             await context.respond(context.options["baz"].value)
@@ -140,10 +132,53 @@ as you may refer to the previous sections for more details.
 
 ----
 
+Slash Command Option Typehints
+==============================
+
+The defining of slash command options uses type-hinting in order to infer the type to send discord. All the
+permitted types can be seen below. Note that if you wrap the type in a ``typing.Optional`` then the option
+will be set as not-required unless specified otherwise in the associated :obj:`~lightbulb.slash_commands.Option` object.
+
+Example:
+
+.. code-block:: python
+
+    text: str = Option("string option")
+    number: typing.Optional[int] = Option("non-required integer option")
+    user: hikari.User = Option("user option")
+
+Permitted types:
+
+- ``str`` (:obj:`hikari.OptionType.STRING`)
+- ``int`` (:obj:`hikari.OptionType.INTEGER`)
+- ``bool`` (:obj:`hikari.OptionType.BOOLEAN`)
+- ``float`` (:obj:`hikari.OptionType.FLOAT`)
+- ``hikari.User`` (:obj:`hikari.OptionType.USER`)
+- ``hikari.TextableChannel`` (:obj:`hikari.OptionType.TextableChannel`)
+- ``hikari.Role`` (:obj:`hikari.OptionType.ROLE`)
+- ``hikari.Snowflake`` (:obj:`hikari.OptionType.MENTIONABLE`)
+
+.. seealso::
+    Discord's `documentation <https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-type>`_ on command option types.
+
+----
+
 API Reference
 =============
 
+.. error::
+    The inclusion of slash commands within a Plugin class is not supported.
+
+Top level classes
+=================
+
 .. automodule:: lightbulb.slash_commands
-    :members:
+    :members: Option, SlashCommand, SlashCommandGroup, SlashSubGroup, SlashSubCommand
     :show-inheritance:
-    :member-order: bysource
+
+Template classes
+================
+
+.. automodule:: lightbulb.slash_commands
+    :members: BaseSlashCommand, WithAsyncCallback, WithGetCommand, WithCreationMethods, WithGetOptions, WithAsOption
+    :show-inheritance:

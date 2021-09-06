@@ -6,6 +6,11 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 1.2.4
+=============
+
+- Fix NameError and TypeError when attempting to add slash commands in python 3.9
+
 Version 1.2.3
 =============
 

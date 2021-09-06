@@ -35,6 +35,7 @@ import abc
 import collections.abc
 import dataclasses
 import functools
+import inspect
 import logging
 import typing
 import warnings
@@ -155,7 +156,7 @@ def _get_options_for_command_instance(
 
     all_attrs = [[attr_name, getattr(cmd, attr_name)] for attr_name in dir(cmd)]
     opts = filter(lambda opt: type(opt[1]) is Option, all_attrs)
-    hints = typing.get_type_hints(cmd)
+    hints = typing.get_type_hints(cmd if inspect.isclass(cmd) else type(cmd))
 
     hk_options = []
     for attr_name, option in opts:
@@ -175,8 +176,7 @@ class BaseSlashCommand(abc.ABC):
     Args:
         bot (:obj:`~lightbulb.command_handler.Bot`): The bot instance the command will be added to.
     """
-
-    __slots__: typing.Sequence[str] = ("bot", "_instances")
+    __slots__ = ("bot", "_instances")
 
     def __init__(self, bot: command_handler.Bot) -> None:
         self.bot = bot
@@ -207,6 +207,8 @@ class BaseSlashCommand(abc.ABC):
 
 
 class WithAsyncCallback(abc.ABC):
+    __slots__ = ()
+
     @abc.abstractmethod
     async def callback(self, context: context_.SlashCommandContext) -> None:
         """
@@ -228,6 +230,8 @@ class WithAsyncCallback(abc.ABC):
 
 
 class WithAsOption(abc.ABC):
+    __slots__ = ()
+
     @abc.abstractmethod
     def as_option(self) -> hikari.CommandOption:
         """
@@ -241,6 +245,8 @@ class WithAsOption(abc.ABC):
 
 
 class WithGetOptions(abc.ABC):
+    __slots__ = ()
+
     @property
     def enabled_guilds(self) -> typing.Optional[typing.Union[hikari.Snowflakeish, hikari.SnowflakeishSequence]]:
         """
@@ -266,6 +272,8 @@ class WithGetOptions(abc.ABC):
 
 
 class WithCreationMethods(abc.ABC):
+    __slots__ = ()
+
     @abc.abstractmethod
     async def create(
         self,
@@ -338,6 +346,8 @@ class WithCreationMethods(abc.ABC):
 
 
 class WithGetCommand(abc.ABC):
+    __slots__ = ()
+
     def get_command(self, guild_id: typing.Optional[hikari.Snowflakeish] = None) -> typing.Optional[hikari.Command]:
         """
         Gets the :obj:`hikari.Command` instance of this command class for a given ``guild_id``, or the global
@@ -364,7 +374,6 @@ class SlashCommand(BaseSlashCommand, WithGetOptions, WithAsyncCallback, WithCrea
     - :obj:`~lightbulb.slash_commands.BaseSlashCommand.description` (class variable)
     - :obj:`~lightbulb.slash_commands.WithAsyncCallback.callback` (instance method)
     """
-
     __slots__ = ()
 
     async def __call__(self, *args, **kwargs):
@@ -400,8 +409,7 @@ class SlashCommandGroup(BaseSlashCommand, WithGetOptions, WithCreationMethods, W
 
     - :obj:`~lightbulb.slash_commands.BaseSlashCommand.description` (class variable)
     """
-
-    __slots__: typing.Sequence[str] = ("_subcommands",)
+    __slots__ = ("_subcommands",)
 
     _subcommand_list: typing.List[typing.Union[typing.Type[SlashSubCommand], typing.Type[SlashSubGroup]]] = []
 
@@ -477,8 +485,7 @@ class SlashSubGroup(BaseSlashCommand, WithAsOption, abc.ABC):
 
     - :obj:`~lightbulb.slash_commands.BaseSlashCommand.description` (class variable)
     """
-
-    __slots__: typing.Sequence[str] = ("_subcommands",)
+    __slots__ = ("_subcommands",)
 
     _subcommand_list: typing.List[typing.Type[SlashSubCommand]] = []
 
@@ -534,7 +541,6 @@ class SlashSubCommand(BaseSlashCommand, WithAsOption, WithAsyncCallback, abc.ABC
     - :obj:`~lightbulb.slash_commands.BaseSlashCommand.description` (class variable)
     - :obj:`~lightbulb.slash_commands.WithAsyncCallback.callback` (instance method)
     """
-
     __slots__ = ()
 
     async def __call__(self, *args, **kwargs):

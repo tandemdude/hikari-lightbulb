@@ -176,6 +176,7 @@ class BaseSlashCommand(abc.ABC):
     Args:
         bot (:obj:`~lightbulb.command_handler.Bot`): The bot instance the command will be added to.
     """
+
     __slots__ = ("bot", "_instances")
 
     def __init__(self, bot: command_handler.Bot) -> None:
@@ -374,6 +375,7 @@ class SlashCommand(BaseSlashCommand, WithGetOptions, WithAsyncCallback, WithCrea
     - :obj:`~lightbulb.slash_commands.BaseSlashCommand.description` (class variable)
     - :obj:`~lightbulb.slash_commands.WithAsyncCallback.callback` (instance method)
     """
+
     __slots__ = ()
 
     async def __call__(self, *args, **kwargs):
@@ -409,6 +411,7 @@ class SlashCommandGroup(BaseSlashCommand, WithGetOptions, WithCreationMethods, W
 
     - :obj:`~lightbulb.slash_commands.BaseSlashCommand.description` (class variable)
     """
+
     __slots__ = ("_subcommands",)
 
     _subcommand_list: typing.List[typing.Union[typing.Type[SlashSubCommand], typing.Type[SlashSubGroup]]] = []
@@ -485,6 +488,7 @@ class SlashSubGroup(BaseSlashCommand, WithAsOption, abc.ABC):
 
     - :obj:`~lightbulb.slash_commands.BaseSlashCommand.description` (class variable)
     """
+
     __slots__ = ("_subcommands",)
 
     _subcommand_list: typing.List[typing.Type[SlashSubCommand]] = []
@@ -541,6 +545,7 @@ class SlashSubCommand(BaseSlashCommand, WithAsOption, WithAsyncCallback, abc.ABC
     - :obj:`~lightbulb.slash_commands.BaseSlashCommand.description` (class variable)
     - :obj:`~lightbulb.slash_commands.WithAsyncCallback.callback` (instance method)
     """
+
     __slots__ = ()
 
     async def __call__(self, *args, **kwargs):

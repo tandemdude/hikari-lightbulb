@@ -135,15 +135,15 @@ async def _has_roles(ctx: context.Context, *, role_check):
     return True
 
 
-def _get_missing_perms(permissions: hikari.Permissions, roles: typing.Sequence[hikari.Role]) -> hikari.Permissions:
-    missing_perms = hikari.Permissions.NONE
-    user_permissions = set([role.permissions for role in roles])
-
-    if hikari.Permissions.ADMINISTRATOR in user_permissions:
+def _get_missing_permissions(
+    required_permissions: hikari.Permissions, user_permissions: hikari.Permissions
+) -> hikari.Permissions:
+    if hikari.Permissions.ADMINISTRATOR & user_permissions:
         return hikari.Permissions.NONE
 
-    for required_permission in permissions:
-        if required_permission not in user_permissions:
+    missing_perms = hikari.Permissions.NONE
+    for required_permission in required_permissions.split():
+        if (required_permission & user_permissions) != 0:
             missing_perms |= required_permission
 
     return missing_perms
@@ -155,13 +155,17 @@ async def _has_guild_permissions(ctx: context.Context, *, permissions: hikari.Pe
 
     await _guild_only(ctx)
 
-    # Checks if the author is the server owner
     if ctx.guild.owner_id == ctx.author.id:
         return True
 
-    roles = ctx.bot.cache.get_roles_view_for_guild(ctx.guild_id).values()
+    guild_roles = ctx.bot.cache.get_roles_view_for_guild(ctx.guild_id).values()
+    user_roles = [role for role in guild_roles if role.id in ctx.member.role_ids]
 
-    missing_perms = _get_missing_perms(permissions, [role for role in roles if role.id in ctx.member.role_ids])
+    user_permissions = hikari.Permissions.NONE
+    for role in user_roles:
+        user_permissions |= role.permissions
+
+    missing_perms = _get_missing_permissions(permissions, user_permissions)
 
     if missing_perms:
         raise errors.MissingRequiredPermission(
@@ -179,10 +183,15 @@ async def _bot_has_guild_permissions(ctx: context.Context, *, permissions: hikar
     if ctx.guild.owner_id == ctx.bot.cache.get_me().id:
         return True
 
-    roles = ctx.bot.cache.get_roles_view_for_guild(ctx.guild_id).values()
+    guild_roles = ctx.bot.cache.get_roles_view_for_guild(ctx.guild_id).values()
     bot_member = ctx.bot.cache.get_member(ctx.guild_id, ctx.bot.cache.get_me().id)
+    user_roles = [role for role in guild_roles if role.id in bot_member.role_ids]
 
-    missing_perms = _get_missing_perms(permissions, [role for role in roles if role.id in bot_member.role_ids])
+    user_permissions = hikari.Permissions.NONE
+    for role in user_roles:
+        user_permissions |= role.permissions
+
+    missing_perms = _get_missing_permissions(permissions, user_permissions)
 
     if missing_perms:
         raise errors.BotMissingRequiredPermission(
@@ -197,6 +206,9 @@ async def _has_permissions(ctx: context.Context, *, permissions: hikari.Permissi
 
     await _guild_only(ctx)
 
+    if ctx.guild.owner_id == ctx.author.id:
+        return True
+
     perm_over = ctx.channel.permission_overwrites.values()
     perm_none = hikari.Permissions.NONE
 
@@ -204,7 +216,7 @@ async def _has_permissions(ctx: context.Context, *, permissions: hikari.Permissi
         operator.or_, (override.allow if override.id in ctx.member.role_ids else perm_none for override in perm_over)
     )
 
-    missing_perms = allowed_perms ^ permissions
+    missing_perms = _get_missing_permissions(permissions, allowed_perms)
 
     if missing_perms:
         raise errors.MissingRequiredPermission(
@@ -219,6 +231,9 @@ async def _bot_has_permissions(ctx: context.Context, *, permissions: hikari.Perm
 
     await _guild_only(ctx)
 
+    if ctx.guild.owner_id == ctx.bot.cache.get_me().id:
+        return True
+
     perm_over = ctx.channel.permission_overwrites.values()
     perm_none = hikari.Permissions.NONE
     bot_member = ctx.bot.cache.get_member(ctx.guild_id, ctx.bot.cache.get_me().id)
@@ -227,7 +242,7 @@ async def _bot_has_permissions(ctx: context.Context, *, permissions: hikari.Perm
         operator.or_, (override.allow if override.id in bot_member.role_ids else perm_none for override in perm_over)
     )
 
-    missing_perms = allowed_perms ^ permissions
+    missing_perms = _get_missing_permissions(permissions, allowed_perms)
 
     if missing_perms:
         raise errors.BotMissingRequiredPermission(

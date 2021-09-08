@@ -23,6 +23,7 @@ import datetime
 import functools
 import re
 import typing
+import warnings
 
 import hikari
 
@@ -165,6 +166,22 @@ class Context:
 
         return re.sub(r"<@!?(\d+)>", replace, self.prefix)
 
+    @property
+    def guild(self) -> typing.Optional[hikari.Guild]:
+        """
+        The cached :obj:`hikari.Guild` instance for the context's guild ID.
+
+        This will be None if the bot is stateless, the guild is not found in the cache,
+        or the context is for a command run in DMs.
+        """
+
+        warnings.warn("The context property 'guild' is depreciated and will be removed in version 1.4. "
+                      "Instead you should use 'get_guild'.", DeprecationWarning)
+
+        if self.guild_id is not None:
+            return self.bot.cache.get_available_guild(self.guild_id)
+        return None
+
     def get_guild(self) -> typing.Optional[hikari.Guild]:
         """
         The cached :obj:`hikari.Guild` instance for the context's guild ID.
@@ -174,6 +191,22 @@ class Context:
         """
         if self.guild_id is not None:
             return self.bot.cache.get_available_guild(self.guild_id)
+        return None
+
+    @property
+    def channel(self) -> typing.Optional[hikari.TextableChannel]:
+        """
+        The cached :obj:`hikari.TextableChannel` instance for the context's channel ID.
+
+        This will be None if the bot is stateless, the channel is not found in the cache,
+        or the context is for a command run in DMs.
+        """
+
+        warnings.warn("The context property 'channel' is depreciated and will be removed in version 1.4. "
+                      "Instead you should use 'get_channel'.", DeprecationWarning)
+
+        if self.guild_id is not None:
+            return self.bot.cache.get_guild_channel(self.channel_id)
         return None
 
     def get_channel(self) -> typing.Optional[hikari.TextableChannel]:

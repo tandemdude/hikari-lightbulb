@@ -21,6 +21,7 @@ __all__: typing.Final[typing.List[str]] = ["SlashCommandOptionsWrapper", "SlashC
 
 import functools
 import typing
+import warnings
 
 import hikari
 
@@ -129,10 +130,32 @@ class SlashCommandContext:
     @property
     def channel(self) -> typing.Optional[hikari.GuildChannel]:
         """The cached channel that the command was invoked in, or ``None`` if not found."""
+
+        warnings.warn(
+            "The slash context property 'channel' is depreciated and will be removed in version 1.4. "
+            "Instead you should use 'get_channel'.",
+            DeprecationWarning,
+        )
+
+        return self._interaction.get_channel()
+
+    def get_channel(self) -> typing.Optional[hikari.GuildChannel]:
+        """The cached channel that the command was invoked in, or ``None`` if not found."""
         return self._interaction.get_channel()
 
     @property
     def guild(self) -> typing.Optional[hikari.GatewayGuild]:
+        """The cached guild that the command was invoked in, or ``None`` if not found."""
+
+        warnings.warn(
+            "The slash context property 'guild' is depreciated and will be removed in version 1.4. "
+            "Instead you should use 'get_guild'.",
+            DeprecationWarning,
+        )
+
+        return self.bot.cache.get_guild(self.guild_id)
+
+    def get_guild(self) -> typing.Optional[hikari.GatewayGuild]:
         """The cached guild that the command was invoked in, or ``None`` if not found."""
         return self.bot.cache.get_guild(self.guild_id)
 

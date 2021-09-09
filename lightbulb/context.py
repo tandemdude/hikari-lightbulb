@@ -175,8 +175,11 @@ class Context:
         or the context is for a command run in DMs.
         """
 
-        warnings.warn("The context property 'guild' is depreciated and will be removed in version 1.4. "
-                      "Instead you should use 'get_guild'.", DeprecationWarning)
+        warnings.warn(
+            "The context property 'guild' is depreciated and will be removed in version 1.4. "
+            "Instead you should use 'get_guild'.",
+            DeprecationWarning,
+        )
 
         if self.guild_id is not None:
             return self.bot.cache.get_available_guild(self.guild_id)
@@ -202,8 +205,11 @@ class Context:
         or the context is for a command run in DMs.
         """
 
-        warnings.warn("The context property 'channel' is depreciated and will be removed in version 1.4. "
-                      "Instead you should use 'get_channel'.", DeprecationWarning)
+        warnings.warn(
+            "The context property 'channel' is depreciated and will be removed in version 1.4. "
+            "Instead you should use 'get_channel'.",
+            DeprecationWarning,
+        )
 
         if self.guild_id is not None:
             return self.bot.cache.get_guild_channel(self.channel_id)

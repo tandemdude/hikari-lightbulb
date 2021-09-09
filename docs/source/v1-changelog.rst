@@ -9,7 +9,11 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 Version 1.2.4
 =============
 
-- Fix NameError and TypeError when attempting to add slash commands in python 3.9
+- Deprecate context properties and replace with cache getter methods.
+
+- Fix permission checks not working as expected.
+
+- Fix NameError and TypeError when attempting to add slash commands in python 3.9.
 
 Version 1.2.3
 =============
@@ -66,5 +70,3 @@ Version 1.0.0
 **Stable Release**
 
 - Compatibility with hikari 2.0.0dev101.
-
-- From now on the project will use semantic versioning.

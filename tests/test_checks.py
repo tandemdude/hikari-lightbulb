@@ -88,7 +88,7 @@ async def test_owner_only_fails(ctx):
 @pytest.mark.asyncio
 async def test_guild_owner_passes(ctx):
     ctx.author.id = 12345
-    ctx.guild.owner_id = 12345
+    ctx.get_guild().owner_id = 12345
     ctx.bot.intents = Intents.GUILDS
     assert await checks._has_guild_permissions(ctx, permissions=Permissions.ADMINISTRATOR)
 

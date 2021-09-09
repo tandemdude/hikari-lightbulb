@@ -132,8 +132,8 @@ class SlashCommandContext:
         """The cached channel that the command was invoked in, or ``None`` if not found."""
 
         warnings.warn(
-            "The slash context property 'channel' is depreciated and will be removed in version 1.4. "
-            "Instead you should use 'get_channel'.",
+            "The slash context property 'channel' is deprecated and scheduled for removal in version 1.4. "
+            "You should use 'get_channel()' instead.",
             DeprecationWarning,
         )
 
@@ -148,8 +148,8 @@ class SlashCommandContext:
         """The cached guild that the command was invoked in, or ``None`` if not found."""
 
         warnings.warn(
-            "The slash context property 'guild' is depreciated and will be removed in version 1.4. "
-            "Instead you should use 'get_guild'.",
+            "The slash context property 'guild' is deprecated and scheduled for removal in version 1.4. "
+            "You should use 'get_guild()' instead.",
             DeprecationWarning,
         )
 

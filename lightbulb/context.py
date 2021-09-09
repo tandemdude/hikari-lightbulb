@@ -176,8 +176,8 @@ class Context:
         """
 
         warnings.warn(
-            "The context property 'guild' is depreciated and will be removed in version 1.4. "
-            "Instead you should use 'get_guild'.",
+            "The context property 'guild' is deprecated and scheduled for removal in version 1.4. "
+            "You should use 'get_guild()' instead.",
             DeprecationWarning,
         )
 
@@ -206,8 +206,8 @@ class Context:
         """
 
         warnings.warn(
-            "The context property 'channel' is depreciated and will be removed in version 1.4. "
-            "Instead you should use 'get_channel'.",
+            "The context property 'channel' is deprecated and scheduled for removal in version 1.4. "
+            "You should use 'get_channel()' instead.",
             DeprecationWarning,
         )
 

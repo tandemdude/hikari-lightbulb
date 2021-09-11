@@ -923,11 +923,11 @@ class Bot(hikari.GatewayBot):
             await before_invoke(context)
 
         try:
-            positional_args, keyword_arg = await self.resolve_args_for_command(context, command, final_args)
             if not await maybe_await(command._check_exempt_predicate, context):
                 await self._evaluate_checks(command, context)
             else:
                 _LOGGER.debug("checks bypassed for command %r", context.message.content)
+            positional_args, keyword_arg = await self.resolve_args_for_command(context, command, final_args)
         except (
             errors.NotEnoughArguments,
             errors.TooManyArguments,

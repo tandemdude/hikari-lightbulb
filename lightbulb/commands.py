@@ -246,8 +246,7 @@ class Command:
         self.method_name: typing.Optional[str] = None
         self.parent: typing.Optional[Group] = parent
         """The parent group for the command. If ``None`` then the command is not a subcommand."""
-        self.plugin: typing.Optional[plugins.Plugin] = None
-        """The plugin the command is registered to. If ``None`` then it was defined outside of a plugin."""
+        self._plugin: typing.Optional[plugins.Plugin] = None
         self.user_required_permissions: hikari.Permissions = hikari.Permissions.NONE
         """
         The permissions required by a user to run the command.
@@ -284,6 +283,15 @@ class Command:
 
     def __eq__(self, other) -> bool:
         return isinstance(other, type(self)) and other.name == self.name
+
+    @property
+    def plugin(self) -> typing.Optional[plugins.Plugin]:
+        """The plugin the command is registered to. If ``None`` then it was defined outside of a plugin."""
+        return self._plugin
+
+    @plugin.setter
+    def plugin(self, new_plugin: plugins.Plugin) -> None:
+        self._plugin = new_plugin
 
     @functools.cached_property
     def _error_listener(self):
@@ -541,6 +549,17 @@ class Group(Command):
         self._subcommands: typing.MutableMapping[str, Command] = {} if not self.insensitive_commands else CIMultiDict()
         self.subcommands: typing.Set[Command] = set()
         """A set containing all subcommands registered to the group."""
+
+    @property
+    def plugin(self) -> typing.Optional[plugins.Plugin]:
+        """The plugin the command is registered to. If ``None`` then it was defined outside of a plugin."""
+        return self._plugin
+
+    @plugin.setter
+    def plugin(self, new_plugin: plugins.Plugin) -> None:
+        for subcommand in self._subcommands.values():
+            subcommand.plugin = new_plugin
+        self._plugin = new_plugin
 
     def _resolve_subcommand(self, args) -> typing.Tuple[typing.Union[Command, Group], typing.Iterable[str]]:
         this = self

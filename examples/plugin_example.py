@@ -19,7 +19,7 @@ import hikari
 
 import lightbulb
 
-bot = lightbulb.Bot(prefix="!", token="YOUR_TOKEN", intents=hikari.Intents.ALL)
+bot = lightbulb.Bot(prefix="!", token="YOUR_TOKEN", intents=hikari.Intents.ALL_UNPRIVILEGED)
 
 
 class ExamplePlugin(lightbulb.Plugin):

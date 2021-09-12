@@ -9,6 +9,8 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 Version 1.2.5
 =============
 
+- Fix slash command groups all sharing the same subcommands.
+
 - Fix plugin_check not being applied to subcommands.
 
 - Swap order of command checks and argument parsing - checks are now evaluated before arguments are parsed.

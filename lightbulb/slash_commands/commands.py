@@ -414,7 +414,9 @@ class SlashCommandGroup(BaseSlashCommand, WithGetOptions, WithCreationMethods, W
 
     __slots__ = ("_subcommands",)
 
-    _subcommand_dict: typing.Dict[str, typing.List[typing.Type[SlashSubCommand], typing.Type[SlashSubGroup]]] = collections.defaultdict(list)
+    _subcommand_dict: typing.Dict[
+        str, typing.List[typing.Type[SlashSubCommand], typing.Type[SlashSubGroup]]
+    ] = collections.defaultdict(list)
 
     def __init__(self, bot: command_handler.Bot):
         super().__init__(bot)

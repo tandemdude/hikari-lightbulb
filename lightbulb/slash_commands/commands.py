@@ -414,12 +414,12 @@ class SlashCommandGroup(BaseSlashCommand, WithGetOptions, WithCreationMethods, W
 
     __slots__ = ("_subcommands",)
 
-    _subcommand_list: typing.List[typing.Union[typing.Type[SlashSubCommand], typing.Type[SlashSubGroup]]] = []
+    _subcommand_dict: typing.Dict[str, typing.List[typing.Type[SlashSubCommand], typing.Type[SlashSubGroup]]] = collections.defaultdict(list)
 
     def __init__(self, bot: command_handler.Bot):
         super().__init__(bot)
         self._subcommands: typing.MutableMapping[str, SlashSubCommand] = {}
-        for cmd_class in self._subcommand_list:
+        for cmd_class in self._subcommand_dict.get(self.__class__.__name__.lower(), []):
             cmd = cmd_class(bot)
             self._subcommands[cmd.name] = cmd
 
@@ -446,7 +446,7 @@ class SlashCommandGroup(BaseSlashCommand, WithGetOptions, WithCreationMethods, W
         """
 
         def decorate(subcommand_class: typing.Type[SlashSubCommand]) -> typing.Type[SlashSubCommand]:
-            cls._subcommand_list.append(subcommand_class)
+            cls._subcommand_dict[cls.__name__.lower()].append(subcommand_class)
             return subcommand_class
 
         return decorate
@@ -458,7 +458,7 @@ class SlashCommandGroup(BaseSlashCommand, WithGetOptions, WithCreationMethods, W
         """
 
         def decorate(subgroup_class: typing.Type[SlashSubGroup]) -> typing.Type[SlashSubGroup]:
-            cls._subcommand_list.append(subgroup_class)
+            cls._subcommand_dict[cls.__name__.lower()].append(subgroup_class)
             return subgroup_class
 
         return decorate
@@ -491,12 +491,12 @@ class SlashSubGroup(BaseSlashCommand, WithAsOption, abc.ABC):
 
     __slots__ = ("_subcommands",)
 
-    _subcommand_list: typing.List[typing.Type[SlashSubCommand]] = []
+    _subcommand_dict: typing.Dict[str, typing.List[typing.Type[SlashSubCommand]]] = collections.defaultdict(list)
 
     def __init__(self, bot: command_handler.Bot):
         super().__init__(bot)
         self._subcommands: typing.MutableMapping[str, SlashSubCommand] = {}
-        for cmd_class in self._subcommand_list:
+        for cmd_class in self._subcommand_dict.get(self.__class__.__name__.lower(), []):
             cmd = cmd_class(bot)
             self._subcommands[cmd.name] = cmd
 
@@ -519,7 +519,7 @@ class SlashSubGroup(BaseSlashCommand, WithAsOption, abc.ABC):
         """
 
         def decorate(subcommand_class: typing.Type[SlashSubCommand]) -> typing.Type[SlashSubCommand]:
-            cls._subcommand_list.append(subcommand_class)
+            cls._subcommand_dict[cls.__name__.lower()].append(subcommand_class)
             return subcommand_class
 
         return decorate

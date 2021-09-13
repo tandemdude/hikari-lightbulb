@@ -141,62 +141,122 @@ def _get_missing_permissions(
     if hikari.Permissions.ADMINISTRATOR & user_permissions:
         return hikari.Permissions.NONE
 
-    missing_perms = hikari.Permissions.NONE
-    for required_permission in required_permissions.split():
-        if (required_permission & user_permissions) != 0:
-            missing_perms |= required_permission
+    missing_perms = required_permissions & ~user_permissions
 
     return missing_perms
 
 
-async def _has_guild_permissions(ctx: context.Context, *, permissions: hikari.Permissions):
+async def _has_guild_permissions(ctx: context.Context, *, permissions: hikari.Permissions) -> bool:
     if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
         raise hikari.MissingIntentError(hikari.Intents.GUILDS)
 
     await _guild_only(ctx)
 
-    # Checks if the author is the server owner
     if ctx.get_guild().owner_id == ctx.author.id:
         return True
 
-    guild_roles = ctx.bot.cache.get_roles_view_for_guild(ctx.guild_id).values()
-    user_roles = [role for role in guild_roles if role.id in ctx.member.role_ids]
+    perm_over: typing.Sequence[hikari.PermissionOverwrite] = ctx.get_channel().permission_overwrites.values()
+    perm_none = hikari.Permissions.NONE
+    has_perms = hikari.Permissions.NONE
 
-    user_permissions = hikari.Permissions.NONE
-    for role in user_roles:
-        user_permissions |= role.permissions
+    denied_user_perms = functools.reduce(
+        operator.or_, (override.deny if override.id == ctx.member.id else perm_none for override in perm_over)
+    )
 
-    missing_perms = _get_missing_permissions(permissions, user_permissions)
+    if denied_and_needed_user := (permissions & denied_user_perms):
+        raise errors.MissingRequiredPermission(
+            "You are missing one or more permissions required in order to run this command", denied_and_needed_user
+        )
 
-    if missing_perms:
+    allowed_user_perms = functools.reduce(
+        operator.or_, (override.allow if override.id == ctx.member.id else perm_none for override in perm_over)
+    )
+
+    if not permissions & ~allowed_user_perms:
+        return True
+    has_perms |= (permissions & allowed_user_perms)
+
+    denied_role_perms = functools.reduce(
+        operator.or_, (override.deny if override.id in ctx.member.role_ids else perm_none for override in perm_over)
+    )
+
+    if denied_and_needed_role := (permissions & denied_role_perms):
+        raise errors.MissingRequiredPermission(
+            "You are missing one or more permissions required in order to run this command", denied_and_needed_role
+        )
+
+    allowed_role_perms = functools.reduce(
+        operator.or_, (override.allow if override.id in ctx.member.role_ids else perm_none for override in perm_over)
+    )
+
+    if not permissions & ~allowed_role_perms:
+        return True
+    has_perms |= (permissions & allowed_role_perms)
+
+    user_role_perms = functools.reduce(operator.or_, (role.permissions for role in ctx.member.get_roles()))
+    user_role_perms |= has_perms
+
+    if missing_perms := _get_missing_permissions(permissions, user_role_perms):
         raise errors.MissingRequiredPermission(
             "You are missing one or more permissions required in order to run this command", missing_perms
         )
     return True
 
 
-async def _bot_has_guild_permissions(ctx: context.Context, *, permissions: hikari.Permissions):
+async def _bot_has_guild_permissions(ctx: context.Context, *, permissions: hikari.Permissions) -> bool:
     if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
         raise hikari.MissingIntentError(hikari.Intents.GUILDS)
 
     await _guild_only(ctx)
 
-    if ctx.get_guild().owner_id == ctx.bot.cache.get_me().id:
+    if ctx.get_guild().owner_id == ctx.author.id:
         return True
 
-    guild_roles = ctx.bot.cache.get_roles_view_for_guild(ctx.guild_id).values()
-    bot_member = ctx.bot.cache.get_member(ctx.guild_id, ctx.bot.cache.get_me().id)
-    user_roles = [role for role in guild_roles if role.id in bot_member.role_ids]
+    bot_member = ctx.get_guild().get_member(ctx.bot.get_me())
+    perm_over: typing.Sequence[hikari.PermissionOverwrite] = ctx.get_channel().permission_overwrites.values()
+    perm_none = hikari.Permissions.NONE
+    has_perms = hikari.Permissions.NONE
 
-    user_permissions = hikari.Permissions.NONE
-    for role in user_roles:
-        user_permissions |= role.permissions
+    denied_user_perms = functools.reduce(
+        operator.or_, (override.deny if override.id == bot_member.id else perm_none for override in perm_over)
+    )
 
-    missing_perms = _get_missing_permissions(permissions, user_permissions)
+    if denied_and_needed_user := (permissions & denied_user_perms):
+        raise errors.MissingRequiredPermission(
+            "You are missing one or more permissions required in order to run this command", denied_and_needed_user
+        )
 
-    if missing_perms:
-        raise errors.BotMissingRequiredPermission(
-            "I am missing one or more permissions required in order to run this command", missing_perms
+    allowed_user_perms = functools.reduce(
+        operator.or_, (override.allow if override.id == bot_member.id else perm_none for override in perm_over)
+    )
+
+    if not permissions & ~allowed_user_perms:
+        return True
+    has_perms |= (permissions & allowed_user_perms)
+
+    denied_role_perms = functools.reduce(
+        operator.or_, (override.deny if override.id in bot_member.role_ids else perm_none for override in perm_over)
+    )
+
+    if denied_and_needed_role := (permissions & denied_role_perms):
+        raise errors.MissingRequiredPermission(
+            "You are missing one or more permissions required in order to run this command", denied_and_needed_role
+        )
+
+    allowed_role_perms = functools.reduce(
+        operator.or_, (override.allow if override.id in bot_member.role_ids else perm_none for override in perm_over)
+    )
+
+    if not permissions & ~allowed_role_perms:
+        return True
+    has_perms |= (permissions & allowed_role_perms)
+
+    user_role_perms = functools.reduce(operator.or_, (role.permissions for role in bot_member.get_roles()))
+    user_role_perms |= has_perms
+
+    if missing_perms := _get_missing_permissions(permissions, user_role_perms):
+        raise errors.MissingRequiredPermission(
+            "You are missing one or more permissions required in order to run this command", missing_perms
         )
     return True
 
@@ -248,6 +308,154 @@ async def _bot_has_permissions(ctx: context.Context, *, permissions: hikari.Perm
     if missing_perms:
         raise errors.BotMissingRequiredPermission(
             "I am missing one or more permissions required in order to run this command", missing_perms
+        )
+    return True
+
+
+async def _has_role_permissions(ctx: context.Context, *, permissions: hikari.Permissions) -> bool:
+    if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
+        raise hikari.MissingIntentError(hikari.Intents.GUILDS)
+
+    await _guild_only(ctx)
+
+    if ctx.get_guild().owner_id == ctx.author.id:
+        return True
+
+    user_perms = functools.reduce(operator.or_, (role.permissions for role in ctx.member.get_roles()))
+    missing_perms = _get_missing_permissions(permissions, user_perms)
+
+    if missing_perms:
+        raise errors.MissingRequiredPermission(
+            "You are missing one or more permissions required in order to run this command", missing_perms
+        )
+    return True
+
+
+async def _bot_has_role_permissions(ctx: context.Context, *, permissions: hikari.Permissions) -> bool:
+    if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
+        raise hikari.MissingIntentError(hikari.Intents.GUILDS)
+
+    await _guild_only(ctx)
+
+    bot_member = ctx.get_guild().get_member(ctx.bot.get_me())
+    if ctx.get_guild().owner_id == bot_member.id:
+        return True
+
+    user_perms = functools.reduce(operator.or_, (role.permissions for role in bot_member.get_roles()))
+    missing_perms = _get_missing_permissions(permissions, user_perms)
+
+    if missing_perms:
+        raise errors.BotMissingRequiredPermission(
+            "I am missing one or more permissions required in order to run this command", missing_perms
+        )
+    return True
+
+
+async def _has_channel_permissions(ctx: context.Context, *, permissions: hikari.Permissions) -> bool:
+    if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
+        raise hikari.MissingIntentError(hikari.Intents.GUILDS)
+
+    await _guild_only(ctx)
+
+    if ctx.get_guild().owner_id == ctx.author.id:
+        return True
+
+    perm_over: typing.Sequence[hikari.PermissionOverwrite] = ctx.get_channel().permission_overwrites.values()
+    perm_none = hikari.Permissions.NONE
+    has_perms = hikari.Permissions.NONE
+
+    denied_user_perms = functools.reduce(
+        operator.or_, (override.deny if override.id == ctx.member.id else perm_none for override in perm_over)
+    )
+
+    if denied_and_needed_user := (permissions & denied_user_perms):
+        raise errors.MissingRequiredPermission(
+            "You are missing one or more permissions required in order to run this command", denied_and_needed_user
+        )
+
+    allowed_user_perms = functools.reduce(
+        operator.or_, (override.allow if override.id == ctx.member.id else perm_none for override in perm_over)
+    )
+
+    if not permissions & ~allowed_user_perms:
+        return True
+    has_perms |= (permissions & allowed_user_perms)
+
+    denied_role_perms = functools.reduce(
+        operator.or_, (override.deny if override.id in ctx.member.role_ids else perm_none for override in perm_over)
+    )
+
+    if denied_and_needed_role := (permissions & denied_role_perms):
+        raise errors.MissingRequiredPermission(
+            "You are missing one or more permissions required in order to run this command", denied_and_needed_role
+        )
+
+    allowed_role_perms = functools.reduce(
+        operator.or_, (override.allow if override.id in ctx.member.role_ids else perm_none for override in perm_over)
+    )
+
+    if not permissions & ~allowed_role_perms:
+        return True
+    has_perms |= (permissions & allowed_role_perms)
+
+    if missing_perms := _get_missing_permissions(permissions, has_perms):
+        raise errors.MissingRequiredPermission(
+            "You are missing one or more permissions required in order to run this command", missing_perms
+        )
+    return True
+
+
+async def _bot_has_channel_permissions(ctx: context.Context, *, permissions: hikari.Permissions) -> bool:
+    if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
+        raise hikari.MissingIntentError(hikari.Intents.GUILDS)
+
+    await _guild_only(ctx)
+
+    if ctx.get_guild().owner_id == ctx.author.id:
+        return True
+
+    bot_member = ctx.get_guild().get_member(ctx.bot.get_me())
+    perm_over: typing.Sequence[hikari.PermissionOverwrite] = ctx.get_channel().permission_overwrites.values()
+    perm_none = hikari.Permissions.NONE
+    has_perms = hikari.Permissions.NONE
+
+    denied_user_perms = functools.reduce(
+        operator.or_, (override.deny if override.id == bot_member.id else perm_none for override in perm_over)
+    )
+
+    if denied_and_needed_user := (permissions & denied_user_perms):
+        raise errors.MissingRequiredPermission(
+            "You are missing one or more permissions required in order to run this command", denied_and_needed_user
+        )
+
+    allowed_user_perms = functools.reduce(
+        operator.or_, (override.allow if override.id == bot_member.id else perm_none for override in perm_over)
+    )
+
+    if not permissions & ~allowed_user_perms:
+        return True
+    has_perms |= (permissions & allowed_user_perms)
+
+    denied_role_perms = functools.reduce(
+        operator.or_, (override.deny if override.id in bot_member.role_ids else perm_none for override in perm_over)
+    )
+
+    if denied_and_needed_role := (permissions & denied_role_perms):
+        raise errors.MissingRequiredPermission(
+            "You are missing one or more permissions required in order to run this command", denied_and_needed_role
+        )
+
+    allowed_role_perms = functools.reduce(
+        operator.or_, (override.allow if override.id in bot_member.role_ids else perm_none for override in perm_over)
+    )
+
+    if not permissions & ~allowed_role_perms:
+        return True
+    has_perms |= (permissions & allowed_role_perms)
+
+    if missing_perms := _get_missing_permissions(permissions, has_perms):
+        raise errors.MissingRequiredPermission(
+            "You are missing one or more permissions required in order to run this command", missing_perms
         )
     return True
 
@@ -401,7 +609,7 @@ def has_roles(
 def has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
     """
     A decorator that prevents the command from being used by a member missing any of the required
-    guild permissions (permissions granted by a role).
+    guild permissions (this takes into account both role permissions and channel overwrites).
 
     Args:
         perm1 (:obj:`hikari.Permissions`): Permission to check for.
@@ -433,7 +641,7 @@ def has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permis
 def bot_has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
     """
     A decorator that prevents the command from being used if the bot is missing any of the required
-    guild permissions (permissions granted by a role).
+    guild permissions (this takes into account both role permissions and channel overwrites).
 
     Args:
         perm1 (:obj:`hikari.Permissions`): Permission to check for.
@@ -462,6 +670,134 @@ def bot_has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Pe
     return decorate
 
 
+def has_role_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+    """
+    A decorator that prevents the command from being used by a member missing any of the required
+    role permissions.
+
+    Args:
+        perm1 (:obj:`hikari.Permissions`): Permission to check for.
+        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have permissions
+        in a DM channel.
+
+    Warning:
+        This check is unavailable if your application is stateless and/or missing the intent
+        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
+        either of these conditions are not met.
+    """
+
+    def decorate(command: T_inv) -> T_inv:
+        _check_check_decorator_above_commands_decorator(command)
+        perms = perm1.split()
+
+        total_perms = functools.reduce(operator.or_, (*perms, *permissions))
+        command.user_required_permissions = total_perms
+
+        command.add_check(functools.partial(_has_role_permissions, permissions=total_perms))
+        return command
+
+    return decorate
+
+
+def bot_has_role_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+    """
+    A decorator that prevents the command from being used if the bot is missing any of the required
+    role permissions.
+
+    Args:
+        perm1 (:obj:`hikari.Permissions`): Permission to check for.
+        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have permissions
+        in a DM channel.
+
+    Warning:
+        This check is unavailable if your application is stateless and/or missing the intent
+        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
+        either of these conditions are not met.
+    """
+
+    def decorate(command: T_inv) -> T_inv:
+        _check_check_decorator_above_commands_decorator(command)
+        perms = perm1.split()
+
+        total_perms = functools.reduce(operator.or_, (*perms, *permissions))
+        command.user_required_permissions = total_perms
+
+        command.add_check(functools.partial(_bot_has_role_permissions, permissions=total_perms))
+        return command
+
+    return decorate
+
+
+def has_channel_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+    """
+    A decorator that prevents the command from being used by a member missing any of the required
+    channel permissions (permissions granted by a permission overwrite).
+
+    Args:
+        perm1 (:obj:`hikari.Permissions`): Permission to check for.
+        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have permissions
+        in a DM channel.
+
+    Warning:
+        This check is unavailable if your application is stateless and/or missing the intent
+        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
+        either of these conditions are not met.
+    """
+
+    def decorate(command: T_inv) -> T_inv:
+        _check_check_decorator_above_commands_decorator(command)
+        perms = perm1.split()
+
+        total_perms = functools.reduce(operator.or_, (*perms, *permissions))
+        command.user_required_permissions = total_perms
+
+        command.add_check(functools.partial(_has_channel_permissions, permissions=total_perms))
+        return command
+
+    return decorate
+
+
+def bot_has_channel_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+    """
+    A decorator that prevents the command from being used if the bot is missing any of the required
+    channel permissions (permissions granted by a permission overwrite).
+
+    Args:
+        perm1 (:obj:`hikari.Permissions`): Permission to check for.
+        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have permissions
+        in a DM channel.
+
+    Warning:
+        This check is unavailable if your application is stateless and/or missing the intent
+        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
+        either of these conditions are not met.
+    """
+
+    def decorate(command: T_inv) -> T_inv:
+        _check_check_decorator_above_commands_decorator(command)
+        perms = perm1.split()
+
+        total_perms = functools.reduce(operator.or_, (*perms, *permissions))
+        command.user_required_permissions = total_perms
+
+        command.add_check(functools.partial(_bot_has_channel_permissions, permissions=total_perms))
+        return command
+
+    return decorate
+
+
 def has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
     """
     A decorator that prevents the command from being used by a member missing any of the required
@@ -474,9 +810,17 @@ def has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions)
     Note:
         This check will also prevent commands from being used in DMs, as you cannot have permissions
         in a DM channel.
+
+    Warning:
+        This check is unavailable if your application is stateless and/or missing the intent
+        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
+        either of these conditions are not met.
     """
 
     def decorate(command: T_inv) -> T_inv:
+
+        # deprecation message??
+
         _check_check_decorator_above_commands_decorator(command)
         perms = perm1.split()
 
@@ -501,9 +845,17 @@ def bot_has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissi
     Note:
         This check will also prevent commands from being used in DMs, as you cannot have permissions
         in a DM channel.
+
+    Warning:
+        This check is unavailable if your application is stateless and/or missing the intent
+        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
+        either of these conditions are not met.
     """
 
     def decorate(command: T_inv) -> T_inv:
+
+        # deprecation message??
+
         _check_check_decorator_above_commands_decorator(command)
         perms = perm1.split()
 

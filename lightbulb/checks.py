@@ -46,6 +46,7 @@ import functools
 import inspect
 import operator
 import typing
+import warnings
 
 import hikari
 
@@ -789,9 +790,11 @@ def has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions)
     """
 
     def decorate(command: T_inv) -> T_inv:
-
-        # deprecation message??
-
+        warnings.warn(
+            "The permissions check 'has_permissions' is deprecated and scheduled for removal in version 1.3. "
+            "You should use 'has_channel_permissions' instead.",
+            DeprecationWarning,
+        )
         _check_check_decorator_above_commands_decorator(command)
         perms = perm1.split()
 
@@ -824,9 +827,11 @@ def bot_has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissi
     """
 
     def decorate(command: T_inv) -> T_inv:
-
-        # deprecation message??
-
+        warnings.warn(
+            "The permissions check 'bot_has_permissions' is deprecated and scheduled for removal in version 1.3. "
+            "You should use 'bot_has_channel_permissions' instead.",
+            DeprecationWarning,
+        )
         _check_check_decorator_above_commands_decorator(command)
         perms = perm1.split()
 

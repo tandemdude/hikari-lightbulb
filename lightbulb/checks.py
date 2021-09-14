@@ -157,38 +157,29 @@ async def _has_guild_permissions(ctx: context.Context, *, permissions: hikari.Pe
 
     await _guild_only(ctx)
 
-    if ctx.get_guild().owner_id == ctx.author.id:
+    member = ctx.member
+    if ctx.get_guild().owner_id == member.id:
+        return True
+
+    _user_role_perms = functools.reduce(operator.or_, (role.permissions for role in member.get_roles()))
+    if _user_role_perms & hikari.Permissions.ADMINISTRATOR:
         return True
 
     perm_over = ctx.get_channel().permission_overwrites.values()
-    perm_none = hikari.Permissions.NONE
-    denied_perms = hikari.Permissions.NONE
-    allowed_perms = hikari.Permissions.NONE
 
-    _user_denies = functools.reduce(
-        operator.or_, (override.deny if override.id == ctx.member.id else perm_none for override in perm_over)
-    )
-    denied_perms |= _user_denies
+    _user_denies = (
+        _user_allows
+    ) = _role_denies = _role_allows = perm_none = denied_perms = allowed_perms = hikari.Permissions.NONE
 
-    _user_allows = functools.reduce(
-        operator.or_, (override.allow if override.id == ctx.member.id else perm_none for override in perm_over)
-    )
-    allowed_perms |= _user_allows
+    for override in perm_over:
+        _user_denies |= override.deny if override.id == member.id else perm_none
+        _user_allows |= override.allow if override.id == member.id else perm_none
 
-    _role_denies = functools.reduce(
-        operator.or_, (override.deny if override.id in ctx.member.role_ids else perm_none for override in perm_over)
-    )
-    denied_perms |= _role_denies & ~_user_allows
+        _role_denies |= override.deny if override.id in member.role_ids else perm_none
+        _role_allows |= override.allow if override.id in member.role_ids else perm_none
 
-    _role_allows = functools.reduce(
-        operator.or_, (override.allow if override.id in ctx.member.role_ids else perm_none for override in perm_over)
-    )
-    allowed_perms |= _role_allows & ~_user_denies
-
-    _user_role_perms = functools.reduce(operator.or_, (role.permissions for role in ctx.member.get_roles()))
-
-    if _user_role_perms & hikari.Permissions.ADMINISTRATOR:
-        return True
+    denied_perms |= _user_denies | (_role_denies & ~_user_allows)
+    allowed_perms |= _user_allows | (_role_allows & ~_user_denies)
 
     allowed_perms |= _user_role_perms & ~denied_perms
     denied_perms |= ~allowed_perms
@@ -206,40 +197,30 @@ async def _bot_has_guild_permissions(ctx: context.Context, *, permissions: hikar
 
     await _guild_only(ctx)
 
-    bot_member = ctx.get_guild().get_member(ctx.bot.get_me())
+    member = ctx.get_guild().get_member(ctx.bot.get_me())
 
-    if ctx.get_guild().owner_id == bot_member.id:
+    if ctx.get_guild().owner_id == member.id:
+        return True
+
+    _user_role_perms = functools.reduce(operator.or_, (role.permissions for role in member.get_roles()))
+    if _user_role_perms & hikari.Permissions.ADMINISTRATOR:
         return True
 
     perm_over = ctx.get_channel().permission_overwrites.values()
-    perm_none = hikari.Permissions.NONE
-    denied_perms = hikari.Permissions.NONE
-    allowed_perms = hikari.Permissions.NONE
 
-    _user_denies = functools.reduce(
-        operator.or_, (override.deny if override.id == bot_member.id else perm_none for override in perm_over)
-    )
-    denied_perms |= _user_denies
+    _user_denies = (
+        _user_allows
+    ) = _role_denies = _role_allows = perm_none = denied_perms = allowed_perms = hikari.Permissions.NONE
 
-    _user_allows = functools.reduce(
-        operator.or_, (override.allow if override.id == bot_member.id else perm_none for override in perm_over)
-    )
-    allowed_perms |= _user_allows
+    for override in perm_over:
+        _user_denies |= override.deny if override.id == member.id else perm_none
+        _user_allows |= override.allow if override.id == member.id else perm_none
 
-    _role_denies = functools.reduce(
-        operator.or_, (override.deny if override.id in bot_member.role_ids else perm_none for override in perm_over)
-    )
-    denied_perms |= _role_denies & ~_user_allows
+        _role_denies |= override.deny if override.id in member.role_ids else perm_none
+        _role_allows |= override.allow if override.id in member.role_ids else perm_none
 
-    _role_allows = functools.reduce(
-        operator.or_, (override.allow if override.id in bot_member.role_ids else perm_none for override in perm_over)
-    )
-    allowed_perms |= _role_allows & ~_user_denies
-
-    _user_role_perms = functools.reduce(operator.or_, (role.permissions for role in bot_member.get_roles()))
-
-    if _user_role_perms & hikari.Permissions.ADMINISTRATOR:
-        return True
+    denied_perms |= _user_denies | (_role_denies & ~_user_allows)
+    allowed_perms |= _user_allows | (_role_allows & ~_user_denies)
 
     allowed_perms |= _user_role_perms & ~denied_perms
     denied_perms |= ~allowed_perms
@@ -349,33 +330,25 @@ async def _has_channel_permissions(ctx: context.Context, *, permissions: hikari.
 
     await _guild_only(ctx)
 
-    if ctx.get_guild().owner_id == ctx.author.id:
+    member = ctx.member
+    if ctx.get_guild().owner_id == member.id:
         return True
 
     perm_over = ctx.get_channel().permission_overwrites.values()
-    perm_none = hikari.Permissions.NONE
-    denied_perms = hikari.Permissions.NONE
-    allowed_perms = hikari.Permissions.NONE
 
-    _user_denies = functools.reduce(
-        operator.or_, (override.deny if override.id == ctx.member.id else perm_none for override in perm_over)
-    )
-    denied_perms |= _user_denies
+    _user_denies = (
+        _user_allows
+    ) = _role_denies = _role_allows = perm_none = denied_perms = allowed_perms = hikari.Permissions.NONE
 
-    _user_allows = functools.reduce(
-        operator.or_, (override.allow if override.id == ctx.member.id else perm_none for override in perm_over)
-    )
-    allowed_perms |= _user_allows
+    for override in perm_over:
+        _user_denies |= override.deny if override.id == member.id else perm_none
+        _user_allows |= override.allow if override.id == member.id else perm_none
 
-    _role_denies = functools.reduce(
-        operator.or_, (override.deny if override.id in ctx.member.role_ids else perm_none for override in perm_over)
-    )
-    denied_perms |= _role_denies & ~_user_allows
+        _role_denies |= override.deny if override.id in member.role_ids else perm_none
+        _role_allows |= override.allow if override.id in member.role_ids else perm_none
 
-    _role_allows = functools.reduce(
-        operator.or_, (override.allow if override.id in ctx.member.role_ids else perm_none for override in perm_over)
-    )
-    allowed_perms |= _role_allows & ~_user_denies
+    denied_perms |= _user_denies | (_role_denies & ~_user_allows)
+    allowed_perms |= _user_allows | (_role_allows & ~_user_denies)
 
     if not (permissions & ~allowed_perms):
         return True
@@ -391,35 +364,25 @@ async def _bot_has_channel_permissions(ctx: context.Context, *, permissions: hik
 
     await _guild_only(ctx)
 
-    bot_member = ctx.get_guild().get_member(ctx.bot.get_me())
-
-    if ctx.get_guild().owner_id == bot_member.id:
+    member = ctx.get_guild().get_member(ctx.bot.get_me())
+    if ctx.get_guild().owner_id == member.id:
         return True
 
     perm_over = ctx.get_channel().permission_overwrites.values()
-    perm_none = hikari.Permissions.NONE
-    denied_perms = hikari.Permissions.NONE
-    allowed_perms = hikari.Permissions.NONE
 
-    _user_denies = functools.reduce(
-        operator.or_, (override.deny if override.id == bot_member.id else perm_none for override in perm_over)
-    )
-    denied_perms |= _user_denies
+    _user_denies = (
+        _user_allows
+    ) = _role_denies = _role_allows = perm_none = denied_perms = allowed_perms = hikari.Permissions.NONE
 
-    _user_allows = functools.reduce(
-        operator.or_, (override.allow if override.id == bot_member.id else perm_none for override in perm_over)
-    )
-    allowed_perms |= _user_allows
+    for override in perm_over:
+        _user_denies |= override.deny if override.id == member.id else perm_none
+        _user_allows |= override.allow if override.id == member.id else perm_none
 
-    _role_denies = functools.reduce(
-        operator.or_, (override.deny if override.id in bot_member.role_ids else perm_none for override in perm_over)
-    )
-    denied_perms |= _role_denies & ~_user_allows
+        _role_denies |= override.deny if override.id in member.role_ids else perm_none
+        _role_allows |= override.allow if override.id in member.role_ids else perm_none
 
-    _role_allows = functools.reduce(
-        operator.or_, (override.allow if override.id in bot_member.role_ids else perm_none for override in perm_over)
-    )
-    allowed_perms |= _role_allows & ~_user_denies
+    denied_perms |= _user_denies | (_role_denies & ~_user_allows)
+    allowed_perms |= _user_allows | (_role_allows & ~_user_denies)
 
     if not (permissions & ~allowed_perms):
         return True

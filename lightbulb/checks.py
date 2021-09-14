@@ -381,9 +381,8 @@ async def _has_channel_permissions(ctx: context.Context, *, permissions: hikari.
         return True
 
     raise errors.MissingRequiredPermission(
-        "You are missing one or more permissions required in order to run this command",
-        permissions & denied_perms
-        )
+        "You are missing one or more permissions required in order to run this command", permissions & denied_perms
+    )
 
 
 async def _bot_has_channel_permissions(ctx: context.Context, *, permissions: hikari.Permissions) -> bool:
@@ -426,8 +425,7 @@ async def _bot_has_channel_permissions(ctx: context.Context, *, permissions: hik
         return True
 
     raise errors.MissingRequiredPermission(
-        "You are missing one or more permissions required in order to run this command",
-        permissions & denied_perms
+        "You are missing one or more permissions required in order to run this command", permissions & denied_perms
     )
 
 

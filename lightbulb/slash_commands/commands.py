@@ -127,16 +127,28 @@ class Option:
 
     description: str
     """The description of the option."""
-    name: str = None
+    name: typing.Optional[str] = None
     """The name of the option. If ``None`` then this will be the name of the attribute."""
-    required: bool = None
+    required: typing.Optional[bool] = None
     """Whether or not the option is required. If ``None`` then it will be inferred from the attribute's typehint."""
+    choices: typing.Optional[typing.Sequence[str, int, float, hikari.Snowflakeish, hikari.CommandChoice]] = None
+    """
+    Sequence of the choices for the option. Defaults to None. 
+    If :obj:`hikari.CommandChoice` objects are not provided then one will be built
+    from the choice with the name set to the string representation of the value.
+    """
 
 
 def _get_type_and_required_from_option(hint, opt: Option) -> typing.Tuple[hikari.OptionType, bool]:
     type_ = OPTION_TYPE_MAPPING[typing.get_args(hint)[0] if typing.get_args(hint) else hint]
     required = opt.required if opt.required is not None else (type(None) not in typing.get_args(hint))
     return type_, required
+
+
+def _get_choice_objects_from_choices(
+    choices: typing.Sequence[str, int, float, hikari.Snowflakeish, hikari.CommandChoice]
+):
+    return [c if isinstance(c, hikari.CommandChoice) else hikari.CommandChoice(name=str(c), value=c) for c in choices]
 
 
 def _get_options_for_command_instance(
@@ -163,7 +175,11 @@ def _get_options_for_command_instance(
         type_, required = _get_type_and_required_from_option(hints.get(attr_name), option)
         hk_options.append(
             hikari.CommandOption(
-                name=option.name or attr_name, description=option.description, type=type_, is_required=required
+                name=option.name or attr_name,
+                description=option.description,
+                type=type_,
+                is_required=required,
+                **({"choices": _get_choice_objects_from_choices(option.choices)} if option.choices is not None else {}),
             )
         )
     return hk_options

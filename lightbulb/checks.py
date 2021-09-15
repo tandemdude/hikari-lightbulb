@@ -395,6 +395,7 @@ async def _bot_has_channel_permissions(ctx: context.Context, *, permissions: hik
         "You are missing one or more permissions required in order to run this command", permissions & denied_perms
     )
 
+
 async def _has_attachment(
     ctx: context.Context, *, allowed_extensions: typing.Optional[typing.Sequence[str]] = None
 ) -> bool:

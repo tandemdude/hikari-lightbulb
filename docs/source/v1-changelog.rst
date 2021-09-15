@@ -6,6 +6,11 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 1.2.6
+=============
+
+- Added ability to define choices for slash command options.
+
 Version 1.2.5
 =============
 

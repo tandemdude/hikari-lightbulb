@@ -146,6 +146,7 @@ Example:
     text: str = Option("string option")
     number: typing.Optional[int] = Option("non-required integer option")
     user: hikari.User = Option("user option")
+    choice: str = Option("option with choices", choices=["foo", "bar", "baz"])
 
 Permitted types:
 

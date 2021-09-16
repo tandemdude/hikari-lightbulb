@@ -171,7 +171,7 @@ class Plugin:
 
                 @lightbulb.command()
                 async def ping(self, ctx):
-                    await ctx.send("Pong!")
+                    await ctx.respond("Pong!")
 
             bot.add_plugin(MyPlugin())
     """

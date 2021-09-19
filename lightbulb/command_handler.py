@@ -24,6 +24,7 @@ import collections
 import functools
 import importlib
 import inspect
+import json
 import logging
 import re
 import sys
@@ -1138,7 +1139,7 @@ class Bot(hikari.GatewayBot):
                     _LOGGER.debug("deleting global slash command %r", cmd.name)
                     await cmd.delete()
                 # if our implementation of the slash command is specific to guilds
-                elif self._slash_commands[cmd.name].enabled_guilds is not None:
+                elif self._slash_commands[cmd.name].enabled_guilds:
                     _LOGGER.debug("deleting global slash command %r", cmd.name)
                     await cmd.delete()
                 else:
@@ -1177,11 +1178,11 @@ class Bot(hikari.GatewayBot):
             _guild_ids: typing.Optional[typing.List] = None,
         ) -> bool:
             # If one command is global and the other isn't
-            if lb_cmd.enabled_guilds != _guild_ids and (lb_cmd.enabled_guilds is None or _guild_ids is None):
+            if (not lb_cmd.enabled_guilds and _guild_ids) or (lb_cmd.enabled_guilds and not _guild_ids):
                 return False
 
             # If both commands are global
-            if _guild_ids is None and lb_cmd.enabled_guilds is None:
+            if _guild_ids is None and not lb_cmd.enabled_guilds:
                 return _serialise_command(lb_cmd) == _serialise_command(hk_cmd)
 
             # If both commands are guild commands and for the same guilds

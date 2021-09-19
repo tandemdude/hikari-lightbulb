@@ -49,7 +49,7 @@ async def test_guild_only_passes(ctx):
 
 @pytest.mark.asyncio
 async def test_guild_only_fails(ctx):
-    ctx.message.guild_id = None
+    ctx.guild_id = None
     with pytest.raises(errors.OnlyInGuild) as exc_info:
         await checks._guild_only(ctx)
     assert exc_info.type is errors.OnlyInGuild
@@ -57,13 +57,13 @@ async def test_guild_only_fails(ctx):
 
 @pytest.mark.asyncio
 async def test_dm_only_passes(ctx):
-    ctx.message.guild_id = None
+    ctx.guild_id = None
     assert await checks._dm_only(ctx) is True
 
 
 @pytest.mark.asyncio
 async def test_dm_only_fails(ctx):
-    ctx.message.guild_id = 123456
+    ctx.guild_id = 123456
     with pytest.raises(errors.OnlyInDM) as exc_info:
         await checks._dm_only(ctx)
     assert exc_info.type is errors.OnlyInDM
@@ -72,7 +72,7 @@ async def test_dm_only_fails(ctx):
 @pytest.mark.asyncio
 async def test_owner_only_passes(ctx):
     ctx.bot.owner_ids = [12345]
-    ctx.message.author.id = 12345
+    ctx.author.id = 12345
     assert await checks._owner_only(ctx) is True
 
 
@@ -91,21 +91,3 @@ async def test_guild_owner_passes(ctx):
     ctx.get_guild().owner_id = 12345
     ctx.bot.intents = Intents.GUILDS
     assert await checks._has_guild_permissions(ctx, permissions=Permissions.ADMINISTRATOR)
-
-
-def test_add_check_called_with_guild_only():
-    deco = checks.guild_only()
-    fake_command = deco(mock.Mock(spec_set=commands.Command))
-    fake_command.add_check.assert_called_with(checks._guild_only)
-
-
-def test_add_check_called_with_dm_only():
-    deco = checks.dm_only()
-    fake_command = deco(mock.Mock(spec_set=commands.Command))
-    fake_command.add_check.assert_called_with(checks._dm_only)
-
-
-def test_add_check_called_with_owner_only():
-    deco = checks.owner_only()
-    fake_command = deco(mock.Mock(spec_set=commands.Command))
-    fake_command.add_check.assert_called_with(checks._owner_only)

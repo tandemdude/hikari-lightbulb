@@ -13,6 +13,8 @@ Version 1.2.6
 
 - Fix permission checks not working as expected (again).
 
+- Fix modification detection for global slash commands not working correctly.
+
 Version 1.2.5
 =============
 

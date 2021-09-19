@@ -22,6 +22,7 @@
 from __future__ import annotations
 
 __all__: typing.Final[typing.List[str]] = [
+    "Check",
     "dm_only",
     "guild_only",
     "owner_only",
@@ -53,17 +54,27 @@ import hikari
 from lightbulb import commands
 from lightbulb import context
 from lightbulb import errors
+from lightbulb import slash_commands
+from lightbulb import utils
 
 if typing.TYPE_CHECKING:
     from hikari import snowflakes
 
 T_inv = typing.TypeVar("T_inv", bound=commands.Command)
+T_predicate = typing.Callable[
+    [typing.Union[context.Context, slash_commands.SlashCommandContext]],
+    typing.Union[typing.Coroutine[typing.Any, typing.Any, bool], bool],
+]
+T_slash_predicate = typing.Callable[
+    [slash_commands.SlashCommandContext], typing.Union[typing.Coroutine[typing.Any, typing.Any, bool], bool]
+]
+T_contexts = typing.Union[context.Context, slash_commands.SlashCommandContext]
 
-_CHECK_DECORATOR_BELOW_COMMAND_DECORATOR_MESSAGE = """Check decorators MUST be above the commands decorator in order for them to work.
+_CHECK_DECORATOR_BELOW_COMMAND_DECORATOR_MESSAGE = """The check decorator MUST be above the command decorator in order for it to work.
 
 Valid:
 
-@lightbulb.guild_only()
+@lightbulb.check(...)
 @lightbulb.command()
 async def foo(ctx):
     ...
@@ -71,7 +82,7 @@ async def foo(ctx):
 Invalid:
 
 @lightbulb.command()
-@lightbulb.guild_only()
+@lightbulb.check(...)
 async def foo(ctx):
     ...
 
@@ -79,28 +90,60 @@ See https://hikari-lightbulb.readthedocs.io/en/latest/api-reference.html#module-
 """
 
 
+class Check:
+    """
+    Class representing a check for both message and slash commands.
+
+    Args:
+        predicate: Check predicate function for both message and slash commands. Must return a boolean or
+            raise an error.
+
+    Keyword Args:
+        slash_command_predicate: If provided, an alternative predicate function to use for slash commands.
+    """
+
+    __slots__ = ("msg_command_predicate", "slash_command_predicate", "__name__")
+
+    def __init__(self, predicate: T_predicate, *, slash_command_predicate: typing.Optional[T_slash_predicate] = None):
+        self.msg_command_predicate = predicate
+        self.slash_command_predicate = predicate
+        if slash_command_predicate is not None:
+            self.slash_command_predicate = slash_command_predicate
+
+        self.__name__ = (
+            self.msg_command_predicate.func.__name__
+            if isinstance(self.msg_command_predicate, functools.partial)
+            else self.msg_command_predicate.__name__
+        )
+
+    async def __call__(self, ctx: typing.Union[context.Context, slash_commands.SlashCommandContext]) -> bool:
+        if isinstance(ctx, context.Context):
+            return await utils.maybe_await(self.msg_command_predicate, ctx)
+        return await utils.maybe_await(self.slash_command_predicate, ctx)
+
+
 def _check_check_decorator_above_commands_decorator(func_or_command) -> None:
     if inspect.isfunction(func_or_command) or inspect.ismethod(func_or_command):
         raise SyntaxError(_CHECK_DECORATOR_BELOW_COMMAND_DECORATOR_MESSAGE)
 
 
-async def _guild_only(ctx: context.Context) -> bool:
-    if ctx.message.guild_id is None:
+async def _guild_only(ctx: T_contexts) -> bool:
+    if ctx.guild_id is None:
         raise errors.OnlyInGuild("This command can only be used in a guild")
     return True
 
 
-async def _dm_only(ctx: context.Context) -> bool:
-    if ctx.message.guild_id is not None:
+async def _dm_only(ctx: T_contexts) -> bool:
+    if ctx.guild_id is not None:
         raise errors.OnlyInDM("This command can only be used in DMs")
     return True
 
 
-async def _owner_only(ctx: context.Context) -> bool:
+async def _owner_only(ctx: T_contexts) -> bool:
     if not ctx.bot.owner_ids:
         await ctx.bot.fetch_owner_ids()
 
-    if ctx.message.author.id not in ctx.bot.owner_ids:
+    if ctx.author.id not in ctx.bot.owner_ids:
         raise errors.NotOwner("You are not the owner of this bot")
     return True
 
@@ -123,9 +166,11 @@ async def _human_only(ctx: context.Context) -> bool:
     return True
 
 
-async def _nsfw_channel_only(ctx: context.Context) -> bool:
+async def _nsfw_channel_only(ctx: T_contexts) -> bool:
     if not ctx.get_channel().is_nsfw:
-        raise errors.NSFWChannelOnly(f"{ctx.invoked_with} can only be used in an NSFW channel")
+        raise errors.NSFWChannelOnly(
+            f"{getattr(ctx, 'invoked_with', ctx.command_name)} can only be used in an NSFW channel"
+        )
     return True
 
 
@@ -133,7 +178,7 @@ def _role_check(member_roles: typing.Sequence[hikari.Snowflake], *, roles: typin
     return func(r in member_roles for r in roles)
 
 
-async def _has_roles(ctx: context.Context, *, role_check):
+async def _has_roles(ctx: T_contexts, *, role_check):
     await _guild_only(ctx)
     if not role_check(ctx.member.role_ids):
         raise errors.MissingRequiredRole("You are missing one or more roles required in order to run this command.")
@@ -359,390 +404,9 @@ async def _has_attachment(
     return True
 
 
-def guild_only() -> typing.Callable[[T_inv], T_inv]:
-    """
-    A decorator that prevents a command from being used in direct messages.
-    """
-
-    def decorate(command: T_inv) -> T_inv:
-        _check_check_decorator_above_commands_decorator(command)
-        command.add_check(_guild_only)
-        return command
-
-    return decorate
-
-
-def dm_only() -> typing.Callable[[T_inv], T_inv]:
-    """
-    A decorator that prevents a command from being used in a guild.
-
-    Example:
-
-        .. code-block:: python
-
-            @lightbulb.dm_only()
-            @bot.command()
-            async def foo(ctx):
-                await ctx.respond("bar")
-    """
-
-    def decorate(command: T_inv) -> T_inv:
-        _check_check_decorator_above_commands_decorator(command)
-        command.add_check(_dm_only)
-        return command
-
-    return decorate
-
-
-def owner_only() -> typing.Callable[[T_inv], T_inv]:
-    """
-    A decorator that prevents a command from being used by anyone other than the owner of the application.
-    """
-
-    def decorate(command: T_inv) -> T_inv:
-        _check_check_decorator_above_commands_decorator(command)
-        command.add_check(_owner_only)
-        return command
-
-    return decorate
-
-
-def bot_only() -> typing.Callable[[T_inv], T_inv]:
-    """
-    A decorator that prevents a command from being used by anyone other than a bot.
-    """
-
-    def decorate(command: T_inv) -> T_inv:
-        _check_check_decorator_above_commands_decorator(command)
-        command.add_check(_bot_only)
-        return command
-
-    return decorate
-
-
-def webhook_only() -> typing.Callable[[T_inv], T_inv]:
-    """
-    A decorator that prevents a command from being used by anyone other than a webhook.
-    """
-
-    def decorate(command: T_inv) -> T_inv:
-        _check_check_decorator_above_commands_decorator(command)
-        command.add_check(_webhook_only)
-        return command
-
-    return decorate
-
-
-def human_only() -> typing.Callable[[T_inv], T_inv]:
-    """
-    A decorator that prevents a command from being used by anyone other than a human.
-    """
-
-    def decorate(command: T_inv) -> T_inv:
-        _check_check_decorator_above_commands_decorator(command)
-        command.add_check(_human_only)
-        return command
-
-    return decorate
-
-
-def nsfw_channel_only() -> typing.Callable[[T_inv], T_inv]:
-    def decorate(command: T_inv) -> T_inv:
-        _check_check_decorator_above_commands_decorator(command)
-        command.add_check(_nsfw_channel_only)
-        return command
-
-    return decorate
-
-
-def has_roles(
-    role1: snowflakes.SnowflakeishOr[hikari.PartialRole],
-    *role_ids: snowflakes.SnowflakeishOr[hikari.PartialRole],
-    mode: typing.Literal["all", "any"] = "all",
-):
-    """
-    A decorator that prevents a command from being used by anyone missing roles according
-    to the given mode.
-
-    Args:
-        role1 (:obj:`~hikari.snowflakes.SnowflakeishOr` [ :obj:`~hikari.PartialRole` ]): Role ID to check for.
-        *role_ids (:obj:`~hikari.snowflakes.SnowflakeishOr` [ :obj:`~hikari.PartialRole` ]): Additional role IDs to check for.
-
-    Keyword Args:
-        mode (Literal["all", "any"]): The mode to check roles using. If ``"all"``, all role IDs
-            passed will be required. If ``"any"``, the invoker will only be required to have one
-            of the specified roles. Defaults to ``"all"``.
-
-    Note:
-        This check will also prevent commands from being used in DMs, as you cannot have roles
-        in a DM channel.
-    """
-    if mode not in ["all", "any"]:
-        raise SyntaxError("has_roles mode must be one of: all, any")
-
-    def decorate(command: T_inv) -> T_inv:
-        _check_check_decorator_above_commands_decorator(command)
-        check_func = functools.partial(
-            _role_check, roles=[int(role1), *[int(r) for r in role_ids]], func=all if mode == "all" else any
-        )
-        command.add_check(functools.partial(_has_roles, role_check=check_func))
-        return command
-
-    return decorate
-
-
-def has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
-    """
-    A decorator that prevents the command from being used by a member missing any of the required
-    guild permissions (this takes into account both role permissions and channel overwrites,
-    where channel overwrites take priority).
-
-    Args:
-        perm1 (:obj:`hikari.Permissions`): Permission to check for.
-        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
-
-    Note:
-        This check will also prevent commands from being used in DMs, as you cannot have permissions
-        in a DM channel.
-
-    Warning:
-        This check is unavailable if your application is stateless and/or missing the intent
-        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
-        either of these conditions are not met.
-    """
-
-    def decorate(command: T_inv) -> T_inv:
-        _check_check_decorator_above_commands_decorator(command)
-        perms = perm1.split()
-
-        total_perms = functools.reduce(operator.or_, (*perms, *permissions))
-        command.user_required_permissions = total_perms
-
-        command.add_check(functools.partial(_has_guild_permissions, permissions=total_perms))
-        return command
-
-    return decorate
-
-
-def bot_has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
-    """
-    A decorator that prevents the command from being used if the bot is missing any of the required
-    guild permissions (this takes into account both role permissions and channel overwrites).
-
-    Args:
-        perm1 (:obj:`hikari.Permissions`): Permission to check for.
-        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
-
-    Note:
-        This check will also prevent commands from being used in DMs, as you cannot have permissions
-        in a DM channel.
-
-    Warning:
-        This check is unavailable if your application is stateless and/or missing the intent
-        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
-        either of these conditions are not met.
-    """
-
-    def decorate(command: T_inv) -> T_inv:
-        _check_check_decorator_above_commands_decorator(command)
-        perms = perm1.split()
-
-        total_perms = functools.reduce(operator.or_, (*perms, *permissions))
-        command.bot_required_permissions = total_perms
-
-        command.add_check(functools.partial(_bot_has_guild_permissions, permissions=total_perms))
-        return command
-
-    return decorate
-
-
-def has_role_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
-    """
-    A decorator that prevents the command from being used by a member missing any of the required
-    role permissions.
-
-    Args:
-        perm1 (:obj:`hikari.Permissions`): Permission to check for.
-        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
-
-    Note:
-        This check will also prevent commands from being used in DMs, as you cannot have permissions
-        in a DM channel.
-
-    Warning:
-        This check is unavailable if your application is stateless and/or missing the intent
-        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
-        either of these conditions are not met.
-    """
-
-    def decorate(command: T_inv) -> T_inv:
-        _check_check_decorator_above_commands_decorator(command)
-        perms = perm1.split()
-
-        total_perms = functools.reduce(operator.or_, (*perms, *permissions))
-        command.user_required_permissions = total_perms
-
-        command.add_check(functools.partial(_has_role_permissions, permissions=total_perms))
-        return command
-
-    return decorate
-
-
-def bot_has_role_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
-    """
-    A decorator that prevents the command from being used if the bot is missing any of the required
-    role permissions.
-
-    Args:
-        perm1 (:obj:`hikari.Permissions`): Permission to check for.
-        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
-
-    Note:
-        This check will also prevent commands from being used in DMs, as you cannot have permissions
-        in a DM channel.
-
-    Warning:
-        This check is unavailable if your application is stateless and/or missing the intent
-        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
-        either of these conditions are not met.
-    """
-
-    def decorate(command: T_inv) -> T_inv:
-        _check_check_decorator_above_commands_decorator(command)
-        perms = perm1.split()
-
-        total_perms = functools.reduce(operator.or_, (*perms, *permissions))
-        command.user_required_permissions = total_perms
-
-        command.add_check(functools.partial(_bot_has_role_permissions, permissions=total_perms))
-        return command
-
-    return decorate
-
-
-def has_channel_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
-    """
-    A decorator that prevents the command from being used by a member missing any of the required
-    channel permissions (permissions granted by a permission overwrite).
-
-    Args:
-        perm1 (:obj:`hikari.Permissions`): Permission to check for.
-        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
-
-    Note:
-        This check will also prevent commands from being used in DMs, as you cannot have permissions
-        in a DM channel.
-
-    Warning:
-        This check is unavailable if your application is stateless and/or missing the intent
-        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
-        either of these conditions are not met.
-    """
-
-    def decorate(command: T_inv) -> T_inv:
-        _check_check_decorator_above_commands_decorator(command)
-        perms = perm1.split()
-
-        total_perms = functools.reduce(operator.or_, (*perms, *permissions))
-        command.user_required_permissions = total_perms
-
-        command.add_check(functools.partial(_has_channel_permissions, permissions=total_perms))
-        return command
-
-    return decorate
-
-
-def bot_has_channel_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
-    """
-    A decorator that prevents the command from being used if the bot is missing any of the required
-    channel permissions (permissions granted by a permission overwrite).
-
-    Args:
-        perm1 (:obj:`hikari.Permissions`): Permission to check for.
-        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
-
-    Note:
-        This check will also prevent commands from being used in DMs, as you cannot have permissions
-        in a DM channel.
-
-    Warning:
-        This check is unavailable if your application is stateless and/or missing the intent
-        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
-        either of these conditions are not met.
-    """
-
-    def decorate(command: T_inv) -> T_inv:
-        _check_check_decorator_above_commands_decorator(command)
-        perms = perm1.split()
-
-        total_perms = functools.reduce(operator.or_, (*perms, *permissions))
-        command.user_required_permissions = total_perms
-
-        command.add_check(functools.partial(_bot_has_channel_permissions, permissions=total_perms))
-        return command
-
-    return decorate
-
-
-def has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
-    """
-    Alias for :obj:`~has_channel_permissions` for backwards compatibility.
-
-    This is deprecated, use :obj:`~has_channel_permissions` instead.
-    """
-    warnings.warn(
-        "The permissions check 'has_permissions' is deprecated and scheduled for removal in version 1.4. "
-        "You should use 'has_channel_permissions' instead.",
-        DeprecationWarning,
-    )
-    return has_channel_permissions(perm1, *permissions)
-
-
-def bot_has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
-    """
-    Alias for :obj:`~bot_has_channel_permissions` for backwards compatibility.
-
-    This is deprecated, use :obj:`~bot_has_channel_permissions` instead.
-    """
-    warnings.warn(
-        "The permissions check 'bot_has_permissions' is deprecated and scheduled for removal in version 1.4. "
-        "You should use 'bot_has_channel_permissions' instead.",
-        DeprecationWarning,
-    )
-    return bot_has_channel_permissions(perm1, *permissions)
-
-
-def has_attachment(*extensions: str):
-    """
-    A decorator that prevents the command from being used if the invocation message
-    does not include any attachments.
-
-    Args:
-        *extensions (:obj:`str`): If specified, attachments with a different file extension
-            will cause the check to fail.
-
-    Example:
-
-        .. code-block:: python
-
-            @checks.has_attachment(".yaml", ".json")
-            @bot.command()
-            async def foobar(ctx):
-                print(ctx.attachments[0].filename)
-
-    Note:
-        If ``extensions`` is specified then all attachments must conform to the restriction.
-    """
-
-    def decorate(command: T_inv) -> T_inv:
-        _check_check_decorator_above_commands_decorator(command)
-        command.add_check(functools.partial(_has_attachment, allowed_extensions=extensions if extensions else None))
-        return command
-
-    return decorate
-
-
-def check(check_func: typing.Callable[[context.Context], typing.Coroutine[typing.Any, typing.Any, bool]]):
+def check(
+    check_func: typing.Callable[[context.Context], typing.Coroutine[typing.Any, typing.Any, bool]]
+) -> typing.Callable[[T_inv], T_inv]:
     """
     A decorator which adds a custom check function to a command. The check function must be a coroutine (async def)
     and take a single argument, which will be the command context.
@@ -777,7 +441,7 @@ def check(check_func: typing.Callable[[context.Context], typing.Coroutine[typing
     return decorate
 
 
-def check_exempt(predicate):
+def check_exempt(predicate: T_predicate) -> typing.Callable[[T_inv], T_inv]:
     """
     A decorator which allows **all** checks to be bypassed if the ``predicate`` conditions are met.
     Predicate can be a coroutine or a normal function but must take a single
@@ -803,3 +467,302 @@ def check_exempt(predicate):
         return command
 
     return decorate
+
+
+guild_only: Check = Check(_guild_only)
+"""Prevents a command from being used in direct messages. This check supports slash commands."""
+dm_only: Check = Check(_dm_only)
+"""Prevents a command from being used in a guild. This check supports slash commands."""
+owner_only: Check = Check(_owner_only)
+"""Prevents a command from being used by anyone other than the owner of the application. This check supports slash commands."""
+bot_only: Check = Check(_bot_only)
+"""Prevents a command from being used by anyone other than a bot."""
+webhook_only: Check = Check(_webhook_only)
+"""Prevents a command from being used by anyone other than a webhook."""
+human_only: Check = Check(_human_only)
+"""Prevents a command from being used by anyone other than a human."""
+nsfw_channel_only: Check = Check(_nsfw_channel_only)
+"""Prevents a command from being used in any channel other than one marked as NSFW. This check supports slash commands."""
+
+
+def has_roles(
+    role1: snowflakes.SnowflakeishOr[hikari.PartialRole],
+    *role_ids: snowflakes.SnowflakeishOr[hikari.PartialRole],
+    mode: typing.Literal["all", "any"] = "all",
+):
+    """
+    Prevents a command from being used by anyone missing roles according to the given mode.
+    This check supports slash commands.
+
+    Args:
+        role1 (:obj:`~hikari.snowflakes.SnowflakeishOr` [ :obj:`~hikari.PartialRole` ]): Role ID to check for.
+        *role_ids (:obj:`~hikari.snowflakes.SnowflakeishOr` [ :obj:`~hikari.PartialRole` ]): Additional role IDs to
+            check for.
+
+    Keyword Args:
+        mode (Literal["all", "any"]): The mode to check roles using. If ``"all"``, all role IDs
+            passed will be required. If ``"any"``, the invoker will only be required to have one
+            of the specified roles. Defaults to ``"all"``.
+
+    Example:
+
+        .. code-block:: python
+
+            @lightbulb.check(lightbulb.has_roles(123, 456, 789))
+            @bot.command()
+            async def foo(ctx):
+                ...
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have roles
+        in a DM channel.
+    """
+    if mode not in ["all", "any"]:
+        raise SyntaxError("has_roles mode must be one of: all, any")
+
+    return Check(
+        functools.partial(
+            _has_roles,
+            role_check=functools.partial(
+                roles=[int(role1), *[int(r) for r in role_ids]], func={"all": all, "any": any}[mode]
+            ),
+        )
+    )
+
+
+def has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+    """
+    Prevents the command from being used by a member missing any of the required
+    guild permissions (this takes into account both role permissions and channel overwrites,
+    where channel overwrites take priority).
+
+    Args:
+        perm1 (:obj:`hikari.Permissions`): Permission to check for.
+        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have permissions
+        in a DM channel.
+
+    Warning:
+        This check is unavailable if your application is stateless and/or missing the intent
+        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
+        either of these conditions are not met.
+    """
+    perms = perm1.split()
+    total_perms = functools.reduce(operator.or_, (*perms, *permissions))
+    # TODO - figure out way to hook command.user_required_perms
+
+    return Check(
+        functools.partial(
+            _has_guild_permissions,
+            permissions=total_perms,
+        )
+    )
+
+
+def bot_has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+    """
+    Prevents the command from being used if the bot is missing any of the required
+    guild permissions (this takes into account both role permissions and channel overwrites).
+
+    Args:
+        perm1 (:obj:`hikari.Permissions`): Permission to check for.
+        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have permissions
+        in a DM channel.
+
+    Warning:
+        This check is unavailable if your application is stateless and/or missing the intent
+        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
+        either of these conditions are not met.
+    """
+    perms = perm1.split()
+    total_perms = functools.reduce(operator.or_, (*perms, *permissions))
+    # TODO - figure out way to hook command.bot_required_perms
+
+    return Check(
+        functools.partial(
+            _bot_has_guild_permissions,
+            permissions=total_perms,
+        )
+    )
+
+
+def has_role_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+    """
+    Prevents the command from being used by a member missing any of the required
+    role permissions.
+
+    Args:
+        perm1 (:obj:`hikari.Permissions`): Permission to check for.
+        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have permissions
+        in a DM channel.
+
+    Warning:
+        This check is unavailable if your application is stateless and/or missing the intent
+        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
+        either of these conditions are not met.
+    """
+    perms = perm1.split()
+    total_perms = functools.reduce(operator.or_, (*perms, *permissions))
+    # TODO - figure out way to hook command.user_required_perms
+
+    return Check(
+        functools.partial(
+            _has_role_permissions,
+            permissions=total_perms,
+        )
+    )
+
+
+def bot_has_role_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+    """
+    Prevents the command from being used if the bot is missing any of the required
+    role permissions.
+
+    Args:
+        perm1 (:obj:`hikari.Permissions`): Permission to check for.
+        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have permissions
+        in a DM channel.
+
+    Warning:
+        This check is unavailable if your application is stateless and/or missing the intent
+        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
+        either of these conditions are not met.
+    """
+    perms = perm1.split()
+    total_perms = functools.reduce(operator.or_, (*perms, *permissions))
+    # TODO - figure out way to hook command.bot_required_perms
+
+    return Check(
+        functools.partial(
+            _bot_has_role_permissions,
+            permissions=total_perms,
+        )
+    )
+
+
+def has_channel_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+    """
+    Prevents the command from being used by a member missing any of the required
+    channel permissions (permissions granted by a permission overwrite).
+
+    Args:
+        perm1 (:obj:`hikari.Permissions`): Permission to check for.
+        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have permissions
+        in a DM channel.
+
+    Warning:
+        This check is unavailable if your application is stateless and/or missing the intent
+        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
+        either of these conditions are not met.
+    """
+    perms = perm1.split()
+    total_perms = functools.reduce(operator.or_, (*perms, *permissions))
+    # TODO - figure out way to hook command.user_required_perms
+
+    return Check(
+        functools.partial(
+            _has_channel_permissions,
+            permissions=total_perms,
+        )
+    )
+
+
+def bot_has_channel_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+    """
+    Prevents the command from being used if the bot is missing any of the required
+    channel permissions (permissions granted by a permission overwrite).
+
+    Args:
+        perm1 (:obj:`hikari.Permissions`): Permission to check for.
+        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have permissions
+        in a DM channel.
+
+    Warning:
+        This check is unavailable if your application is stateless and/or missing the intent
+        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
+        either of these conditions are not met.
+    """
+    perms = perm1.split()
+    total_perms = functools.reduce(operator.or_, (*perms, *permissions))
+    # TODO - figure out way to hook command.bot_required_perms
+
+    return Check(
+        functools.partial(
+            _bot_has_channel_permissions,
+            permissions=total_perms,
+        )
+    )
+
+
+def has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+    """
+    Alias for :obj:`~has_channel_permissions` for backwards compatibility.
+
+    This is deprecated, use :obj:`~has_channel_permissions` instead.
+    """
+    warnings.warn(
+        "The permissions check 'has_permissions' is deprecated and scheduled for removal in version 1.4. "
+        "You should use 'has_channel_permissions' instead.",
+        DeprecationWarning,
+    )
+    return has_channel_permissions(perm1, *permissions)
+
+
+def bot_has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+    """
+    Alias for :obj:`~bot_has_channel_permissions` for backwards compatibility.
+
+    This is deprecated, use :obj:`~bot_has_channel_permissions` instead.
+    """
+    warnings.warn(
+        "The permissions check 'bot_has_permissions' is deprecated and scheduled for removal in version 1.4. "
+        "You should use 'bot_has_channel_permissions' instead.",
+        DeprecationWarning,
+    )
+    return bot_has_channel_permissions(perm1, *permissions)
+
+
+def has_attachment(*extensions: str):
+    """
+    Prevents the command from being used if the invocation message
+    does not include any attachments.
+
+    Args:
+        *extensions (:obj:`str`): If specified, attachments with a different file extension
+            will cause the check to fail.
+
+    Example:
+
+        .. code-block:: python
+
+            @lightbulb.check(lightbulb.has_attachment(".yaml", ".json"))
+            @bot.command()
+            async def foobar(ctx):
+                print(ctx.attachments[0].filename)
+
+    Note:
+        If ``extensions`` is specified then all attachments must conform to the restriction.
+    """
+    return Check(
+        functools.partial(
+            _has_attachment,
+            allowed_extensions=extensions if extensions else None,
+        )
+    )

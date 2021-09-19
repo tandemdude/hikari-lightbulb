@@ -234,57 +234,6 @@ async def _bot_has_guild_permissions(ctx: context.Context, *, permissions: hikar
     return True
 
 
-async def _has_permissions(ctx: context.Context, *, permissions: hikari.Permissions) -> bool:
-    if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
-        raise hikari.MissingIntentError(hikari.Intents.GUILDS)
-
-    await _guild_only(ctx)
-
-    if ctx.get_guild().owner_id == ctx.author.id:
-        return True
-
-    perm_over = ctx.get_channel().permission_overwrites.values()
-    perm_none = hikari.Permissions.NONE
-
-    allowed_perms = functools.reduce(
-        operator.or_, (override.allow if override.id in ctx.member.role_ids else perm_none for override in perm_over)
-    )
-
-    missing_perms = _get_missing_permissions(permissions, allowed_perms)
-
-    if missing_perms:
-        raise errors.MissingRequiredPermission(
-            "You are missing one or more permissions required in order to run this command", missing_perms
-        )
-    return True
-
-
-async def _bot_has_permissions(ctx: context.Context, *, permissions: hikari.Permissions) -> bool:
-    if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
-        raise hikari.MissingIntentError(hikari.Intents.GUILDS)
-
-    await _guild_only(ctx)
-
-    if ctx.get_guild().owner_id == ctx.bot.cache.get_me().id:
-        return True
-
-    perm_over = ctx.get_channel().permission_overwrites.values()
-    perm_none = hikari.Permissions.NONE
-    bot_member = ctx.bot.cache.get_member(ctx.guild_id, ctx.bot.cache.get_me().id)
-
-    allowed_perms = functools.reduce(
-        operator.or_, (override.allow if override.id in bot_member.role_ids else perm_none for override in perm_over)
-    )
-
-    missing_perms = _get_missing_permissions(permissions, allowed_perms)
-
-    if missing_perms:
-        raise errors.BotMissingRequiredPermission(
-            "I am missing one or more permissions required in order to run this command", missing_perms
-        )
-    return True
-
-
 async def _has_role_permissions(ctx: context.Context, *, permissions: hikari.Permissions) -> bool:
     if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
         raise hikari.MissingIntentError(hikari.Intents.GUILDS)
@@ -737,76 +686,30 @@ def bot_has_channel_permissions(perm1: hikari.Permissions, *permissions: hikari.
 
 def has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
     """
-    A decorator that prevents the command from being used by a member missing any of the required
-    channel permissions (permissions granted by a permission overwrite).
+    Alias for :obj:`~has_channel_permissions` for backwards compatibility.
 
-    Args:
-        perm1 (:obj:`hikari.Permissions`): Permission to check for.
-        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
-
-    Note:
-        This check will also prevent commands from being used in DMs, as you cannot have permissions
-        in a DM channel.
-
-    Warning:
-        This check is unavailable if your application is stateless and/or missing the intent
-        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
-        either of these conditions are not met.
+    This is deprecated, use :obj:`~has_channel_permissions` instead.
     """
-
-    def decorate(command: T_inv) -> T_inv:
-        warnings.warn(
-            "The permissions check 'has_permissions' is deprecated and scheduled for removal in version 1.3. "
-            "You should use 'has_channel_permissions' instead.",
-            DeprecationWarning,
-        )
-        _check_check_decorator_above_commands_decorator(command)
-        perms = perm1.split()
-
-        total_perms = functools.reduce(operator.or_, (*perms, *permissions))
-        command.user_required_permissions = total_perms
-
-        command.add_check(functools.partial(_has_permissions, permissions=total_perms))
-        return command
-
-    return decorate
+    warnings.warn(
+        "The permissions check 'has_permissions' is deprecated and scheduled for removal in version 1.4. "
+        "You should use 'has_channel_permissions' instead.",
+        DeprecationWarning,
+    )
+    return has_channel_permissions(perm1, *permissions)
 
 
 def bot_has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
     """
-    A decorator that prevents the command from being used if the bot is missing any of the required
-    channel permissions (permissions granted by a permission overwrite).
+    Alias for :obj:`~bot_has_channel_permissions` for backwards compatibility.
 
-    Args:
-        perm1 (:obj:`hikari.Permissions`): Permission to check for.
-        *permissions (:obj:`hikari.Permissions`): Additional permissions to check for.
-
-    Note:
-        This check will also prevent commands from being used in DMs, as you cannot have permissions
-        in a DM channel.
-
-    Warning:
-        This check is unavailable if your application is stateless and/or missing the intent
-        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
-        either of these conditions are not met.
+    This is deprecated, use :obj:`~bot_has_channel_permissions` instead.
     """
-
-    def decorate(command: T_inv) -> T_inv:
-        warnings.warn(
-            "The permissions check 'bot_has_permissions' is deprecated and scheduled for removal in version 1.3. "
-            "You should use 'bot_has_channel_permissions' instead.",
-            DeprecationWarning,
-        )
-        _check_check_decorator_above_commands_decorator(command)
-        perms = perm1.split()
-
-        total_perms = functools.reduce(operator.or_, (*perms, *permissions))
-        command.user_required_permissions = total_perms
-
-        command.add_check(functools.partial(_bot_has_permissions, permissions=total_perms))
-        return command
-
-    return decorate
+    warnings.warn(
+        "The permissions check 'bot_has_permissions' is deprecated and scheduled for removal in version 1.4. "
+        "You should use 'bot_has_channel_permissions' instead.",
+        DeprecationWarning,
+    )
+    return bot_has_channel_permissions(perm1, *permissions)
 
 
 def has_attachment(*extensions: str):

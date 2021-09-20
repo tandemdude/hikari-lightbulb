@@ -6,6 +6,19 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 1.3.0
+=============
+
+**Breaking changes**
+
+- Reimplemented checks, removing all decorators apart from ``@lightbulb.check``
+
+**Other changes**
+
+- Implemented checks for slash commands
+
+- Implemented error handling for slash commands, see :obj:`~lightbulb.events.SlashCommandErrorEvent`
+
 Version 1.2.6
 =============
 

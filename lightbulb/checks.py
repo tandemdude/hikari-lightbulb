@@ -404,18 +404,16 @@ async def _has_attachment(
     return True
 
 
-def check(
-    check_func: typing.Callable[[context.Context], typing.Coroutine[typing.Any, typing.Any, bool]]
-) -> typing.Callable[[T_inv], T_inv]:
+def check(check_func: typing.Union[Check, T_predicate]) -> typing.Callable[[T_inv], T_inv]:
     """
-    A decorator which adds a custom check function to a command. The check function must be a coroutine (async def)
-    and take a single argument, which will be the command context.
+    A decorator which adds a check function to a command. The check function can be a coroutine (async def)
+    and must take a single argument, which will be the command context.
 
     This acts as a shortcut to calling :meth:`~.commands.Command.add_check` on a command instance.
 
     Args:
-        check_func (Callable[ [ :obj:`~.context.Context` ], Coroutine[ Any, Any, :obj:`bool` ] ]): The coroutine
-            to add to the command as a check.
+        check_func (Union[:obj:`~Check`, Callable[[:obj:`~.context.Context`], Union[Coroutine[Any, Any, :obj:`bool`], :obj:`bool`]]): The
+            function, coroutine or Check object to add to the command as a check.
 
     Example:
 
@@ -434,7 +432,12 @@ def check(
     """
 
     def decorate(command: T_inv) -> T_inv:
+        nonlocal check_func
         _check_check_decorator_above_commands_decorator(command)
+
+        if not isinstance(check_func, Check):
+            check_func = Check(check_func)
+
         command.add_check(check_func)
         return command
 

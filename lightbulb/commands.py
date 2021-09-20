@@ -46,6 +46,7 @@ from lightbulb.converters import _GreedyConverter
 from lightbulb.converters import _UnionConverter
 
 if typing.TYPE_CHECKING:
+    from lightbulb import checks as checks_
     from lightbulb import plugins
 
 _LOGGER = logging.getLogger("lightbulb")
@@ -238,7 +239,7 @@ class Command:
         self._allow_extra_arguments = allow_extra_arguments
         self._aliases = aliases
         self.hidden = hidden
-        self._checks = []
+        self._checks: typing.List[checks_.Check] = []
         self._check_exempt_predicate = lambda ctx: False
         self._raw_error_listener = None
         self._raw_before_invoke = None
@@ -471,7 +472,7 @@ class Command:
 
         return await self._callback(context, *args, **kwargs)
 
-    def add_check(self, check_func: typing.Callable[[context_.Context], typing.Coroutine[None, None, bool]]) -> None:
+    def add_check(self, check_func: checks_.Check) -> None:
         """
         Add a check to an instance of :obj:`~.commands.Command` or a subclass. The check passed must
         be an awaitable function taking a single argument which will be an instance of :obj:`~.context.Context`.
@@ -479,8 +480,7 @@ class Command:
         or raise an instance of :obj:`~.errors.CheckFailure` or a subclass.
 
         Args:
-            check_func (Callable[ [ :obj:`~.context.Context` ], Coroutine[ ``None``, ``None``, :obj:`bool` ] ]): Check
-                to add to the command
+            check_func (:obj:`~lightbulb.checks.Check`): Check to add to the command
 
         Returns:
             ``None``
@@ -492,7 +492,7 @@ class Command:
                 async def author_name_startswith_foo(ctx):
                     return ctx.author.username.startswith("foo")
 
-                bot.get_command("foo").add_check(author_name_startswith_foo)
+                bot.get_command("foo").add_check(Check(author_name_startswith_foo))
 
         See Also:
             :meth:`~.checks.check`
@@ -588,7 +588,7 @@ class Group(Command):
             if isinstance(command, Group):
                 yield from command.walk_commands()
 
-    def add_check(self, check_func: typing.Callable[[context_.Context], typing.Coroutine[None, None, bool]]) -> None:
+    def add_check(self, check_func: checks_.Check) -> None:
         if self.inherit_checks:
             for c in self.subcommands:
                 c.add_check(check_func)

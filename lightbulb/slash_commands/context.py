@@ -98,8 +98,8 @@ class SlashCommandContext:
         return self._interaction.guild_id
 
     @property
-    def member(self) -> typing.Optional[hikari.Member]:
-        """The :obj:`hikari.Member` object for the user that invoked the slash command, or ``None`` if in DMs."""
+    def member(self) -> typing.Optional[hikari.InteractionMember]:
+        """The :obj:`hikari.InteractionMember` object for the user that invoked the slash command, or ``None`` if in DMs."""
         return self._interaction.member
 
     @property

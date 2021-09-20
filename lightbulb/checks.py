@@ -196,6 +196,17 @@ def _get_missing_permissions(
     return missing_perms
 
 
+async def _slash_has_permissions(ctx: slash_commands.SlashCommandContext, *, permissions: hikari.Permissions) -> bool:
+    await _guild_only(ctx)
+
+    missing_perms = _get_missing_permissions(permissions, ctx.member.permissions)
+    if missing_perms != hikari.Permissions.NONE:
+        raise errors.MissingRequiredPermission(
+            "You are missing one or more permissions required in order to run this command", missing_perms
+        )
+    return True
+
+
 async def _has_guild_permissions(ctx: context.Context, *, permissions: hikari.Permissions) -> bool:
     if not (ctx.bot.intents & hikari.Intents.GUILDS) == hikari.Intents.GUILDS:
         raise hikari.MissingIntentError(hikari.Intents.GUILDS)
@@ -537,7 +548,7 @@ def has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permis
     """
     Prevents the command from being used by a member missing any of the required
     guild permissions (this takes into account both role permissions and channel overwrites,
-    where channel overwrites take priority).
+    where channel overwrites take priority). This check supports slash commands.
 
     Args:
         perm1 (:obj:`hikari.Permissions`): Permission to check for.
@@ -560,7 +571,8 @@ def has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permis
         functools.partial(
             _has_guild_permissions,
             permissions=total_perms,
-        )
+        ),
+        slash_command_predicate=functools.partial(_slash_has_permissions, permissions=total_perms),
     )
 
 

@@ -726,6 +726,25 @@ class Bot(hikari.GatewayBot):
         """
         return context_.Context(self, message, prefix, invoked_with, invoked_command)
 
+    def get_slash_command_context(
+        self,
+        event: hikari.InteractionCreateEvent,
+        command: typing.Union[slash_commands.SlashCommand, slash_commands.SlashCommandGroup],
+    ) -> slash_commands.SlashCommandContext:
+        """
+        Get the :obj:`~.slash_commands.SlashCommandContext` instance for the given arguments. This should be overridden
+        if you wish to supply a custom :obj:`~.slash_commands.SlashCommandContext` class to your slash commands.
+
+        Args:
+            event (:obj:`hikari.InteractionCreateEvent`): The event this context is for.
+            command (Union[:obj:`~.slash_commands.SlashCommand`, :obj:`~.slash_commands.SlashCommandGroup`]): Command
+                invoked for the event.
+
+        Returns:
+            :obj:`~.slash_commands.SlashCommandContext`: Context to use for the command invocation.
+        """
+        return slash_commands.SlashCommandContext(self, event.interaction, command)
+
     async def _evaluate_checks(self, command: commands.Command, context: context_.Context) -> bool:
         checks = [*self._checks, *command.checks]
         if command.plugin is not None:
@@ -1105,9 +1124,24 @@ class Bot(hikari.GatewayBot):
         if command is None:
             return
 
-        context = slash_commands.SlashCommandContext(self, event.interaction, command)
+        context = self.get_slash_command_context(event, command)
         _LOGGER.debug("invoking slash command %r", command.name)
-        await command(context)
+
+        try:
+            await command(context)
+        except Exception as ex:
+            if not isinstance(ex, errors.CheckFailure):
+                ex = errors.CommandInvocationError(f"{type(ex).__name__}: {ex}", ex)
+
+            error_event = events.SlashCommandErrorEvent(app=self, exception=ex, context=context, command=command)
+
+            handled = False
+            if self.get_listeners(events.SlashCommandErrorEvent, polymorphic=True):
+                await self.dispatch(error_event)
+                handled = True
+
+            if not handled:
+                raise ex
 
     async def _manage_slash_commands(self, _):
         self._app = await self.rest.fetch_application()

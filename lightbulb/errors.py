@@ -45,6 +45,7 @@ __all__: typing.Final[typing.List[str]] = [
     "BotMissingRequiredPermission",
     "MissingRequiredAttachment",
     "CommandInvocationError",
+    "SlashCommandInvocationError",
 ]
 
 import abc
@@ -333,6 +334,23 @@ class CommandInvocationError(CommandError):
     Error raised if an error is encountered during command invocation. This will only be raised
     if all the checks passed and an error was raised somewhere inside the command.
     This effectively acts as a wrapper for the original exception for easier handling in an error handler.
+    """
+
+    def __init__(self, text: str, original: Exception) -> None:
+        self.text: str = text
+        """The error text."""
+        self.original: Exception = original
+        """The original exception that caused this to be raised."""
+
+    @property
+    def __cause__(self) -> Exception:
+        return self.original
+
+
+class SlashCommandInvocationError(CommandError):
+    """
+    Error raised if an error is encountered during slash command invocation. This will only be raised
+    if all the checks passed and an error was raised somewhere inside the command.
     """
 
     def __init__(self, text: str, original: Exception) -> None:

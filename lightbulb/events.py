@@ -17,7 +17,12 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__: typing.Final[typing.List[str]] = ["CommandErrorEvent", "CommandInvocationEvent", "CommandCompletionEvent"]
+__all__: typing.Final[typing.List[str]] = [
+    "CommandErrorEvent",
+    "CommandInvocationEvent",
+    "CommandCompletionEvent",
+    "SlashCommandErrorEvent",
+]
 
 import abc
 import typing
@@ -33,6 +38,7 @@ if typing.TYPE_CHECKING:
     from lightbulb import commands
     from lightbulb import context as context_
     from lightbulb import errors
+    from lightbulb import slash_commands
 
 
 @attr.s(slots=True, weakref_slot=False)
@@ -120,3 +126,30 @@ class CommandCompletionEvent(LightbulbEvent):
     """The command that this event was triggered for."""
     context: context_.Context = attr.ib()
     """The context that this event was triggered for."""
+
+
+@attr.s(kw_only=True, slots=True, weakref_slot=False)
+@hikari_base_events.requires_intents(hikari.Intents.DM_MESSAGES, hikari.Intents.GUILD_MESSAGES)
+class SlashCommandErrorEvent(LightbulbEvent):
+    """
+    Event type to subscribe to for the processing of all slash command errors raised by the handler.
+    """
+
+    exception: errors.LightbulbError = attr.ib()
+    """The exception that triggered this event."""
+    context: slash_commands.SlashCommandContext = attr.ib()
+    """The context that this event was triggered for."""
+    command: typing.Union[slash_commands.SlashCommand, slash_commands.SlashCommandGroup] = attr.ib()
+    """The slash command that this event was triggered for."""
+
+    @property
+    def exc_info(
+        self,
+    ) -> typing.Tuple[typing.Type[errors.LightbulbError], errors.LightbulbError, typing.Optional[types.TracebackType]]:
+        """The exception triplet compatible with context managers and :mod:`traceback` helpers."""
+        return type(self.exception), self.exception, self.exception.__traceback__
+
+    @property
+    def traceback(self) -> types.TracebackType:
+        """The traceback for this event's exception."""
+        return self.exception.__traceback__

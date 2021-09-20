@@ -164,6 +164,33 @@ Permitted types:
 
 ----
 
+Slash Command Checks
+====================
+
+You can use some of the lightbulb built-in checks with slash commands. Only the ``SlashCommand`` and ``SlashSubCommand``
+classes support checks. The checks will be run prior to the command's callback being invoked and, similar to message command
+checks, will raise a :obj:`~lightbulb.errors.CheckFailure`` exception if they do not pass. Checks are defined as
+a sequence of :obj:`~lightbulb.checks.Check` objects defined in the slash command class as seen below.
+::
+
+    import lightbulb
+    from lightbulb import slash_commands
+
+    class OwnerOnlySlashCommand(slash_commands.SlashCommand):
+        name = "foo"
+        description = "bar"
+        # Defining the list of checks
+        # You can use any built-in checks, as long as it is explicitly
+        # stated in the docstring that slash commands are supported.
+        # You can also use custom checks by wrapping the check function
+        # in a Check object
+        checks = [
+            lightbulb.owner_only,  # built-in check
+            lightbulb.Check(some_check_function),  # custom check
+        ]
+
+----
+
 API Reference
 =============
 

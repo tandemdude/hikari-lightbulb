@@ -42,7 +42,10 @@ import warnings
 
 import hikari
 
+from lightbulb import errors
+
 if typing.TYPE_CHECKING:
+    from lightbulb import checks as checks_
     from lightbulb import command_handler
     from lightbulb.slash_commands import context as context_
 
@@ -246,6 +249,38 @@ class WithAsyncCallback(abc.ABC):
         ...
 
 
+class WithChecks(abc.ABC):
+    async def evaluate_checks(self, context: context_.SlashCommandContext) -> bool:
+        failed_checks = []
+        for check in self.checks:
+            try:
+                result = await check(context)
+                if not result:
+                    failed_checks.append(errors.CheckFailure(f"Check {check.__name__} failed for command {self.name}"))
+            except Exception as ex:
+                error = errors.CheckFailure(str(ex))
+                error.__cause__ = ex
+                failed_checks.append(ex)
+
+        if len(failed_checks) > 1:
+            raise errors.CheckFailure("Multiple checks failed: " + ", ".join(str(ex) for ex in failed_checks))
+        elif failed_checks:
+            raise failed_checks[0]
+
+        return True
+
+    @property
+    def checks(self) -> typing.Sequence[checks_.Check]:
+        """
+        The slash command's checks. These will be run in order before the slash command
+        is invoked.
+
+        Returns:
+            Sequence[:obj:`~lightbulb.checks.Check`]: Checks to run before command invocation.
+        """
+        return []
+
+
 class WithAsOption(abc.ABC):
     __slots__ = ()
 
@@ -380,7 +415,9 @@ class WithGetCommand(abc.ABC):
         return self._instances.get(guild_id)
 
 
-class SlashCommand(BaseSlashCommand, WithGetOptions, WithAsyncCallback, WithCreationMethods, WithGetCommand, abc.ABC):
+class SlashCommand(
+    BaseSlashCommand, WithGetOptions, WithAsyncCallback, WithCreationMethods, WithGetCommand, WithChecks, abc.ABC
+):
     """
     Abstract base class for top level slash commands. All slash commands that are not groups
     should inherit from this class.
@@ -395,6 +432,7 @@ class SlashCommand(BaseSlashCommand, WithGetOptions, WithAsyncCallback, WithCrea
     __slots__ = ()
 
     async def __call__(self, *args, **kwargs):
+        await self.evaluate_checks(*args, **kwargs)
         return await self.callback(*args, **kwargs)
 
     @functools.lru_cache
@@ -553,7 +591,7 @@ class SlashSubGroup(BaseSlashCommand, WithAsOption, abc.ABC):
         )
 
 
-class SlashSubCommand(BaseSlashCommand, WithAsOption, WithAsyncCallback, abc.ABC):
+class SlashSubCommand(BaseSlashCommand, WithAsOption, WithAsyncCallback, WithChecks, abc.ABC):
     """
     Abstract base class for slash subcommands. All slash subcommands should inherit from this class.
 
@@ -567,6 +605,7 @@ class SlashSubCommand(BaseSlashCommand, WithAsOption, WithAsyncCallback, abc.ABC
     __slots__ = ()
 
     async def __call__(self, *args, **kwargs):
+        await self.evaluate_checks(*args, **kwargs)
         return await self.callback(*args, **kwargs)
 
     @functools.lru_cache

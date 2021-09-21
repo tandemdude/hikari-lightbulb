@@ -99,16 +99,26 @@ class Check:
             raise an error.
 
     Keyword Args:
-        slash_command_predicate: If provided, an alternative predicate function to use for slash commands.
+        slash_command_predicate: If provided, an alternative predicate function to use for slash commands. Defaults
+            to the same function as ``predicate``.
+        add_to_command_hook: A function to run when the check is added to the command. Must take a single argument,
+            which will be the command object that the check is added to. This hook is not run for slash commands.
     """
 
-    __slots__ = ("msg_command_predicate", "slash_command_predicate", "__name__")
+    __slots__ = ("msg_command_predicate", "slash_command_predicate", "__name__", "add_to_command_hook")
 
-    def __init__(self, predicate: T_predicate, *, slash_command_predicate: typing.Optional[T_slash_predicate] = None):
+    def __init__(
+        self,
+        predicate: T_predicate,
+        *,
+        slash_command_predicate: typing.Optional[T_slash_predicate] = None,
+        add_to_command_hook: typing.Optional[typing.Callable[[commands.Command], None]] = None,
+    ):
         self.msg_command_predicate = predicate
         self.slash_command_predicate = predicate
         if slash_command_predicate is not None:
             self.slash_command_predicate = slash_command_predicate
+        self.add_to_command_hook = add_to_command_hook or (lambda c: None)
 
         self.__name__ = (
             self.msg_command_predicate.func.__name__
@@ -565,7 +575,6 @@ def has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permis
     """
     perms = perm1.split()
     total_perms = functools.reduce(operator.or_, (*perms, *permissions))
-    # TODO - figure out way to hook command.user_required_perms
 
     return Check(
         functools.partial(
@@ -573,6 +582,7 @@ def has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permis
             permissions=total_perms,
         ),
         slash_command_predicate=functools.partial(_slash_has_permissions, permissions=total_perms),
+        add_to_command_hook=lambda cmd: setattr(cmd, "user_required_permissions", total_perms),
     )
 
 
@@ -596,13 +606,13 @@ def bot_has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Pe
     """
     perms = perm1.split()
     total_perms = functools.reduce(operator.or_, (*perms, *permissions))
-    # TODO - figure out way to hook command.bot_required_perms
 
     return Check(
         functools.partial(
             _bot_has_guild_permissions,
             permissions=total_perms,
-        )
+        ),
+        add_to_command_hook=lambda cmd: setattr(cmd, "bot_required_permissions", total_perms),
     )
 
 
@@ -626,13 +636,13 @@ def has_role_permissions(perm1: hikari.Permissions, *permissions: hikari.Permiss
     """
     perms = perm1.split()
     total_perms = functools.reduce(operator.or_, (*perms, *permissions))
-    # TODO - figure out way to hook command.user_required_perms
 
     return Check(
         functools.partial(
             _has_role_permissions,
             permissions=total_perms,
-        )
+        ),
+        add_to_command_hook=lambda cmd: setattr(cmd, "user_required_permissions", total_perms),
     )
 
 
@@ -656,13 +666,13 @@ def bot_has_role_permissions(perm1: hikari.Permissions, *permissions: hikari.Per
     """
     perms = perm1.split()
     total_perms = functools.reduce(operator.or_, (*perms, *permissions))
-    # TODO - figure out way to hook command.bot_required_perms
 
     return Check(
         functools.partial(
             _bot_has_role_permissions,
             permissions=total_perms,
-        )
+        ),
+        add_to_command_hook=lambda cmd: setattr(cmd, "bot_required_permissions", total_perms),
     )
 
 
@@ -686,13 +696,13 @@ def has_channel_permissions(perm1: hikari.Permissions, *permissions: hikari.Perm
     """
     perms = perm1.split()
     total_perms = functools.reduce(operator.or_, (*perms, *permissions))
-    # TODO - figure out way to hook command.user_required_perms
 
     return Check(
         functools.partial(
             _has_channel_permissions,
             permissions=total_perms,
-        )
+        ),
+        add_to_command_hook=lambda cmd: setattr(cmd, "user_required_permissions", total_perms),
     )
 
 
@@ -716,13 +726,13 @@ def bot_has_channel_permissions(perm1: hikari.Permissions, *permissions: hikari.
     """
     perms = perm1.split()
     total_perms = functools.reduce(operator.or_, (*perms, *permissions))
-    # TODO - figure out way to hook command.bot_required_perms
 
     return Check(
         functools.partial(
             _bot_has_channel_permissions,
             permissions=total_perms,
-        )
+        ),
+        add_to_command_hook=lambda cmd: setattr(cmd, "bot_required_permissions", total_perms),
     )
 
 

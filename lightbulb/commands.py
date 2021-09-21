@@ -497,6 +497,7 @@ class Command:
         See Also:
             :meth:`~.checks.check`
         """
+        check_func.add_to_command_hook(self)
         self._checks.append(check_func)
 
     async def is_runnable(self, context: context_.Context) -> bool:

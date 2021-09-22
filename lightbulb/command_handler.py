@@ -110,7 +110,7 @@ def _return_prefix(_: typing.Any, __: typing.Any, *, prefixes: typing.Iterable[s
 
 class Bot(hikari.GatewayBot):
     """
-    A subclassed implementation of :class:`hikari.impl.bot.BotAppImpl` which contains a command handler.
+    A subclassed implementation of :class:`hikari.impl.bot.GatewayBot` which contains a command handler.
     This should be instantiated instead of the superclass if you want to be able to use
     the command handler implementation provided.
 
@@ -143,7 +143,7 @@ class Bot(hikari.GatewayBot):
         slash_commands_only (:obj:`bool`): Whether or not the bot will only be using slash commands to interact
             with discord. Defaults to ``False``. If this is ``False`` and no prefix is provided then an error will
             be raised. If ``True``, then you do not need to provide a prefix.
-        **kwargs: Other parameters passed to the :class:`hikari.impl.bot.BotAppImpl` constructor.
+        **kwargs: Other parameters passed to the :class:`hikari.impl.bot.GatewayBot` constructor.
     """
 
     def __init__(

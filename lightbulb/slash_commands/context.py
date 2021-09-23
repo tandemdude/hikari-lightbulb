@@ -81,7 +81,8 @@ class SlashCommandContext:
             else {}
         )
         """A mapping of :obj:`str` option name to :obj:`hikari.CommandInteractionOption` containing the options the command was invoked with."""
-        self._is_initial_response = True
+        self.initial_response_sent = False
+        """Whether or not an initial response has been sent for the interaction."""
 
     @property
     def interaction(self) -> hikari.CommandInteraction:
@@ -194,10 +195,10 @@ class SlashCommandContext:
             This can only be called **once** for each interaction. To add more information to the response
             you should use :obj:`~lightbulb.slash_commands.SlashCommandContext.edit_response`
         """
-        if self._is_initial_response:
+        if not self.initial_response_sent:
             resp_type = kwargs.pop("response_type", hikari.ResponseType.MESSAGE_CREATE)
             await self._interaction.create_initial_response(resp_type, content, **kwargs)
-            self._is_initial_response = False
+            self.initial_response_sent = True
         else:
             raise hikari.NotFoundError("Interaction initial response has already been sent.")
 

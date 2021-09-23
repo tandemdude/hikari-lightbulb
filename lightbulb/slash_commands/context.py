@@ -64,8 +64,6 @@ class SlashCommandContext:
         command (:obj:`~lightbulb.slash_commands.SlashCommand`): The :obj:`~SlashCommand` object that was invoked.
     """
 
-    __slots__ = ("bot", "_interaction", "_command", "options", "_is_initial_response")
-
     def __init__(
         self,
         bot: command_handler.Bot,
@@ -223,7 +221,7 @@ class SlashCommandContext:
         await self._interaction.delete_initial_response()
 
     @functools.wraps(hikari.CommandInteraction.execute)
-    async def followup(self, *args, **kwargs):
+    async def followup(self, *args, **kwargs) -> hikari.Message:
         """
         Alias for :obj:`hikari.CommandInteraction.execute`. Allows you to create followup responses for
         the interaction.

@@ -188,6 +188,10 @@ class SlashCommandContext:
         Returns:
             ``None``
 
+        Raises:
+            :obj:`hikari.NotFoundError`: The interaction has already had an initial response sent for it. This is
+                determined without sending a REST request so you are safe to try except this in your code.
+
         Note:
             This can only be called **once** for each interaction. To add more information to the response
             you should use :obj:`~lightbulb.slash_commands.SlashCommandContext.edit_response`

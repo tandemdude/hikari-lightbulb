@@ -64,6 +64,8 @@ class SlashCommandContext:
         command (:obj:`~lightbulb.slash_commands.SlashCommand`): The :obj:`~SlashCommand` object that was invoked.
     """
 
+    __slots__ = ("bot", "_interaction", "_command", "options", "_is_initial_response")
+
     def __init__(
         self,
         bot: command_handler.Bot,
@@ -81,6 +83,7 @@ class SlashCommandContext:
             else {}
         )
         """A mapping of :obj:`str` option name to :obj:`hikari.CommandInteractionOption` containing the options the command was invoked with."""
+        self._is_initial_response = True
 
     @property
     def interaction(self) -> hikari.CommandInteraction:
@@ -173,10 +176,14 @@ class SlashCommandContext:
         """
         Alias for :obj:`hikari.CommandInteraction.create_initial_response` but without having to pass
         in the ``response_type`` (it is set to :obj:`hikari.ResponseType.MESSAGE_CREATE`) See Hikari documentation
-        for kwargs you can pass in.
+        for kwargs you can pass in. You can override the response type if you want to by setting
+        the kwarg ``response_type`` manually.
 
         Args:
             content (:obj:`hikari.UndefinedType`): The message content, generally :obj:`str`.
+
+        Keyword Args:
+            **kwargs: Kwargs passed to :obj:`hikari.CommandInteraction.create_initial_response`.
 
         Returns:
             ``None``
@@ -185,7 +192,12 @@ class SlashCommandContext:
             This can only be called **once** for each interaction. To add more information to the response
             you should use :obj:`~lightbulb.slash_commands.SlashCommandContext.edit_response`
         """
-        await self._interaction.create_initial_response(hikari.ResponseType.MESSAGE_CREATE, content, **kwargs)
+        if self._is_initial_response:
+            resp_type = kwargs.pop("response_type", hikari.ResponseType.MESSAGE_CREATE)
+            await self._interaction.create_initial_response(resp_type, content, **kwargs)
+            self._is_initial_response = False
+        else:
+            raise hikari.NotFoundError("Interaction initial response has already been sent.")
 
     async def edit_response(self, *args, **kwargs) -> None:
         """
@@ -205,3 +217,18 @@ class SlashCommandContext:
             ``None``
         """
         await self._interaction.delete_initial_response()
+
+    @functools.wraps(hikari.CommandInteraction.execute)
+    async def followup(self, *args, **kwargs):
+        """
+        Alias for :obj:`hikari.CommandInteraction.execute`. Allows you to create followup responses for
+        the interaction.
+
+        Args:
+            *args: Args passed to :obj:`hikari.CommandInteraction.execute`
+            **kwargs: Kwargs passed to :obj:`hikari.CommandInteraction.execute`
+
+        Returns:
+            :obj:`hikari.Message`: The response message created.
+        """
+        return await self._interaction.execute(*args, **kwargs)

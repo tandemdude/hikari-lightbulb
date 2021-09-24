@@ -24,7 +24,6 @@ import collections
 import functools
 import importlib
 import inspect
-import json
 import logging
 import re
 import sys
@@ -50,6 +49,16 @@ _LOGGER = logging.getLogger("lightbulb")
 
 # XXX: can't we use `str.split()` here, which splits on all whitespace in the same way?
 ARG_SEP_REGEX = re.compile(r"(?:\s+|\n)")
+
+
+class _ExtensionType(typing.Protocol):
+    @staticmethod
+    def load(bot: Bot) -> None:
+        ...
+
+    @staticmethod
+    def unload(bot: Bot) -> None:
+        ...
 
 
 def when_mentioned_or(prefix_provider):
@@ -596,6 +605,7 @@ class Bot(hikari.GatewayBot):
             raise errors.ExtensionAlreadyLoaded(text=f"Extension {extension!r} is already loaded.")
 
         module = importlib.import_module(extension)
+        module = typing.cast(_ExtensionType, module)
 
         if not hasattr(module, "load"):
             raise errors.ExtensionMissingLoad(text=f"Extension {extension!r} is missing a load function")
@@ -639,6 +649,7 @@ class Bot(hikari.GatewayBot):
             raise errors.ExtensionNotLoaded(text=f"Extension {extension!r} is not loaded.")
 
         module = importlib.import_module(extension)
+        module = typing.cast(_ExtensionType, module)
 
         if not hasattr(module, "unload"):
             raise errors.ExtensionMissingUnload(text=f"Extension {extension!r} is missing an unload function")

@@ -1138,6 +1138,7 @@ class Bot(hikari.GatewayBot):
         context = self.get_slash_command_context(event, command)
         _LOGGER.debug("invoking slash command %r", command.name)
 
+        await self.dispatch(events.SlashCommandInvocationEvent(app=self, command=command, context=context))
         try:
             await command(context)
         except Exception as ex:
@@ -1153,6 +1154,8 @@ class Bot(hikari.GatewayBot):
 
             if not handled:
                 raise ex
+        else:
+            await self.dispatch(events.SlashCommandCompletionEvent(app=self, command=command, context=context))
 
     async def _manage_slash_commands(self, _):
         self._app = await self.rest.fetch_application()

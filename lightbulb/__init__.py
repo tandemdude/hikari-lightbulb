@@ -39,6 +39,7 @@ from lightbulb.cooldowns import *
 from lightbulb.events import *
 from lightbulb.help import *
 from lightbulb.plugins import *
+from lightbulb.slash_commands import *
 from lightbulb.stringview import *
 
 __all__: typing.Final[typing.List[str]] = [
@@ -52,6 +53,7 @@ __all__: typing.Final[typing.List[str]] = [
     *stringview.__all__,
     *help.__all__,
     *events.__all__,
+    *slash_commands.__all__,
 ]
 
 __version__ = "1.3.0"

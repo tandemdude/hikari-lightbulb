@@ -18,6 +18,7 @@
 import mock
 import pytest
 
+from lightbulb import checks
 from lightbulb import commands
 
 
@@ -65,9 +66,10 @@ async def test_Command_invoke_awaits_awaitable(dummy_command):
     dummy_callback.assert_awaited_with("foo")
 
 
-def test_Command_add_check_adds_callable_to_list(dummy_command, dummy_function):
-    dummy_command.add_check(dummy_function)
-    assert dummy_command._checks == [dummy_function]
+def test_Command_add_check_adds_Check_to_list(dummy_command, dummy_function):
+    check = checks.Check(dummy_function)
+    dummy_command.add_check(check)
+    assert dummy_command._checks == [check]
 
 
 def test_Group_get_subcommand_returns_None(dummy_group):

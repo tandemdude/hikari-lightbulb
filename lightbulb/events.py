@@ -22,6 +22,8 @@ __all__: typing.Final[typing.List[str]] = [
     "CommandInvocationEvent",
     "CommandCompletionEvent",
     "SlashCommandErrorEvent",
+    "SlashCommandInvocationEvent",
+    "SlashCommandCompletionEvent",
 ]
 
 import abc
@@ -153,3 +155,31 @@ class SlashCommandErrorEvent(LightbulbEvent):
     def traceback(self) -> types.TracebackType:
         """The traceback for this event's exception."""
         return self.exception.__traceback__
+
+
+@attr.s(kw_only=True, slots=True, weakref_slot=False)
+@hikari_base_events.requires_intents(hikari.Intents.DM_MESSAGES, hikari.Intents.GUILD_MESSAGES)
+class SlashCommandInvocationEvent(LightbulbEvent):
+    """
+    Event dispatched when a slash command is invoked, regardless of whether or not the checks
+    passed or failed, or an error was raised during command invocation.
+    """
+
+    command: slash_commands.BaseSlashCommand = attr.ib()
+    """The slash command that this event was triggered for."""
+    context: slash_commands.SlashCommandContext = attr.ib()
+    """The context that this event was triggered for."""
+
+
+@attr.s(kw_only=True, slots=True, weakref_slot=False)
+@hikari_base_events.requires_intents(hikari.Intents.DM_MESSAGES, hikari.Intents.GUILD_MESSAGES)
+class SlashCommandCompletionEvent(LightbulbEvent):
+    """
+    Event type dispatched when a slash command invocation occurred and was completed successfully. This means
+    that all checks must have passed and that no errors can have been raised during the command invocation.
+    """
+
+    command: slash_commands.BaseSlashCommand = attr.ib()
+    """The slash command that this event was triggered for."""
+    context: slash_commands.SlashCommandContext = attr.ib()
+    """The context that this event was triggered for."""

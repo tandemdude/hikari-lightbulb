@@ -50,6 +50,18 @@ _LOGGER = logging.getLogger("lightbulb")
 # XXX: can't we use `str.split()` here, which splits on all whitespace in the same way?
 ARG_SEP_REGEX = re.compile(r"(?:\s+|\n)")
 
+prefix_T = typing.Union[
+    str,
+    typing.Iterable[str],
+    typing.Callable[
+        ["Bot", hikari.Message],
+        typing.Union[
+            typing.Coroutine[None, None, typing.Union[str, typing.Iterable[str]]],
+            typing.Union[str, typing.Iterable[str]],
+        ],
+    ],
+]
+
 
 class _ExtensionType(typing.Protocol):
     @staticmethod
@@ -61,7 +73,9 @@ class _ExtensionType(typing.Protocol):
         ...
 
 
-def when_mentioned_or(prefix_provider):
+def when_mentioned_or(
+    prefix_provider: prefix_T,
+) -> typing.Callable[[Bot, hikari.Message], typing.Coroutine[None, None, typing.Iterable[str]]]:
     """
     Helper function which allows the bot's mentions to be used as the command prefix, as well
     as any other prefix(es) passed in or supplied by the ``prefix_provider``.
@@ -159,7 +173,7 @@ class Bot(hikari.GatewayBot):
         self,
         token: str,
         *,
-        prefix=None,
+        prefix: prefix_T = None,
         insensitive_commands: bool = False,
         ignore_bots: bool = True,
         owner_ids: typing.Iterable[int] = (),
@@ -219,15 +233,15 @@ class Bot(hikari.GatewayBot):
     def print_banner(banner: typing.Optional[str], allow_color: bool, force_color: bool) -> None:
         ux.print_banner(banner, allow_color, force_color)
         if banner == "hikari":
-            sys.stdout.write(f"Thank you for using lightbulb!\n")
+            sys.stdout.write("Thank you for using lightbulb!\n")
 
     @property
-    def help_command(self):
+    def help_command(self) -> help_.HelpCommand:
         """The instance of the help class used by the bot."""
         return self._help_impl
 
     @help_command.setter
-    def help_command(self, new_help_instance: help_.HelpCommand):
+    def help_command(self, new_help_instance: help_.HelpCommand) -> None:
         self._help_impl = new_help_instance
 
     async def fetch_owner_ids(self) -> None:

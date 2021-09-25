@@ -48,6 +48,7 @@ from lightbulb.converters import _UnionConverter
 if typing.TYPE_CHECKING:
     from lightbulb import checks as checks_
     from lightbulb import plugins
+    from lightbulb.checks import T_predicate
 
 _LOGGER = logging.getLogger("lightbulb")
 
@@ -227,7 +228,7 @@ class Command:
 
     def __init__(
         self,
-        callback: typing.Callable,
+        callback: typing.Callable[[context_.Context], typing.Coroutine[None, None, None]],
         name: str,
         allow_extra_arguments: bool,
         aliases: typing.Iterable[str],
@@ -240,7 +241,7 @@ class Command:
         self._aliases = aliases
         self.hidden = hidden
         self._checks: typing.List[checks_.Check] = []
-        self._check_exempt_predicate = lambda ctx: False
+        self._check_exempt_predicate: T_predicate = lambda ctx: False
         self._raw_error_listener = None
         self._raw_before_invoke = None
         self._raw_after_invoke = None

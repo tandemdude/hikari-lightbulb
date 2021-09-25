@@ -6,6 +6,11 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 1.3.2
+=============
+
+- Replace all context mention attributes with ``mentions``, returning a :obj:`hikari.Mentions` object.
+
 Version 1.3.1
 =============
 

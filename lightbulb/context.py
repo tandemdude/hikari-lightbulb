@@ -126,22 +126,10 @@ class Context:
         """Optional timestamp of the previous edit of the context message."""
         return self._message.edited_timestamp
 
-    # XXX: these are at the time of writing typing.Sequence objects, but will
-    # be refactored to use typing.AbstractSet as part of https://github.com/nekokatt/hikari/issues/273.
     @property
-    def user_mentions(self) -> typing.Collection[hikari.Snowflake]:
-        """The users mentioned in the context message."""
-        return self._message.user_mentions
-
-    @property
-    def role_mentions(self) -> typing.Collection[hikari.Snowflake]:
-        """The roles mentioned in the context message."""
-        return self._message.role_mentions
-
-    @property
-    def channel_mentions(self) -> typing.Collection[hikari.Snowflake]:
-        """The channels mentioned in the context message."""
-        return self._message.channel_mentions
+    def mentions(self) -> hikari.Mentions:
+        """The mentions that exist in the message that triggered the command."""
+        return self._message.mentions
 
     @property
     def attachments(self) -> typing.Sequence[hikari.Attachment]:
@@ -160,7 +148,7 @@ class Context:
         returns the raw prefix.
         """
 
-        def replace(match):
+        def replace(match: re.Match) -> str:
             user = self.bot.cache.get_user(hikari.Snowflake(match.group(1)))
             return f"@{user}" if user is not None else self.prefix
 

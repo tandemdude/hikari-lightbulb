@@ -157,6 +157,7 @@ class Bot(hikari.GatewayBot):
 
     def __init__(
         self,
+        token: str,
         *,
         prefix=None,
         insensitive_commands: bool = False,
@@ -168,7 +169,7 @@ class Bot(hikari.GatewayBot):
         slash_commands_only: bool = False,
         **kwargs,
     ) -> None:
-        super().__init__(**kwargs)
+        super().__init__(token, **kwargs)
 
         if prefix is None and slash_commands_only is False:
             raise TypeError("slash_commands_only is False but no prefix was provided.")

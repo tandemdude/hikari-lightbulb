@@ -6,18 +6,36 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 1.3.1
+=============
+
+- Fix ``has_roles`` check not working.
+
+- Fix ``token`` not being able to be passed positionally to the bot constructor.
+
+- Export all objects in :obj:`lightbulb.slash_commands` to the top level. E.g. ``lightbulb.slash_commands.SlashCommand -> lightbulb.SlashCommand``.
+
+- Add :obj:`~lightbulb.slash_commands.SlashCommandContext.is_initial_response` attribute.
+
+- Add :obj:`~lightbulb.slash_commands.SlashCommandContext.followup` method.
+
+- Add ``add_to_command_hook`` parameter to :obj:`~lightbulb.checks.Check`.
+
+- Add more slash command events, :obj:`~lightbulb.events.SlashCommandInvocationEvent`, :obj:`~lightbulb.events.SlashCommandCompletionEvent`.
+
+
 Version 1.3.0
 =============
 
 **Breaking changes**
 
-- Reimplemented checks, removing all decorators apart from ``@lightbulb.check``
+- Reimplement checks, remove all decorators apart from ``@lightbulb.check``.
 
 **Other changes**
 
-- Implemented checks for slash commands
+- Implement checks for slash commands.
 
-- Implemented error handling for slash commands, see :obj:`~lightbulb.events.SlashCommandErrorEvent`
+- Implement error handling for slash commands, see :obj:`~lightbulb.events.SlashCommandErrorEvent`.
 
 Version 1.2.6
 =============

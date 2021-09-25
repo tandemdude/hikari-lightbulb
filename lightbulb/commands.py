@@ -402,7 +402,7 @@ class Command:
 
             .. code-block:: python
 
-                @lightbulb.owner_only()
+                @lightbulb.check(lightbulb.owner_only)
                 @bot.command()
                 async def foo(ctx):
                     await ctx.respond("bar")

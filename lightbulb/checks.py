@@ -548,7 +548,7 @@ def has_roles(
         functools.partial(
             _has_roles,
             role_check=functools.partial(
-                roles=[int(role1), *[int(r) for r in role_ids]], func={"all": all, "any": any}[mode]
+                _role_check, roles=[int(role1), *[int(r) for r in role_ids]], func={"all": all, "any": any}[mode]
             ),
         )
     )

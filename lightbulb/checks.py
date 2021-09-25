@@ -63,10 +63,10 @@ if typing.TYPE_CHECKING:
 T_inv = typing.TypeVar("T_inv", bound=commands.Command)
 T_predicate = typing.Callable[
     [typing.Union[context.Context, slash_commands.SlashCommandContext]],
-    typing.Union[typing.Coroutine[typing.Any, typing.Any, bool], bool],
+    typing.Union[typing.Coroutine[None, None, bool], bool],
 ]
 T_slash_predicate = typing.Callable[
-    [slash_commands.SlashCommandContext], typing.Union[typing.Coroutine[typing.Any, typing.Any, bool], bool]
+    [slash_commands.SlashCommandContext], typing.Union[typing.Coroutine[None, None, bool], bool]
 ]
 T_contexts = typing.Union[context.Context, slash_commands.SlashCommandContext]
 
@@ -184,8 +184,8 @@ async def _nsfw_channel_only(ctx: T_contexts) -> bool:
     return True
 
 
-def _role_check(member_roles: typing.Sequence[hikari.Snowflake], *, roles: typing.Sequence[int], func) -> bool:
-    return func(r in member_roles for r in roles)
+def _role_check(member_roles: typing.Sequence[hikari.Snowflake], *, roles: typing.Sequence[int], func_) -> bool:
+    return func_(r in member_roles for r in roles)
 
 
 async def _has_roles(ctx: T_contexts, *, role_check):
@@ -513,7 +513,7 @@ def has_roles(
     role1: snowflakes.SnowflakeishOr[hikari.PartialRole],
     *role_ids: snowflakes.SnowflakeishOr[hikari.PartialRole],
     mode: typing.Literal["all", "any"] = "all",
-):
+) -> Check:
     """
     Prevents a command from being used by anyone missing roles according to the given mode.
     This check supports slash commands.
@@ -548,13 +548,13 @@ def has_roles(
         functools.partial(
             _has_roles,
             role_check=functools.partial(
-                _role_check, roles=[int(role1), *[int(r) for r in role_ids]], func={"all": all, "any": any}[mode]
+                _role_check, roles=[int(role1), *[int(r) for r in role_ids]], func_={"all": all, "any": any}[mode]
             ),
         )
     )
 
 
-def has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+def has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions) -> Check:
     """
     Prevents the command from being used by a member missing any of the required
     guild permissions (this takes into account both role permissions and channel overwrites,
@@ -586,7 +586,7 @@ def has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permis
     )
 
 
-def bot_has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+def bot_has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions) -> Check:
     """
     Prevents the command from being used if the bot is missing any of the required
     guild permissions (this takes into account both role permissions and channel overwrites).
@@ -616,7 +616,7 @@ def bot_has_guild_permissions(perm1: hikari.Permissions, *permissions: hikari.Pe
     )
 
 
-def has_role_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+def has_role_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions) -> Check:
     """
     Prevents the command from being used by a member missing any of the required
     role permissions.
@@ -646,7 +646,7 @@ def has_role_permissions(perm1: hikari.Permissions, *permissions: hikari.Permiss
     )
 
 
-def bot_has_role_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+def bot_has_role_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions) -> Check:
     """
     Prevents the command from being used if the bot is missing any of the required
     role permissions.
@@ -676,7 +676,7 @@ def bot_has_role_permissions(perm1: hikari.Permissions, *permissions: hikari.Per
     )
 
 
-def has_channel_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+def has_channel_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions) -> Check:
     """
     Prevents the command from being used by a member missing any of the required
     channel permissions (permissions granted by a permission overwrite).
@@ -706,7 +706,7 @@ def has_channel_permissions(perm1: hikari.Permissions, *permissions: hikari.Perm
     )
 
 
-def bot_has_channel_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+def bot_has_channel_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions) -> Check:
     """
     Prevents the command from being used if the bot is missing any of the required
     channel permissions (permissions granted by a permission overwrite).
@@ -736,7 +736,7 @@ def bot_has_channel_permissions(perm1: hikari.Permissions, *permissions: hikari.
     )
 
 
-def has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+def has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions) -> Check:
     """
     Alias for :obj:`~has_channel_permissions` for backwards compatibility.
 
@@ -750,7 +750,7 @@ def has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions)
     return has_channel_permissions(perm1, *permissions)
 
 
-def bot_has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions):
+def bot_has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions) -> Check:
     """
     Alias for :obj:`~bot_has_channel_permissions` for backwards compatibility.
 
@@ -764,7 +764,7 @@ def bot_has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissi
     return bot_has_channel_permissions(perm1, *permissions)
 
 
-def has_attachment(*extensions: str):
+def has_attachment(*extensions: str) -> Check:
     """
     Prevents the command from being used if the invocation message
     does not include any attachments.

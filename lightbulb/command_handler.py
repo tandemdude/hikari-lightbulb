@@ -103,7 +103,7 @@ def when_mentioned_or(
             bot = lightbulb.Bot(prefix=lightbulb.when_mentioned_or(get_prefix), ...)
     """
 
-    async def get_prefixes(bot, message):
+    async def get_prefixes(bot: Bot, message: hikari.Message) -> typing.Sequence[str]:
         mentions = [f"<@{bot.get_me().id}> ", f"<@!{bot.get_me().id}> "]
 
         if callable(prefix_provider):
@@ -120,6 +120,7 @@ def when_mentioned_or(
         elif prefixes is None:
             return mentions
         else:
+            prefixes = typing.cast(collections.AsyncIterable, prefixes)
             return mentions + [prefix async for prefix in prefixes]
 
     return get_prefixes
@@ -127,7 +128,7 @@ def when_mentioned_or(
 
 # Prefixes may be a string or iterable of strings. A string is a sequence of strings too by definition,
 # so this type hint _is_ correct.
-def _return_prefix(_: typing.Any, __: typing.Any, *, prefixes: typing.Iterable[str]) -> typing.Sequence[str]:
+def _return_prefix(_: Bot, __: hikari.Message, *, prefixes: typing.Iterable[str]) -> typing.Iterable[str]:
     return prefixes
 
 
@@ -181,7 +182,7 @@ class Bot(hikari.GatewayBot):
         delete_unbound_slash_commands: bool = True,
         recreate_changed_slash_commands: bool = True,
         slash_commands_only: bool = False,
-        **kwargs,
+        **kwargs: hikari.UndefinedType,
     ) -> None:
         super().__init__(token, **kwargs)
 
@@ -1238,7 +1239,7 @@ class Bot(hikari.GatewayBot):
         def compare_commands(
             lb_cmd: typing.Union[slash_commands.SlashCommand, slash_commands.SlashCommandGroup],
             hk_cmd: hikari.Command,
-            _guild_ids: typing.Optional[typing.List] = None,
+            _guild_ids: typing.Optional[typing.List[hikari.Snowflakeish]] = None,
         ) -> bool:
             # If one command is global and the other isn't
             if (not lb_cmd.enabled_guilds and _guild_ids) or (lb_cmd.enabled_guilds and not _guild_ids):

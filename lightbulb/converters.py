@@ -264,16 +264,6 @@ async def guild_voice_channel_converter(arg: WrappedArg) -> hikari.GuildVoiceCha
     return channel
 
 
-# Deprecated, as this may change in the future to not just be a GuildVoiceChannel should Discord add new features,
-# so this shouldn't be used as it may cause breaking changes later.
-def voice_channel_converter(arg: WrappedArg) -> typing.Coroutine[typing.Any, typing.Any, hikari.GuildVoiceChannel]:
-    warnings.warn(
-        "voice_channel_converter is deprecated, use guild_voice_channel_converter instead",
-        category=DeprecationWarning,
-    )
-    return guild_voice_channel_converter(arg)
-
-
 async def category_converter(arg: WrappedArg) -> hikari.GuildCategory:
     """
     Converter to transform a command argument into a :obj:`~hikari.GuildCategory` object.

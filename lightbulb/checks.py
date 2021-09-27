@@ -36,8 +36,6 @@ __all__: typing.Final[typing.List[str]] = [
     "bot_has_role_permissions",
     "has_channel_permissions",
     "bot_has_channel_permissions",
-    "has_permissions",
-    "bot_has_permissions",
     "has_attachment",
     "check",
     "check_exempt",
@@ -734,34 +732,6 @@ def bot_has_channel_permissions(perm1: hikari.Permissions, *permissions: hikari.
         ),
         add_to_command_hook=lambda cmd: setattr(cmd, "bot_required_permissions", total_perms),
     )
-
-
-def has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions) -> Check:
-    """
-    Alias for :obj:`~has_channel_permissions` for backwards compatibility.
-
-    This is deprecated, use :obj:`~has_channel_permissions` instead.
-    """
-    warnings.warn(
-        "The permissions check 'has_permissions' is deprecated and scheduled for removal in version 1.4. "
-        "You should use 'has_channel_permissions' instead.",
-        DeprecationWarning,
-    )
-    return has_channel_permissions(perm1, *permissions)
-
-
-def bot_has_permissions(perm1: hikari.Permissions, *permissions: hikari.Permissions) -> Check:
-    """
-    Alias for :obj:`~bot_has_channel_permissions` for backwards compatibility.
-
-    This is deprecated, use :obj:`~bot_has_channel_permissions` instead.
-    """
-    warnings.warn(
-        "The permissions check 'bot_has_permissions' is deprecated and scheduled for removal in version 1.4. "
-        "You should use 'bot_has_channel_permissions' instead.",
-        DeprecationWarning,
-    )
-    return bot_has_channel_permissions(perm1, *permissions)
 
 
 def has_attachment(*extensions: str) -> Check:

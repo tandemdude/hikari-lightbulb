@@ -42,7 +42,7 @@ Your first slash command can be written very easily:
         text: str = slash_commands.Option("Text to repeat")
 
         async def callback(self, context):
-            await context.respond(context.options["text"].value)
+            await context.respond(context.options.text)
 
 
     # Add the slash command to the bot
@@ -89,7 +89,7 @@ slash command group:
         baz: str = slash_commands.Option("Test subcommand option.")
 
         async def callback(self, context):
-            await context.respond(context.options["baz"].value)
+            await context.respond(context.options.baz)
 
 
 ----
@@ -98,7 +98,7 @@ Creating a Slash Command Subgroup
 =================================
 
 To create a slash command subgroup, you must first create a slash command group as seen in the previous
-section. The :obj`~lightbulb.slash_commands.SlashCommandGroup` class provides a ``subgroup`` decorator that
+section. The :obj:`~lightbulb.slash_commands.SlashCommandGroup` class provides a ``subgroup`` decorator that
 should be used in place of the ``subcommand`` decorator when adding a subgroup to the parent group. The subgroup
 should inherit from the :obj:`~lightbulb.slash_commands.SlashSubGroup` base class.
 
@@ -147,6 +147,7 @@ Example:
     number: typing.Optional[int] = Option("non-required integer option")
     user: hikari.User = Option("user option")
     choice: str = Option("option with choices", choices=["foo", "bar", "baz"])
+    foo: typing.Optional[str] = Option("option with default", default="foo")
 
 Permitted types:
 

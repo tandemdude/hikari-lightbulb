@@ -6,10 +6,28 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
-Version 1.3.2
+Version 1.4.0
 =============
 
+**Breaking Changes**
+
 - Replace all context mention attributes with ``mentions``, returning a :obj:`hikari.Mentions` object.
+
+- Replace :obj:`~lightbulb.slash_commands.SlashCommandContext.options` with :obj:`~lightbulb.slash_commands.SlashCommandContext.raw_options`
+
+- Replace :obj:`~lightbulb.slash_commands.SlashCommandContext.option_values` with :obj:`~lightbulb.slash_commands.SlashCommandContext.options`
+
+- Remove all deprecated functions and methods.
+
+**Other Changes**
+
+- Add ability to specify defaults for slash command options.
+
+- Add dark mode to documentation.
+
+- :obj:`~lightbulb.slash_commands.SlashCommandContext.respond` now calls :obj:`~lightbulb.slash_commands.SlashCommandContext.followup` if ``create_initial_response`` has already been called.
+
+- Fix various docstrings and typos.
 
 Version 1.3.1
 =============

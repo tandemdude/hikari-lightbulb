@@ -101,7 +101,7 @@ def _resolve_subcommand(
     subcommands: typing.MutableMapping[str, typing.Union[SlashSubCommand, SlashSubGroup]],
 ) -> typing.Optional[str]:
     option_name = None
-    for option in context.options:
+    for option in context._options:
         if option in subcommands:
             option_name = option
             break
@@ -136,10 +136,12 @@ class Option:
     """Whether or not the option is required. If ``None`` then it will be inferred from the attribute's typehint."""
     choices: typing.Optional[typing.Sequence[str, int, float, hikari.Snowflakeish, hikari.CommandChoice]] = None
     """
-    Sequence of the choices for the option. Defaults to None. 
+    Sequence of the choices for the option. Defaults to ``None``. 
     If :obj:`hikari.CommandChoice` objects are not provided then one will be built
     from the choice with the name set to the string representation of the value.
     """
+    default: typing.Optional[typing.Any] = None
+    """The default value for the option. Defaults to ``None``."""
 
 
 def _get_type_and_required_from_option(hint, opt: Option) -> typing.Tuple[hikari.OptionType, bool]:
@@ -156,26 +158,16 @@ def _get_choice_objects_from_choices(
 
 def _get_options_for_command_instance(
     cmd: typing.Union[SlashCommand, SlashSubCommand]
-) -> typing.Sequence[hikari.CommandOption]:
-    if (
-        hasattr(cmd, "options")
-        and isinstance(cmd.options, collections.abc.Sequence)
-        and not isinstance(cmd.options, str)
-    ):
-        warnings.warn(
-            "Definition of command options in the 'options' attribute is deprecated and "
-            "scheduled for removal in version 1.4. You should define options using class variables instead.",
-            DeprecationWarning,
-        )
-        return cmd.options
-
+) -> typing.Tuple[typing.Sequence[hikari.CommandOption], typing.Mapping[str, typing.Any]]:
     all_attrs = [[attr_name, getattr(cmd, attr_name)] for attr_name in dir(cmd)]
     opts = filter(lambda opt: type(opt[1]) is Option, all_attrs)
     hints = typing.get_type_hints(cmd if inspect.isclass(cmd) else type(cmd))
 
     hk_options = []
+    defaults = {}
     for attr_name, option in opts:
         type_, required = _get_type_and_required_from_option(hints.get(attr_name), option)
+        defaults[option.name or attr_name] = option.default
         hk_options.append(
             hikari.CommandOption(
                 name=option.name or attr_name,
@@ -185,7 +177,7 @@ def _get_options_for_command_instance(
                 **({"choices": _get_choice_objects_from_choices(option.choices)} if option.choices is not None else {}),
             )
         )
-    return hk_options
+    return hk_options, defaults
 
 
 class BaseSlashCommand(abc.ABC):
@@ -429,7 +421,11 @@ class SlashCommand(
     - :obj:`~lightbulb.slash_commands.WithAsyncCallback.callback` (instance method)
     """
 
-    __slots__ = ()
+    __slots__ = ("_defaults",)
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._defaults = {}
 
     async def __call__(self, *args, **kwargs):
         await self.evaluate_checks(*args, **kwargs)
@@ -437,7 +433,8 @@ class SlashCommand(
 
     @functools.lru_cache
     def get_options(self) -> typing.Sequence[hikari.CommandOption]:
-        hk_options = _get_options_for_command_instance(self)
+        hk_options, defaults = _get_options_for_command_instance(self)
+        self._defaults = defaults
         return list(sorted(hk_options, key=lambda o: o.is_required, reverse=True))
 
     async def create(
@@ -491,8 +488,9 @@ class SlashCommandGroup(BaseSlashCommand, WithGetOptions, WithCreationMethods, W
         _LOGGER.debug("invoking slash subcommand %r", option_name)
         # Replace the context options with the options for the subcommand, the old options
         # can still be accessed through context.interaction.options
-        new_options = context.options[option_name].options
-        context.options = {option.name: option for option in new_options} if new_options is not None else {}
+        new_options = context._options[option_name].options
+        context._options = {option.name: option for option in new_options} if new_options is not None else {}
+        context._command = self._subcommands[option_name]
         return await self._subcommands[option_name](context)
 
     @classmethod
@@ -564,8 +562,9 @@ class SlashSubGroup(BaseSlashCommand, WithAsOption, abc.ABC):
         _LOGGER.debug("invoking slash subcommand %r", option_name)
         # Replace the context options with the options for the subcommand, the old options
         # can still be accessed through context.interaction.options
-        new_options = context.options[option_name].options
-        context.options = {option.name: option for option in new_options} if new_options is not None else {}
+        new_options = context._options[option_name].options
+        context._options = {option.name: option for option in new_options} if new_options is not None else {}
+        context._command = self._subcommands[option_name]
         return await self._subcommands[option_name](context)
 
     @classmethod
@@ -602,7 +601,11 @@ class SlashSubCommand(BaseSlashCommand, WithAsOption, WithAsyncCallback, WithChe
     - :obj:`~lightbulb.slash_commands.WithAsyncCallback.callback` (instance method)
     """
 
-    __slots__ = ()
+    __slots__ = ("_defaults",)
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._defaults = {}
 
     async def __call__(self, *args, **kwargs):
         await self.evaluate_checks(*args, **kwargs)
@@ -610,7 +613,8 @@ class SlashSubCommand(BaseSlashCommand, WithAsOption, WithAsyncCallback, WithChe
 
     @functools.lru_cache
     def as_option(self) -> hikari.CommandOption:
-        hk_options = _get_options_for_command_instance(self)
+        hk_options, defaults = _get_options_for_command_instance(self)
+        self._defaults = defaults
         return hikari.CommandOption(
             name=self.name,
             description=self.description,

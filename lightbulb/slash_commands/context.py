@@ -42,16 +42,20 @@ class SlashCommandOptionsWrapper:
     Args:
         options (Mapping[:obj:`str`, :obj:`hikari.CommandInteractionOption`): The options that the slash command
             was called with.
+        defaults (Mapping[:obj:`str`, Any]): The default values for the slash command options.
     """
 
-    __slots__: typing.Sequence[str] = ("_options",)
+    __slots__: typing.Sequence[str] = ("_options", "_defaults")
 
-    def __init__(self, options: typing.Mapping[str, hikari.CommandInteractionOption]) -> None:
+    def __init__(
+        self, options: typing.Mapping[str, hikari.CommandInteractionOption], defaults: typing.Mapping[str, typing.Any]
+    ) -> None:
         self._options = options
+        self._defaults = defaults
 
     def __getattr__(self, item: str) -> typing.Optional[typing.Union[str, int, bool, float]]:
         option = self._options.get(item)
-        return option.value if option is not None else None
+        return option.value if option is not None else self._defaults.get(item)
 
 
 class SlashCommandContext:
@@ -75,14 +79,32 @@ class SlashCommandContext:
         self._interaction = interaction
         self._command = command
 
-        self.options: typing.Mapping[str, hikari.CommandInteractionOption] = (
+        self._options: typing.Mapping[str, hikari.CommandInteractionOption] = (
             {option.name: option for option in self._interaction.options}
             if self._interaction.options is not None
             else {}
         )
-        """A mapping of :obj:`str` option name to :obj:`hikari.CommandInteractionOption` containing the options the command was invoked with."""
+
         self.initial_response_sent = False
         """Whether or not an initial response has been sent for the interaction."""
+
+    @property
+    def raw_options(self) -> typing.Mapping[str, hikari.CommandInteractionOption]:
+        """
+        A mapping of :obj:`str` option name to :obj:`hikari.CommandInteractionOption`
+        containing the options the command was invoked with.
+        """
+        return self._options
+
+    @functools.cached_property
+    def options(self) -> SlashCommandOptionsWrapper:
+        """
+        The values for the slash command's various options.
+
+        Returns:
+            :obj:`~SlashCommandOptionsWrapper`
+        """
+        return SlashCommandOptionsWrapper(self._options, self._command._defaults)
 
     @property
     def interaction(self) -> hikari.CommandInteraction:
@@ -101,7 +123,10 @@ class SlashCommandContext:
 
     @property
     def member(self) -> typing.Optional[hikari.InteractionMember]:
-        """The :obj:`hikari.InteractionMember` object for the user that invoked the slash command, or ``None`` if in DMs."""
+        """
+        The :obj:`hikari.InteractionMember` object for the user that invoked the slash
+        command, or ``None`` if in DMs.
+        """
         return self._interaction.member
 
     @property
@@ -129,33 +154,9 @@ class SlashCommandContext:
         """The :obj:`hikari.Command` object for this specific context."""
         return self._command.get_command(self.guild_id)
 
-    @property
-    def channel(self) -> typing.Optional[hikari.GuildChannel]:
-        """The cached channel that the command was invoked in, or ``None`` if not found."""
-
-        warnings.warn(
-            "The slash context property 'channel' is deprecated and scheduled for removal in version 1.4. "
-            "You should use 'get_channel()' instead.",
-            DeprecationWarning,
-        )
-
-        return self._interaction.get_channel()
-
     def get_channel(self) -> typing.Optional[hikari.GuildChannel]:
         """The cached channel that the command was invoked in, or ``None`` if not found."""
         return self._interaction.get_channel()
-
-    @property
-    def guild(self) -> typing.Optional[hikari.GatewayGuild]:
-        """The cached guild that the command was invoked in, or ``None`` if not found."""
-
-        warnings.warn(
-            "The slash context property 'guild' is deprecated and scheduled for removal in version 1.4. "
-            "You should use 'get_guild()' instead.",
-            DeprecationWarning,
-        )
-
-        return self.bot.cache.get_guild(self.guild_id)
 
     def get_guild(self) -> typing.Optional[hikari.GatewayGuild]:
         """The cached guild that the command was invoked in, or ``None`` if not found."""
@@ -165,11 +166,6 @@ class SlashCommandContext:
     def resolved(self) -> typing.Optional[hikari.ResolvedOptionData]:
         """Mappings of the objects resolved for the provided command options."""
         return self._interaction.resolved
-
-    @functools.cached_property
-    def option_values(self) -> SlashCommandOptionsWrapper:
-        """The values for the slash command's various options."""
-        return SlashCommandOptionsWrapper(self.options)
 
     async def respond(
         self, content: hikari.UndefinedType = hikari.UNDEFINED, **kwargs: hikari.UndefinedType

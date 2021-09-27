@@ -189,7 +189,7 @@ class SlashCommandContext:
 
         Note:
             This will be a shortcut to :obj:`~lightbulb.slash_commands.SlashCommandContext.edit_response`
-            if you have called this method once.
+            if you have already responded to the interaction using this method.
         """
         if not self.initial_response_sent:
             resp_type = kwargs.pop("response_type", hikari.ResponseType.MESSAGE_CREATE)

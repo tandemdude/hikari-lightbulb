@@ -153,7 +153,7 @@ class Plugin:
     to allow for hot-swapping of commands.
 
     To use in your own bot you should subclass this for each plugin
-    you wish to create. Don't forget to cal ``super().__init__()`` if you
+    you wish to create. Don't forget to call ``super().__init__()`` if you
     override the ``__init__`` method.
 
     Args:

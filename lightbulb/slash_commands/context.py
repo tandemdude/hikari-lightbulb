@@ -187,20 +187,18 @@ class SlashCommandContext:
         Returns:
             ``None``
 
-        Raises:
-            :obj:`hikari.NotFoundError`: The interaction has already had an initial response sent for it. This is
-                determined without sending a REST request so you are safe to try except this in your code.
-
         Note:
-            This can only be called **once** for each interaction. To add more information to the response
-            you should use :obj:`~lightbulb.slash_commands.SlashCommandContext.edit_response`
+            This will be a shortcut to :obj:`~lightbulb.slash_commands.SlashCommandContext.edit_response`
+            if you have called this method once.
         """
         if not self.initial_response_sent:
             resp_type = kwargs.pop("response_type", hikari.ResponseType.MESSAGE_CREATE)
             await self._interaction.create_initial_response(resp_type, content, **kwargs)
             self.initial_response_sent = True
         else:
-            raise hikari.NotFoundError("Interaction initial response has already been sent.")
+            for key in ("flags", "tts", "response_type"):
+                kwargs.pop(key, None)
+            await self.edit_response(content, **kwargs)
 
     async def edit_response(self, *args, **kwargs) -> None:
         """

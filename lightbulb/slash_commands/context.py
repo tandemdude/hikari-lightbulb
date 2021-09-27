@@ -171,7 +171,9 @@ class SlashCommandContext:
         """The values for the slash command's various options."""
         return SlashCommandOptionsWrapper(self.options)
 
-    async def respond(self, content: hikari.UndefinedType = hikari.UNDEFINED, **kwargs: hikari.UndefinedType) -> None:
+    async def respond(
+        self, content: hikari.UndefinedType = hikari.UNDEFINED, **kwargs: hikari.UndefinedType
+    ) -> typing.Optional[hikari.Message]:
         """
         Alias for :obj:`hikari.CommandInteraction.create_initial_response` but without having to pass
         in the ``response_type`` (it is set to :obj:`hikari.ResponseType.MESSAGE_CREATE`) See Hikari documentation
@@ -182,23 +184,23 @@ class SlashCommandContext:
             content (:obj:`hikari.UndefinedType`): The message content, generally :obj:`str`.
 
         Keyword Args:
-            **kwargs: Kwargs passed to :obj:`hikari.CommandInteraction.create_initial_response`.
+            **kwargs: Kwargs passed to :obj:`hikari.CommandInteraction.create_initial_response`
+                or :obj:`hikari.CommandInteraction.execute` if you have already responded
+                to the interaction using this method.
 
         Returns:
-            ``None``
+            Optional[ :obj:`hikari.Message` ]
 
         Note:
-            This will be a shortcut to :obj:`~lightbulb.slash_commands.SlashCommandContext.edit_response`
+            This will be a shortcut to :obj:`~lightbulb.slash_commands.SlashCommandContext.followup`
             if you have already responded to the interaction using this method.
         """
-        if not self.initial_response_sent:
-            resp_type = kwargs.pop("response_type", hikari.ResponseType.MESSAGE_CREATE)
-            await self._interaction.create_initial_response(resp_type, content, **kwargs)
-            self.initial_response_sent = True
-        else:
-            for key in ("flags", "tts", "response_type"):
-                kwargs.pop(key, None)
-            await self.edit_response(content, **kwargs)
+        if self.initial_response_sent:
+            return await self.followup(content, **kwargs)
+
+        resp_type = kwargs.pop("response_type", hikari.ResponseType.MESSAGE_CREATE)
+        await self._interaction.create_initial_response(resp_type, content, **kwargs)
+        self.initial_response_sent = True
 
     async def edit_response(self, *args, **kwargs) -> None:
         """

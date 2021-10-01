@@ -169,7 +169,7 @@ class SlashCommandContext:
 
     async def respond(
         self, content: hikari.UndefinedType = hikari.UNDEFINED, **kwargs: hikari.UndefinedType
-    ) -> typing.Optional[hikari.Message]:
+    ) -> hikari.Message:
         """
         Alias for :obj:`hikari.CommandInteraction.create_initial_response` but without having to pass
         in the ``response_type`` (it is set to :obj:`hikari.ResponseType.MESSAGE_CREATE`) See Hikari documentation
@@ -185,7 +185,7 @@ class SlashCommandContext:
                 to the interaction using this method.
 
         Returns:
-            Optional[ :obj:`hikari.Message` ]
+            :obj:`hikari.Message`: The message object for this response.
 
         Note:
             This will be a shortcut to :obj:`~lightbulb.slash_commands.SlashCommandContext.followup`
@@ -197,6 +197,7 @@ class SlashCommandContext:
         resp_type = kwargs.pop("response_type", hikari.ResponseType.MESSAGE_CREATE)
         await self._interaction.create_initial_response(resp_type, content, **kwargs)
         self.initial_response_sent = True
+        return await self.fetch_response()
 
     async def edit_response(self, *args, **kwargs) -> None:
         """
@@ -216,6 +217,14 @@ class SlashCommandContext:
             ``None``
         """
         await self._interaction.delete_initial_response()
+
+    async def fetch_response(self) -> hikari.Message:
+        """
+        Alias for :obj:`hikari.CommandInteraction.fetch_initial_response`.
+
+        Returns:
+            :obj:`hikari.Message`: The message object for the initial response.
+        """
 
     @functools.wraps(hikari.CommandInteraction.execute)
     async def followup(self, *args, **kwargs) -> hikari.Message:

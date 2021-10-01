@@ -6,6 +6,13 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 1.4.1
+=============
+
+- Add :obj:`lightbulb.slash_commands.SlashCommandContext.fetch_response`.
+
+- Change :obj:`lightbulb.slash_commands.SlashCommandContext.respond` to always return the message object for the response.
+
 Version 1.4.0
 =============
 

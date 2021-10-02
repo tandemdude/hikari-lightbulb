@@ -275,13 +275,16 @@ def cooldown(
 ):
     """
     Decorator which adds a cooldown to a command.
+
     Args:
         length (:obj:`float`): The amount of time before the cooldown expires.
         usages (:obj:`int`): The amount of usages of the command allowed before the cooldown activates.
         bucket (Type[ :obj:`~Bucket` ]): The bucket that the cooldown should be evaluated under.
+
     Keyword Args:
         manager_cls (Type[ :obj:`~CooldownManager` ]): The **uninstantiated** class to use as the command's
             cooldown manager. Defaults to :obj:`~CooldownManager`.
+
     Example:
         .. code-block:: python
 
@@ -307,11 +310,14 @@ def dynamic_cooldown(
 ):
     """
     Decorator which adds a more customized cooldown to a command.
+
     Args:
         callback (Callable[[ :obj:`~Context` ], :obj:`~Bucket`]): The callback that takes a Context object and returns a Bucket object.
+
     Keyword Args:
         manager_cls (Type[ :obj:`~CooldownManager` ]): The **uninstantiated** class to use as the command's
             cooldown manager. Defaults to :obj:`~CooldownManager`.
+
     Example:
         .. code-block:: python
 

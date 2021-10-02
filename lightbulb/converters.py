@@ -59,10 +59,6 @@ along with the converters they 'replace' can be seen below:
 .. warning:: For the supplied converters, some functionality will not be possible depending on the intents and/or
     cache settings of your bot application and object. If the bot does not have a cache then the converters can
     only work for arguments of ID or mention and **not** any form of name.
-
-.. warning:: If you use ``from __future__ import annotations`` then you **will not** be able to use converters
-    in your commands. Instead of converting the arguments, the raw, unconverted arguments will be passed back
-    to the command.
 """
 from __future__ import annotations
 

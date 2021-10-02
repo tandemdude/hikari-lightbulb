@@ -33,6 +33,7 @@ import hikari
 from hikari.internal import ux
 from multidict import CIMultiDict
 
+from lightbulb import checks
 from lightbulb import commands
 from lightbulb import context as context_
 from lightbulb import errors
@@ -44,7 +45,6 @@ from lightbulb.converters import _DefaultingConverter
 from lightbulb.converters import _GreedyConverter
 from lightbulb.slash_commands.commands import _serialise_command
 from lightbulb.utils import maybe_await
-from lightbulb import checks
 
 _LOGGER = logging.getLogger("lightbulb")
 
@@ -443,7 +443,9 @@ class Bot(hikari.GatewayBot):
         _LOGGER.debug("new group registered %r", func.name)
         return self._commands[func.name]
 
-    def add_check(self, func: typing.Union[typing.Callable[[context_.Context], typing.Coroutine[None, None, bool]], checks.Check]) -> None:
+    def add_check(
+        self, func: typing.Union[typing.Callable[[context_.Context], typing.Coroutine[None, None, bool]], checks.Check]
+    ) -> None:
         """
         Add a coroutine as a global check for the bot.
 

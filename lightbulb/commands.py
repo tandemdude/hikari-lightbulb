@@ -136,7 +136,7 @@ class SignatureInspector:
         self.command = command
         self.has_self = isinstance(command, _BoundCommandMarker)
         signature = inspect.signature(command._callback)
-        self.converters = self.parse_signature(signature)
+        self.converters = self.parse_signature(command._callback, signature)
         self.arguments = [p.name for p in signature.parameters.values()]
         self.arguments.pop(0)
         if self.has_self:
@@ -175,24 +175,26 @@ class SignatureInspector:
 
         return _Converter(annotation if annotation is not inspect.Parameter.empty else str)
 
-    def parse_signature(self, signature: inspect.Signature):
+    def parse_signature(self, callback, signature: inspect.Signature):
         """
         Parse the command's callback signature into a list of the converters used
         for each command argument.
 
         Args:
+            callback: The command's callback
             signature (:obj:`inspect.Signature`): The signature of the command callback.
 
         Returns:
             List of converters for command arguments in the correct order.
         """
         arg_converters = []
+        all_annotations = typing.get_type_hints(callback)
 
         for idx, param in enumerate(signature.parameters.values()):
             if idx == 0 or (idx == 1 and self.has_self):
                 continue
 
-            converter: _BaseConverter = self.get_converter(param.annotation)
+            converter: _BaseConverter = self.get_converter(all_annotations.get(param.name, str))
 
             if param.kind is inspect.Parameter.KEYWORD_ONLY:
                 converter = _ConsumeRestConverter(converter, param.name)

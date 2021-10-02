@@ -44,6 +44,7 @@ from lightbulb.converters import _DefaultingConverter
 from lightbulb.converters import _GreedyConverter
 from lightbulb.slash_commands.commands import _serialise_command
 from lightbulb.utils import maybe_await
+from lightbulb import checks
 
 _LOGGER = logging.getLogger("lightbulb")
 
@@ -214,7 +215,7 @@ class Bot(hikari.GatewayBot):
         )
         self.commands: typing.Set[commands.Command] = set()
         """A set containing all commands and groups registered to the bot."""
-        self._checks = []
+        self._checks: typing.List[checks.Check] = []
 
         self._delete_unbound_slash_commands = delete_unbound_slash_commands
         self._recreate_changed_slash_commands = recreate_changed_slash_commands
@@ -442,7 +443,7 @@ class Bot(hikari.GatewayBot):
         _LOGGER.debug("new group registered %r", func.name)
         return self._commands[func.name]
 
-    def add_check(self, func: typing.Callable[[context_.Context], typing.Coroutine[None, None, bool]]) -> None:
+    def add_check(self, func: typing.Union[typing.Callable[[context_.Context], typing.Coroutine[None, None, bool]], checks.Check]) -> None:
         """
         Add a coroutine as a global check for the bot.
 
@@ -455,6 +456,8 @@ class Bot(hikari.GatewayBot):
         Returns:
             ``None``
         """
+        if not isinstance(func, checks.Check):
+            func = checks.Check(func)
         self._checks.append(func)
 
     def add_plugin(self, plugin: typing.Union[plugins.Plugin, typing.Type[plugins.Plugin]]) -> None:
@@ -1297,5 +1300,5 @@ class Bot(hikari.GatewayBot):
         except hikari.ForbiddenError as exc:
             _LOGGER.error(
                 "Could not complete slash command setup. Was your bot invited with the application.commands scope?",
-                exc_info=(type(exc), exc, exc.__traceback__),
             )
+            raise exc

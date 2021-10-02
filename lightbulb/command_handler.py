@@ -192,7 +192,7 @@ class Bot(hikari.GatewayBot):
         if not slash_commands_only:
             self.subscribe(hikari.MessageCreateEvent, self.handle)
         self.subscribe(hikari.InteractionCreateEvent, self.handle_slash_commands)
-        self.subscribe(hikari.StartingEvent, self._manage_slash_commands)
+        self.subscribe(hikari.StartingEvent, self._manage_slash_commands_listener)
 
         if isinstance(prefix, str):
             self.get_prefix = functools.partial(_return_prefix, prefixes=[prefix])
@@ -1173,7 +1173,7 @@ class Bot(hikari.GatewayBot):
         else:
             await self.dispatch(events.SlashCommandCompletionEvent(app=self, command=command, context=context))
 
-    async def _manage_slash_commands(self, _):
+    async def _manage_slash_commands(self):
         self._app = await self.rest.fetch_application()
 
         global_slash_commands = {c.name: c for c in await self.rest.fetch_application_commands(self._app)}
@@ -1196,15 +1196,15 @@ class Bot(hikari.GatewayBot):
         # purging every command.
         remaining_globals = {} if self._delete_unbound_slash_commands is True else global_slash_commands
         if self._delete_unbound_slash_commands:
-            _LOGGER.debug("purging unbound slash commands")
+            _LOGGER.info("purging unbound slash commands")
             for cmd in global_slash_commands.values():
                 # if an implementation of the slash command is not found
                 if self._slash_commands.get(cmd.name) is None:
-                    _LOGGER.debug("deleting global slash command %r", cmd.name)
+                    _LOGGER.info("deleting global slash command %r", cmd.name)
                     await cmd.delete()
                 # if our implementation of the slash command is specific to guilds
                 elif self._slash_commands[cmd.name].enabled_guilds:
-                    _LOGGER.debug("deleting global slash command %r", cmd.name)
+                    _LOGGER.info("deleting global slash command %r", cmd.name)
                     await cmd.delete()
                 else:
                     remaining_globals[cmd.name] = cmd
@@ -1215,11 +1215,11 @@ class Bot(hikari.GatewayBot):
                 for cmd, guild_id in cmds:
                     # if an implementation of the slash command is not found
                     if self._slash_commands.get(cmd.name) is None:
-                        _LOGGER.debug("deleting slash command %r from guild %r", cmd.name, str(cmd.guild_id))
+                        _LOGGER.info("deleting slash command %r from guild %r", cmd.name, str(cmd.guild_id))
                         await cmd.delete()
                     # if our implementation of the slash command doesn't contain an entry for this guild
                     elif cmd.guild_id not in self._slash_commands[cmd.name].enabled_guilds:
-                        _LOGGER.debug("deleting slash command %r from guild %r", cmd.name, str(cmd.guild_id))
+                        _LOGGER.info("deleting slash command %r from guild %r", cmd.name, str(cmd.guild_id))
                         await cmd.delete()
                     else:
                         # We are assuming here that all the guild commands with the same name have the same
@@ -1265,10 +1265,10 @@ class Bot(hikari.GatewayBot):
                     continue
 
                 if not compare_commands(self._slash_commands[cmd.name], cmd):
-                    _LOGGER.debug("recreating global slash command %r as it appears to have changed", cmd.name)
+                    _LOGGER.info("recreating global slash command %r as it appears to have changed", cmd.name)
                     await self._slash_commands[cmd.name].auto_create(self._app)
                 else:
-                    _LOGGER.debug(
+                    _LOGGER.info(
                         "not recreating global slash command %r as it doesn't appear to have changed", cmd.name
                     )
 
@@ -1277,12 +1277,10 @@ class Bot(hikari.GatewayBot):
                     continue
 
                 if not compare_commands(self._slash_commands[cmd.name], cmd, guild_ids):
-                    _LOGGER.debug("recreating guild slash command %r as it appears to have changed", cmd.name)
+                    _LOGGER.info("recreating guild slash command %r as it appears to have changed", cmd.name)
                     await self._slash_commands[cmd.name].auto_create(self._app)
                 else:
-                    _LOGGER.debug(
-                        "not recreating guild slash command %r as it doesn't appear to have changed", cmd.name
-                    )
+                    _LOGGER.info("not recreating guild slash command %r as it doesn't appear to have changed", cmd.name)
 
         all_cmd_names = [
             *[c.name for c in remaining_globals.values()],
@@ -1290,5 +1288,14 @@ class Bot(hikari.GatewayBot):
         ]
         for cmd_name, cmd in self._slash_commands.items():
             if cmd_name not in all_cmd_names:
-                _LOGGER.debug("creating slash command %r as it does not seem to exist yet", cmd_name)
+                _LOGGER.info("creating slash command %r as it does not seem to exist yet", cmd_name)
                 await cmd.auto_create(self._app)
+
+    async def _manage_slash_commands_listener(self, _) -> None:
+        try:
+            await self._manage_slash_commands()
+        except hikari.ForbiddenError as exc:
+            _LOGGER.error(
+                "Could not complete slash command setup. Was your bot invited with the application.commands scope?",
+                exc_info=(type(exc), exc, exc.__traceback__),
+            )

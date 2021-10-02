@@ -124,7 +124,7 @@ class Option:
                 text: str = Option("Text to repeat")
 
                 async def callback(self, context):
-                    await context.respond(context.option_values.text)
+                    await context.respond(context.options.text)
 
     """
 

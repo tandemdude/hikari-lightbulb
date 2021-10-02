@@ -37,7 +37,7 @@ class SlashCommandOptionsWrapper:
     :obj:`~lightbulb.slash_commands.SlashCommandOptionsWrapper.option_name` will return either the option's value,
     or ``None`` if the option was not provided in the slash command invocation.
 
-    This is accessible through :obj:`~lightbulb.slash_commands.SlashCommandContext.option_values`
+    This is accessible through :obj:`~lightbulb.slash_commands.SlashCommandContext.options`
 
     Args:
         options (Mapping[:obj:`str`, :obj:`hikari.CommandInteractionOption`): The options that the slash command

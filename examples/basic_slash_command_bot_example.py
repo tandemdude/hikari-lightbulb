@@ -50,7 +50,7 @@ class Echo(lightbulb.slash_commands.SlashCommand):
 
     async def callback(self, context):
         # Respond with the value of the 'text' option - the text that the user input.
-        await context.respond(context.option_values.text)
+        await context.respond(context.options.text)
 
 
 bot.add_slash_command(Ping)

@@ -13,6 +13,12 @@ Version 1.4.1
 
 - Change :obj:`lightbulb.slash_commands.SlashCommandContext.respond` to always return the message object for the response.
 
+- Converters now work if you are using ``from __future__ import annotations``.
+
+- Add slash command setup error message if it seems like the bot wasn't invited to guilds with the ``application.commands`` scope.
+
+- Change slash command setup logging message level to ``INFO``.
+
 Version 1.4.0
 =============
 

@@ -29,13 +29,13 @@ __all__: typing.List[str] = [
     "stop",
 ]
 
-import abc
 import asyncio
 import typing
 
 import hikari
 
-from lightbulb.context import Context
+from lightbulb import context as context_
+from lightbulb import slash_commands
 
 
 class NavButton:
@@ -127,7 +127,47 @@ async def stop(nav: Navigator, _) -> None:
     nav._msg = None
 
 
-class Navigator(abc.ABC, typing.Generic[T]):
+class Navigator(typing.Generic[T]):
+    """
+    A reaction navigator system for navigating through a list of items that can be sent through the
+    ``content`` argument of :obj:`hikari.Message.respond`.
+
+    Default buttons:
+
+    - ``\\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\\N{VARIATION SELECTOR-16}`` (Go to first page)
+
+    - ``\\N{BLACK LEFT-POINTING TRIANGLE}\\N{VARIATION SELECTOR-16}`` (Go to previous page)
+
+    - ``\\N{BLACK SQUARE FOR STOP}\\N{VARIATION SELECTOR-16}`` (Stop navigation)
+
+    - ``\\N{BLACK RIGHT-POINTING TRIANGLE}\\N{VARIATION SELECTOR-16}`` (Go to next page)
+
+    - ``\\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\\N{VARIATION SELECTOR-16}`` (Go to last page)
+
+    Args:
+        pages (Sequence[T]): Pages to navigate through.
+
+    Keyword Args:
+        buttons (Optional[Sequence[:obj:`~.utils.nav.NavButton`]]): Buttons to
+            use the navigator with. Uses the default buttons if not specified.
+        timeout (:obj:`float`): The navigator timeout in seconds. After the timeout has expired, navigator reactions
+            will no longer work. Defaults to 120 (2 minutes).
+
+    Example:
+
+        .. code-block:: python
+
+            from lightbulb.utils import pag, nav
+
+            @bot.command()
+            async def foo(ctx):
+                paginated_help = pag.StringPaginator()
+                for l in thing_that_creates_a_lot_of_text.split("\\n"):
+                    paginated_help.add_line(l)
+                navigator = nav.Navigator(paginated_help.build_pages())
+                await navigator.run(ctx)
+
+    """
     def __init__(
         self,
         pages: typing.Union[typing.Iterable[T], typing.Iterator[T]],
@@ -150,17 +190,15 @@ class Navigator(abc.ABC, typing.Generic[T]):
 
         self._timeout: float = timeout
         self.current_page_index: int = 0
-        self._context: typing.Optional[Context] = None
+        self._context: typing.Optional[typing.Union[context_.Context, slash_commands.SlashCommandContext]] = None
         self._msg: typing.Optional[hikari.Message] = None
         self._timeout_task = None
 
-    @abc.abstractmethod
     async def _edit_msg(self, message: hikari.Message, page: T) -> hikari.Message:
-        ...
+        return await message.edit(page)
 
-    @abc.abstractmethod
     async def _send_initial_msg(self, page: T) -> hikari.Message:
-        ...
+        return await self._context.respond(page)
 
     def create_default_buttons(self) -> typing.Sequence[NavButton]:
         buttons = (
@@ -174,7 +212,7 @@ class Navigator(abc.ABC, typing.Generic[T]):
 
     async def _process_reaction_add(self, event: hikari.ReactionAddEvent) -> None:
         if (
-            event.user_id != self._context.message.author.id
+            event.user_id != self._context.author.id
             or event.channel_id != self._context.channel_id
             or event.message_id != self._msg.id
         ):
@@ -205,12 +243,13 @@ class Navigator(abc.ABC, typing.Generic[T]):
         except asyncio.CancelledError:
             pass
 
-    async def run(self, context: Context) -> None:
+    async def run(self, context: typing.Union[context_.Context, slash_commands.SlashCommandContext]) -> None:
         """
         Run the navigator under the given context.
 
         Args:
-            context (:obj:`~.context.Context`): Context to run the navigator under
+            context (Union[:obj:`~.context.Context`, :obj:`~.slash_commands.SlashCommandContext`]): Context
+                to run the navigator under.
 
         Returns:
             ``None``
@@ -238,73 +277,7 @@ class Navigator(abc.ABC, typing.Generic[T]):
         self._timeout_task = asyncio.create_task(self._timeout_coro())
 
 
-class StringNavigator(Navigator[str]):
-    """
-    A reaction navigator system for navigating through a list of string messages.
-
-    Default buttons:
-
-    - ``\\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\\N{VARIATION SELECTOR-16}`` (Go to first page)
-
-    - ``\\N{BLACK LEFT-POINTING TRIANGLE}\\N{VARIATION SELECTOR-16}`` (Go to previous page)
-
-    - ``\\N{BLACK SQUARE FOR STOP}\\N{VARIATION SELECTOR-16}`` (Stop navigation)
-
-    - ``\\N{BLACK RIGHT-POINTING TRIANGLE}\\N{VARIATION SELECTOR-16}`` (Go to next page)
-
-    - ``\\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\\N{VARIATION SELECTOR-16}`` (Go to last page)
-
-    Args:
-        pages (Sequence[ :obj:`str` ]): Pages to navigate through.
-
-    Keyword Args:
-        buttons (Optional[ Sequence[ :obj:`~.utils.nav.NavButton` ] ]): Buttons to
-            use the navigator with. Uses the default buttons if not specified.
-        timeout (:obj:`float`): The navigator timeout in seconds. After the timeout has expired, navigator reactions
-            will no longer work. Defaults to 120 (2 minutes).
-
-    Example:
-
-        .. code-block:: python
-
-            from lightbulb.utils import pag, nav
-
-            @bot.command()
-            async def foo(ctx):
-                paginated_help = pag.StringPaginator()
-                for l in thing_that_creates_a_lot_of_text.split("\\n"):
-                    paginated_help.add_line(l)
-                navigator = nav.StringNavigator(paginated_help.build_pages())
-                await navigator.run(ctx)
-
-    """
-
-    async def _edit_msg(self, message: hikari.Message, page: str) -> hikari.Message:
-        return await message.edit(page)
-
-    async def _send_initial_msg(self, page: str) -> hikari.Message:
-        return await self._context.respond(page)
-
-
-class EmbedNavigator(Navigator[hikari.Embed]):
-    """
-    A reaction navigator system for navigating through a list of embeds.
-
-    Args:
-        pages (Iterable[ :obj:`~hikari.embeds.Embed` ]): Pages to navigate through.
-
-    Keyword Args:
-        buttons (Optional[ Iterable[ :obj:`~.utils.nav.NavButton` ] ]): Buttons to
-            use the navigator with. Uses the default buttons if not specified.
-        timeout (:obj:`float`): The navigator timeout in seconds. After the timeout has expired, navigator reactions
-            will no longer work. Defaults to 120 (2 minutes).
-
-    Note:
-        See :obj:`~.utils.nav.StringNavigator` for the default buttons supplied by the navigator.
-    """
-
-    async def _edit_msg(self, message: hikari.Message, page: hikari.Embed) -> hikari.Message:
-        return await message.edit(embed=page)
-
-    async def _send_initial_msg(self, page: hikari.Embed) -> hikari.Message:
-        return await self._context.respond(embed=page)
+StringNavigator = Navigator
+"""Reference to the ``Navigator`` class maintained for backwards compatibility. Scheduled for removal in 1.6"""
+EmbedNavigator = Navigator
+"""Reference to the ``Navigator`` class maintained for backwards compatibility. Scheduled for removal in 1.6"""

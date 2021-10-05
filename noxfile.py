@@ -35,7 +35,7 @@ options.sessions = ["format_fix", "test", "sphinx"]
 def test(session):
     session.install("-r", "test_requirements.txt")
     session.install("-r", "requirements.txt")
-    session.run("python", "-m", "pytest", "tests", "--testdox")
+    session.run("python", "-m", "pytest", "tests")
 
 
 @nox.session()

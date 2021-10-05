@@ -19,6 +19,12 @@ Version 1.4.1
 
 - Change slash command setup logging message level to ``INFO``.
 
+- Change :obj:`lightbulb.utils.nav.Navigator` to work with slash commands.
+
+- Deprecate :obj:`lightbulb.utils.nav.StringNavigator` and :obj:`lightbulb.utils.nav.EmbedNavigator` in favour of :obj:`lightbulb.utils.nav.Navigator`.
+
+- Add :obj:`lightbulb.command_handler.Bot.autodiscover_slash_commands` and :obj:`lightbulb.command_handler.Bot.autoremove_slash_commands`.
+
 Version 1.4.0
 =============
 

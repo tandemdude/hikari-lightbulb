@@ -230,6 +230,8 @@ class Bot(hikari.GatewayBot):
         self._app: typing.Optional[hikari.PartialApplication] = None
 
         self._help_impl = help_class(self)
+        # The extension currently being loaded/unloaded.
+        self._current_extension: typing.Optional[_ExtensionType] = None
 
     @staticmethod
     def print_banner(banner: typing.Optional[str], allow_color: bool, force_color: bool) -> None:
@@ -627,6 +629,7 @@ class Bot(hikari.GatewayBot):
 
         module = importlib.import_module(extension)
         module = typing.cast(_ExtensionType, module)
+        self._current_extension = module
 
         if not hasattr(module, "load"):
             raise errors.ExtensionMissingLoad(text=f"Extension {extension!r} is missing a load function")
@@ -634,6 +637,7 @@ class Bot(hikari.GatewayBot):
             module.load(self)
             self.extensions.append(extension)
             _LOGGER.debug("new extension loaded %r", extension)
+        self._current_extension = None
 
     def unload_extension(self, extension: str) -> None:
         """
@@ -671,6 +675,7 @@ class Bot(hikari.GatewayBot):
 
         module = importlib.import_module(extension)
         module = typing.cast(_ExtensionType, module)
+        self._current_extension = module
 
         if not hasattr(module, "unload"):
             raise errors.ExtensionMissingUnload(text=f"Extension {extension!r} is missing an unload function")
@@ -679,6 +684,7 @@ class Bot(hikari.GatewayBot):
             self.extensions.remove(extension)
             del sys.modules[extension]
             _LOGGER.debug("extension unloaded %r", extension)
+        self._current_extension = None
 
     def reload_extension(self, extension: str) -> None:
         """
@@ -1031,13 +1037,72 @@ class Bot(hikari.GatewayBot):
 
         await self.process_commands_for_event(event)
 
-    def add_slash_command(self, command: typing.Type[slash_commands.BaseSlashCommand], create: bool = False) -> None:
+    def _get_slash_commands_in_current_extension(
+        self,
+    ) -> typing.List[
+        typing.Union[typing.Type[slash_commands.SlashCommand], typing.Type[slash_commands.SlashCommandGroup]]
+    ]:
+        cmds = []
+        for item in dir(self._current_extension):
+            obj = getattr(self._current_extension, item)
+            if inspect.isclass(obj) and issubclass(
+                obj, (slash_commands.SlashCommand, slash_commands.SlashCommandGroup)
+            ):
+                cmds.append(obj)
+        return cmds
+
+    def autodiscover_slash_commands(self, create: bool = False) -> None:
+        """
+        Automatically discovers all slash command classes in the current extension
+        and adds each of them to the bot.
+
+        This should **only** be used in an extension's ``load`` function.
+
+        Args:
+            create (:obj:`bool`): Whether or not to send a create request to discord when the command is added.
+                Defaults to ``False``.
+
+        Returns:
+            ``None``
+        """
+        if self._current_extension is None:
+            return
+
+        for cmd in self._get_slash_commands_in_current_extension():
+            self.add_slash_command(cmd, create=create)
+
+    def autoremove_slash_commands(self, delete: bool = False) -> None:
+        """
+        Automatically discovers all slash command classes in the current extension
+        and removes each of them from the bot.
+
+        This should **only** be used in an extension's ``unload`` function.
+
+        Args:
+            delete (:obj:`bool`): Whether or not to delete the command from discord when it is removed.
+                Defaults to ``False``.
+
+        Returns:
+            ``None``
+        """
+        if self._current_extension is None:
+            return
+
+        for cmd in self._get_slash_commands_in_current_extension():
+            cmd = cmd(self)
+            self.remove_slash_command(cmd.name, delete=delete)
+
+    def add_slash_command(
+        self,
+        command: typing.Union[typing.Type[slash_commands.SlashCommand], typing.Type[slash_commands.SlashCommandGroup]],
+        create: bool = False,
+    ) -> None:
         """
         Registers a slash command with the bot.
 
         Args:
-            command (Type[:obj:`~lightbulb.slash_commands.SlashCommandBase`]): The slash command class to register
-                to the bot. This should **not** be instantiated.
+            command (Union[Type[:obj:`~lightbulb.slash_commands.SlashCommand`], Type[:obj:`~lightbulb.slash_commands.SlashCommandGroup`]]): The
+                slash command class to register to the bot. This should **not** be an instance.
             create (:obj:`bool`): Whether or not to send a create request to discord when the command is added.
                 Defaults to ``False``.
 

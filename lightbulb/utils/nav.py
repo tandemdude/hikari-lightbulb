@@ -168,6 +168,7 @@ class Navigator(typing.Generic[T]):
                 await navigator.run(ctx)
 
     """
+
     def __init__(
         self,
         pages: typing.Union[typing.Iterable[T], typing.Iterator[T]],

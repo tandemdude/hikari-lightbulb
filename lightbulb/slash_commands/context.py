@@ -225,6 +225,7 @@ class SlashCommandContext:
         Returns:
             :obj:`hikari.Message`: The message object for the initial response.
         """
+        return await self._interaction.fetch_initial_response()
 
     @functools.wraps(hikari.CommandInteraction.execute)
     async def followup(self, *args, **kwargs) -> hikari.Message:

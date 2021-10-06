@@ -25,6 +25,7 @@ import functools
 import importlib
 import inspect
 import logging
+import pathlib
 import re
 import sys
 import typing
@@ -608,6 +609,7 @@ class Bot(hikari.GatewayBot):
         Raises:
             :obj:`~.errors.ExtensionAlreadyLoaded`: If the extension has already been loaded.
             :obj:`~.errors.ExtensionMissingLoad`: If the extension to be loaded does not contain a ``load`` function.
+            :obj:`~.errors.ExtensionNotFound`: If the extension to be loaded does not exist.
 
         Example:
             This method is useful when wanting to split your bot up into multiple files.
@@ -627,17 +629,59 @@ class Bot(hikari.GatewayBot):
         if extension in self.extensions:
             raise errors.ExtensionAlreadyLoaded(text=f"Extension {extension!r} is already loaded.")
 
-        module = importlib.import_module(extension)
+        try:
+            module = importlib.import_module(extension)
+        except ModuleNotFoundError:
+            raise errors.ExtensionNotFound(f"No extension by the name {extension!r} was found") from None
+
         module = typing.cast(_ExtensionType, module)
         self._current_extension = module
 
         if not hasattr(module, "load"):
-            raise errors.ExtensionMissingLoad(text=f"Extension {extension!r} is missing a load function")
+            raise errors.ExtensionMissingLoad(f"Extension {extension!r} is missing a load function")
         else:
             module.load(self)
             self.extensions.append(extension)
             _LOGGER.debug("new extension loaded %r", extension)
         self._current_extension = None
+
+    def load_extensions_from(
+        self, path: typing.Union[str, pathlib.Path], *, recursive: bool = False, must_exist: bool = False
+    ) -> None:
+        """
+        Load all external extensions from a given directory. Every extension **must** contain a function ``load``
+        which takes a single argument which will be the bot instance you are loading the extension into.
+
+        Args:
+            path (Union[ :obj:`str`, :obj:`pathlib.Path` ]): The directory to load extensions from.
+
+        Keyword Args:
+            recursive (:obj:`bool`): Whether to search the directory recursively. Defaults to False.
+            must_exist (:obj:`bool`): Whether the directory must exist before extensions can be loaded. If this is
+                False and the directory does not exist, no extensions will be loaded. If this is True, a
+                :obj:`FileNotFoundError` is thrown if the directory does not exist. Defaults to False.
+
+        Returns:
+            ``None``
+
+        Raises:
+            :obj:`~.errors.ExtensionAlreadyLoaded`: If the extension has already been loaded.
+            :obj:`~.errors.ExtensionMissingLoad`: If the extension to be loaded does not contain a ``load`` function.
+            :obj:`~.errors.ExtensionNotFound`: If the extension to be loaded does not exist.
+            :obj:`FileNotFoundError`: If the directory to load extensions from does not exist and ``must_exist``
+                is True.
+        """
+        if isinstance(path, str):
+            path = pathlib.Path(path)
+
+        if not path.is_dir():
+            if must_exist:
+                raise FileNotFoundError(f"{path} is not an existing directory")
+
+            return
+
+        for ext in path.glob(("**/" if recursive else "") + "*.py"):
+            self.load_extension(".".join([*ext.parts[:-1], ext.stem]))
 
     def unload_extension(self, extension: str) -> None:
         """
@@ -686,6 +730,9 @@ class Bot(hikari.GatewayBot):
             _LOGGER.debug("extension unloaded %r", extension)
         self._current_extension = None
 
+    # def unload_extensions_from(self, *names: str) -> None:
+    #     ...
+
     def reload_extension(self, extension: str) -> None:
         """
         Reload a bot extension. This method is atomic and so the bot will
@@ -709,6 +756,9 @@ class Bot(hikari.GatewayBot):
             raise e
         else:
             del old
+
+    # def reload_extensions_from(self, *names: str) -> None:
+    #     ...
 
     def walk_commands(self) -> typing.Generator[commands.Command, None, None]:
         """

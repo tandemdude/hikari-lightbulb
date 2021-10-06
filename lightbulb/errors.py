@@ -84,6 +84,10 @@ class ExtensionMissingUnload(ExtensionError):
     """Exception raised when an extension is attempted to be unloaded but does not contain an unload function"""
 
 
+class ExtensionNotFound(ExtensionError):
+    """Exception raised when an attempt is made to load an extension that does not exist."""
+
+
 class CommandError(LightbulbError):
     """Base exception for errors incurred during handling of commands."""
 

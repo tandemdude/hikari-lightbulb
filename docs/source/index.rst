@@ -54,6 +54,8 @@ look at both Lightbulb and Tanjun before choosing which one you wish to use for 
 
 - `benn#1953 <https://github.com/ben2224>`_
 
+- `Parafoxia#1911 <https://github.com/parafoxia>`_
+
 **Index:**
 
 .. toctree::

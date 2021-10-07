@@ -699,6 +699,7 @@ class Bot(hikari.GatewayBot):
         Raises:
             :obj:`~.errors.ExtensionNotLoaded`: If the extension has not been loaded.
             :obj:`~.errors.ExtensionMissingUnload`: If the extension does not contain an ``unload`` function.
+            :obj:`~.errors.ExtensionNotFound`: If the extension to be unloaded does not exist.
 
         Example:
 
@@ -718,7 +719,11 @@ class Bot(hikari.GatewayBot):
         if extension not in self.extensions:
             raise errors.ExtensionNotLoaded(text=f"Extension {extension!r} is not loaded.")
 
-        module = importlib.import_module(extension)
+        try:
+            module = importlib.import_module(extension)
+        except ModuleNotFoundError:
+            raise errors.ExtensionNotFound(f"No extension by the name {extension!r} was found") from None
+
         module = typing.cast(_ExtensionType, module)
         self._current_extension = module
 
@@ -731,8 +736,41 @@ class Bot(hikari.GatewayBot):
             _LOGGER.debug("extension unloaded %r", extension)
         self._current_extension = None
 
-    # def unload_extensions_from(self, *names: str) -> None:
-    #     ...
+    def unload_extensions(self, *extensions: str) -> None:
+        """
+        Unload multiple external extensions from the bot. This method relies on a function,
+        ``unload`` existing in the extensions to be unloaded which the bot will use to remove all
+        commands and/or plugins from the bot.
+
+        Args:
+            *extensions (:obj:`*str`): The names of the extensions to unload.
+
+        Returns:
+            ``None``
+
+        Raises:
+            :obj:`~.errors.ExtensionNotLoaded`: If the extension has not been loaded.
+            :obj:`~.errors.ExtensionMissingUnload`: If the extension does not contain an ``unload`` function.
+            :obj:`~.errors.ExtensionNotFound`: If the extension to be unloaded does not exist.
+        """
+        for ext in extensions:
+            self.unload_extension(ext)
+
+    def unload_all_extensions(self) -> None:
+        """
+        Unload all external extensions from the bot. This method relies on a function,
+        ``unload`` existing in all extensions which the bot will use to remove all
+        commands and/or plugins from the bot.
+
+        Returns:
+            ``None``
+
+        Raises:
+            :obj:`~.errors.ExtensionNotLoaded`: If the extension has not been loaded.
+            :obj:`~.errors.ExtensionMissingUnload`: If the extension does not contain an ``unload`` function.
+        """
+        for ext in self.extensions:
+            self.unload_extension(ext)
 
     def reload_extension(self, extension: str) -> None:
         """
@@ -758,8 +796,32 @@ class Bot(hikari.GatewayBot):
         else:
             del old
 
-    # def reload_extensions_from(self, *names: str) -> None:
-    #     ...
+    def reload_extensions(self, *extensions: str) -> None:
+        """
+        Reload multiple bot extensions. This method is atomic and so the bot will
+        revert to the previous loaded state if the extensions encounter problems
+        during unloading or loading.
+
+        Args:
+            *extensions (:obj:`*str`): The name of the extension to be reloaded.
+
+        Returns:
+            ``None``
+        """
+        for ext in extensions:
+            self.reload_extension(ext)
+
+    def reload_all_extensions(self) -> None:
+        """
+        Reload all bot extensions. This method is atomic and so the bot will
+        revert to the previous loaded state if the extensions encounter problems
+        during unloading or loading.
+
+        Returns:
+            ``None``
+        """
+        for ext in self.extensions:
+            self.reload_extension(ext)
 
     def walk_commands(self) -> typing.Generator[commands.Command, None, None]:
         """

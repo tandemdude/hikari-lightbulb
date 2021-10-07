@@ -627,7 +627,7 @@ class Bot(hikari.GatewayBot):
                     bot.add_plugin(MyPlugin())
         """
         if extension in self.extensions:
-            raise errors.ExtensionAlreadyLoaded(text=f"Extension {extension!r} is already loaded.")
+            raise errors.ExtensionAlreadyLoaded(f"Extension {extension!r} is already loaded.")
 
         try:
             module = importlib.import_module(extension)
@@ -717,7 +717,7 @@ class Bot(hikari.GatewayBot):
                     bot.remove_plugin("MyPlugin")
         """
         if extension not in self.extensions:
-            raise errors.ExtensionNotLoaded(text=f"Extension {extension!r} is not loaded.")
+            raise errors.ExtensionNotLoaded(f"Extension {extension!r} is not loaded.")
 
         try:
             module = importlib.import_module(extension)
@@ -728,7 +728,7 @@ class Bot(hikari.GatewayBot):
         self._current_extension = module
 
         if not hasattr(module, "unload"):
-            raise errors.ExtensionMissingUnload(text=f"Extension {extension!r} is missing an unload function")
+            raise errors.ExtensionMissingUnload(f"Extension {extension!r} is missing an unload function")
         else:
             module.unload(self)
             self.extensions.remove(extension)

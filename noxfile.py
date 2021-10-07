@@ -55,6 +55,6 @@ def format(session):
 
 @nox.session(reuse_venv=True)
 def sphinx(session):
-    session.install("-U", "sphinx", "sphinx_rtd_theme", "sphinx_rtd_dark_mode")
+    session.install("-Ur", "docs_requirements.txt")
     session.install("-Ur", "requirements.txt")
     session.run("python", "-m", "sphinx.cmd.build", "docs/source", "docs/build", "-b", "html")

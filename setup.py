@@ -54,7 +54,6 @@ def parse_requirements_file(path):
 
 meta = parse_meta()
 
-
 setup(
     name="hikari-lightbulb",
     version=meta.version,

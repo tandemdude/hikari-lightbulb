@@ -9,23 +9,25 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 Version 1.5.0
 =============
 
+- Add support for python `3.10`.
+
 - Add :obj:`lightbulb.slash_commands.SlashCommandContext.fetch_response`.
 
-- Change :obj:`lightbulb.slash_commands.SlashCommandContext.respond` to always return the message object for the response.
-
-- Converters now work if you are using ``from __future__ import annotations``.
+- Add :obj:`lightbulb.command_handler.Bot.autodiscover_slash_commands` and :obj:`lightbulb.command_handler.Bot.autoremove_slash_commands`.
 
 - Add slash command setup error message if it seems like the bot wasn't invited to guilds with the ``application.commands`` scope.
+
+- Add :obj:`lightbulb.command_handler.Bot.load_extensions_from`, :obj:`lightbulb.command_handler.Bot.unload_extensions`, :obj:`lightbulb.command_handler.Bot.unload_all_extensions`, :obj:`lightbulb.command_handler.Bot.reload_extensions`, and :obj:`lightbulb.command_handler.Bot.reload_all_extensions`.
+
+- Change :obj:`lightbulb.slash_commands.SlashCommandContext.respond` to always return the message object for the response.
 
 - Change slash command setup logging message level to ``INFO``.
 
 - Change :obj:`lightbulb.utils.nav.Navigator` to work with slash commands.
 
+- Converters for prefix/message commands now work if you are using ``from __future__ import annotations``.
+
 - Deprecate :obj:`lightbulb.utils.nav.StringNavigator` and :obj:`lightbulb.utils.nav.EmbedNavigator` in favour of :obj:`lightbulb.utils.nav.Navigator`.
-
-- Add :obj:`lightbulb.command_handler.Bot.autodiscover_slash_commands` and :obj:`lightbulb.command_handler.Bot.autoremove_slash_commands`.
-
-- Add :obj:`lightbulb.command_handler.Bot.load_extensions_from`, :obj:`lightbulb.command_handler.Bot.unload_extensions`, :obj:`lightbulb.command_handler.Bot.unload_all_extensions`, :obj:`lightbulb.command_handler.Bot.reload_extensions`, and :obj:`lightbulb.command_handler.Bot.reload_all_extensions`.
 
 Version 1.4.0
 =============

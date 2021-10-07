@@ -649,8 +649,9 @@ class Bot(hikari.GatewayBot):
         self, path: typing.Union[str, pathlib.Path], *, recursive: bool = False, must_exist: bool = False
     ) -> None:
         """
-        Load all external extensions from a given directory. Every extension **must** contain a function ``load``
-        which takes a single argument which will be the bot instance you are loading the extension into.
+        Load all external extensions from a given directory. Files that begin with an underscore ( _ ) are ignored.
+        Every extension **must** contain a function ``load`` which takes a single argument which will be the bot
+        instance you are loading the extension into.
 
         Args:
             path (Union[ :obj:`str`, :obj:`pathlib.Path` ]): The directory to load extensions from.
@@ -680,7 +681,7 @@ class Bot(hikari.GatewayBot):
 
             return
 
-        for ext in path.glob(("**/" if recursive else "") + "*.py"):
+        for ext in path.glob(("**/" if recursive else "") + "[!_]*.py"):
             self.load_extension(".".join([*ext.parts[:-1], ext.stem]))
 
     def unload_extension(self, extension: str) -> None:

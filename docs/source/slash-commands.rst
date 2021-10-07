@@ -211,3 +211,35 @@ Template classes
 .. automodule:: lightbulb.slash_commands
     :members: BaseSlashCommand, WithAsyncCallback, WithGetCommand, WithCreationMethods, WithGetOptions, WithAsOption
     :show-inheritance:
+
+Appendix
+========
+
+The method hikari-lightbulb uses for defining slash commands is very different to the method used to
+define message/prefix commands. If you would prefer to use a similar decorator-chain definition style for
+slash commands then you can use `filament <https://filament.readthedocs.io/en/latest/api-reference.html#module-filament.slash_commands>`_.
+
+A short filament example can be seen below:
+
+.. code-block:: python
+
+    import filament
+    import lightbulb
+
+    bot = lightbulb.Bot(...)
+
+    @filament.with_option(type=str, name="text", description="the text to repeat")
+    @filament.slash_command(description="repeats your input")
+    async def echo(context: lightbulb.SlashCommandContext) -> None:
+        await context.respond(context.options.text)
+
+    bot.add_slash_command(echo)
+    bot.run()
+
+As far as the bot is concerned, filament slash commands are functionally identical to slash commands defined
+through the normal method that hikari-lightbulb provides, so everything you can do with hikari-lightbulb slash
+commands can also be done with filament slash commands.
+
+There is however, one notable exception to this rule in that filament slash commands cannot be detected
+when using :obj:`lightbulb.command_handler.Bot.autodiscover_slash_commands`. If using filament slash commands,
+you should instead use `filament's autodiscovery function <https://filament.readthedocs.io/en/latest/api-reference.html#filament.slash_commands.autodiscover_slash_commands>`_.

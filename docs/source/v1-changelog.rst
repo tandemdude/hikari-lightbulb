@@ -6,7 +6,7 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
-Version 1.4.1
+Version 1.5.0
 =============
 
 - Add :obj:`lightbulb.slash_commands.SlashCommandContext.fetch_response`.
@@ -24,6 +24,8 @@ Version 1.4.1
 - Deprecate :obj:`lightbulb.utils.nav.StringNavigator` and :obj:`lightbulb.utils.nav.EmbedNavigator` in favour of :obj:`lightbulb.utils.nav.Navigator`.
 
 - Add :obj:`lightbulb.command_handler.Bot.autodiscover_slash_commands` and :obj:`lightbulb.command_handler.Bot.autoremove_slash_commands`.
+
+- Add :obj:`lightbulb.command_handler.Bot.load_extensions_from`, :obj:`lightbulb.command_handler.Bot.unload_extensions`, :obj:`lightbulb.command_handler.Bot.unload_all_extensions`, :obj:`lightbulb.command_handler.Bot.reload_extensions`, and :obj:`lightbulb.command_handler.Bot.reload_all_extensions`.
 
 Version 1.4.0
 =============

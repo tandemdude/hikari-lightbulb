@@ -1412,7 +1412,7 @@ class Bot(hikari.GatewayBot):
                         _LOGGER.info("deleting slash command %r from guild %r", cmd.name, str(cmd.guild_id))
                         await cmd.delete()
                     # if our implementation of the slash command doesn't contain an entry for this guild
-                    elif cmd.guild_id not in self._slash_commands[cmd.name].enabled_guilds:
+                    elif cmd.guild_id not in (self._slash_commands[cmd.name].enabled_guilds or []):
                         _LOGGER.info("deleting slash command %r from guild %r", cmd.name, str(cmd.guild_id))
                         await cmd.delete()
                     else:

@@ -170,9 +170,10 @@ class Bot(hikari.GatewayBot):
             with discord. Defaults to ``False``. If this is ``False`` and no prefix is provided then an error will
             be raised. If ``True``, then you do not need to provide a prefix.
         default_enabled_guilds (Union[ :obj:`int`, Iterable[ :obj:`int` ] ]): The IDs of the guilds you want slash
-            commands to be enabled in by default. If this is an empty sequence, commands will be global by default, and
-            you will need to manually specify the guild ID per command to change this. If you only want to enable a
-            single guild, you can pass the ID directly instead of a one-element sequence. Defaults to an empty list.
+            commands to be enabled in by default. If this is an empty sequence or ``None``, commands will be global by
+            default, and you will need to manually specify the guild ID per command to change this. If you only want to
+            enable a single guild, you can pass the ID directly instead of a one-element sequence. Defaults to
+            ``None``.
         **kwargs: Other parameters passed to the :class:`hikari.impl.bot.GatewayBot` constructor.
     """
 
@@ -188,7 +189,7 @@ class Bot(hikari.GatewayBot):
         delete_unbound_slash_commands: bool = True,
         recreate_changed_slash_commands: bool = True,
         slash_commands_only: bool = False,
-        default_enabled_guilds: typing.Union[int, typing.Iterable[int]] = [],
+        default_enabled_guilds: typing.Optional[typing.Union[int, typing.Iterable[int]]] = None,
         **kwargs: hikari.UndefinedType,
     ) -> None:
         super().__init__(token, **kwargs)
@@ -235,7 +236,7 @@ class Bot(hikari.GatewayBot):
 
         if isinstance(default_enabled_guilds, int):
             default_enabled_guilds = (default_enabled_guilds,)
-        self.default_enabled_guilds: typing.Iterable[int] = default_enabled_guilds
+        self.default_enabled_guilds: typing.Iterable[int] = default_enabled_guilds or []
         """An iterable of the enabled guilds to use by default."""
 
         self._app: typing.Optional[hikari.PartialApplication] = None

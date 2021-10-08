@@ -295,8 +295,8 @@ class WithGetOptions(abc.ABC):
     def enabled_guilds(self) -> typing.Optional[typing.Union[hikari.Snowflakeish, hikari.SnowflakeishSequence]]:
         """
         The guilds that the slash command is enabled in. If ``None`` or an empty sequence, the command will be
-        added as a global command. Defaults to :obj:`lightbulb.command_handler.Bot.default_enabled_guilds`, which in
-        itself defaults to an empty list.
+        added as a global command. Defaults to :obj:`lightbulb.command_handler.Bot.default_enabled_guilds`, which is
+        an empty list unless otherwise specified.
 
         Returns:
             Optional[Union[:obj:`hikari.Snowflakeish`, :obj:`hikari.SnowflakeishSequence`]]: Guilds that the command

@@ -181,7 +181,7 @@ class Bot(hikari.GatewayBot):
         self,
         token: str,
         *,
-        prefix: prefix_T = None,
+        prefix: typing.Optional[prefix_T] = None,
         insensitive_commands: bool = False,
         ignore_bots: bool = True,
         owner_ids: typing.Iterable[int] = (),

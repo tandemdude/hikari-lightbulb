@@ -136,7 +136,7 @@ class Option:
     """Whether or not the option is required. If ``None`` then it will be inferred from the attribute's typehint."""
     choices: typing.Optional[typing.Sequence[str, int, float, hikari.Snowflakeish, hikari.CommandChoice]] = None
     """
-    Sequence of the choices for the option. Defaults to ``None``. 
+    Sequence of the choices for the option. Defaults to ``None``.
     If :obj:`hikari.CommandChoice` objects are not provided then one will be built
     from the choice with the name set to the string representation of the value.
     """
@@ -295,14 +295,14 @@ class WithGetOptions(abc.ABC):
     def enabled_guilds(self) -> typing.Optional[typing.Union[hikari.Snowflakeish, hikari.SnowflakeishSequence]]:
         """
         The guilds that the slash command is enabled in. If ``None`` or an empty sequence, the command will be
-        added as a global command. Defaults to an empty list, therefore making the command global unless otherwise
-        specified.
+        added as a global command. Defaults to :obj:`lightbulb.command_handler.Bot.default_enabled_guilds`, which in
+        itself defaults to an empty list.
 
         Returns:
             Optional[Union[:obj:`hikari.Snowflakeish`, :obj:`hikari.SnowflakeishSequence`]]: Guilds that the command
                 is enabled in, or ``None`` or empty sequence if the command is global.
         """
-        return []
+        return self.bot.default_enabled_guilds
 
     @abc.abstractmethod
     def get_options(self) -> typing.Sequence[hikari.CommandOption]:

@@ -134,6 +134,8 @@ class SignatureInspector:
         command (:obj:`~.commands.Command`): The command to inspect the arguments of.
     """
 
+    overriden_ns = {}
+
     def __init__(self, command: Command) -> None:
         self.command = command
         self.has_self = isinstance(command, _BoundCommandMarker)
@@ -177,6 +179,10 @@ class SignatureInspector:
 
         return _Converter(annotation if annotation is not inspect.Parameter.empty else str)
 
+    @staticmethod
+    def get_annotations(callback):
+        return typing.get_type_hints(callback, localns=SignatureInspector.overriden_ns)
+
     def parse_signature(self, callback, signature: inspect.Signature):
         """
         Parse the command's callback signature into a list of the converters used
@@ -190,7 +196,7 @@ class SignatureInspector:
             List of converters for command arguments in the correct order.
         """
         arg_converters = []
-        all_annotations = typing.get_type_hints(callback)
+        all_annotations = self.get_annotations(callback)
 
         for idx, param in enumerate(signature.parameters.values()):
             if idx == 0 or (idx == 1 and self.has_self):
@@ -743,5 +749,14 @@ def group(**kwargs):
             insensitive_commands=kwargs.get("insensitive_commands", False),
             inherit_checks=kwargs.get("inherit_checks", True),
         )
+
+    return decorate
+
+
+def typing_override(ns: typing.Dict[str, typing.Any]):
+    SignatureInspector.overriden_ns.update(ns)
+
+    def decorate(cmd: Command) -> Command:
+        return cmd
 
     return decorate

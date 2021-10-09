@@ -245,6 +245,8 @@ class Bot(hikari.GatewayBot):
         # The extension currently being loaded/unloaded.
         self._current_extension: typing.Optional[_ExtensionType] = None
 
+        commands.typing_override({"context_": context_})
+
     @staticmethod
     def print_banner(banner: typing.Optional[str], allow_color: bool, force_color: bool) -> None:
         ux.print_banner(banner, allow_color, force_color)

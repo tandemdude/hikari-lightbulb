@@ -120,7 +120,7 @@ async def filter_commands(
 
 
 @commands.command(name="help")
-async def _help_cmd(ctx) -> None:
+async def _help_cmd(ctx: context_.Context) -> None:
     """
     Displays help for the bot, a command, or a category.
 

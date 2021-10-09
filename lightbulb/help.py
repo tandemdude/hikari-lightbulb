@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © Thomm.o 2021
+# Copyright © tandemdude 2020-present
 #
 # This file is part of Lightbulb.
 #
@@ -120,7 +120,7 @@ async def filter_commands(
 
 
 @commands.command(name="help")
-async def _help_cmd(ctx: context_.Context) -> None:
+async def _help_cmd(ctx) -> None:
     """
     Displays help for the bot, a command, or a category.
 

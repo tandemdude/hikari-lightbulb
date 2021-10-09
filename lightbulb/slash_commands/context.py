@@ -164,7 +164,7 @@ class SlashCommandContext:
 
     @property
     def resolved(self) -> typing.Optional[hikari.ResolvedOptionData]:
-        """Mappings of the objects resolved for the provided command options."""
+        """Optional[:obj:`hikari.ResolvedOptionData`] objects resolved for the provided command options."""
         return self._interaction.resolved
 
     async def respond(

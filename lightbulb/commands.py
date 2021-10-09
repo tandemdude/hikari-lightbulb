@@ -23,6 +23,7 @@ __all__: typing.Final[typing.List[str]] = [
     "Group",
     "command",
     "group",
+    "typing_override",
 ]
 
 import datetime
@@ -754,9 +755,19 @@ def group(**kwargs):
 
 
 def typing_override(ns: typing.Dict[str, typing.Any]):
+    """
+    Add additional assistance to :obj:`typing.get_type_hints` for when command signatures cannot be
+    resolved correctly. This can be called as a function or used as a decorator.
+
+    Most users should never run into this problem.
+
+    Args:
+        ns (Dict[:obj:`str`, :obj:`typing.Any`): Dictionary of string annotation name/symbol to the object
+            that the annotation should be resolved into.
+    """
     SignatureInspector.overriden_ns.update(ns)
 
-    def decorate(cmd: Command) -> Command:
-        return cmd
+    def decorate(obj: T) -> T:
+        return obj
 
     return decorate

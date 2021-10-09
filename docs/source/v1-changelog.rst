@@ -17,6 +17,8 @@ Version 1.5.1
 
 - Add :obj:`lightbulb.command_handler.Bot.default_enabled_guilds`.
 
+- Add :obj:`lightbulb.commands.typing_override`.
+
 Version 1.5.0
 =============
 

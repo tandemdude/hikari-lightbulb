@@ -54,6 +54,7 @@ along with the converters they 'replace' can be seen below:
 - :obj:`hikari.Invite` (:obj:`~.invite_converter`)
 - :obj:`hikari.Colour` (:obj:`~.colour_converter`)
 - :obj:`hikari.Color` (:obj:`~.color_converter`)
+- :obj:`datetime.datetime` (:obj:`~.timestamp_converter`)
 
 
 .. warning:: For the supplied converters, some functionality will not be possible depending on the intents and/or
@@ -76,13 +77,14 @@ __all__: typing.Final[typing.List[str]] = [
     "invite_converter",
     "colour_converter",
     "color_converter",
+    "timestamp_converter",
     "Greedy",
 ]
 
 import collections
+import datetime
 import re
 import typing
-import warnings
 
 import hikari
 
@@ -98,6 +100,7 @@ USER_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<@!?(\d+)>")
 CHANNEL_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<#(\d+)>")
 ROLE_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<@&(\d+)>")
 EMOJI_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<a?:\w+:(\d+)>")
+TIMESTAMP_MENTION_REGEX: typing.Final[typing.Pattern] = re.compile(r"<t:(\d+)(?::[tTdDfFR])?>")
 
 
 class WrappedArg(collections.UserString):
@@ -424,6 +427,25 @@ async def colour_converter(arg: WrappedArg) -> hikari.Colour:
 async def color_converter(arg: WrappedArg) -> hikari.Color:
     """Alias for :obj:`~colour_converter`"""
     return await colour_converter(arg)
+
+
+async def timestamp_converter(arg: WrappedArg) -> datetime.datetime:
+    """
+    Converter to transform a command argument into a :obj:`datetime.datetime` object.
+
+    Args:
+        arg (:obj:`WrappedArg`): Argument to transform.
+
+    Returns:
+        :obj:`datetime.datetime`: The datetime object resolved from the argument.
+
+    Raises:
+        :obj:`~.errors.ConverterFailure`: If the argument could not be resolved into a datetime object.
+    """
+    timestamp = None
+    if match := TIMESTAMP_MENTION_REGEX.match(arg.data):
+        timestamp = match.group(1)
+    return datetime.datetime.fromtimestamp(int(timestamp), datetime.timezone.utc)
 
 
 class Greedy(typing.Generic[T]):

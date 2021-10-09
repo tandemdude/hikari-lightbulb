@@ -25,6 +25,7 @@ __all__: typing.Final[typing.List[str]] = [
     "group",
 ]
 
+import datetime
 import functools
 import inspect
 import logging
@@ -69,6 +70,7 @@ _CONVERTER_CLASS_MAPPING = {
     hikari.Invite: converters.invite_converter,
     hikari.Colour: converters.colour_converter,
     hikari.Color: converters.colour_converter,
+    datetime.datetime: converters.timestamp_converter,
 }
 
 

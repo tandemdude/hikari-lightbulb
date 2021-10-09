@@ -6,6 +6,17 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 1.5.1
+=============
+
+- Fix annotations bug preventing invocation of the default help command.
+
+- Fix bug if slash command ``enabled_guilds`` is set to ``None``
+
+- Add :obj:`lightbulb.converters.timestamp_converter` for converting timestamp mentions into datetime objects.
+
+- Add :obj:`lightbulb.command_handler.Bot.default_enabled_guilds`.
+
 Version 1.5.0
 =============
 

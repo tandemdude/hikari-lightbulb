@@ -21,7 +21,7 @@ __all__: typing.List[str] = [
     "StringNavigator",
     "EmbedNavigator",
     "ReactionNavigator",
-    "ButtonNavigator"
+    "ButtonNavigator",
     "NavButton",
     "next_page",
     "prev_page",
@@ -34,7 +34,6 @@ import asyncio
 import typing
 
 import hikari
-
 from hikari.messages import ButtonStyle
 
 from lightbulb import context as context_
@@ -56,7 +55,9 @@ class NavButton:
     def __init__(
         self,
         emoji: typing.Union[str, hikari.Emoji],
-        callback: typing.Callable[[ReactionNavigator, hikari.ReactionAddEvent], typing.Coroutine[typing.Any, typing.Any, None]],
+        callback: typing.Callable[
+            [ReactionNavigator, hikari.ReactionAddEvent], typing.Coroutine[typing.Any, typing.Any, None]
+        ],
     ) -> None:
         if isinstance(emoji, str):
             emoji = hikari.Emoji.parse(emoji)
@@ -77,7 +78,9 @@ class NavButton:
             return event.emoji_id == self.emoji.id
         return event.emoji_name == self.emoji.name
 
-    def press(self, nav: ReactionNavigator, event: hikari.ReactionAddEvent) -> typing.Coroutine[typing.Any, typing.Any, None]:
+    def press(
+        self, nav: ReactionNavigator, event: hikari.ReactionAddEvent
+    ) -> typing.Coroutine[typing.Any, typing.Any, None]:
         """
         Call the button's callback coroutine and return the awaitable.
 
@@ -315,6 +318,7 @@ class ButtonNavigator(typing.Generic[T]):
                 await navigator.run(ctx)
 
     """
+
     def __init__(
         self,
         pages: typing.Union[typing.Iterable[T], typing.Iterator[T]],
@@ -337,26 +341,19 @@ class ButtonNavigator(typing.Generic[T]):
         message = await self._ctx.respond(page, component=self.buttons)
         return message or await self._ctx.interaction.fetch_initial_response()
 
-
     async def update_message(self, inter: hikari.ComponentInteraction, page: typing.Union[str, hikari.Embed]) -> None:
         self.buttons = await self.build_buttons(disabled=True if self._msg == None else False)
         try:
-            await inter.create_initial_response(
-                hikari.ResponseType.MESSAGE_UPDATE,
-                page,
-                component=self.buttons
-            )
+            await inter.create_initial_response(hikari.ResponseType.MESSAGE_UPDATE, page, component=self.buttons)
         except hikari.NotFoundError:
-            await inter.edit_initial_response(
-                page,
-                component=self.buttons
-            )
+            await inter.edit_initial_response(page, component=self.buttons)
 
-
-    async def build_buttons(self, disabled: typing.Optional[bool] = False) -> typing.Union[hikari.api.special_endpoints.ActionRowBuilder, hikari.UNDEFINED]:
+    async def build_buttons(
+        self, disabled: typing.Optional[bool] = False
+    ) -> typing.Union[hikari.api.special_endpoints.ActionRowBuilder, hikari.UNDEFINED]:
         if len(self.pages) > 1:
             buttons = self._ctx.bot.rest.build_action_row()
-            
+
             fp = buttons.add_button(ButtonStyle.PRIMARY, "first_page").set_emoji("⏮️")
             if self.current_page_index == 0 or disabled:
                 fp.set_is_disabled(True)
@@ -387,7 +384,6 @@ class ButtonNavigator(typing.Generic[T]):
             # No buttons for a single page navigator
             return hikari.UNDEFINED
 
-
     async def _process_button_click(self, inter: hikari.ComponentInteraction) -> None:
         cid = inter.custom_id
         if cid == "first_page":
@@ -402,7 +398,6 @@ class ButtonNavigator(typing.Generic[T]):
             await last_page(self, inter)
 
         await self.update_message(inter, self.pages[self.current_page_index])
-
 
     async def run(self, ctx: typing.Union[context_.Context, slash_commands.SlashCommandContext]) -> None:
         """
@@ -430,11 +425,6 @@ class ButtonNavigator(typing.Generic[T]):
 
         if self._msg is not None:
             if isinstance(self._ctx, slash_commands.SlashCommandContext):
-                await self._ctx.edit_response(
-                    component=await self.build_buttons(disabled=True)
-                )
+                await self._ctx.edit_response(component=await self.build_buttons(disabled=True))
             elif isinstance(self._ctx, context_.Context):
-                await self._msg.edit(
-                    component=await self.build_buttons(disabled=True)
-                )
-                
+                await self._msg.edit(component=await self.build_buttons(disabled=True))

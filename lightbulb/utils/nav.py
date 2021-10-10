@@ -22,6 +22,8 @@ __all__: typing.List[str] = [
     "EmbedNavigator",
     "ReactionNavigator",
     "ButtonNavigator",
+    "ReactionButton",
+    "ComponentButton",
     "NavButton",
     "next_page",
     "prev_page",
@@ -34,15 +36,16 @@ import asyncio
 import typing
 
 import hikari
+from hikari.api.special_endpoints import ActionRowBuilder
 from hikari.messages import ButtonStyle
 
 from lightbulb import context as context_
 from lightbulb import slash_commands
 
 
-class NavButton:
+class ReactionButton:
     """
-    A navigator button. Contains the emoji linked to the button as well as
+    A reaction-based navigator button. Contains the emoji linked to the button as well as
     the coroutine to be called when the button is pressed.
 
     Args:
@@ -80,6 +83,78 @@ class NavButton:
 
     def press(
         self, nav: ReactionNavigator, event: hikari.ReactionAddEvent
+    ) -> typing.Coroutine[typing.Any, typing.Any, None]:
+        """
+        Call the button's callback coroutine and return the awaitable.
+
+        Returns:
+            Coroutine[``None``, Any, ``None``]: Returned awaitable from the coroutine call.
+        """
+        return self.callback(nav, event)
+
+
+class ComponentButton:
+    """
+    A component-based navigator button. Contains the custom_id linked to the button as well as
+    the coroutine to be called when the button is pressed.
+
+    Args:
+        label (:obj:`str`): The label of the button.
+        label_is_emoji (:obj:`bool`): Whether the label is an emoji or not. This affects whether ``set_label`` or
+            ``set_emoji`` is called when building the button.
+        style (:obj:`hikari.ButtonStyle`): The style of the button.
+        custom_id (:obj:`str`): The custom ID of the button.
+        callback: The coroutine function to be called on button press.
+    """
+
+    __slots__ = ("custom_id", "callback", "label", "style", "label_is_emoji")
+
+    def __init__(
+        self,
+        label: str,
+        label_is_emoji: bool,
+        style: ButtonStyle,
+        custom_id: str,
+        callback: typing.Callable[
+            [ButtonNavigator, hikari.InteractionCreateEvent], typing.Coroutine[typing.Any, typing.Any, None]
+        ],
+    ) -> None:
+        self.label = label
+        self.label_is_emoji = label_is_emoji
+        self.style = style
+        self.custom_id = custom_id
+        self.callback = callback
+
+    def build(self, container: ActionRowBuilder, disabled: bool = False) -> None:
+        """
+        Build and add the button to the given container.
+
+        Args:
+            container (:obj:`hikari.api.special_endpoints.ActionRowBuilder`): The container to add the button to.
+            disabled (:obj:`bool`): Whether or not to display the button as disabled.
+
+        Returns:
+            ``None``
+        """
+        btn = container.add_button(self.style, self.custom_id)
+        btn.set_is_disabled(disabled)
+        getattr(btn, f"set_{'emoji' if self.label_is_emoji else 'label'}")(self.label)
+        btn.add_to_container()
+
+    def is_pressed(self, event: hikari.InteractionCreateEvent) -> bool:
+        """
+        Check if the button is pressed in a given event.
+
+        Args:
+            event (:obj:`~hikari.InteractionCreateEvent`): The event to check the button is pressed in.
+
+        Returns:
+            :obj:`bool`: Whether or not the button is pressed in the given event.
+        """
+        return event.interaction.custom_id == self.custom_id
+
+    def press(
+        self, nav: ButtonNavigator, event: hikari.InteractionCreateEvent
     ) -> typing.Coroutine[typing.Any, typing.Any, None]:
         """
         Call the button's callback coroutine and return the awaitable.
@@ -128,9 +203,8 @@ async def stop(nav: typing.Union[ReactionNavigator, ButtonNavigator], _) -> None
     """
     :obj:`NavButton` callback to make the navigator stop navigation.
     """
-    if isinstance(_, hikari.ReactionAddEvent):
-        nav._msg.app.unsubscribe(hikari.ReactionAddEvent, nav._process_reaction_add)
-        await nav._msg.delete()
+    await nav._remove_listener()
+    await nav._msg.delete()
     nav._msg = None
 
 
@@ -219,11 +293,7 @@ class ReactionNavigator(typing.Generic[T]):
         return buttons
 
     async def _process_reaction_add(self, event: hikari.ReactionAddEvent) -> None:
-        if (
-            event.user_id != self._context.author.id
-            or event.channel_id != self._context.channel_id
-            or event.message_id != self._msg.id
-        ):
+        if event.user_id != self._context.author.id or event.message_id != self._msg.id:
             return
 
         for button in self.buttons:
@@ -237,7 +307,7 @@ class ReactionNavigator(typing.Generic[T]):
                         pass
                 break
 
-    async def _remove_reaction_listener(self):
+    async def _remove_listener(self):
         self._context.bot.unsubscribe(hikari.ReactionAddEvent, self._process_reaction_add)
         try:
             await self._msg.remove_all_reactions()
@@ -247,7 +317,7 @@ class ReactionNavigator(typing.Generic[T]):
     async def _timeout_coro(self):
         try:
             await asyncio.sleep(self._timeout)
-            await self._remove_reaction_listener()
+            await self._remove_listener()
         except asyncio.CancelledError:
             pass
 
@@ -285,12 +355,6 @@ class ReactionNavigator(typing.Generic[T]):
         self._timeout_task = asyncio.create_task(self._timeout_coro())
 
 
-StringNavigator = ReactionNavigator
-"""Reference to the ``Navigator`` class maintained for backwards compatibility. Scheduled for removal in 1.6"""
-EmbedNavigator = ReactionNavigator
-"""Reference to the ``Navigator`` class maintained for backwards compatibility. Scheduled for removal in 1.6"""
-
-
 class ButtonNavigator(typing.Generic[T]):
     """
     A button navigator system for navigating through a list of items that can be sent through the
@@ -300,6 +364,8 @@ class ButtonNavigator(typing.Generic[T]):
         pages (Sequence[T]): Pages to navigate through.
 
     Keyword Args:
+        buttons (Sequence[:obj:`~ComponentButton`]): Buttons to
+            use the navigator with. Uses the default buttons if not specified.
         timeout (:obj:`float`): The navigator timeout in seconds. After the timeout has expired, navigator buttons
             are disabled and will no longer work. Defaults to 120 (2 minutes).
 
@@ -323,83 +389,110 @@ class ButtonNavigator(typing.Generic[T]):
         self,
         pages: typing.Union[typing.Iterable[T], typing.Iterator[T]],
         *,
+        buttons: typing.Optional[typing.Sequence[ComponentButton]] = None,
         timeout: float = 120,
     ) -> None:
         if not pages:
             raise ValueError("You cannot pass fewer than 1 page to the navigator.")
         self.pages: typing.Sequence[T] = tuple(pages)
 
-        self.buttons = None
+        if len(self.pages) == 1 and not buttons:
+            self.buttons = [
+                ComponentButton(
+                    "\N{BLACK SQUARE FOR STOP}\N{VARIATION SELECTOR-16}", True, ButtonStyle.DANGER, "stop", stop
+                )
+            ]
+        else:
+            self.buttons = buttons if buttons is not None else self.create_default_buttons()
 
         self._timeout: float = timeout
         self.current_page_index: int = 0
-        self._ctx: typing.Optional[typing.Union[context_.Context, slash_commands.SlashCommandContext]] = None
+        self._context: typing.Optional[typing.Union[context_.Context, slash_commands.SlashCommandContext]] = None
         self._msg: typing.Optional[hikari.Message] = None
+        self._timeout_task = None
 
-    async def _send_initial_msg(self, page: typing.Union[str, hikari.Embed]) -> hikari.Message:
-        self.buttons = await self.build_buttons()
-        message = await self._ctx.respond(page, component=self.buttons)
-        return message or await self._ctx.interaction.fetch_initial_response()
+    async def _send_initial_msg(self, page: T) -> hikari.Message:
+        buttons = await self.build_buttons()
+        message = await self._context.respond(page, component=buttons)
+        return message
 
-    async def update_message(self, inter: hikari.ComponentInteraction, page: typing.Union[str, hikari.Embed]) -> None:
-        self.buttons = await self.build_buttons(disabled=True if self._msg == None else False)
+    async def _edit_msg(self, inter: hikari.ComponentInteraction, page: T) -> None:
+        buttons = await self.build_buttons(disabled=True if self._msg is None else False)
         try:
-            await inter.create_initial_response(hikari.ResponseType.MESSAGE_UPDATE, page, component=self.buttons)
+            await inter.create_initial_response(hikari.ResponseType.MESSAGE_UPDATE, page, component=buttons)
         except hikari.NotFoundError:
-            await inter.edit_initial_response(page, component=self.buttons)
+            await inter.edit_initial_response(page, component=buttons)
+
+    def create_default_buttons(self) -> typing.Sequence[ComponentButton]:
+        buttons = (
+            ComponentButton(
+                "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
+                True,
+                ButtonStyle.PRIMARY,
+                "first_page",
+                first_page,
+            ),
+            ComponentButton(
+                "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
+                True,
+                ButtonStyle.PRIMARY,
+                "prev_page",
+                prev_page,
+            ),
+            ComponentButton(
+                "\N{BLACK SQUARE FOR STOP}\N{VARIATION SELECTOR-16}", True, ButtonStyle.DANGER, "stop", stop
+            ),
+            ComponentButton(
+                "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
+                True,
+                ButtonStyle.PRIMARY,
+                "next_page",
+                next_page,
+            ),
+            ComponentButton(
+                "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
+                True,
+                ButtonStyle.PRIMARY,
+                "last_page",
+                last_page,
+            ),
+        )
+        return buttons
 
     async def build_buttons(
         self, disabled: typing.Optional[bool] = False
-    ) -> typing.Union[hikari.api.special_endpoints.ActionRowBuilder, hikari.UNDEFINED]:
-        if len(self.pages) > 1:
-            buttons = self._ctx.bot.rest.build_action_row()
+    ) -> typing.Union[ActionRowBuilder, hikari.UNDEFINED]:
+        buttons = self._context.bot.rest.build_action_row()
+        for button in self.buttons:
+            button.build(buttons, disabled)
+        return buttons
 
-            fp = buttons.add_button(ButtonStyle.PRIMARY, "first_page").set_emoji("⏮️")
-            if self.current_page_index == 0 or disabled:
-                fp.set_is_disabled(True)
-            fp.add_to_container()
+    async def _process_interaction_create(self, event: hikari.InteractionCreateEvent):
+        if not isinstance(event.interaction, hikari.ComponentInteraction):
+            return
 
-            pp = buttons.add_button(ButtonStyle.PRIMARY, "prev_page").set_emoji("◀️")
-            if self.current_page_index == 0 or disabled:
-                pp.set_is_disabled(True)
-            pp.add_to_container()
+        if event.interaction.message.id != self._msg.id or event.interaction.user.id != self._context.author.id:
+            return
 
-            stop = buttons.add_button(ButtonStyle.DANGER, "stop").set_emoji("✖️")
-            if disabled:
-                stop.set_is_disabled(True)
-            stop.add_to_container()
+        for button in self.buttons:
+            if button.is_pressed(event):
+                await button.press(self, event)
+                if self._msg is not None:
+                    await self._edit_msg(event.interaction, self.pages[self.current_page_index])
+                break
 
-            np = buttons.add_button(ButtonStyle.PRIMARY, "next_page").set_emoji("▶️")
-            if self.current_page_index == len(self.pages) - 1 or disabled:
-                np.set_is_disabled(True)
-            np.add_to_container()
+    async def _remove_listener(self):
+        self._context.bot.unsubscribe(hikari.InteractionCreateEvent, self._process_interaction_create)
+        await self._msg.edit(component=await self.build_buttons(True))
 
-            lp = buttons.add_button(ButtonStyle.PRIMARY, "last_page").set_emoji("⏭️")
-            if self.current_page_index == len(self.pages) - 1 or disabled:
-                lp.set_is_disabled(True)
-            lp.add_to_container()
+    async def _timeout_coro(self):
+        try:
+            await asyncio.sleep(self._timeout)
+            await self._remove_listener()
+        except asyncio.CancelledError:
+            pass
 
-            return buttons
-        else:
-            # No buttons for a single page navigator
-            return hikari.UNDEFINED
-
-    async def _process_button_click(self, inter: hikari.ComponentInteraction) -> None:
-        cid = inter.custom_id
-        if cid == "first_page":
-            await first_page(self, inter)
-        elif cid == "prev_page":
-            await prev_page(self, inter)
-        elif cid == "stop":
-            await stop(self, inter)
-        elif cid == "next_page":
-            await next_page(self, inter)
-        elif cid == "last_page":
-            await last_page(self, inter)
-
-        await self.update_message(inter, self.pages[self.current_page_index])
-
-    async def run(self, ctx: typing.Union[context_.Context, slash_commands.SlashCommandContext]) -> None:
+    async def run(self, context: typing.Union[context_.Context, slash_commands.SlashCommandContext]) -> None:
         """
         Run the navigator under the given context.
 
@@ -410,21 +503,18 @@ class ButtonNavigator(typing.Generic[T]):
         Returns:
             ``None``
         """
-        self._ctx = ctx
+        self._context = context
+        context.bot.subscribe(hikari.InteractionCreateEvent, self._process_interaction_create)
         self._msg = await self._send_initial_msg(self.pages[self.current_page_index])
 
-        async with ctx.bot.stream(hikari.InteractionCreateEvent, self._timeout).filter(
-            lambda e: (
-                isinstance(e.interaction, hikari.ComponentInteraction)
-                and e.interaction.user == ctx.author
-                and e.interaction.message == self._msg
-            )
-        ) as stream:
-            async for event in stream:
-                await self._process_button_click(event.interaction)
+        if self._timeout_task is not None:
+            self._timeout_task.cancel()
+        self._timeout_task = asyncio.create_task(self._timeout_coro())
 
-        if self._msg is not None:
-            if isinstance(self._ctx, slash_commands.SlashCommandContext):
-                await self._ctx.edit_response(component=await self.build_buttons(disabled=True))
-            elif isinstance(self._ctx, context_.Context):
-                await self._msg.edit(component=await self.build_buttons(disabled=True))
+
+StringNavigator = ReactionNavigator
+"""Reference to the ``ReactionNavigator`` class maintained for backwards compatibility. Scheduled for removal in 1.6"""
+EmbedNavigator = ReactionNavigator
+"""Reference to the ``ReactionNavigator`` class maintained for backwards compatibility. Scheduled for removal in 1.6"""
+NavButton = ReactionButton
+"""Reference to the ``ReactionButton`` class maintained for backwards compatibility. Scheduled for removal in 1.6"""

@@ -15,18 +15,25 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-
 import inspect
 import typing
 
 from lightbulb.utils import nav
 from lightbulb.utils import pag
+from lightbulb.utils import permissions
 from lightbulb.utils import search
 from lightbulb.utils.nav import *
 from lightbulb.utils.pag import *
+from lightbulb.utils.permissions import *
 from lightbulb.utils.search import *
 
-__all__: typing.Final[typing.List[str]] = [*nav.__all__, *pag.__all__, *search.__all__, "maybe_await"]
+__all__: typing.Final[typing.List[str]] = [
+    *nav.__all__,
+    *pag.__all__,
+    *search.__all__,
+    *permissions.__all__,
+    "maybe_await",
+]
 
 
 async def maybe_await(callable_, *args, **kwargs):

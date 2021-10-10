@@ -6,6 +6,21 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 1.5.2
+=============
+
+- Add :obj:`lightbulb.utils.nav.ButtonNavigator`.
+
+- Add :obj:`lightbulb.utils.nav.ComponentButton`.
+
+- Add :obj:`lightbulb.utils.permissions.permissions_for`.
+
+- Add :obj:`lightbulb.utils.permissions.permissions_in`.
+
+- Rename ``lightbulb.utils.nav.Navigator`` to :obj:`lightbulb.utils.nav.ReactionNavigator`.
+
+- Rename ``lightbulb.utils.nav.NavButton`` to :obj:`lightbulb.utils.nav.ReactionButton`.
+
 Version 1.5.1
 =============
 

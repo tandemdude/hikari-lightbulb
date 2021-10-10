@@ -26,4 +26,4 @@ Miscellaneous
 =============
 
 .. automodule:: lightbulb.utils
-    :members: get, find
+    :members: get, find, permissions_in, permissions_for

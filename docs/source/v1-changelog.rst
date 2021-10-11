@@ -21,6 +21,8 @@ Version 1.5.2
 
 - Rename ``lightbulb.utils.nav.NavButton`` to :obj:`lightbulb.utils.nav.ReactionButton`.
 
+- Implement cooldowns for slash commands. See :obj:`lightbulb.slash_commands.WithChecks.cooldown_manager`
+
 Version 1.5.1
 =============
 

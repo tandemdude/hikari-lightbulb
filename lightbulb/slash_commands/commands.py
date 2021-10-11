@@ -38,10 +38,10 @@ import functools
 import inspect
 import logging
 import typing
-import warnings
 
 import hikari
 
+from lightbulb import cooldowns
 from lightbulb import errors
 
 if typing.TYPE_CHECKING:
@@ -261,6 +261,10 @@ class WithChecks(abc.ABC):
 
         return True
 
+    async def evaluate_cooldowns(self, context: context_.SlashCommandContext):
+        if self.cooldown_manager is not None:
+            await self.cooldown_manager.add_cooldown(context)
+
     @property
     def checks(self) -> typing.Sequence[checks_.Check]:
         """
@@ -271,6 +275,26 @@ class WithChecks(abc.ABC):
             Sequence[:obj:`~lightbulb.checks.Check`]: Checks to run before command invocation.
         """
         return []
+
+    @property
+    def cooldown_manager(self) -> typing.Optional[cooldowns.CooldownManager]:
+        """
+        The cooldown manager to use for this slash command.
+
+        Returns:
+            Optional[:obj:`~lightbulb.cooldowns.CooldownManager`]: Cooldown manager to use, or ``None``
+                if this slash command has no cooldown.
+
+        Example:
+
+            .. code-block:: python
+
+                # Static cooldown
+                cooldown_manager = lightbulb.CooldownManager(5, 1, lightbulb.UserBucket)
+                # Dynamic cooldown
+                cooldown_manager = lightbulb.CooldownManager(callback=some_function_that_returns_a_Bucket)
+        """
+        return None
 
 
 class WithAsOption(abc.ABC):
@@ -429,6 +453,7 @@ class SlashCommand(
 
     async def __call__(self, *args, **kwargs):
         await self.evaluate_checks(*args, **kwargs)
+        await self.evaluate_cooldowns(*args, **kwargs)
         return await self.callback(*args, **kwargs)
 
     @functools.lru_cache
@@ -609,6 +634,7 @@ class SlashSubCommand(BaseSlashCommand, WithAsOption, WithAsyncCallback, WithChe
 
     async def __call__(self, *args, **kwargs):
         await self.evaluate_checks(*args, **kwargs)
+        await self.evaluate_cooldowns(*args, **kwargs)
         return await self.callback(*args, **kwargs)
 
     @functools.lru_cache

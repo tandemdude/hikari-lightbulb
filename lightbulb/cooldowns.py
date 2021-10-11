@@ -41,6 +41,7 @@ from lightbulb import utils
 if typing.TYPE_CHECKING:
     from lightbulb import commands
     from lightbulb import context as context_
+    from lightbulb.slash_commands import context as slash_context
 
 
 class CooldownStatus(int, enums.Enum):
@@ -78,12 +79,15 @@ class Bucket(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def extract_hash(cls, context: context_.Context) -> typing.Hashable:
+    def extract_hash(
+        cls, context: typing.Union[context_.Context, slash_context.SlashCommandContext]
+    ) -> typing.Hashable:
         """
         Extracts the hash from the context which links a command usage to a single cooldown bucket.
 
         Args:
-            context (:obj:`~.context.Context`): The context the command was invoked under.
+            context (Union[:obj:`~.context.Context`, :obj:`~.slash_commands.SlashCommandContext]): The context the
+                command was invoked under.
 
         Returns:
             :obj:`typing.Hashable`: Hashable object linking the context to a cooldown bucket.
@@ -134,7 +138,9 @@ class GlobalBucket(Bucket):
     __slots__ = ()
 
     @classmethod
-    def extract_hash(cls, context: context_.Context) -> typing.Hashable:
+    def extract_hash(
+        cls, context: typing.Union[context_.Context, slash_context.SlashCommandContext]
+    ) -> typing.Hashable:
         return 0
 
 
@@ -146,7 +152,9 @@ class UserBucket(Bucket):
     __slots__ = ()
 
     @classmethod
-    def extract_hash(cls, context: context_.Context) -> typing.Hashable:
+    def extract_hash(
+        cls, context: typing.Union[context_.Context, slash_context.SlashCommandContext]
+    ) -> typing.Hashable:
         return context.author.id
 
 
@@ -158,7 +166,9 @@ class ChannelBucket(Bucket):
     __slots__ = ()
 
     @classmethod
-    def extract_hash(cls, context: context_.Context) -> typing.Hashable:
+    def extract_hash(
+        cls, context: typing.Union[context_.Context, slash_context.SlashCommandContext]
+    ) -> typing.Hashable:
         return context.channel_id
 
 
@@ -172,7 +182,9 @@ class GuildBucket(Bucket):
     __slots__ = ()
 
     @classmethod
-    def extract_hash(cls, context: context_.Context) -> typing.Hashable:
+    def extract_hash(
+        cls, context: typing.Union[context_.Context, slash_context.SlashCommandContext]
+    ) -> typing.Hashable:
         return context.guild_id if context.guild_id is not None else context.channel_id
 
 
@@ -191,7 +203,9 @@ class CooldownManager:
         ...
 
     @typing.overload
-    def __init__(self, *, callback: typing.Callable[[context_.Context], Bucket]) -> None:
+    def __init__(
+        self, *, callback: typing.Callable[[typing.Union[context_.Context, slash_context.SlashCommandContext]], Bucket]
+    ) -> None:
         ...
 
     def __init__(
@@ -200,7 +214,9 @@ class CooldownManager:
         usages: typing.Optional[int] = None,
         bucket: typing.Optional[typing.Type[Bucket]] = None,
         *,
-        callback: typing.Optional[typing.Callable[[context_.Context], Bucket]] = None,
+        callback: typing.Optional[
+            typing.Callable[[typing.Union[context_.Context, slash_context.SlashCommandContext]], Bucket]
+        ] = None,
     ) -> None:
         if callback is not None:
             self.callback = callback
@@ -213,7 +229,7 @@ class CooldownManager:
         self.cooldowns: typing.MutableMapping[typing.Hashable, Bucket] = {}
         """Mapping of a hashable to a :obj:`~Bucket` representing the currently stored cooldowns."""
 
-    async def _get_bucket(self, context: context_.Context) -> Bucket:
+    async def _get_bucket(self, context: typing.Union[context_.Context, slash_context.SlashCommandContext]) -> Bucket:
         if not hasattr(self, "callback"):
             return self.bucket(self.length, self.usages)
 
@@ -224,13 +240,14 @@ class CooldownManager:
 
         return bucket
 
-    async def add_cooldown(self, context: context_.Context) -> None:
+    async def add_cooldown(self, context: typing.Union[context_.Context, slash_context.SlashCommandContext]) -> None:
         """
         Add a cooldown under the given context. If an expired bucket already exists then it
         will be overwritten.
 
         Args:
-            context (:obj:`~.context.Context`): The context to add a cooldown under.
+            context (Union[:obj:`~.context.Context`, :obj:`~.slash_commands.SlashCommandContext]): The context to
+                add a cooldown under.
 
         Returns:
             ``None``
@@ -253,12 +270,13 @@ class CooldownManager:
         self.cooldowns[cooldown_hash] = bucket
         self.cooldowns[cooldown_hash].acquire()
 
-    def reset_cooldown(self, context: context_.Context) -> None:
+    def reset_cooldown(self, context: typing.Union[context_.Context, slash_context.SlashCommandContext]) -> None:
         """
         Reset the cooldown under the given context.
 
         Args:
-            context (:obj:`~.context.Context`): The context to reset the cooldown under.
+            context (Union[:obj:`~.context.Context`, :obj:`~.slash_commands.SlashCommandContext]): The context to reset
+                the cooldown under.
 
         Returns:
             ``None``

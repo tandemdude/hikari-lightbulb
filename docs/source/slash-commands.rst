@@ -27,8 +27,6 @@ Your first slash command can be written very easily:
 
     # Import the command handler
     import lightbulb
-    # Import the slash_commands submodule
-    from lightbulb import slash_commands
 
     # Instantiate a Bot instance
     bot = lightbulb.Bot(token="your_token_here", prefix="your_prefix_here")
@@ -36,10 +34,10 @@ Your first slash command can be written very easily:
 
     # Create a custom slash command class and implement
     # the abstract methods
-    class Echo(slash_commands.SlashCommand):
+    class Echo(lightbulb.SlashCommand):
         description = "Repeats your input."
         # Options
-        text: str = slash_commands.Option("Text to repeat")
+        text: str = lightbulb.Option("Text to repeat")
 
         async def callback(self, context):
             await context.respond(context.options.text)
@@ -71,22 +69,20 @@ slash command group:
 
     # Import the command handler
     import lightbulb
-    # Import the slash_commands submodule
-    from lightbulb import slash_commands
 
     # Instantiate a Bot instance
     bot = lightbulb.Bot(token="your_token_here", prefix="your_prefix_here")
 
 
-    class Foo(slash_commands.SlashCommandGroup):
+    class Foo(lightbulb.SlashCommandGroup):
         description = "Test slash command group."
 
 
     @Foo.subcommand()
-    class Bar(slash_commands.SlashSubCommand):
+    class Bar(lightbulb.SlashSubCommand):
         description = "Test subcommand."
         # Options
-        baz: str = slash_commands.Option("Test subcommand option.")
+        baz: str = lightbulb.Option("Test subcommand option.")
 
         async def callback(self, context):
             await context.respond(context.options.baz)
@@ -109,24 +105,22 @@ as you may refer to the previous sections for more details.
 
     # Import the command handler
     import lightbulb
-    # Import the slash_commands submodule
-    from lightbulb import slash_commands
 
     # Instantiate a Bot instance
     bot = lightbulb.Bot(token="your_token_here", prefix="your_prefix_here")
 
 
-    class Foo(slash_commands.SlashCommandGroup):
+    class Foo(lightbulb.SlashCommandGroup):
         ...
 
 
     @Foo.subgroup()
-    class Bar(slash_commands.SlashSubGroup):
+    class Bar(lightbulb.SlashSubGroup):
         description = "Test subgroup."
 
 
     @Bar.subcommand()
-    class Baz(slash_commands.SlashSubCommand):
+    class Baz(lightbulb.SlashSubCommand):
         ...
 
 
@@ -156,7 +150,7 @@ Permitted types:
 - ``bool`` (:obj:`hikari.OptionType.BOOLEAN`)
 - ``float`` (:obj:`hikari.OptionType.FLOAT`)
 - ``hikari.User`` (:obj:`hikari.OptionType.USER`)
-- ``hikari.TextableChannel`` (:obj:`hikari.OptionType.TextableChannel`)
+- ``hikari.TextableChannel`` (:obj:`hikari.OptionType.CHANNEL`)
 - ``hikari.Role`` (:obj:`hikari.OptionType.ROLE`)
 - ``hikari.Snowflake`` (:obj:`hikari.OptionType.MENTIONABLE`)
 
@@ -175,9 +169,8 @@ a sequence of :obj:`~lightbulb.checks.Check` objects defined in the slash comman
 ::
 
     import lightbulb
-    from lightbulb import slash_commands
 
-    class OwnerOnlySlashCommand(slash_commands.SlashCommand):
+    class OwnerOnlySlashCommand(lightbulb.SlashCommand):
         name = "foo"
         description = "bar"
         # Defining the list of checks
@@ -189,6 +182,24 @@ a sequence of :obj:`~lightbulb.checks.Check` objects defined in the slash comman
             lightbulb.owner_only,  # built-in check
             lightbulb.Check(some_check_function),  # custom check
         ]
+
+----
+
+Slash Command Cooldowns
+=======================
+
+It is very easy to implement cooldowns for your slash commands. All you need to do is assign a cooldown manager
+to the class variable ``cooldown_manager``. All of lightbulb's built-in cooldown buckets work with slash commands.
+::
+
+    import lightbulb
+
+    class Foo(lightbulb.SlashCommand):
+        ...
+        # Static cooldown
+        cooldown_manager = lightbulb.CooldownManager(5, 1, lightbulb.UserBucket)
+        # Dynamic cooldown
+    cooldown_manager = lightbulb.CooldownManager(callback=some_function_that_returns_a_Bucket)
 
 ----
 

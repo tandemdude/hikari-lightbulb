@@ -1352,7 +1352,7 @@ class Bot(hikari.GatewayBot):
         try:
             await command(context)
         except Exception as ex:
-            if not isinstance(ex, errors.CheckFailure):
+            if not isinstance(ex, (errors.CheckFailure, errors.CommandIsOnCooldown)):
                 ex = errors.CommandInvocationError(f"{type(ex).__name__}: {ex}", ex)
 
             error_event = events.SlashCommandErrorEvent(app=self, exception=ex, context=context, command=command)

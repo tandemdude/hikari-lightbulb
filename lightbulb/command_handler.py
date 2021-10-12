@@ -252,6 +252,11 @@ class Bot(hikari.GatewayBot):
             sys.stdout.write("Thank you for using lightbulb!\n")
 
     @property
+    def app(self) -> typing.Optional[hikari.PartialApplication]:
+        """The application instance for the bot. Will be ``None`` unless the bot is running."""
+        return self._app
+
+    @property
     def help_command(self) -> help_.HelpCommand:
         """The instance of the help class used by the bot."""
         return self._help_impl

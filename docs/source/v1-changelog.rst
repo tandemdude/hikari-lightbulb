@@ -17,6 +17,8 @@ Version 1.5.2
 
 - Add :obj:`lightbulb.utils.permissions.permissions_in`.
 
+- Add :obj:`lightbulb.command_handler.Bot.app`.
+
 - Rename ``lightbulb.utils.nav.Navigator`` to :obj:`lightbulb.utils.nav.ReactionNavigator`.
 
 - Rename ``lightbulb.utils.nav.NavButton`` to :obj:`lightbulb.utils.nav.ReactionButton`.

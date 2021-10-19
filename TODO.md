@@ -1,6 +1,12 @@
 # TODO
 
+## Main
+
 - [ ] Custom Bot Class
+  - [ ] Bot Checks
+  - [x] Multiple Owners
+  - [x] Get prefix function (sync or async)
+  - [ ] Regex prefix?
 
 - [ ] Plugins
   - [ ] Support Prefix Commands
@@ -16,6 +22,8 @@
     - [ ] ~~Autocomplete~~ (blocked)
   - [ ] ~~Message Commands~~ (blocked)
   - [ ] ~~User Commands~~ (blocked)
+  - [ ] Per-Command Error Handler
+  - [ ] Auto-managing of Application Commands
   
 - [ ] Checks (Reuse?)
   - [ ] DM Only
@@ -69,6 +77,7 @@
 - [ ] Parsing
   - [ ] Standard Parser
   - [ ] CLI Parser
+  - [ ] Custom Parsing
 
 - [ ] Help Command
 
@@ -81,3 +90,12 @@
   - [ ] find
   - [ ] permissions_in
   - [ ] permissions_for
+
+## Other
+
+- [ ] Paginated/Navigated Help Command
+- [ ] Embed Help Command
+- [ ] Default Ephemeral Flags
+- [ ] Reinvoke on edits
+- [ ] Default allowed mentions
+- [ ] Broadcast typing on command invocation

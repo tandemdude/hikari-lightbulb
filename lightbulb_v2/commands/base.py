@@ -69,6 +69,10 @@ class Command(abc.ABC):
     async def __call__(self, context: context_.base.Context) -> None:
         return await self.callback(context)
 
+    @property
+    def qualname(self) -> str:
+        return self.name
+
     @abc.abstractmethod
     def signature(self) -> str:
         ...

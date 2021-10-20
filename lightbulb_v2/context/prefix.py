@@ -15,10 +15,77 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 __all__ = ["PrefixContext"]
+
+import typing as t
+
+import hikari
 
 from lightbulb_v2.context import base
 
+if t.TYPE_CHECKING:
+    from lightbulb_v2 import app as app_
+    from lightbulb_v2 import commands
+
 
 class PrefixContext(base.Context):
-    pass
+    def __init__(
+        self,
+        app: app_.BotApp,
+        event: hikari.MessageCreateEvent,
+        command: commands.prefix.PrefixCommand,
+        invoked_with: str,
+        prefix: str,
+    ):
+        self._app = app
+        self._event = event
+        self._command = command
+        self._invoked_with = invoked_with
+        self._prefix = prefix
+        self._options: t.Dict[str, t.Any] = {}
+
+    @property
+    def raw_options(self) -> t.Dict[str, t.Any]:
+        return self._options
+
+    @property
+    def options(self) -> base.OptionsProxy:
+        return base.OptionsProxy(self.raw_options)
+
+    @property
+    def app(self) -> app_.BotApp:
+        return self.app
+
+    @property
+    def channel_id(self) -> hikari.Snowflakeish:
+        return self._event.message.channel_id
+
+    @property
+    def guild_id(self) -> t.Optional[hikari.Snowflakeish]:
+        return self._event.message.guild_id
+
+    @property
+    def member(self) -> t.Optional[hikari.Member]:
+        return self._event.message.member
+
+    @property
+    def author(self) -> hikari.User:
+        return self._event.message.author
+
+    @property
+    def invoked_with(self) -> str:
+        return self._invoked_with
+
+    @property
+    def command(self) -> commands.prefix.PrefixCommand:
+        return self._command
+
+    def get_channel(self) -> t.Optional[t.Union[hikari.GuildChannel, hikari.Snowflake]]:
+        if self.guild_id is not None:
+            return self.app.cache.get_guild_channel(self.channel_id)
+        return self.app.cache.get_dm_channel_id(self.author.id)
+
+    async def respond(self, *args: t.Any, **kwargs: t.Any) -> hikari.Message:
+        return await self._event.message.respond(*args, **kwargs)

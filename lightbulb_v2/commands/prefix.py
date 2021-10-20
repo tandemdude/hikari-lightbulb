@@ -21,4 +21,8 @@ from lightbulb_v2.commands import base
 
 
 class PrefixCommand(base.Command):
-    pass
+    def signature(self) -> str:
+        sig = self.qualname
+        if self.options:
+            sig += f" {' '.join(f'<{o.name}>' if o.required else f'[{o.name}]' for o in self.options.values())}"
+        return sig

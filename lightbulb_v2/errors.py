@@ -15,7 +15,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-__all__ = ["LightbulbError", "CheckFailure"]
+__all__ = ["LightbulbError", "CheckFailure", "CommandNotFound"]
+
+import typing as t
 
 
 class LightbulbError(Exception):
@@ -24,3 +26,9 @@ class LightbulbError(Exception):
 
 class CheckFailure(LightbulbError):
     pass
+
+
+class CommandNotFound(LightbulbError):
+    def __init__(self, *args: t.Any, invoked_with: str):
+        super().__init__(*args)
+        self.invoked_with = invoked_with

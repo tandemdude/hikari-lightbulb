@@ -17,7 +17,7 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__ = ["Context"]
+__all__ = ["Context", "OptionsProxy"]
 
 import abc
 import typing as t
@@ -29,9 +29,15 @@ if t.TYPE_CHECKING:
     from lightbulb_v2 import commands
 
 
-class Context(abc.ABC):
-    __slots__ = ()
+class OptionsProxy:
+    def __init__(self, options: t.Dict[str, t.Any]) -> None:
+        self._options = options
 
+    def __getattr__(self, item: str) -> t.Any:
+        return self._options.get(item)
+
+
+class Context(abc.ABC):
     @property
     @abc.abstractmethod
     def app(self) -> app.BotApp:
@@ -49,7 +55,7 @@ class Context(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def member(self) -> hikari.Member:
+    def member(self) -> t.Optional[hikari.Member]:
         ...
 
     @property
@@ -63,7 +69,7 @@ class Context(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def command_name(self) -> str:
+    def invoked_with(self) -> str:
         ...
 
     @property
@@ -72,7 +78,7 @@ class Context(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def get_channel(self) -> t.Optional[hikari.TextableChannel]:
+    def get_channel(self) -> t.Optional[t.Union[hikari.GuildChannel, hikari.Snowflake]]:
         ...
 
     def get_guild(self) -> t.Optional[hikari.Guild]:

@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 __all__ = ["Context"]
 
 import abc
@@ -24,53 +26,54 @@ import hikari
 
 if t.TYPE_CHECKING:
     from lightbulb_v2 import app
+    from lightbulb_v2 import commands
 
 
 class Context(abc.ABC):
     __slots__ = ()
 
-    @abc.abstractmethod
     @property
+    @abc.abstractmethod
     def app(self) -> app.BotApp:
-        pass
+        ...
 
-    @abc.abstractmethod
     @property
+    @abc.abstractmethod
     def channel_id(self) -> hikari.Snowflakeish:
-        pass
+        ...
 
-    @abc.abstractmethod
     @property
+    @abc.abstractmethod
     def guild_id(self) -> t.Optional[hikari.Snowflakeish]:
-        pass
+        ...
 
-    @abc.abstractmethod
     @property
+    @abc.abstractmethod
     def member(self) -> hikari.Member:
-        pass
+        ...
 
-    @abc.abstractmethod
     @property
+    @abc.abstractmethod
     def author(self) -> hikari.User:
-        pass
+        ...
 
     @property
     def user(self) -> hikari.User:
         return self.author
 
-    @abc.abstractmethod
     @property
+    @abc.abstractmethod
     def command_name(self) -> str:
-        pass
+        ...
 
-    @abc.abstractmethod
     @property
-    def command(self) -> hikari.UndefinedType:  # TODO
-        pass
+    @abc.abstractmethod
+    def command(self) -> commands.base.Command:
+        ...
 
     @abc.abstractmethod
     def get_channel(self) -> t.Optional[hikari.TextableChannel]:
-        pass
+        ...
 
     def get_guild(self) -> t.Optional[hikari.Guild]:
         if self.guild_id is None:
@@ -79,4 +82,4 @@ class Context(abc.ABC):
 
     @abc.abstractmethod
     async def respond(self, *args: t.Any, **kwargs: t.Any) -> hikari.Message:
-        pass
+        ...

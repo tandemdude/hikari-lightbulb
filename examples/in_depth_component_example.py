@@ -18,16 +18,16 @@
 import typing
 
 import hikari
-import lightbulb
 from hikari.impl import ActionRowBuilder
 
+import lightbulb
 
 ########################################################################
 # Helper functions and data.
 ########################################################################
 
 # Mapping of color names to hex literal and a fact about the color.
-COLORS: typing.Mapping[str, typing.Tuple[int, str]]  = {
+COLORS: typing.Mapping[str, typing.Tuple[int, str]] = {
     "Red": (
         0xFF0000,
         "Due to it's long wavelength, red is the first color a baby sees!",
@@ -40,10 +40,7 @@ COLORS: typing.Mapping[str, typing.Tuple[int, str]]  = {
         0x0000FF,
         "Globally, blue is the most common favorite color!",
     ),
-    "Orange": (
-        0xFFA500,
-        "The color orange is named after its fruity counterpart, the orange!"
-    ),
+    "Orange": (0xFFA500, "The color orange is named after its fruity counterpart, the orange!"),
     "Purple": (
         0xA020F0,
         "Purple is the hardest color for human eyes to distinguish!",
@@ -52,14 +49,8 @@ COLORS: typing.Mapping[str, typing.Tuple[int, str]]  = {
         0xFFFF00,
         "Taxi's and school buses are yellow because it's so easy to see!",
     ),
-    "Black": (
-        0x000000,
-        "Black is a color which results from the absence of visible light!"
-    ),
-    "White": (
-        0xFFFFFF,
-        "White objects fully reflect and scatter all visible light!"
-    ),
+    "Black": (0x000000, "Black is a color which results from the absence of visible light!"),
+    "White": (0xFFFFFF, "White objects fully reflect and scatter all visible light!"),
 }
 
 
@@ -239,7 +230,7 @@ class Rgb(lightbulb.slash_commands.SlashCommand):
             ctx.author,
             # Because we dont have the initial response message yet,
             # we fetch it here in order to pass it to the function.
-            await ctx.interaction.fetch_initial_response()
+            await ctx.interaction.fetch_initial_response(),
         )
 
 

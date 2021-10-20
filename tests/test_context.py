@@ -15,14 +15,16 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-import mock
-import pytest
 import datetime
 
-from hikari import messages, guilds
+import mock
+import pytest
+from hikari import guilds
+from hikari import messages
+
 from lightbulb import Bot
-from lightbulb import context
 from lightbulb import commands
+from lightbulb import context
 
 
 @pytest.fixture()

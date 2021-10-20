@@ -27,8 +27,8 @@ import typing as t
 import hikari
 
 from lightbulb_v2 import checks
-from lightbulb_v2 import plugins
 from lightbulb_v2 import commands
+from lightbulb_v2 import plugins
 
 _PrefixT = t.Union[
     t.Sequence[str],
@@ -36,7 +36,9 @@ _PrefixT = t.Union[
 ]
 
 
-def when_mentioned_or(prefix_provider: _PrefixT) -> t.Callable[[BotApp, hikari.Message], t.Coroutine[t.Any, t.Any, t.Sequence[str]]]:
+def when_mentioned_or(
+    prefix_provider: _PrefixT,
+) -> t.Callable[[BotApp, hikari.Message], t.Coroutine[t.Any, t.Any, t.Sequence[str]]]:
     async def get_prefixes(bot: BotApp, message: hikari.Message) -> t.Sequence[str]:
         me = bot.get_me()
         assert me is not None
@@ -55,6 +57,7 @@ def when_mentioned_or(prefix_provider: _PrefixT) -> t.Callable[[BotApp, hikari.M
         elif isinstance(prefixes, t.Sequence):
             return mentions + list(prefixes)
         return mentions
+
     return get_prefixes
 
 
@@ -65,13 +68,13 @@ def _default_get_prefix(_: BotApp, __: hikari.Message, *, prefixes: t.Sequence[s
 
 class BotApp(hikari.GatewayBot):
     def __init__(
-            self,
-            token: str,
-            prefix: t.Optional[_PrefixT] = None,
-            ignore_bots: bool = True,
-            owner_ids: t.Sequence[int] = (),
-            application_commands_only: bool = False,
-            **kwargs: t.Any,
+        self,
+        token: str,
+        prefix: t.Optional[_PrefixT] = None,
+        ignore_bots: bool = True,
+        owner_ids: t.Sequence[int] = (),
+        application_commands_only: bool = False,
+        **kwargs: t.Any,
     ) -> None:
         super().__init__(token, **kwargs)
 

@@ -17,8 +17,8 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 import pytest
 
-from lightbulb import stringview
 from lightbulb import errors
+from lightbulb import stringview
 
 
 def test_stringview_splits_normal_args():

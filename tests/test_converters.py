@@ -1,7 +1,9 @@
 import typing
 
 import pytest
-from lightbulb import commands, converters
+
+from lightbulb import commands
+from lightbulb import converters
 
 
 def assert_converters_recursively(

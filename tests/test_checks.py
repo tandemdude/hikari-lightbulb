@@ -17,14 +17,14 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 import mock
 import pytest
-from hikari import messages
-from hikari import Permissions
 from hikari import Intents
+from hikari import Permissions
+from hikari import messages
 
-from lightbulb import checks
-from lightbulb import context
-from lightbulb import commands
 from lightbulb import Bot
+from lightbulb import checks
+from lightbulb import commands
+from lightbulb import context
 from lightbulb import errors
 
 

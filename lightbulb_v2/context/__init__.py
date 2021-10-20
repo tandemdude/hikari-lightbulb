@@ -26,6 +26,4 @@ from lightbulb_v2.context.prefix import *
 from lightbulb_v2.context.slash import *
 from lightbulb_v2.context.user import *
 
-__all__ = [
-    *base.__all__, *message.__all__, *prefix.__all__, *slash.__all__, *user.__all__
-]
+__all__ = [*base.__all__, *message.__all__, *prefix.__all__, *slash.__all__, *user.__all__]

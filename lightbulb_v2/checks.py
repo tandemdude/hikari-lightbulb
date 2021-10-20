@@ -17,30 +17,38 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 __all__ = ["Check"]
 
+import functools
 import typing as t
 
 from lightbulb_v2 import context as context_
 
 T = t.TypeVar("T")
-_CallbackT = t.Callable[[context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]]
+_CallbackT = t.Union[
+    t.Callable[[context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]], functools.partial
+]
 
 
 class Check:
     __slots__ = ("prefix_callback", "slash_callback", "message_callback", "user_callback", "add_to_object_hook")
 
     def __init__(
-            self,
-            p_callback: _CallbackT,
-            s_callback: t.Optional[_CallbackT] = None,
-            m_callback: t.Optional[_CallbackT] = None,
-            u_callback: t.Optional[_CallbackT] = None,
-            add_hook: t.Optional[t.Callable[[T], T]] = None
+        self,
+        p_callback: _CallbackT,
+        s_callback: t.Optional[_CallbackT] = None,
+        m_callback: t.Optional[_CallbackT] = None,
+        u_callback: t.Optional[_CallbackT] = None,
+        add_hook: t.Optional[t.Callable[[T], T]] = None,
     ) -> None:
         self.prefix_callback = p_callback
         self.slash_callback = s_callback or p_callback
         self.message_callback = m_callback or p_callback
         self.user_callback = u_callback or p_callback
         self.add_to_object_hook = add_hook or (lambda o: o)
+
+    def __name__(self) -> str:
+        if isinstance(self.prefix_callback, functools.partial):
+            return self.prefix_callback.func.__name__
+        return self.prefix_callback.__name__
 
     def __call__(self, context: context_.base.Context) -> t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]:
         if isinstance(context, context_.prefix.PrefixContext):

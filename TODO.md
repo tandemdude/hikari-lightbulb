@@ -15,6 +15,8 @@
   - [ ] Support User Commands
 
 - [ ] Commands
+  - [x] Base Command
+  - [x] Base Application Command (needs creation methods)
   - [ ] Prefix Commands
   - [ ] Slash Commands
     - [ ] Option Types 
@@ -88,8 +90,8 @@
 - [ ] Utils (Reuse?)
   - [ ] get
   - [ ] find
-  - [ ] permissions_in
-  - [ ] permissions_for
+  - [x] permissions_in
+  - [x] permissions_for
 
 ## Other
 

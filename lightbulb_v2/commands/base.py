@@ -17,7 +17,7 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__ = ["OptionLike", "CommandLike", "Command"]
+__all__ = ["OptionLike", "CommandLike", "Command", "ApplicationCommand"]
 
 import abc
 import dataclasses
@@ -29,6 +29,7 @@ import hikari
 from lightbulb_v2 import errors
 
 if t.TYPE_CHECKING:
+    from lightbulb_v2 import app as app_
     from lightbulb_v2 import checks
     from lightbulb_v2 import context as context_
 
@@ -54,10 +55,12 @@ class CommandLike:
     cooldown_manager: t.Optional[...] = None  # TODO
     error_handler: t.Optional[t.Callable[[context_.base.Context], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]] = None
     aliases: t.Sequence[str] = dataclasses.field(default_factory=list)
+    guilds: t.Sequence[int] = dataclasses.field(default_factory=list)
 
 
 class Command(abc.ABC):
-    def __init__(self, initialiser: CommandLike) -> None:
+    def __init__(self, app: app_.BotApp, initialiser: CommandLike) -> None:
+        self.app = app
         self.callback = initialiser.callback
         self.name = initialiser.name
         self.description = initialiser.description
@@ -73,6 +76,7 @@ class Command(abc.ABC):
     def qualname(self) -> str:
         return self.name
 
+    @property
     @abc.abstractmethod
     def signature(self) -> str:
         ...
@@ -107,4 +111,40 @@ class Command(abc.ABC):
 
     async def evaluate_cooldowns(self, context: context_.base.Context) -> None:
         if self.cooldown_manager is not None:
-            pass
+            pass  # TODO
+
+
+class ApplicationCommand(Command):
+    def __init__(self, app: app_.BotApp, initialiser: CommandLike) -> None:
+        super().__init__(app, initialiser)
+        self.guilds = initialiser.guilds
+        self.instances: t.Dict[t.Union[int, None], hikari.Command] = {}
+
+    @property
+    def signature(self) -> str:
+        sig = f"/{self.qualname}"
+        if self.options:
+            sig += f" {' '.join(f'<{o.name}>' if o.required else f'[{o.name}]' for o in self.options.values())}"
+        return sig
+
+    async def create(self, guild: t.Optional[int] = None) -> hikari.Command:
+        assert self.app.application is not None
+        args, kwargs = self.as_create_args()
+        kwargs.update({"guild": guild} if guild is not None else {})
+        created_cmd = await self.app.rest.create_application_command(
+            self.app.application,
+            *args,
+            **kwargs,
+        )
+        self.instances[guild] = created_cmd
+        return created_cmd
+
+    async def delete(self, guild: t.Optional[int]) -> None:
+        assert self.app.application is not None
+        await self.app.rest.delete_application_command(
+            self.app.application, self.instances.pop(guild), **({"guild": guild} if guild is not None else {})
+        )
+
+    @abc.abstractmethod
+    def as_create_args(self) -> t.Tuple[t.Tuple[str, str], t.Dict[str, t.Any]]:
+        ...

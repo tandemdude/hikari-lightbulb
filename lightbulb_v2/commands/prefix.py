@@ -21,6 +21,7 @@ from lightbulb_v2.commands import base
 
 
 class PrefixCommand(base.Command):
+    @property
     def signature(self) -> str:
         sig = self.qualname
         if self.options:

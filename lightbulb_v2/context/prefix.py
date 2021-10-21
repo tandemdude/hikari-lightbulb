@@ -19,6 +19,7 @@ from __future__ import annotations
 
 __all__ = ["PrefixContext"]
 
+import typing
 import typing as t
 
 import hikari
@@ -38,13 +39,17 @@ class PrefixContext(base.Context):
         command: commands.prefix.PrefixCommand,
         invoked_with: str,
         prefix: str,
-    ):
-        self._app = app
+    ) -> None:
+        super().__init__(app)
         self._event = event
         self._command = command
         self._invoked_with = invoked_with
         self._prefix = prefix
         self._options: t.Dict[str, t.Any] = {}
+
+    @property
+    def event(self) -> hikari.MessageCreateEvent:
+        return self._event
 
     @property
     def raw_options(self) -> t.Dict[str, t.Any]:
@@ -55,24 +60,20 @@ class PrefixContext(base.Context):
         return base.OptionsProxy(self.raw_options)
 
     @property
-    def app(self) -> app_.BotApp:
-        return self.app
-
-    @property
     def channel_id(self) -> hikari.Snowflakeish:
-        return self._event.message.channel_id
+        return self.event.message.channel_id
 
     @property
     def guild_id(self) -> t.Optional[hikari.Snowflakeish]:
-        return self._event.message.guild_id
+        return self.event.message.guild_id
 
     @property
     def member(self) -> t.Optional[hikari.Member]:
-        return self._event.message.member
+        return self.event.message.member
 
     @property
     def author(self) -> hikari.User:
-        return self._event.message.author
+        return self.event.message.author
 
     @property
     def invoked_with(self) -> str:
@@ -88,4 +89,4 @@ class PrefixContext(base.Context):
         return self.app.cache.get_dm_channel_id(self.author.id)
 
     async def respond(self, *args: t.Any, **kwargs: t.Any) -> hikari.Message:
-        return await self._event.message.respond(*args, **kwargs)
+        return await self.event.message.respond(*args, **kwargs)

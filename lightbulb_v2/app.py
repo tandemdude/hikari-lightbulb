@@ -79,6 +79,8 @@ class BotApp(hikari.GatewayBot):
     ) -> None:
         super().__init__(token, **kwargs)
 
+        self.application: t.Optional[hikari.PartialApplication] = None
+
         if prefix is None and not application_commands_only:
             raise TypeError("'application_commands_only' is False but no prefix was provided.")
 
@@ -111,7 +113,7 @@ class BotApp(hikari.GatewayBot):
     def add_command(self, command: commands.base.CommandLike) -> None:
         commands_to_impl: t.Sequence[t.Type[commands.base.Command]] = getattr(command.callback, "__cmd_types__", [])
         for command_cls in commands_to_impl:
-            cmd = command_cls(command)
+            cmd = command_cls(self, command)
             if isinstance(cmd, commands.prefix.PrefixCommand):
                 self._prefix_commands[cmd.name] = cmd
             elif isinstance(cmd, commands.slash.SlashCommand):

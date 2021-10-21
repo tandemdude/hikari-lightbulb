@@ -17,8 +17,12 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 __all__ = ["MessageCommand"]
 
+import typing as t
+
 from lightbulb_v2.commands import base
 
 
-class MessageCommand(base.Command):
-    pass
+class MessageCommand(base.ApplicationCommand):
+    def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.options = {}

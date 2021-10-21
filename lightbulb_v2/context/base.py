@@ -25,7 +25,7 @@ import typing as t
 import hikari
 
 if t.TYPE_CHECKING:
-    from lightbulb_v2 import app
+    from lightbulb_v2 import app as app_
     from lightbulb_v2 import commands
 
 
@@ -38,9 +38,16 @@ class OptionsProxy:
 
 
 class Context(abc.ABC):
+    def __init__(self, app: app_.BotApp):
+        self._app = app
+
+    @property
+    def app(self) -> app_.BotApp:
+        return self._app
+
     @property
     @abc.abstractmethod
-    def app(self) -> app.BotApp:
+    def event(self) -> t.Union[hikari.MessageCreateEvent, hikari.InteractionCreateEvent]:
         ...
 
     @property

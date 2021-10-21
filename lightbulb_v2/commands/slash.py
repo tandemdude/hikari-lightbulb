@@ -20,5 +20,5 @@ __all__ = ["SlashCommand"]
 from lightbulb_v2.commands import base
 
 
-class SlashCommand(base.Command):
+class SlashCommand(base.ApplicationCommand):
     pass

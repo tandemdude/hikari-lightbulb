@@ -114,6 +114,10 @@ class BotApp(hikari.GatewayBot):
         commands_to_impl: t.Sequence[t.Type[commands.base.Command]] = getattr(command.callback, "__cmd_types__", [])
         for command_cls in commands_to_impl:
             cmd = command_cls(self, command)
+
+            if cmd.is_subcommand:
+                continue
+
             if isinstance(cmd, commands.prefix.PrefixCommand):
                 self._prefix_commands[cmd.name] = cmd
             elif isinstance(cmd, commands.slash.SlashCommand):

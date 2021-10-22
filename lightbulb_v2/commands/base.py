@@ -58,14 +58,14 @@ class CommandLike:
     guilds: t.Sequence[int] = dataclasses.field(default_factory=list)
     subcommands: t.List[CommandLike] = dataclasses.field(default_factory=list)
 
-    def child(self, cmdlike: t.Optional[CommandLike] = None) -> t.Union[CommandLike, t.Callable[[CommandLike], CommandLike]]:
-        if cmdlike is not None:
-            self.subcommands.append(cmdlike)
-            return cmdlike
+    def child(self, cmd_like: t.Optional[CommandLike] = None) -> t.Union[CommandLike, t.Callable[[CommandLike], CommandLike]]:
+        if cmd_like is not None:
+            self.subcommands.append(cmd_like)
+            return cmd_like
 
-        def decorate(cmdlike: CommandLike) -> CommandLike:
-            self.subcommands.append(cmdlike)
-            return cmdlike
+        def decorate(cmd_like_: CommandLike) -> CommandLike:
+            self.subcommands.append(cmd_like_)
+            return cmd_like_
         return decorate
 
 
@@ -79,9 +79,14 @@ class Command(abc.ABC):
         self.checks = initialiser.checks
         self.cooldown_manager = initialiser.cooldown_manager
         self.error_handler = initialiser.error_handler
+        self.parent = None
 
     async def __call__(self, context: context_.base.Context) -> None:
         return await self.callback(context)
+
+    @property
+    def is_subcommand(self) -> bool:
+        return self.parent is not None
 
     @property
     def qualname(self) -> str:
@@ -152,9 +157,10 @@ class ApplicationCommand(Command):
 
     async def delete(self, guild: t.Optional[int]) -> None:
         assert self.app.application is not None
-        await self.app.rest.delete_application_command(
-            self.app.application, self.instances.pop(guild), **({"guild": guild} if guild is not None else {})
-        )
+        cmd = self.instances.pop(guild, None)
+        if cmd is None:
+            return
+        await cmd.delete()
 
     @abc.abstractmethod
     def as_create_args(self) -> t.Tuple[t.Tuple[str, str], t.Dict[str, t.Any]]:

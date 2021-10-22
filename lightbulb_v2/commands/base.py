@@ -56,6 +56,17 @@ class CommandLike:
     error_handler: t.Optional[t.Callable[[context_.base.Context], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]] = None
     aliases: t.Sequence[str] = dataclasses.field(default_factory=list)
     guilds: t.Sequence[int] = dataclasses.field(default_factory=list)
+    subcommands: t.List[CommandLike] = dataclasses.field(default_factory=list)
+
+    def child(self, cmdlike: t.Optional[CommandLike] = None) -> t.Union[CommandLike, t.Callable[[CommandLike], CommandLike]]:
+        if cmdlike is not None:
+            self.subcommands.append(cmdlike)
+            return cmdlike
+
+        def decorate(cmdlike: CommandLike) -> CommandLike:
+            self.subcommands.append(cmdlike)
+            return cmdlike
+        return decorate
 
 
 class Command(abc.ABC):

@@ -117,7 +117,7 @@ class Parser(BaseParser):
             arg = await self._convert(raw, option.arg_type)
         except Exception as e:
             _LOGGER.debug("Failed to convert", exc_info=e)
-            if option.default is not UNDEFINED:
+            if option.default is not UNDEFINED and not option.required:
                 self.ctx._options[option.name] = option.default
                 _LOGGER.debug("Option has a default value, shifting to the next parameter")
                 return False

@@ -136,7 +136,7 @@ class BotApp(hikari.GatewayBot):
         self._checks: t.List[checks.Check] = []
 
         if prefix is not None:
-            self.subscribe(hikari.MessageCreateEvent, self.process_prefix_commands)
+            self.subscribe(hikari.MessageCreateEvent, self.handle_messsage_create_for_prefix_commands)
 
     def _add_command_to_correct_attr(self, command: commands.base.Command) -> None:
         if isinstance(command, commands.prefix.PrefixCommand):

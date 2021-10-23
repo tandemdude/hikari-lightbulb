@@ -21,6 +21,8 @@ __all__ = ["implements", "command", "option"]
 
 import typing as t
 
+import hikari
+
 from lightbulb_v2 import commands
 
 if t.TYPE_CHECKING:
@@ -58,6 +60,8 @@ def command(
 def option(
     name: str, description: str, type: t.Type[t.Any] = str, **kwargs: t.Any
 ) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
+    kwargs.setdefault("required", kwargs.get("default", hikari.UNDEFINED) is hikari.UNDEFINED)
+
     def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
         c_like.options[name] = commands.base.OptionLike(name, description, type, **kwargs)
         return c_like

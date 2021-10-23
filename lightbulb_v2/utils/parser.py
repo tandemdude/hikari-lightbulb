@@ -100,7 +100,7 @@ class Parser(BaseParser):
                 _LOGGER.debug("Got raw arg %s", raw_arg)
             except StopIteration:
                 _LOGGER.debug("Arguments have exhausted")
-                if option.default is UNDEFINED and not option.required:
+                if option.default is UNDEFINED or option.required:
                     raise RuntimeError  # TODO: raise missing argument error
 
                 self.ctx._options[option.name] = option.default

@@ -19,7 +19,9 @@ from __future__ import annotations
 
 __all__ = ["PrefixCommand"]
 
+from lightbulb_v2 import context as context_
 from lightbulb_v2.commands import base
+from lightbulb_v2.utils import parser
 
 
 class PrefixCommand(base.Command):
@@ -33,3 +35,10 @@ class PrefixCommand(base.Command):
         if self.options:
             sig += f" {' '.join(f'<{o.name}>' if o.required else f'[{o.name}]' for o in self.options.values())}"
         return sig
+
+    async def invoke(self, context: context_.base.Context) -> None:
+        await self.evaluate_checks(context)
+        await self.evaluate_cooldowns(context)
+        assert isinstance(context, context_.prefix.PrefixContext)
+        await parser.Parser(context).inject_args_to_context()
+        await self(context)

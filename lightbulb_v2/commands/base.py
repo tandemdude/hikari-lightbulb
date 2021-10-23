@@ -32,6 +32,7 @@ if t.TYPE_CHECKING:
     from lightbulb_v2 import app as app_
     from lightbulb_v2 import checks
     from lightbulb_v2 import context as context_
+    from lightbulb_v2 import plugins
 
 
 @dataclasses.dataclass
@@ -58,7 +59,9 @@ class CommandLike:
     guilds: t.Sequence[int] = dataclasses.field(default_factory=list)
     subcommands: t.List[CommandLike] = dataclasses.field(default_factory=list)
 
-    def child(self, cmd_like: t.Optional[CommandLike] = None) -> t.Union[CommandLike, t.Callable[[CommandLike], CommandLike]]:
+    def child(
+        self, cmd_like: t.Optional[CommandLike] = None
+    ) -> t.Union[CommandLike, t.Callable[[CommandLike], CommandLike]]:
         if cmd_like is not None:
             self.subcommands.append(cmd_like)
             return cmd_like
@@ -66,6 +69,7 @@ class CommandLike:
         def decorate(cmd_like_: CommandLike) -> CommandLike:
             self.subcommands.append(cmd_like_)
             return cmd_like_
+
         return decorate
 
 
@@ -79,7 +83,8 @@ class Command(abc.ABC):
         self.checks = initialiser.checks
         self.cooldown_manager = initialiser.cooldown_manager
         self.error_handler = initialiser.error_handler
-        self.parent = None
+        self.parent: t.Optional[Command] = None
+        self.plugin: t.Optional[plugins.Plugin] = None
 
     async def __call__(self, context: context_.base.Context) -> None:
         return await self.callback(context)

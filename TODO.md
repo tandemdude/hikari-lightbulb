@@ -9,10 +9,13 @@
   - [ ] Regex prefix?
 
 - [ ] Plugins
-  - [ ] Support Prefix Commands
-  - [ ] Support Slash Commands
-  - [ ] Support Message Commands
-  - [ ] Support User Commands
+  - [x] Support Prefix Commands
+  - [x] Support Slash Commands
+  - [x] Support Message Commands
+  - [x] Support User Commands
+  - [x] Support Listeners
+  - [ ] Plugin Unload Hook
+  - [ ] Plugin Check
 
 - [ ] Commands
   - [x] Base Command

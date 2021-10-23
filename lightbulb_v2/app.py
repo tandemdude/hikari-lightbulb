@@ -40,13 +40,41 @@ _PrefixT = t.Union[
 def when_mentioned_or(
     prefix_provider: _PrefixT,
 ) -> t.Callable[[BotApp, hikari.Message], t.Coroutine[t.Any, t.Any, t.Sequence[str]]]:
-    async def get_prefixes(bot: BotApp, message: hikari.Message) -> t.Sequence[str]:
-        me = bot.get_me()
+    """
+    Helper function which allows the bot's mentions to be used as the command prefix, as well
+    as any other prefix(es) passed in or supplied by the ``prefix_provider``.
+
+    Args:
+        prefix_provider: A :obj:`str` prefix, Sequence[:obj:`str`] of prefixes, or sync or async callable that returns
+            a prefix or sequence of prefixes. If ``None``, only the bot's mentions will be used.
+
+    Example:
+
+        .. code-block:: python
+
+            # The below are all valid
+            app = lightbulb.BotApp(prefix=lightbulb.when_mentioned_or("!"), ...)
+
+            app = lightbulb.BotApp(prefix=lightbulb.when_mentioned_or(["!", "?"]), ...)
+
+            # Using only mentions as the prefix
+            app = lightbulb.BotApp(prefix=lightbulb.when_mentioned_or(None), ...)
+
+            # Using with a get_prefix function
+            def get_prefix(app, message):
+                # Do something to get the prefixes
+                return prefixes
+
+            app = lightbulb.Bot(prefix=lightbulb.when_mentioned_or(get_prefix), ...)
+    """
+
+    async def get_prefixes(app: BotApp, message: hikari.Message) -> t.Sequence[str]:
+        me = app.get_me()
         assert me is not None
         mentions = [f"<@{me.id}> ", f"<@!{me.id}> "]
 
         if callable(prefix_provider):
-            prefixes = prefix_provider(bot, message)
+            prefixes = prefix_provider(app, message)
             if inspect.iscoroutine(prefixes):
                 assert not isinstance(prefixes, t.Sequence)
                 prefixes = await prefixes
@@ -110,22 +138,48 @@ class BotApp(hikari.GatewayBot):
         if prefix is not None:
             self.subscribe(hikari.MessageCreateEvent, self.process_prefix_commands)
 
-    def add_command(self, command: commands.base.CommandLike) -> None:
-        commands_to_impl: t.Sequence[t.Type[commands.base.Command]] = getattr(command.callback, "__cmd_types__", [])
-        for command_cls in commands_to_impl:
-            cmd = command_cls(self, command)
+    def _add_command_to_correct_attr(self, command: commands.base.Command) -> None:
+        if isinstance(command, commands.prefix.PrefixCommand):
+            self._prefix_commands[command.name] = command
+        elif isinstance(command, commands.slash.SlashCommand):
+            self._slash_commands[command.name] = command
+        elif isinstance(command, commands.message.MessageCommand):
+            self._message_commands[command.name] = command
+        elif isinstance(command, commands.user.UserCommand):
+            self._user_commands[command.name] = command
 
-            if cmd.is_subcommand:
-                continue
+    def command(
+        self, cmd_like: t.Optional[commands.base.CommandLike] = None
+    ) -> t.Union[commands.base.CommandLike, t.Callable[[commands.base.CommandLike], commands.base.CommandLike]]:
+        """
+        Adds a command to the bot. This method can be used as a first or second order decorator, or called
+        manually with the :obj:`~.commands.CommandLike` instance to add as a command.
+        """
+        if cmd_like is not None:
+            commands_to_impl: t.Sequence[t.Type[commands.base.Command]] = getattr(
+                cmd_like.callback, "__cmd_types__", []
+            )
+            for command_cls in commands_to_impl:
+                cmd = command_cls(self, cmd_like)
 
-            if isinstance(cmd, commands.prefix.PrefixCommand):
-                self._prefix_commands[cmd.name] = cmd
-            elif isinstance(cmd, commands.slash.SlashCommand):
-                self._slash_commands[cmd.name] = cmd
-            elif isinstance(cmd, commands.message.MessageCommand):
-                self._message_commands[cmd.name] = cmd
-            elif isinstance(cmd, commands.user.UserCommand):
-                self._user_commands[cmd.name] = cmd
+                if cmd.is_subcommand:
+                    continue
+
+                self._add_command_to_correct_attr(cmd)
+
+        def decorate(cmd_like_: commands.base.CommandLike) -> commands.base.CommandLike:
+            self.command(cmd_like_)
+            return cmd_like_
+
+        return decorate
+
+    def add_plugin(self, plugin: plugins.Plugin) -> None:
+        plugin.app = self
+        for command in plugin._all_commands:
+            self._add_command_to_correct_attr(command)
+        for event, listeners in plugin._listeners.items():
+            for listener_func in listeners:
+                self.subscribe(event, listener_func)
 
     def get_prefix_command(self, name: str) -> t.Optional[commands.prefix.PrefixCommand]:
         return self._prefix_commands.get(name)

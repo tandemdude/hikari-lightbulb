@@ -467,7 +467,7 @@ class BotApp(hikari.GatewayBot):
             return None
 
         split_content = new_content.split(maxsplit=1)
-        invoked_with, arg = split_content[0], "".join(split_content[1:])
+        invoked_with = split_content[0]
 
         if not invoked_with:
             return None

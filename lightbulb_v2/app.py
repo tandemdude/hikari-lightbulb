@@ -221,14 +221,22 @@ class BotApp(hikari.GatewayBot):
             return None
 
         command = self.get_prefix_command(invoked_with)
-        if command is None:
-            raise errors.CommandNotFound(
-                f"A command with name or alias {invoked_with!r} does not exist", invoked_with=invoked_with
-            )
 
         return cls(self, event, command, invoked_with, invoked_prefix)
 
-    async def process_prefix_commands(self, event: hikari.MessageCreateEvent) -> None:
+    async def process_prefix_commands(self, context: t.Optional[context_.prefix.PrefixContext]) -> None:
+        if context is None:
+            return
+
+        if context.command is None:
+            raise errors.CommandNotFound(
+                f"A command with name or alias {context.invoked_with!r} does not exist",
+                invoked_with=context.invoked_with,
+            )
+
+        await context.command.invoke(context)
+
+    async def handle_messsage_create_for_prefix_commands(self, event: hikari.MessageCreateEvent) -> None:
         if self.ignore_bots and not event.is_human:
             return
 
@@ -236,7 +244,13 @@ class BotApp(hikari.GatewayBot):
             return
 
         context = await self.get_prefix_context(event)
-        if context is None:
-            return
-
-        await context.command.invoke(context)
+        try:
+            await self.process_prefix_commands(context)
+        except Exception as exc:
+            new_exc = exc
+            if not isinstance(exc, errors.LightbulbError):
+                assert context is not None and context.command is not None
+                new_exc = errors.CommandInvocationError(
+                    f"An error occurred during command {context.command.name!r} invocation", original=exc
+                )
+            pass  # TODO error handling and event dispatching

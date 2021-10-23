@@ -19,7 +19,6 @@ from __future__ import annotations
 
 __all__ = ["PrefixContext"]
 
-import typing
 import typing as t
 
 import hikari
@@ -36,7 +35,7 @@ class PrefixContext(base.Context):
         self,
         app: app_.BotApp,
         event: hikari.MessageCreateEvent,
-        command: commands.prefix.PrefixCommand,
+        command: t.Optional[commands.prefix.PrefixCommand],
         invoked_with: str,
         prefix: str,
     ) -> None:
@@ -80,7 +79,7 @@ class PrefixContext(base.Context):
         return self._invoked_with
 
     @property
-    def command(self) -> commands.prefix.PrefixCommand:
+    def command(self) -> t.Optional[commands.prefix.PrefixCommand]:
         return self._command
 
     def get_channel(self) -> t.Optional[t.Union[hikari.GuildChannel, hikari.Snowflake]]:

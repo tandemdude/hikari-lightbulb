@@ -72,10 +72,10 @@
 
 - [ ] Cooldowns (Reuse?)
 
-- [ ] Events
-  - [ ] *Command Completion Event
-  - [ ] *Command Invocation Event
-  - [ ] *Command Error Event
+- [x] Events
+  - [x] *Command Completion Event
+  - [x] *Command Invocation Event
+  - [x] *Command Error Event
 
 - [ ] Errors (Reuse?)
 

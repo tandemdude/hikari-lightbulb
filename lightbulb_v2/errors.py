@@ -15,7 +15,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-__all__ = ["LightbulbError", "CheckFailure", "CommandNotFound"]
+from __future__ import annotations
+
+__all__ = ["LightbulbError", "CheckFailure", "CommandNotFound", "CommandInvocationError"]
 
 import typing as t
 
@@ -32,3 +34,11 @@ class CommandNotFound(LightbulbError):
     def __init__(self, *args: t.Any, invoked_with: str):
         super().__init__(*args)
         self.invoked_with = invoked_with
+
+
+class CommandInvocationError(LightbulbError):
+    def __init__(self, *args: t.Any, original: Exception):
+        super().__init__(*args)
+        self.original = original
+        """The exception that caused this to be raised. Also accessible through ``CommandInvocationError.__cause__``"""
+        self.__cause__ = original

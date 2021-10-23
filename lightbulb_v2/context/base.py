@@ -81,7 +81,7 @@ class Context(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def command(self) -> commands.base.Command:
+    def command(self) -> t.Optional[commands.base.Command]:
         ...
 
     @abc.abstractmethod

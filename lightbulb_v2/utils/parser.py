@@ -128,6 +128,9 @@ class Parser(BaseParser):
             self.ctx._options[option.name] = arg
             return True
 
+    async def _greedy_convert(self, *args: t.Any, **kwargs: t.Any) -> t.Any:
+        raise NotImplementedError
+
     @staticmethod
     async def _convert(
         value: str,

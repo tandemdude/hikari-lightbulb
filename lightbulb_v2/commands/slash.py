@@ -17,8 +17,16 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 __all__ = ["SlashCommand"]
 
+import typing as t
+
 from lightbulb_v2.commands import base
 
 
 class SlashCommand(base.ApplicationCommand):
-    pass
+    def as_create_kwargs(self) -> t.Dict[str, t.Any]:
+        sorted_opts = sorted(self.options.values(), key=lambda o: int(o.required), reverse=True)
+        return {
+            "name": self.name,
+            "description": self.description,
+            "options": [o.as_application_command_option() for o in sorted_opts],
+        }

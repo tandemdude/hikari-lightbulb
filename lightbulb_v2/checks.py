@@ -15,12 +15,24 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-__all__ = ["Check"]
+__all__ = [
+    "Check",
+    "owner_only",
+    "guild_only",
+    "dm_only",
+    "bot_only",
+    "webhook_only",
+    "human_only",
+    "nsfw_channel_only",
+]
 
 import functools
 import typing as t
 
+import hikari
+
 from lightbulb_v2 import context as context_
+from lightbulb_v2 import errors
 
 T = t.TypeVar("T")
 _CallbackT = t.Union[
@@ -60,3 +72,72 @@ class Check:
         elif isinstance(context, context_.user.UserContext):
             return self.user_callback(context)
         return True
+
+
+async def _owner_only(context: context_.base.Context) -> bool:
+    if not context.app.owner_ids:
+        context.app.owner_ids = await context.app.fetch_owner_ids()
+
+    if context.author.id not in context.app.owner_ids:
+        raise errors.NotOwner("You are not the owner of this bot")
+    return True
+
+
+def _guild_only(context: context_.base.Context) -> bool:
+    if context.guild_id is None:
+        raise errors.OnlyInGuild("This command can only be used in a guild")
+    return True
+
+
+def _dm_only(context: context_.base.Context) -> bool:
+    if context.guild_id is not None:
+        raise errors.OnlyInDM("This command can only be used in DMs")
+    return True
+
+
+def _bot_only(context: context_.base.Context) -> bool:
+    if not context.author.is_bot:
+        raise errors.BotOnly("This command can only be used by bots")
+    return True
+
+
+def _webhook_only(context: context_.base.Context) -> bool:
+    if not isinstance(context, context_.prefix.PrefixContext):
+        raise errors.WebhookOnly("This command can only be used by webhooks")
+    if context.event.message.webhook_id is None:
+        raise errors.WebhookOnly("This command can only be used by webhooks")
+    return True
+
+
+def _human_only(context: context_.base.Context) -> bool:
+    if isinstance(context, context_.prefix.PrefixContext):
+        if context.author.is_bot or context.event.message.webhook_id is not None:
+            raise errors.HumanOnly("This command can only be used by humans")
+    if context.author.is_bot:
+        raise errors.HumanOnly("This command can only be used by humans")
+    return True
+
+
+def _nsfw_channel_only(context: context_.base.Context) -> bool:
+    if context.guild_id is None:
+        raise errors.NSFWChannelOnly("This command can only be used in NSFW channels")
+    channel = context.get_channel()
+    if not isinstance(channel, hikari.GuildChannel) or not channel.is_nsfw:
+        raise errors.NSFWChannelOnly("This command can only be used in NSFW channels")
+    return True
+
+
+owner_only = Check(_owner_only)
+"""Prevents a command from being used by anyone other than the owner of the application."""
+guild_only = Check(_guild_only)
+"""Prevents a command from being used in direct messages."""
+dm_only = Check(_dm_only)
+"""Prevents a command from being used in a guild."""
+bot_only = Check(_bot_only)
+"""Prevents a command from being used by anyone other than a bot."""
+webhook_only = Check(_webhook_only)
+"""Prevents a command from being used by anyone other than a webhook."""
+human_only = Check(_human_only)
+"""Prevents a command from being used by anyone other than a human."""
+nsfw_channel_only = Check(_nsfw_channel_only)
+"""Prevents a command from being used in any channel other than one marked as NSFW."""

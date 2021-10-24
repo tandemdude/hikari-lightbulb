@@ -17,16 +17,24 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__ = ["LightbulbError", "CheckFailure", "CommandNotFound", "CommandInvocationError"]
+__all__ = [
+    "LightbulbError",
+    "CommandNotFound",
+    "CommandInvocationError",
+    "CheckFailure",
+    "NotOwner",
+    "OnlyInGuild",
+    "OnlyInDM",
+    "BotOnly",
+    "WebhookOnly",
+    "HumanOnly",
+    "NSFWChannelOnly",
+]
 
 import typing as t
 
 
 class LightbulbError(Exception):
-    pass
-
-
-class CheckFailure(LightbulbError):
     pass
 
 
@@ -42,3 +50,35 @@ class CommandInvocationError(LightbulbError):
         self.original = original
         """The exception that caused this to be raised. Also accessible through ``CommandInvocationError.__cause__``"""
         self.__cause__ = original
+
+
+class CheckFailure(LightbulbError):
+    pass
+
+
+class NotOwner(CheckFailure):
+    pass
+
+
+class OnlyInGuild(CheckFailure):
+    pass
+
+
+class OnlyInDM(CheckFailure):
+    pass
+
+
+class BotOnly(CheckFailure):
+    pass
+
+
+class WebhookOnly(CheckFailure):
+    pass
+
+
+class HumanOnly(CheckFailure):
+    pass
+
+
+class NSFWChannelOnly(CheckFailure):
+    pass

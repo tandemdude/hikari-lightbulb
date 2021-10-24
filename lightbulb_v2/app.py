@@ -107,8 +107,6 @@ class BotApp(hikari.GatewayBot):
     ) -> None:
         super().__init__(token, **kwargs)
 
-        self.application: t.Optional[hikari.PartialApplication] = None
-
         if prefix is None and not application_commands_only:
             raise TypeError("'application_commands_only' is False but no prefix was provided.")
 
@@ -126,6 +124,8 @@ class BotApp(hikari.GatewayBot):
         self.ignore_bots = ignore_bots
         self.owner_ids = owner_ids
 
+        self.application: t.Optional[hikari.Application] = None
+
         self._prefix_commands: t.MutableMapping[str, commands.prefix.PrefixCommand] = {}
         self._slash_commands: t.MutableMapping[str, commands.slash.SlashCommand] = {}
         self._message_commands: t.MutableMapping[str, commands.message.MessageCommand] = {}
@@ -137,6 +137,19 @@ class BotApp(hikari.GatewayBot):
 
         if prefix is not None:
             self.subscribe(hikari.MessageCreateEvent, self.handle_messsage_create_for_prefix_commands)
+
+    async def fetch_owner_ids(self) -> t.Sequence[hikari.SnowflakeishOr[int]]:
+        if self.owner_ids:
+            return self.owner_ids
+
+        self.application = self.application or await self.rest.fetch_application()
+
+        owner_ids = []
+        if self.application.owner is not None:
+            owner_ids.append(self.application.owner.id)
+        if self.application.team is not None:
+            owner_ids.extend([member_id for member_id in self.application.team.members])
+        return owner_ids
 
     def _add_command_to_correct_attr(self, command: commands.base.Command) -> None:
         if isinstance(command, commands.prefix.PrefixCommand):

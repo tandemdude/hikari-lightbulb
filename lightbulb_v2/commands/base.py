@@ -34,16 +34,46 @@ if t.TYPE_CHECKING:
     from lightbulb_v2 import context as context_
     from lightbulb_v2 import plugins
 
+OPTION_TYPE_MAPPING = {
+    str: hikari.OptionType.STRING,
+    int: hikari.OptionType.INTEGER,
+    bool: hikari.OptionType.BOOLEAN,
+    hikari.User: hikari.OptionType.USER,
+    hikari.TextableChannel: hikari.OptionType.CHANNEL,
+    hikari.Role: hikari.OptionType.ROLE,
+    hikari.Snowflake: hikari.OptionType.MENTIONABLE,
+    float: hikari.OptionType.FLOAT,
+}
+
+
+def _get_choice_objects_from_choices(
+    choices: t.Sequence[t.Union[str, int, float, hikari.CommandChoice]]
+) -> t.Sequence[hikari.CommandChoice]:
+    return [c if isinstance(c, hikari.CommandChoice) else hikari.CommandChoice(name=str(c), value=c) for c in choices]
+
 
 @dataclasses.dataclass
 class OptionLike:
     name: str
     description: str
     arg_type: t.Type[t.Any] = str
-    required: t.Optional[bool] = None
+    required: bool = True
     choices: t.Optional[t.Sequence[t.Union[str, int, float, hikari.CommandChoice]]] = None
     channel_types: t.Optional[t.Sequence[hikari.ChannelType]] = None
     default: hikari.UndefinedOr[t.Any] = hikari.UNDEFINED
+
+    def as_application_command_option(self) -> hikari.CommandOption:
+        kwargs = {
+            "type": OPTION_TYPE_MAPPING.get(self.arg_type, self.arg_type),
+            "name": self.name,
+            "description": self.description,
+            "is_required": self.required,
+        }
+        if self.choices:
+            kwargs["choices"] = _get_choice_objects_from_choices(self.choices)  # type: ignore
+        if self.channel_types:
+            kwargs["channel_types"] = self.channel_types  # type: ignore
+        return hikari.CommandOption(**kwargs)  # type: ignore
 
 
 @dataclasses.dataclass
@@ -150,11 +180,10 @@ class ApplicationCommand(Command):
 
     async def create(self, guild: t.Optional[int] = None) -> hikari.Command:
         assert self.app.application is not None
-        args, kwargs = self.as_create_args()
+        kwargs = self.as_create_kwargs()
         kwargs.update({"guild": guild} if guild is not None else {})
         created_cmd = await self.app.rest.create_application_command(
             self.app.application,
-            *args,
             **kwargs,
         )
         self.instances[guild] = created_cmd
@@ -168,5 +197,5 @@ class ApplicationCommand(Command):
         await cmd.delete()
 
     @abc.abstractmethod
-    def as_create_args(self) -> t.Tuple[t.Tuple[str, str], t.Dict[str, t.Any]]:
+    def as_create_kwargs(self) -> t.Dict[str, t.Any]:
         ...

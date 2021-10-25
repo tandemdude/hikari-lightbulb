@@ -31,6 +31,16 @@ if t.TYPE_CHECKING:
 
 
 class SlashContext(base.Context):
+    """
+    An implementation of :obj:`~.context.base.Context` for prefix commands.
+
+    Args:
+        app (:obj:`~.app.BotApp`): The ``BotApp`` instance that the context is linked to.
+        event (:obj:`~hikari.events.interaction_events.InteractionCreateEvent`): The event to create the context
+            from.
+        command (:obj:`~.commands.slash.SlashCommand`): The command that the context is for.
+    """
+
     def __init__(
         self, app: app_.BotApp, event: hikari.InteractionCreateEvent, command: commands.slash.SlashCommand
     ) -> None:
@@ -39,7 +49,8 @@ class SlashContext(base.Context):
         assert isinstance(event.interaction, hikari.CommandInteraction)
         self._interaction: hikari.CommandInteraction = event.interaction
         self._command = command
-        self.initial_response_sent = False
+        self.initial_response_sent: bool = False
+        """Whether or not the initial response has been sent for this interaction."""
 
     @property
     def event(self) -> hikari.InteractionCreateEvent:
@@ -70,6 +81,10 @@ class SlashContext(base.Context):
         return self._command.name
 
     @property
+    def prefix(self) -> str:
+        return "/"
+
+    @property
     def command(self) -> commands.base.Command:
         return self._command
 
@@ -87,6 +102,25 @@ class SlashContext(base.Context):
         return self.app.cache.get_dm_channel_id(self.user)
 
     async def respond(self, *args: t.Any, **kwargs: t.Any) -> hikari.Message:
+        """
+        Create a response for this context. The first time this method is called, the initial
+        interaction response will be created by calling
+        :obj:`~hikari.interactions.command_interactions.CommandInteraction.create_initial_response` with the response
+        type set to :obj:`~hikari.interactions.base_interactions.ResponseType.MESSAGE_CREATE` if not otherwise
+        specified.
+
+        Subsequent calls will instead create followup responses to the interaction by calling
+        :obj:`~hikari.interactions.command_interactions.CommandInteraction.execute`.
+
+        Args:
+            *args (Any): Positional arguments passed to ``CommandInteraction.create_initial_response`` or
+                ``CommandInteraction.execute``.
+            **kwargs: Keyword arguments passed to ``CommandInteraction.create_initial_response`` or
+                ``CommandInteraction.execute``.
+
+        Returns:
+            :obj:`~hikari.messages.Message`: The created message object.
+        """
         if self.initial_response_sent:
             return await self._interaction.execute(*args, **kwargs)
 

@@ -99,8 +99,13 @@ class Context(abc.ABC):
     @property
     @abc.abstractmethod
     def invoked_with(self) -> str:
-        """The command name that the context is for."""
+        """The command name or alias was used in the context."""
         ...
+
+    @property
+    @abc.abstractmethod
+    def prefix(self) -> str:
+        """The prefix that was used in the context."""
 
     @property
     @abc.abstractmethod

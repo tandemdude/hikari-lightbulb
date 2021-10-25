@@ -26,8 +26,8 @@ import hikari
 from lightbulb_v2 import commands
 
 if t.TYPE_CHECKING:
-    from lightbulb_v2 import context
     from lightbulb_v2 import checks as checks_
+    from lightbulb_v2 import context
 
 T = t.TypeVar("T")
 

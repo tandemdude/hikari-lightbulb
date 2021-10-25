@@ -31,6 +31,18 @@ if t.TYPE_CHECKING:
 
 
 class PrefixContext(base.Context):
+    """
+    An implementation of :obj:`~.context.base.Context` for prefix commands.
+
+    Args:
+        app (:obj:`~.app.BotApp`): The ``BotApp`` instance that the context is linked to.
+        event (:obj:`~hikari.events.message_events.MessageCreateEvent`): The event to create the context from.
+        command (Optional[:obj:`~.commands.prefix.PrefixCommand`]): The command that the context is for, or ``None``
+            if no command could be resolved.
+        invoked_with (:obj:`str`): The name or alias that the command was invoked with.
+        prefix (:obj:`str`): The prefix that was used in this context.
+    """
+
     def __init__(
         self,
         app: app_.BotApp,
@@ -52,10 +64,12 @@ class PrefixContext(base.Context):
 
     @property
     def raw_options(self) -> t.Dict[str, t.Any]:
+        """Dictionary of :obj:`str` option name to option value that the user invoked the command with."""
         return self._options
 
     @property
     def options(self) -> base.OptionsProxy:
+        """:obj:`~.context.base.OptionsProxy` wrapping the options that the user invoked the command with."""
         return base.OptionsProxy(self.raw_options)
 
     @property
@@ -79,6 +93,10 @@ class PrefixContext(base.Context):
         return self._invoked_with
 
     @property
+    def prefix(self) -> str:
+        return self._prefix
+
+    @property
     def command(self) -> t.Optional[commands.prefix.PrefixCommand]:
         return self._command
 
@@ -88,4 +106,14 @@ class PrefixContext(base.Context):
         return self.app.cache.get_dm_channel_id(self.author.id)
 
     async def respond(self, *args: t.Any, **kwargs: t.Any) -> hikari.Message:
+        """
+        Create a response for this context. This method directly calls :obj:`~hikari.messages.Message.respond`.
+
+        Args:
+            *args (Any): Positional arguments passed to :obj:`~hikari.messages.Message.respond`.
+            **kwargs (Any): Keyword arguments passed to :obj:`~hikari.messages.Message.respond`.
+
+        Returns:
+            :obj:`~hikari.messages.Message`: The created message object.
+        """
         return await self.event.message.respond(*args, **kwargs)

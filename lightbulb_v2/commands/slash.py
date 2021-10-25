@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 __all__ = ["SlashCommand"]
 
 import typing as t
@@ -23,6 +25,12 @@ from lightbulb_v2.commands import base
 
 
 class SlashCommand(base.ApplicationCommand):
+    """
+    An implementation of :obj:`~.commands.base.Command` representing a slash command.
+
+    See the `API Documentation <https://discord.com/developers/docs/interactions/application-commands#user-commands>`_.
+    """
+
     def as_create_kwargs(self) -> t.Dict[str, t.Any]:
         sorted_opts = sorted(self.options.values(), key=lambda o: int(o.required), reverse=True)
         return {

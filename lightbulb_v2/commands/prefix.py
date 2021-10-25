@@ -15,12 +15,18 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 __all__ = ["PrefixCommand"]
 
 from lightbulb_v2.commands import base
 
 
 class PrefixCommand(base.Command):
+    """
+    An implementation of :obj:`~.commands.base.Command` representing a prefix command.
+    """
+
     @property
     def signature(self) -> str:
         sig = self.qualname

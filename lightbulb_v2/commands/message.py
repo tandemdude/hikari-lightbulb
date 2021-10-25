@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 __all__ = ["MessageCommand"]
 
 import typing as t
@@ -23,6 +25,15 @@ from lightbulb_v2.commands import base
 
 
 class MessageCommand(base.ApplicationCommand):
+    """
+    An implementation of :obj:`~.commabds.base.Command` representing a message context menu command.
+
+    See the `API Documentation <https://discord.com/developers/docs/interactions/application-commands#message-commands>`_.
+    """
+
     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
         self.options = {}
+
+    def as_create_kwargs(self) -> t.Dict[str, t.Any]:
+        raise NotImplementedError

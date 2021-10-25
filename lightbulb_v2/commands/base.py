@@ -17,10 +17,11 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__ = ["OptionLike", "CommandLike", "Command", "ApplicationCommand"]
+__all__ = ["OptionModifier", "OptionLike", "CommandLike", "Command", "ApplicationCommand"]
 
 import abc
 import dataclasses
+import enum
 import inspect
 import typing as t
 
@@ -53,6 +54,17 @@ def _get_choice_objects_from_choices(
     return [c if isinstance(c, hikari.CommandChoice) else hikari.CommandChoice(name=str(c), value=c) for c in choices]
 
 
+class OptionModifier(enum.Enum):
+    """Enum representing option modifiers that affect parsing for prefix commands."""
+
+    NONE = enum.auto()
+    """No modifier. This will be parsed as a normal argument."""
+    GREEDY = enum.auto()
+    """Greedy option. This will consume arguments until the string is exhausted or conversion fails."""
+    CONSUME_REST = enum.auto()
+    """Consume rest option. This will consume the entire remainder of the string."""
+
+
 @dataclasses.dataclass
 class OptionLike:
     """
@@ -73,6 +85,8 @@ class OptionLike:
     """The channel types for this option. This only affects application (slash) commands."""
     default: hikari.UndefinedOr[t.Any] = hikari.UNDEFINED
     """The default value for this option."""
+    modifier: OptionModifier = OptionModifier.NONE
+    """Additional modifier controlling how the option should be parsed. This only affects prefix commands."""
 
     def as_application_command_option(self) -> hikari.CommandOption:
         """

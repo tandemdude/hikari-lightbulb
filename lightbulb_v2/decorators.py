@@ -99,10 +99,12 @@ def option(
         required (:obj:`bool`): Whether or not this option is required. This will be inferred from whether or not
             a default was provided if unspecified.
         choices (Optional[Sequence[Union[:obj:`str`, :obj:`int`, :obj:`float`, :obj:`~hikari.commands.CommandChoice`]]]): The
-            choices for the option. This will only affect application (slash) commands. Defaults to ``None``
+            choices for the option. This will only affect application (slash) commands. Defaults to ``None``.
         channel_types (Optional[Sequence[hikari.channels.ChannelType]]): The channel types allowed for the option.
-            This will only affect application (slash) commands. Defaults to ``None``
-        default: (UndefinedOr[Any]): The default value for the option. Defaults to :obj:`~hikari.undefined.UNDEFINED`
+            This will only affect application (slash) commands. Defaults to ``None``.
+        default (UndefinedOr[Any]): The default value for the option. Defaults to :obj:`~hikari.undefined.UNDEFINED`.
+        modifier (:obj:`~.commands.base.OptionModifier`): Modifier controlling how the option should be parsed. Defaults
+            to ``OptionModifier.NONE``.
     """
     kwargs.setdefault("required", kwargs.get("default", hikari.UNDEFINED) is hikari.UNDEFINED)
 

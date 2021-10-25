@@ -30,9 +30,22 @@ if t.TYPE_CHECKING:
 
 
 class Plugin:
+    """
+    Container class for commands and listeners that can be loaded and unloaded from the bot
+    to allow for hot-swapping of commands.
+
+    Args:
+        name (:obj:`str): The name of the plugin.
+        description (Optional[:obj:`str`]): Description of the plugin. Defaults to ``None``.
+    """
+
+    __slots__ = ("name", "description", "_raw_commands", "_all_commands", "_listeners", "_app")
+
     def __init__(self, name: str, description: t.Optional[str] = None) -> None:
         self.name = name
+        """The plugin's name."""
         self.description = description or ""
+        """The plugin's description."""
 
         self._raw_commands: t.List[commands.base.CommandLike] = []
         self._all_commands: t.List[commands.base.Command] = []
@@ -45,6 +58,7 @@ class Plugin:
 
     @property
     def app(self) -> t.Optional[app_.BotApp]:
+        """The :obj:`~.app.BotApp` instance that the plugin is registered to."""
         return self._app
 
     @app.setter
@@ -55,6 +69,13 @@ class Plugin:
         self.create_commands()
 
     def create_commands(self) -> None:
+        """
+        Creates the command objects implemented by the :obj:`~.commands.base.CommandLike` objects registered
+        to the plugin.
+
+        Returns:
+            ``None``
+        """
         assert self._app is not None
         for command_like in self._raw_commands:
             commands_to_impl: t.Sequence[t.Type[commands.base.Command]] = getattr(
@@ -68,6 +89,11 @@ class Plugin:
     def command(
         self, cmd_like: t.Optional[commands.base.CommandLike] = None
     ) -> t.Union[commands.base.CommandLike, t.Callable[[commands.base.CommandLike], commands.base.CommandLike]]:
+        """
+        Adds a :obj:`~.commands.base.CommandLike` object as a command to the plugin. This method can be used as a
+        first or second order decorator, or called manually with the :obj:`~.commands.CommandLike` instance to
+        add as a command.
+        """
         if cmd_like is not None:
             self._raw_commands.append(cmd_like)
             return cmd_like
@@ -89,6 +115,13 @@ class Plugin:
             t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]],
         ],
     ]:
+        """
+        Adds a listener function to the plugin. This method can be used as a second order decorator, or called
+        manually with the event type and function to add to the plugin as a listener.
+
+        Args:
+            event (Type[:obj:`~hikari.events.base_events.Event`): Event that the listener is for.
+        """
         if listener_func is not None:
             self._listeners[event].append(listener_func)
             return listener_func

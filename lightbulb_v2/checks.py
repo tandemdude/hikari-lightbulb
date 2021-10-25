@@ -41,6 +41,19 @@ _CallbackT = t.Union[
 
 
 class Check:
+    """
+    Class representing a check. Check functions can be syncronous or asyncronous functions which take
+    a single argument, which will be the context that the command is being invoked under, and return
+    a boolean or raise a :obj:`.errors.CheckFailure` indicating whether the check passed or failed.
+
+    Args:
+        p_callback (CallbackT): Check function to use for prefix commands.
+        s_callback (Optional[CallbackT]): Check function to use for slash commands.
+        m_callback (Optional[CallbackT]): Check function to use for message commands.
+        u_callback (Optional[CallbackT]): Check function to use for user commands.
+        add_hook (Optional[Callable[[T], T]]): Function called when the check is added to an object.
+    """
+
     __slots__ = ("prefix_callback", "slash_callback", "message_callback", "user_callback", "add_to_object_hook")
 
     def __init__(
@@ -57,6 +70,10 @@ class Check:
         self.user_callback = u_callback or p_callback
         self.add_to_object_hook = add_hook or (lambda o: o)
 
+    def __str__(self) -> str:
+        return self.__name__
+
+    @property
     def __name__(self) -> str:
         if isinstance(self.prefix_callback, functools.partial):
             return self.prefix_callback.func.__name__

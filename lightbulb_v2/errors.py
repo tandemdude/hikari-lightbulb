@@ -21,6 +21,7 @@ __all__ = [
     "LightbulbError",
     "CommandNotFound",
     "CommandInvocationError",
+    "CommandIsOnCooldown",
     "CheckFailure",
     "NotOwner",
     "OnlyInGuild",
@@ -39,17 +40,24 @@ class LightbulbError(Exception):
 
 
 class CommandNotFound(LightbulbError):
-    def __init__(self, *args: t.Any, invoked_with: str):
+    def __init__(self, *args: t.Any, invoked_with: str) -> None:
         super().__init__(*args)
         self.invoked_with = invoked_with
 
 
 class CommandInvocationError(LightbulbError):
-    def __init__(self, *args: t.Any, original: Exception):
+    def __init__(self, *args: t.Any, original: Exception) -> None:
         super().__init__(*args)
         self.original = original
         """The exception that caused this to be raised. Also accessible through ``CommandInvocationError.__cause__``"""
         self.__cause__ = original
+
+
+class CommandIsOnCooldown(LightbulbError):
+    def __init__(self, *args: t.Any, retry_after: float) -> None:
+        super().__init__(*args)
+        self.retry_after = retry_after
+        """The amount of time remaining until the cooldown expires."""
 
 
 class CheckFailure(LightbulbError):

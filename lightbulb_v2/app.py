@@ -21,6 +21,7 @@ __all__ = ["BotApp", "when_mentioned_or"]
 
 import functools
 import inspect
+import typing
 import typing as t
 
 import hikari
@@ -29,6 +30,7 @@ from lightbulb_v2 import checks
 from lightbulb_v2 import commands
 from lightbulb_v2 import context as context_
 from lightbulb_v2 import errors
+from lightbulb_v2 import events
 from lightbulb_v2 import plugins
 
 _PrefixT = t.Union[
@@ -96,20 +98,32 @@ def _default_get_prefix(_: BotApp, __: hikari.Message, *, prefixes: t.Sequence[s
 
 
 class BotApp(hikari.GatewayBot):
+    """
+    A subclassed implementation of the :obj:`~hikari.impl.bot.GatewayBot` class containing a command
+    handler. This should be instantiated instead of the superclass if you wish to use the command
+    handler implementation provided.
+
+    Args:
+        token (:obj:`str`): The bot account's token.
+        prefix (Optional[PrefixT]): The command prefix to use for prefix commands, or ``None`` if prefix commands
+            will not be used.
+        ignore_bots (:obj:`bool`): Whether or not prefix commands should ignore bots for invocation. Defaults
+            to ``True``.
+        owner_ids (Sequence[int]): The IDs of the users that own the bot. If not provided then it will be fetched
+            by :obj:`~BotApp.fetch_owner_ids`.
+        **kwargs (Any): Additional keyword arguments passed to the constructor of the :obj:`~hikari.impl.bot.GatewayBot`
+            class.
+    """
+
     def __init__(
         self,
         token: str,
         prefix: t.Optional[_PrefixT] = None,
         ignore_bots: bool = True,
         owner_ids: t.Sequence[int] = (),
-        application_commands_only: bool = False,
         **kwargs: t.Any,
     ) -> None:
         super().__init__(token, **kwargs)
-
-        if prefix is None and not application_commands_only:
-            raise TypeError("'application_commands_only' is False but no prefix was provided.")
-
         # The prefix command handler expects an iterable to be returned from the get_prefix function
         # so we have to wrap a single string prefix in a list here.
         if prefix is not None:
@@ -122,9 +136,12 @@ class BotApp(hikari.GatewayBot):
                 [BotApp, hikari.Message], t.Union[t.Sequence[str], t.Coroutine[t.Any, t.Any, t.Sequence[str]]]
             ] = prefix
         self.ignore_bots = ignore_bots
+        """Whether or not other bots will be ignored when invoking prefix commands."""
         self.owner_ids = owner_ids
+        """The owner ID(s) for the owner(s) of the bot account."""
 
         self.application: t.Optional[hikari.Application] = None
+        """The :obj:`~hikari.applications.Application` for the bot account. This will always be ``None`` before the bot has logged in."""
 
         self._prefix_commands: t.MutableMapping[str, commands.prefix.PrefixCommand] = {}
         self._slash_commands: t.MutableMapping[str, commands.slash.SlashCommand] = {}
@@ -139,6 +156,12 @@ class BotApp(hikari.GatewayBot):
             self.subscribe(hikari.MessageCreateEvent, self.handle_messsage_create_for_prefix_commands)
 
     async def fetch_owner_ids(self) -> t.Sequence[hikari.SnowflakeishOr[int]]:
+        """
+        Fetch the bot's owner IDs, or return the given owner IDs on instantiation if provided.
+
+        Returns:
+            Sequence[SnowflakeishOr[:obj:`int`]]: The IDs of the bot's owners.
+        """
         if self.owner_ids:
             return self.owner_ids
 
@@ -161,12 +184,46 @@ class BotApp(hikari.GatewayBot):
         elif isinstance(command, commands.user.UserCommand):
             self._user_commands[command.name] = command
 
+    async def maybe_dispatch_error_event(
+        self,
+        event: events.CommandErrorEvent,
+        priority_handlers: t.Sequence[
+            t.Union[None, t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]]
+        ],
+    ) -> bool:
+        """
+        Attempts to handle the event first using the given ``priority_handlers``, falling back to dispatching
+        the given event to global listeners.
+
+        Args:
+            event (:obj:`~.events.CommandErrorEvent`): Event to attempt to handle.
+            priority_handlers (Sequence[Union[``None``, ListenerT)]]: Handlers to attempt to use to handle the
+                event before falling back to global event listeners.
+
+        Returns:
+            :obj:`bool`: Whether or not the given event was handled or dispatched successfully.
+        """
+        handled = False
+        for listener in priority_handlers:
+            if handled:
+                break
+            if listener is not None:
+                handled = bool(await listener(event))
+
+        if not handled:
+            if self.get_listeners(type(event), polymorphic=True):
+                await self.dispatch(event)
+                handled = True
+
+        return handled
+
     def command(
         self, cmd_like: t.Optional[commands.base.CommandLike] = None
     ) -> t.Union[commands.base.CommandLike, t.Callable[[commands.base.CommandLike], commands.base.CommandLike]]:
         """
-        Adds a command to the bot. This method can be used as a first or second order decorator, or called
-        manually with the :obj:`~.commands.CommandLike` instance to add as a command.
+        Adds a :obj:`~.commands.base.CommandLike` object as a command to the bot. This method can be used as a
+        first or second order decorator, or called manually with the :obj:`~.commands.CommandLike` instance to
+        add as a command.
         """
         if cmd_like is not None:
             commands_to_impl: t.Sequence[t.Type[commands.base.Command]] = getattr(
@@ -187,6 +244,16 @@ class BotApp(hikari.GatewayBot):
         return decorate
 
     def add_plugin(self, plugin: plugins.Plugin) -> None:
+        """
+        Registers a plugin to the bot, adding all commands and listeners present
+        in the plugin.
+
+        Args:
+            plugin (:obj:`~.plugins.Plugin`): Plugin to register to the bot.
+
+        Returns:
+            ``None``
+        """
         plugin.app = self
         for command in plugin._all_commands:
             self._add_command_to_correct_attr(command)
@@ -195,6 +262,16 @@ class BotApp(hikari.GatewayBot):
                 self.subscribe(event, listener_func)
 
     def get_prefix_command(self, name: str) -> t.Optional[commands.prefix.PrefixCommand]:
+        """
+        Gets the prefix command with the given name, or ``None`` if no command with that name was found.
+
+        Args:
+            name (:obj:`str`): Name of the prefix command to get.
+
+        Returns:
+            Optional[:obj:`~.commands.prefix.PrefixCommand`]: Prefix command object with the given name, or ``None``
+                if not found.
+        """
         return self._prefix_commands.get(name)
 
     async def get_prefix_context(
@@ -202,6 +279,18 @@ class BotApp(hikari.GatewayBot):
         event: hikari.MessageCreateEvent,
         cls: t.Type[context_.prefix.PrefixContext] = context_.prefix.PrefixContext,
     ) -> t.Optional[context_.prefix.PrefixContext]:
+        """
+        Get the :obj:`~.context.prefix.PrefixContext` instance for the given event, or ``None`` if
+        no context could be created.
+
+        Args:
+            event (:obj:`~hikari.events.MessageCreateEvent`): Event to get the prefix context for.
+            cls (Type[:obj:`~.context.prefix.PrefixContext`]): Context class to instantiate. Defaults to
+                :obj:`~.context.prefix.PrefixContext`.
+
+        Returns:
+            Optional[:obj:`~.context.prefix.PrefixContext`]: Prefix context instance for the given event.
+        """
         assert event.message.content is not None
 
         prefixes = self.get_prefix(self, event.message)
@@ -237,10 +326,16 @@ class BotApp(hikari.GatewayBot):
 
         return cls(self, event, command, invoked_with, invoked_prefix)
 
-    async def process_prefix_commands(self, context: t.Optional[context_.prefix.PrefixContext]) -> None:
-        if context is None:
-            return
+    async def process_prefix_commands(self, context: context_.prefix.PrefixContext) -> None:
+        """
+        Invokes the appropriate command for the given context.
 
+        Args:
+            context (:obj:`.context.prefix.PrefixContext`): Context to invoke the command under.
+
+        Returns:
+            ``None``
+        """
         if context.command is None:
             raise errors.CommandNotFound(
                 f"A command with name or alias {context.invoked_with!r} does not exist",
@@ -250,6 +345,16 @@ class BotApp(hikari.GatewayBot):
         await context.command.invoke(context)
 
     async def handle_messsage_create_for_prefix_commands(self, event: hikari.MessageCreateEvent) -> None:
+        """
+        Prefix command :obj:`~hikari.events.MessageCreateEvent` listener. This handles fetching the context,
+        dispatching events, and invoking the appropriate command.
+
+        Args:
+            event (:obj:`~hikari.events.MessageCreateEvent`): Event that prefix commands will be processed for.
+
+        Returns:
+            ``None``
+        """
         if self.ignore_bots and not event.is_human:
             return
 
@@ -257,13 +362,27 @@ class BotApp(hikari.GatewayBot):
             return
 
         context = await self.get_prefix_context(event)
+        if context is None:
+            return
+
+        if context.command is not None:
+            await self.dispatch(events.PrefixCommandInvocationEvent(app=self, command=context.command, context=context))
+
         try:
             await self.process_prefix_commands(context)
         except Exception as exc:
             new_exc = exc
             if not isinstance(exc, errors.LightbulbError):
-                assert context is not None and context.command is not None
+                assert context.command is not None
                 new_exc = errors.CommandInvocationError(
                     f"An error occurred during command {context.command.name!r} invocation", original=exc
                 )
-            pass  # TODO error handling and event dispatching
+            new_exc = typing.cast(errors.LightbulbError, new_exc)
+            error_event = events.PrefixCommandErrorEvent(app=self, exception=new_exc, context=context)
+            handled = await self.maybe_dispatch_error_event(error_event, [getattr(context.command, "error_handler")])
+
+            if not handled:
+                raise new_exc
+        else:
+            assert context.command is not None
+            await self.dispatch(events.PrefixCommandCompletionEvent(app=self, command=context.command, context=context))

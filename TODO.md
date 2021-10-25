@@ -16,39 +16,48 @@
   - [x] Support Listeners
   - [ ] Plugin Unload Hook
   - [ ] Plugin Check
+  - [ ] Plugin error handler
 
 - [ ] Commands
   - [x] Base Command
   - [x] Base Application Command (needs creation methods)
   - [ ] Prefix Commands
+    - [x] Invocation
+    - [ ] Parsing
+    - [ ] Groups & subcommands
   - [ ] Slash Commands
-    - [ ] Option Types 
-    - [ ] Channel Types
+    - [x] Option Types
+    - [x] Channel Types
+    - [ ] Groups & subcommands
     - [ ] ~~Autocomplete~~ (blocked)
   - [ ] ~~Message Commands~~ (blocked)
   - [ ] ~~User Commands~~ (blocked)
   - [ ] Per-Command Error Handler
+    - [x] Prefix commands
+    - [ ] Slash commands
+    - [ ] ~~Message commands~~ (blocked)
+    - [ ] ~~User commands~~ (blocked)
   - [ ] Auto-managing of Application Commands
   
 - [ ] Checks (Reuse?)
-  - [ ] DM Only
-  - [ ] Guild Only
-  - [ ] Human Only
-  - [ ] Bot Only
-  - [ ] Webhook Only
-  - [ ] Owner Only
+  - [x] DM Only
+  - [x] Guild Only
+  - [x] Human Only
+  - [x] Bot Only
+  - [x] Webhook Only
+  - [x] Owner Only
   - [ ] Has Roles
   - [ ] (Bot) Has Guild Permissions
   - [ ] (Bot) Has Role Permissions
   - [ ] (Bot) Has Channel Permissions
   - [ ] Has Attachment
   - [ ] Custom Checks
-  - [ ] Check Exempt
+  - [ ] Check Exempt?
 
 - [ ] Context
-  - [ ] Base Class
-  - [ ] Prefix Context
-  - [ ] Slash Context
+  - [x] Base Class
+  - [x] Prefix Context
+  - [x] Slash Context
   - [ ] ~~Message Context~~ (blocked)
   - [ ] ~~User Context~~ (blocked)
 

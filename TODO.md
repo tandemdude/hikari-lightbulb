@@ -18,6 +18,11 @@
   - [ ] Plugin Check
   - [ ] Plugin error handler
 
+- [ ] Extensions
+  - [ ] Load
+  - [ ] Unload
+  - [ ] Reload
+
 - [ ] Commands
   - [x] Base Command
   - [x] Base Application Command (needs creation methods)
@@ -99,9 +104,9 @@
 
 - [ ] Navigators (Reuse?)
 
-- [ ] Utils (Reuse?)
-  - [ ] get
-  - [ ] find
+- [x] Utils (Reuse?)
+  - [x] get
+  - [x] find
   - [x] permissions_in
   - [x] permissions_for
 

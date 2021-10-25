@@ -284,7 +284,7 @@ class BotApp(hikari.GatewayBot):
         no context could be created.
 
         Args:
-            event (:obj:`~hikari.events.MessageCreateEvent`): Event to get the prefix context for.
+            event (:obj:`~hikari.events.message_events.MessageCreateEvent`): Event to get the prefix context for.
             cls (Type[:obj:`~.context.prefix.PrefixContext`]): Context class to instantiate. Defaults to
                 :obj:`~.context.prefix.PrefixContext`.
 
@@ -346,11 +346,12 @@ class BotApp(hikari.GatewayBot):
 
     async def handle_messsage_create_for_prefix_commands(self, event: hikari.MessageCreateEvent) -> None:
         """
-        Prefix command :obj:`~hikari.events.MessageCreateEvent` listener. This handles fetching the context,
-        dispatching events, and invoking the appropriate command.
+        Prefix command :obj:`~hikari.events.message_events.MessageCreateEvent` listener. This handles fetching the
+        context, dispatching events, and invoking the appropriate command.
 
         Args:
-            event (:obj:`~hikari.events.MessageCreateEvent`): Event that prefix commands will be processed for.
+            event (:obj:`~hikari.events.message_events.MessageCreateEvent`): Event that prefix commands will be
+                processed for.
 
         Returns:
             ``None``

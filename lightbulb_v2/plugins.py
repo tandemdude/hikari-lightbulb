@@ -39,6 +39,8 @@ class Plugin:
     Args:
         name (:obj:`str): The name of the plugin.
         description (Optional[:obj:`str`]): Description of the plugin. Defaults to ``None``.
+        include_datastore (:obj:`bool`): Whether or not to create a :obj:`~.utils.data_store.DataStore` instance
+            internally for this plugin.
     """
 
     __slots__ = ("name", "description", "d", "_raw_commands", "_all_commands", "_listeners", "_app")

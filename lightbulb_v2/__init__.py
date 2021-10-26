@@ -31,3 +31,5 @@ from lightbulb_v2.events import *
 from lightbulb_v2.plugins import *
 
 __all__ = [*app.__all__, *checks.__all__, *decorators.__all__, *errors.__all__, *events.__all__, *plugins.__all__]
+
+__version__ = "2.0.0.dev0"

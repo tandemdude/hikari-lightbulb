@@ -28,7 +28,7 @@ class SlashCommand(base.ApplicationCommand):
     """
     An implementation of :obj:`~.commands.base.Command` representing a slash command.
 
-    See the `API Documentation <https://discord.com/developers/docs/interactions/application-commands#user-commands>`_.
+    See the `API Documentation <https://discord.com/developers/docs/interactions/application-commands#slash-commands>`_.
     """
 
     def as_create_kwargs(self) -> t.Dict[str, t.Any]:

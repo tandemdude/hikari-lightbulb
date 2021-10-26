@@ -21,10 +21,10 @@ sys.setrecursionlimit(1500)
 # -- Project information -----------------------------------------------------
 
 project = "Lightbulb"
-copyright = "2020, tandemdude"
+copyright = "2020-present, tandemdude"
 author = "tandemdude"
 
-with open("../../lightbulb/__init__.py") as fp:
+with open("../../lightbulb_v2/__init__.py") as fp:
     file = fp.read()
 version = re.search(r"__version__ = \"([^\"]+)", file).group(1)
 release = version
@@ -43,6 +43,10 @@ extensions = [
     "sphinx_rtd_theme",
     "sphinx_rtd_dark_mode",
 ]
+
+autodoc_default_options = {
+    "member-order": "groupwise"
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

@@ -28,7 +28,7 @@ already exists for your bug or feature.
 
 Also see `Tanjun <https://fasterspeeding.github.io/Tanjun/master/>`_ if you would prefer different command handler
 syntax. Tanjun could be considered more powerful than Lightbulb for advanced applications, however it has a far
-steeper learning curve for new programmers, and programmers transitioning from discord.py. I reccommend taking a
+steeper learning curve for new programmers, and programmers transitioning from discord.py. I recommend taking a
 look at both Lightbulb and Tanjun before choosing which one you wish to use for your bot.
 
 `View Tanjun on GitHub <https://github.com/FasterSpeeding/Tanjun>`_
@@ -63,9 +63,6 @@ look at both Lightbulb and Tanjun before choosing which one you wish to use for 
 
    getting-started
    api-reference
-   utils-api-reference
-   slash-commands
-   custom-help
    changelog
 
 * :ref:`genindex`

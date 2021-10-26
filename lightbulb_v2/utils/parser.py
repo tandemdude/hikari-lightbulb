@@ -138,7 +138,8 @@ class Parser(BaseParser):
         return self.buffer[prev + 1 : self.idx - 1]
 
     def read_rest(self) -> str:
-        return self.buffer[self.idx : self.n]
+        self.idx = self.n
+        return self.buffer[self.prev :]
 
     def get_option(self) -> commands.base.OptionLike | None:
         if self.options:

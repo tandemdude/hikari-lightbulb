@@ -34,6 +34,7 @@ from lightbulb_v2 import errors
 from lightbulb_v2 import events
 from lightbulb_v2 import plugins
 from lightbulb_v2.utils import data_store
+from lightbulb_v2.utils import parser
 
 _PrefixT = t.Union[
     t.Sequence[str],
@@ -467,13 +468,15 @@ class BotApp(hikari.GatewayBot):
             return None
 
         split_content = new_content.split(maxsplit=1)
-        invoked_with = split_content[0]
+        invoked_with, args = split_content[0], "".join(split_content[1])
 
         if not invoked_with:
             return None
 
         command = self.get_prefix_command(invoked_with)
-        return cls(self, event, command, invoked_with, invoked_prefix)
+        ctx = cls(self, event, command, invoked_with, invoked_prefix)
+        ctx._parser = parser.Parser(ctx, args)
+        return ctx
 
     async def process_prefix_commands(self, context: context_.prefix.PrefixContext) -> None:
         """

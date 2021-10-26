@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import abc
 import logging
-import re
 import typing as t
 
 from hikari.undefined import UNDEFINED
@@ -52,59 +51,116 @@ _quotes = {
 _LOGGER = logging.getLogger("lightbulb_v2.utils.parser")
 
 
-def _get_arg_pattern() -> re.Pattern[str]:
-    patterns = []
-    for opening, closing in _quotes.items():
-        patterns.append(f"{opening}(.*?){closing}")
-    patterns.append("\S+")
-    return re.compile(f"({'|'.join(patterns)})")
-
-
 class BaseParser(abc.ABC):
     ctx: context_.prefix.PrefixContext
 
     @abc.abstractmethod
-    async def inject_args_to_context(self, content: str | None) -> None:
+    async def inject_args_to_context(self) -> None:
         ...
 
 
 class Parser(BaseParser):
-    RE_PAT: t.Final[re.Pattern[str]] = _get_arg_pattern()
+    __slots__ = ("ctx", "_idx", "buffer", "n", "prev")
 
-    def __init__(self, context: context_.prefix.PrefixContext):
+    def __init__(self, context: context_.prefix.PrefixContext, buffer: str | None):
         self.ctx = context
+        self._idx = 0
 
-    @staticmethod
-    def _iterator(content: str) -> t.Iterator[t.Tuple[str, int]]:
-        idx = 0
-        while match := Parser.RE_PAT.search(content[idx:]):
-            idx += match.span()[-1]
-            # yielding idx might be handy later for consume rest options
-            # TODO: find a better pattern so that we don't need this list comp
-            yield [x for x in match.groups() if x is not None][-1], idx
-
-    async def inject_args_to_context(self, content: str | None = None) -> None:
-        if content is None:
+        if buffer is None:
             message = self.ctx.event.message
             assert message.content is not None
-            content = message.content[len(self.ctx.prefix) + len(self.ctx.invoked_with) :]
+            buffer = message.content
+            self._idx += len(self.ctx.prefix) + len(self.ctx.invoked_with)
 
-        raw_args = self._iterator(content)
+        self.buffer = buffer
+        self.n = len(buffer)
+        self.prev = 0
+
+    @property
+    def is_eof(self) -> bool:
+        return self.idx >= self.n
+
+    @property
+    def idx(self) -> int:
+        return self._idx
+
+    @idx.setter
+    def idx(self, val: int) -> int:
+        self.prev = self._idx
+        self._idx = val
+
+    def undo(self) -> None:
+        self.idx = self.prev
+        return None
+
+    def skip_ws(self) -> None:
+        prev = self.idx
+        if (char := self.get_current()) is not None and not char.isspace():
+            return None
+        while (char := self.get_char()) is not None and char.isspace():
+            pass
+        self.prev = prev
+
+    def get_char(self) -> str | None:
+        self.idx += 1
+        return self.get_current()
+
+    def get_current(self) -> str | None:
+        return None if self.is_eof else self.buffer[self.idx]
+
+    def get_word(self) -> str:
+        """Gets the next word, will return an empty strig if EOF."""
+        self.skip_ws()
+        prev = self.idx
+        while (char := self.get_char()) is not None and not char.isspace():
+            pass
+        self.prev = prev
+        return self.buffer[prev : self.idx]
+
+    def get_quoted_word(self) -> str | None:
+        self.skip_ws()
+        prev = self.idx
+        print(self.idx, self.get_current())
+        if (closing := _quotes.get(self.get_current())) is None:
+            return self.get_word()
+
+        while (char := self.get_char()) is not None:
+            if char == closing:
+                break
+        else:
+            # EOF
+            raise RuntimeError("expected a closing quote")  # TODO: raise proper error
+
+        if (current := self.get_char()) is not None and not current.isspace():
+            raise RuntimeError("expected a space after the closing quote")  # TODO: raise proper error
+
+        self.prev = prev
+        return self.buffer[prev + 1 : self.idx - 1]
+
+    def read_rest(self) -> str:
+        return self.buffer[self.idx : self.n]
+
+    def _iterator(self) -> t.Iterator[t.Tuple[str, int]]:
+        while word := self.get_quoted_word():
+            yield word
+
+    async def inject_args_to_context(self) -> None:
+        raw_args = self._iterator()
         assert self.ctx.command is not None
         options = list(self.ctx.command.options.values())
         while options:
             option = options.pop(0)
             _LOGGER.debug("Getting arg for %s with type %s", option.name, option.arg_type)
             try:
-                raw_arg, _ = next(raw_args)  # we don't care about the idx for now
-                _LOGGER.debug("Got raw arg %s", raw_arg)
+                raw_arg = next(raw_args)
             except StopIteration:
                 _LOGGER.debug("Arguments have exhausted")
-                if option.default is UNDEFINED or option.required:
+                if option.required:
                     raise RuntimeError  # TODO: raise missing argument error
 
                 self.ctx._options[option.name] = option.default
             else:
+                _LOGGER.debug("Got raw arg %s", raw_arg)
                 while 1:
                     if await self._try_convert(raw_arg, option) or not options:
                         break
@@ -117,7 +173,7 @@ class Parser(BaseParser):
             arg = await self._convert(raw, option.arg_type)
         except Exception as e:
             _LOGGER.debug("Failed to convert", exc_info=e)
-            if option.default is not UNDEFINED and not option.required:
+            if not option.required:
                 self.ctx._options[option.name] = option.default
                 _LOGGER.debug("Option has a default value, shifting to the next parameter")
                 return False

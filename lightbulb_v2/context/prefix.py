@@ -28,6 +28,7 @@ from lightbulb_v2.context import base
 if t.TYPE_CHECKING:
     from lightbulb_v2 import app as app_
     from lightbulb_v2 import commands
+    from lightbulb_v2.utils import parser
 
 
 class PrefixContext(base.Context):
@@ -42,6 +43,8 @@ class PrefixContext(base.Context):
         invoked_with (:obj:`str`): The name or alias that the command was invoked with.
         prefix (:obj:`str`): The prefix that was used in this context.
     """
+
+    _parser: parser.BaseParser
 
     def __init__(
         self,

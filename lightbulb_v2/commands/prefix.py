@@ -40,5 +40,5 @@ class PrefixCommand(base.Command):
         await self.evaluate_checks(context)
         await self.evaluate_cooldowns(context)
         assert isinstance(context, context_.prefix.PrefixContext)
-        await parser.Parser(context).inject_args_to_context()
+        await context._parser.inject_args_to_context()
         await self(context)

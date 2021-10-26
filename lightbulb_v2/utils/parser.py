@@ -19,13 +19,13 @@ from __future__ import annotations
 __all__ = ["BaseParser", "Parser"]
 
 import abc
-import functools
 import inspect
 import logging
 import typing as t
 
 from lightbulb_v2 import commands
 from lightbulb_v2 import context as context_
+from lightbulb_v2 import errors
 from lightbulb_v2.commands.base import OptionModifier
 from lightbulb_v2.converters.base import BaseConverter
 
@@ -167,7 +167,10 @@ class Parser(BaseParser):
             ):
                 _LOGGER.debug("Arguments have exhausted")
                 if option.required:
-                    raise RuntimeError  # TODO: raise missing argument error
+                    raise errors.NotEnoughArguments(
+                        "Command invocation is missing one or more required arguments.",
+                        missing=[option, *(o for o in self.options if o.required)],
+                    )
 
                 self.ctx._options[option.name] = option.default
                 continue
@@ -176,15 +179,13 @@ class Parser(BaseParser):
             convert = self._greedy_convert if option.modifier is OptionModifier.GREEDY else self._try_convert
             await convert(raw_arg, option)
 
-        # TODO: raise TooManyArguments?
-
     async def _try_convert(self, raw: str, option: commands.base.OptionLike) -> None:
         try:
             arg = await self._convert(raw, option.arg_type)
         except Exception as e:
             _LOGGER.debug("Failed to convert", exc_info=e)
             if option.required:
-                raise RuntimeError  # TODO: raise conversion failed error
+                raise errors.ConverterFailure(f"Conversion failed for option {option.name!r}", opt=option) from e
 
             self.ctx._options[option.name] = option.default
             _LOGGER.debug("Option has a default value, shifting to the next parameter")

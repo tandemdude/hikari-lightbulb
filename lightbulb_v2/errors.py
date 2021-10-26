@@ -22,6 +22,8 @@ __all__ = [
     "CommandNotFound",
     "CommandInvocationError",
     "CommandIsOnCooldown",
+    "ConverterFailure",
+    "NotEnoughArguments",
     "CheckFailure",
     "NotOwner",
     "OnlyInGuild",
@@ -33,6 +35,9 @@ __all__ = [
 ]
 
 import typing as t
+
+if t.TYPE_CHECKING:
+    from lightbulb_v2 import commands
 
 
 class LightbulbError(Exception):
@@ -90,13 +95,33 @@ class CommandIsOnCooldown(LightbulbError):
         """The amount of time in seconds remaining until the cooldown expires."""
 
 
+class ConverterFailure(LightbulbError):
+    """
+    Error raised when option type conversion fails while prefix command arguments are being parsed.
+    """
+
+    def __init__(self, *args: t.Any, opt: commands.base.OptionLike) -> None:
+        super().__init__(*args)
+        self.option: commands.base.OptionLike = opt
+        """The option that could not be converted."""
+
+
+class NotEnoughArguments(LightbulbError):
+    """
+    Error raised when a prefix command expects more options than could be parsed from the user's input.
+    """
+
+    def __init__(self, *args: t.Any, missing: t.Sequence[commands.base.OptionLike]) -> None:
+        super().__init__(*args)
+        self.missing_options: t.Sequence[commands.base.OptionLike] = missing
+        """The missing options from the command invocation."""
+
+
 class CheckFailure(LightbulbError):
     """
     Error raised when a check fails before command invocation. If another error caused this
     to be raised then you can access it using ``CheckFailure.__cause__``.
     """
-
-    pass
 
 
 class NotOwner(CheckFailure):
@@ -105,16 +130,12 @@ class NotOwner(CheckFailure):
     that is restricted to owners only.
     """
 
-    pass
-
 
 class OnlyInGuild(CheckFailure):
     """
     Error raised when a user attempts to use a command in DMs that has been restricted
     to being used only in guilds.
     """
-
-    pass
 
 
 class OnlyInDM(CheckFailure):
@@ -123,16 +144,12 @@ class OnlyInDM(CheckFailure):
     to being used only in DMs.
     """
 
-    pass
-
 
 class BotOnly(CheckFailure):
     """
     Error raised when any entity other than a bot attempts to use a command that has been
     restricted to being used only by bots.
     """
-
-    pass
 
 
 class WebhookOnly(CheckFailure):
@@ -141,8 +158,6 @@ class WebhookOnly(CheckFailure):
     restricted to being used only by webhooks.
     """
 
-    pass
-
 
 class HumanOnly(CheckFailure):
     """
@@ -150,13 +165,9 @@ class HumanOnly(CheckFailure):
     restricted to being used only by humans.
     """
 
-    pass
-
 
 class NSFWChannelOnly(CheckFailure):
     """
     Error raised when a user attempts to use a command in a non-NSFW channel that has
     been restricted to only being used in NSFW channels.
     """
-
-    pass

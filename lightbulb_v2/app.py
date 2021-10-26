@@ -476,7 +476,7 @@ class BotApp(hikari.GatewayBot):
         command = self.get_prefix_command(invoked_with)
         ctx = cls(self, event, command, invoked_with, invoked_prefix)
         if ctx.command is not None:
-            ctx._parser = ctx.command.parser(ctx, args)
+            ctx._parser = (ctx.command.parser or parser.Parser)(ctx, args)
         return ctx
 
     async def process_prefix_commands(self, context: context_.prefix.PrefixContext) -> None:
@@ -533,7 +533,7 @@ class BotApp(hikari.GatewayBot):
                 )
             new_exc = t.cast(errors.LightbulbError, new_exc)
             error_event = events.PrefixCommandErrorEvent(app=self, exception=new_exc, context=context)
-            handled = await self.maybe_dispatch_error_event(error_event, [getattr(context.command, "error_handler")])
+            handled = await self.maybe_dispatch_error_event(error_event, [getattr(context.command, "error_handler", None)])
 
             if not handled:
                 raise new_exc

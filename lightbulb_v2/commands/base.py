@@ -28,7 +28,6 @@ import typing as t
 import hikari
 
 from lightbulb_v2 import errors
-from lightbulb_v2.utils import parser as parser_
 
 if t.TYPE_CHECKING:
     from lightbulb_v2 import app as app_
@@ -36,6 +35,7 @@ if t.TYPE_CHECKING:
     from lightbulb_v2 import context as context_
     from lightbulb_v2 import events
     from lightbulb_v2 import plugins
+    from lightbulb_v2.utils import parser as parser_
 
 OPTION_TYPE_MAPPING = {
     str: hikari.OptionType.STRING,
@@ -135,7 +135,7 @@ class CommandLike:
     """The guilds for the command. This only affects application commands."""
     subcommands: t.List[CommandLike] = dataclasses.field(default_factory=list)
     """Subcommands for the command."""
-    parser: t.Type[parser_.BaseParser] = parser_.Parser
+    parser: t.Optional[t.Type[parser_.BaseParser]] = None
     """The argument parser to use for prefix commands."""
 
     def set_error_handler(

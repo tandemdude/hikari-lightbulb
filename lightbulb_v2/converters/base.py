@@ -16,13 +16,14 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+__all__ = ["BaseConverter"]
+
 import abc
 import typing as t
 
 from lightbulb import context as context_
 
 T = t.TypeVar("T")
-__all__ = ["BaseConverter"]
 
 
 class BaseConverter(abc.ABC, t.Generic[T]):

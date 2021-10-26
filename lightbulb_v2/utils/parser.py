@@ -16,6 +16,8 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+__all__ = ["BaseParser", "Parser"]
+
 import abc
 import logging
 import typing as t
@@ -27,7 +29,6 @@ from lightbulb_v2 import context as context_
 from lightbulb_v2.converters.base import BaseConverter
 
 T = t.TypeVar("T")
-__all__ = ["BaseParser", "Parser"]
 _quotes = {
     '"': '"',
     "'": "'",

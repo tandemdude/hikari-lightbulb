@@ -21,7 +21,6 @@ __all__ = ["PrefixCommand"]
 
 from lightbulb_v2 import context as context_
 from lightbulb_v2.commands import base
-from lightbulb_v2.utils import parser
 
 
 class PrefixCommand(base.Command):

@@ -28,6 +28,7 @@ import typing as t
 import hikari
 
 from lightbulb_v2 import errors
+from lightbulb_v2.utils import parser as parser_
 
 if t.TYPE_CHECKING:
     from lightbulb_v2 import app as app_
@@ -134,6 +135,8 @@ class CommandLike:
     """The guilds for the command. This only affects application commands."""
     subcommands: t.List[CommandLike] = dataclasses.field(default_factory=list)
     """Subcommands for the command."""
+    parser: t.Type[parser_.BaseParser] = parser_.Parser
+    """The argument parser to use for prefix commands."""
 
     def set_error_handler(
         self,
@@ -211,6 +214,8 @@ class Command(abc.ABC):
         """The plugin that the command belongs to."""
         self.aliases: t.Sequence[str] = initialiser.aliases
         """The aliases for the command. This value means nothing for application commands."""
+        self.parser = initialiser.parser
+        """The argument parser to use for prefix commands."""
 
     async def __call__(self, context: context_.base.Context) -> None:
         return await self.callback(context)

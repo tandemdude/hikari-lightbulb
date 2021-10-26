@@ -19,6 +19,8 @@ from __future__ import annotations
 __all__ = ["BaseParser", "Parser"]
 
 import abc
+import functools
+import inspect
 import logging
 import typing as t
 
@@ -53,6 +55,10 @@ _LOGGER = logging.getLogger("lightbulb_v2.utils.parser")
 
 class BaseParser(abc.ABC):
     ctx: context_.prefix.PrefixContext
+
+    @abc.abstractmethod
+    def __init__(self, context: context_.prefix.PrefixContext, args: t.Optional[str]) -> None:
+        ...
 
     @abc.abstractmethod
     async def inject_args_to_context(self) -> None:
@@ -164,6 +170,7 @@ class Parser(BaseParser):
                     raise RuntimeError  # TODO: raise missing argument error
 
                 self.ctx._options[option.name] = option.default
+                continue
 
             _LOGGER.debug("Got raw arg %s", raw_arg)
             convert = self._greedy_convert if option.modifier is OptionModifier.GREEDY else self._try_convert
@@ -204,10 +211,19 @@ class Parser(BaseParser):
     async def _convert(
         self,
         value: str,
-        callback_or_type: t.Union[t.Callable[[str], T], t.Type[BaseConverter[T]]],
+        callback_or_type: t.Union[
+            t.Callable[[str], t.Union[T, t.Coroutine[t.Any, t.Any, T]]], t.Type[BaseConverter[T]]
+        ],
     ) -> T:
         _LOGGER.debug("Attempting to convert %s to %s", value, callback_or_type)
-        if issubclass(callback_or_type, BaseConverter):
-            raise NotImplementedError  # TODO: make use of maybe_await on convert method
+        conversion_func = callback_or_type
+        if inspect.isclass(callback_or_type) and issubclass(callback_or_type, BaseConverter):  # type: ignore
+            conversion_func = callback_or_type(self.ctx).convert  # type: ignore
 
-        return callback_or_type(value)
+        converted = conversion_func(value)  # type: ignore
+        if inspect.iscoroutine(converted):
+            assert isinstance(converted, t.Awaitable)
+            converted = await converted
+
+        converted = t.cast(T, converted)
+        return converted

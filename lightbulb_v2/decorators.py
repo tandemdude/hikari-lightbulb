@@ -73,6 +73,8 @@ def command(
             to an empty list.
         guilds (Sequence[:obj:`int`]): The guilds that the command will be created in. This will only affect
             application commands. Defaults to an empty list.
+        parser (:obj:`~.utils.parser.BaseParser`): The argument parser to use for prefix commands. Defaults
+            to :obj:`~.utils.parser.Parser`.
     """
 
     def decorate(

@@ -21,13 +21,17 @@ __all__ = ["BaseConverter"]
 import abc
 import typing as t
 
-from lightbulb import context as context_
+from lightbulb_v2 import context as context_
 
 T = t.TypeVar("T")
 
 
 class BaseConverter(abc.ABC, t.Generic[T]):
-    @staticmethod
+    __slots__ = ("context",)
+
+    def __init__(self, context: context_.base.Context) -> None:
+        self.context = context
+
     @abc.abstractmethod
-    def convert(context: context_.Context, arg: str) -> T:
+    def convert(self, arg: str) -> T:
         ...

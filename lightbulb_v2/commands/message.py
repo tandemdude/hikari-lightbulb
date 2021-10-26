@@ -33,7 +33,7 @@ class MessageCommand(base.ApplicationCommand):
 
     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
-        self.options = {}
+        self.options: t.Dict[str, t.Any] = {}
 
     def as_create_kwargs(self) -> t.Dict[str, t.Any]:
         raise NotImplementedError

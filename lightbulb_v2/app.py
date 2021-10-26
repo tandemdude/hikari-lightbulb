@@ -468,14 +468,15 @@ class BotApp(hikari.GatewayBot):
             return None
 
         split_content = new_content.split(maxsplit=1)
-        invoked_with, args = split_content[0], "".join(split_content[1])
+        invoked_with, args = split_content[0], "".join(split_content[1:])
 
         if not invoked_with:
             return None
 
         command = self.get_prefix_command(invoked_with)
         ctx = cls(self, event, command, invoked_with, invoked_prefix)
-        ctx._parser = parser.Parser(ctx, args)
+        if ctx.command is not None:
+            ctx._parser = ctx.command.parser(ctx, args)
         return ctx
 
     async def process_prefix_commands(self, context: context_.prefix.PrefixContext) -> None:

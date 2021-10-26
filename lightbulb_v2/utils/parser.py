@@ -22,10 +22,9 @@ import abc
 import logging
 import typing as t
 
-from hikari.undefined import UNDEFINED
-
 from lightbulb_v2 import commands
 from lightbulb_v2 import context as context_
+from lightbulb_v2.commands.base import OptionModifier
 from lightbulb_v2.converters.base import BaseConverter
 
 T = t.TypeVar("T")
@@ -61,7 +60,7 @@ class BaseParser(abc.ABC):
 
 
 class Parser(BaseParser):
-    __slots__ = ("ctx", "_idx", "buffer", "n", "prev")
+    __slots__ = ("ctx", "_idx", "buffer", "n", "prev", "options")
 
     def __init__(self, context: context_.prefix.PrefixContext, buffer: str | None):
         self.ctx = context
@@ -76,6 +75,7 @@ class Parser(BaseParser):
         self.buffer = buffer
         self.n = len(buffer)
         self.prev = 0
+        self.options = list(context.command.options.values()) if context.command else []
 
     @property
     def is_eof(self) -> bool:
@@ -86,7 +86,7 @@ class Parser(BaseParser):
         return self._idx
 
     @idx.setter
-    def idx(self, val: int) -> int:
+    def idx(self, val: int) -> None:
         self.prev = self._idx
         self._idx = val
 
@@ -118,11 +118,10 @@ class Parser(BaseParser):
         self.prev = prev
         return self.buffer[prev : self.idx]
 
-    def get_quoted_word(self) -> str | None:
+    def get_quoted_word(self) -> str:
         self.skip_ws()
         prev = self.idx
-        print(self.idx, self.get_current())
-        if (closing := _quotes.get(self.get_current())) is None:
+        if (closing := _quotes.get(t.cast(str, self.get_current()))) is None:
             return self.get_word()
 
         while (char := self.get_char()) is not None:
@@ -141,58 +140,69 @@ class Parser(BaseParser):
     def read_rest(self) -> str:
         return self.buffer[self.idx : self.n]
 
-    def _iterator(self) -> t.Iterator[t.Tuple[str, int]]:
-        while word := self.get_quoted_word():
-            yield word
+    def get_option(self) -> commands.base.OptionLike | None:
+        if self.options:
+            return self.options.pop(0)
+
+        return None
 
     async def inject_args_to_context(self) -> None:
-        raw_args = self._iterator()
-        assert self.ctx.command is not None
-        options = list(self.ctx.command.options.values())
-        while options:
-            option = options.pop(0)
+        while option := self.get_option():
             _LOGGER.debug("Getting arg for %s with type %s", option.name, option.arg_type)
-            try:
-                raw_arg = next(raw_args)
-            except StopIteration:
+
+            if not (
+                raw_arg := self.read_rest()
+                if option.modifier is OptionModifier.CONSUME_REST
+                else self.get_quoted_word()
+            ):
                 _LOGGER.debug("Arguments have exhausted")
                 if option.required:
                     raise RuntimeError  # TODO: raise missing argument error
 
                 self.ctx._options[option.name] = option.default
-            else:
-                _LOGGER.debug("Got raw arg %s", raw_arg)
-                while 1:
-                    if await self._try_convert(raw_arg, option) or not options:
-                        break
 
-                    option = options.pop(0)
+            _LOGGER.debug("Got raw arg %s", raw_arg)
+            convert = self._greedy_convert if option.modifier is OptionModifier.GREEDY else self._try_convert
+            await convert(raw_arg, option)
 
-    async def _try_convert(self, raw: str, option: commands.base.OptionLike) -> bool:
+        # TODO: raise TooManyArguments?
+
+    async def _try_convert(self, raw: str, option: commands.base.OptionLike) -> None:
         try:
-            _LOGGER.debug("Trying to convert %s to %s", raw, option.arg_type)
             arg = await self._convert(raw, option.arg_type)
         except Exception as e:
             _LOGGER.debug("Failed to convert", exc_info=e)
-            if not option.required:
-                self.ctx._options[option.name] = option.default
-                _LOGGER.debug("Option has a default value, shifting to the next parameter")
-                return False
+            if option.required:
+                raise RuntimeError  # TODO: raise conversion failed error
 
-            raise RuntimeError  # TODO: raise conversion failed error
+            self.ctx._options[option.name] = option.default
+            _LOGGER.debug("Option has a default value, shifting to the next parameter")
+            self.undo()
         else:
             _LOGGER.debug("Sucessfuly converted %s to %s", raw, arg)
             self.ctx._options[option.name] = arg
-            return True
 
-    async def _greedy_convert(self, *args: t.Any, **kwargs: t.Any) -> t.Any:
-        raise NotImplementedError
+    async def _greedy_convert(self, raw: str, option: commands.base.OptionLike) -> None:
+        self.ctx._options[option.name] = args = []
+        _LOGGER.debug("Attempting to greedy convert %s to %s", raw, option.arg_type)
+        while raw:
+            try:
+                arg = await self._convert(raw, option.arg_type)
+            except Exception as e:
+                _LOGGER.debug("Done greedy converting", exc_info=e)
+                self.undo()
+                break
+            else:
+                _LOGGER.debug("Appending %s", arg)
+                args.append(arg)
+                raw = self.get_quoted_word()
 
-    @staticmethod
     async def _convert(
+        self,
         value: str,
         callback_or_type: t.Union[t.Callable[[str], T], t.Type[BaseConverter[T]]],
     ) -> T:
+        _LOGGER.debug("Attempting to convert %s to %s", value, callback_or_type)
         if issubclass(callback_or_type, BaseConverter):
             raise NotImplementedError  # TODO: make use of maybe_await on convert method
 

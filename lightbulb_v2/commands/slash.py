@@ -31,6 +31,8 @@ class SlashCommand(base.ApplicationCommand):
     See the `API Documentation <https://discord.com/developers/docs/interactions/application-commands#slash-commands>`_.
     """
 
+    __slots__ = ()
+
     def as_create_kwargs(self) -> t.Dict[str, t.Any]:
         sorted_opts = sorted(self.options.values(), key=lambda o: int(o.required), reverse=True)
         return {

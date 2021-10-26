@@ -64,6 +64,8 @@ class CommandNotFound(LightbulbError):
     is not found. This will only be raised for prefix commands.
     """
 
+    __slots__ = ("invoked_with",)
+
     def __init__(self, *args: t.Any, invoked_with: str) -> None:
         super().__init__(*args)
         self.invoked_with: str = invoked_with
@@ -77,6 +79,8 @@ class CommandInvocationError(LightbulbError):
     ``CommandInvocationError.__cause__`` or ``CommandInvocationError.original``.
     """
 
+    __slots__ = ("original",)
+
     def __init__(self, *args: t.Any, original: Exception) -> None:
         super().__init__(*args)
         self.original = original
@@ -89,6 +93,8 @@ class CommandIsOnCooldown(LightbulbError):
     Error raised when a command was on cooldown when it was attempted to be invoked.
     """
 
+    __slots__ = ("retry_after",)
+
     def __init__(self, *args: t.Any, retry_after: float) -> None:
         super().__init__(*args)
         self.retry_after: float = retry_after
@@ -100,6 +106,8 @@ class ConverterFailure(LightbulbError):
     Error raised when option type conversion fails while prefix command arguments are being parsed.
     """
 
+    __slots__ = ("option",)
+
     def __init__(self, *args: t.Any, opt: commands.base.OptionLike) -> None:
         super().__init__(*args)
         self.option: commands.base.OptionLike = opt
@@ -110,6 +118,8 @@ class NotEnoughArguments(LightbulbError):
     """
     Error raised when a prefix command expects more options than could be parsed from the user's input.
     """
+
+    __slots__ = ("missing_options",)
 
     def __init__(self, *args: t.Any, missing: t.Sequence[commands.base.OptionLike]) -> None:
         super().__init__(*args)

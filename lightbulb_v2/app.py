@@ -533,7 +533,9 @@ class BotApp(hikari.GatewayBot):
                 )
             new_exc = t.cast(errors.LightbulbError, new_exc)
             error_event = events.PrefixCommandErrorEvent(app=self, exception=new_exc, context=context)
-            handled = await self.maybe_dispatch_error_event(error_event, [getattr(context.command, "error_handler", None)])
+            handled = await self.maybe_dispatch_error_event(
+                error_event, [getattr(context.command, "error_handler", None)]
+            )
 
             if not handled:
                 raise new_exc

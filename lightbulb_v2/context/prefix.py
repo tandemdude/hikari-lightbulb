@@ -44,7 +44,7 @@ class PrefixContext(base.Context):
         prefix (:obj:`str`): The prefix that was used in this context.
     """
 
-    _parser: parser.BaseParser
+    __slots__ = ("_parser", "_event", "_command", "_invoked_with", "_prefix", "_options")
 
     def __init__(
         self,
@@ -60,6 +60,7 @@ class PrefixContext(base.Context):
         self._invoked_with = invoked_with
         self._prefix = prefix
         self._options: t.Dict[str, t.Any] = {}
+        self._parser: parser.BaseParser
 
     @property
     def event(self) -> hikari.MessageCreateEvent:
@@ -67,13 +68,7 @@ class PrefixContext(base.Context):
 
     @property
     def raw_options(self) -> t.Dict[str, t.Any]:
-        """Dictionary of :obj:`str` option name to option value that the user invoked the command with."""
         return self._options
-
-    @property
-    def options(self) -> base.OptionsProxy:
-        """:obj:`~.context.base.OptionsProxy` wrapping the options that the user invoked the command with."""
-        return base.OptionsProxy(self.raw_options)
 
     @property
     def channel_id(self) -> hikari.Snowflakeish:

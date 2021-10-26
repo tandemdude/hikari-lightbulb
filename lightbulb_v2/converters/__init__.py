@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# Copyright © tandemdude 2020-present
 #
 # This file is part of Lightbulb.
 #

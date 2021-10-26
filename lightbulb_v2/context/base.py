@@ -53,6 +53,8 @@ class Context(abc.ABC):
         app (:obj:`~.app.BotApp`): The ``BotApp`` instance that the context is linked to.
     """
 
+    __slots__ = ("_app",)
+
     def __init__(self, app: app_.BotApp):
         self._app = app
 
@@ -66,6 +68,16 @@ class Context(abc.ABC):
     def event(self) -> t.Union[hikari.MessageCreateEvent, hikari.InteractionCreateEvent]:
         """The event for the context."""
         ...
+
+    @property
+    def raw_options(self) -> t.Dict[str, t.Any]:
+        """Dictionary of :obj:`str` option name to option value that the user invoked the command with."""
+        return {}
+
+    @property
+    def options(self) -> OptionsProxy:
+        """:obj:`~OptionsProxy` wrapping the options that the user invoked the command with."""
+        return OptionsProxy(self.raw_options)
 
     @property
     @abc.abstractmethod

@@ -191,6 +191,21 @@ class Command(abc.ABC):
         initialiser (:obj:`~CommandLike`): The ``CommandLike`` object to create the command from.
     """
 
+    __slots__ = (
+        "app",
+        "callback",
+        "name",
+        "description",
+        "options",
+        "checks",
+        "cooldown_manager",
+        "error_handler",
+        "parent",
+        "plugin",
+        "aliases",
+        "parser",
+    )
+
     def __init__(self, app: app_.BotApp, initialiser: CommandLike) -> None:
         self.app = app
         """The ``BotApp`` instance the command is registered to."""
@@ -283,6 +298,8 @@ class Command(abc.ABC):
 
 class ApplicationCommand(Command, abc.ABC):
     """Abstract base class for all application command types."""
+
+    __slots__ = ("guilds", "instances")
 
     def __init__(self, app: app_.BotApp, initialiser: CommandLike) -> None:
         super().__init__(app, initialiser)

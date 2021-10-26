@@ -28,6 +28,8 @@ class PrefixCommand(base.Command):
     An implementation of :obj:`~.commands.base.Command` representing a prefix command.
     """
 
+    __slots__ = ()
+
     @property
     def signature(self) -> str:
         sig = self.qualname

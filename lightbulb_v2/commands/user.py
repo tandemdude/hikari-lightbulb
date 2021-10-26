@@ -31,6 +31,8 @@ class UserCommand(base.ApplicationCommand):
     See the `API Documentation <https://discord.com/developers/docs/interactions/application-commands#user-commands>`_.
     """
 
+    __slots__ = ()
+
     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
         self.options: t.Dict[str, t.Any] = {}

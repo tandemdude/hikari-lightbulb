@@ -21,4 +21,5 @@ from lightbulb_v2.context import base
 
 
 class MessageContext(base.Context):
+    __slots__ = ()
     pass

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# Copyright © tandemdude 2020-present
 #
 # This file is part of Lightbulb.
 #
@@ -54,7 +55,7 @@ _LOGGER = logging.getLogger("lightbulb_v2.utils.parser")
 
 
 class BaseParser(abc.ABC):
-    ctx: context_.prefix.PrefixContext
+    __slots__ = ()
 
     @abc.abstractmethod
     def __init__(self, context: context_.prefix.PrefixContext, args: t.Optional[str]) -> None:
@@ -68,7 +69,7 @@ class BaseParser(abc.ABC):
 class Parser(BaseParser):
     __slots__ = ("ctx", "_idx", "buffer", "n", "prev", "options")
 
-    def __init__(self, context: context_.prefix.PrefixContext, buffer: str | None):
+    def __init__(self, context: context_.prefix.PrefixContext, buffer: t.Optional[str]):
         self.ctx = context
         self._idx = 0
 
@@ -108,14 +109,14 @@ class Parser(BaseParser):
             pass
         self.prev = prev
 
-    def get_char(self) -> str | None:
+    def get_char(self) -> t.Optional[str]:
         self.idx += 1
         return self.get_current()
 
-    def get_current(self) -> str | None:
+    def get_current(self) -> t.Optional[str]:
         return None if self.is_eof else self.buffer[self.idx]
 
-    def get_previous(self) -> str | None:
+    def get_previous(self) -> t.Optional[str]:
         return None if self.idx == 0 else self.buffer[self.idx - 1]
 
     def get_word(self) -> str:
@@ -150,7 +151,7 @@ class Parser(BaseParser):
         self.idx = self.n
         return self.buffer[self.prev :]
 
-    def get_option(self) -> commands.base.OptionLike | None:
+    def get_option(self) -> t.Optional[commands.base.OptionLike]:
         if self.options:
             return self.options.pop(0)
 

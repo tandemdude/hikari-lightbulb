@@ -41,6 +41,8 @@ class SlashContext(base.Context):
         command (:obj:`~.commands.slash.SlashCommand`): The command that the context is for.
     """
 
+    __slots__ = ("_event", "_interaction", "_command", "initial_response_sent")
+
     def __init__(
         self, app: app_.BotApp, event: hikari.InteractionCreateEvent, command: commands.slash.SlashCommand
     ) -> None:

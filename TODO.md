@@ -28,7 +28,7 @@
   - [x] Base Application Command (needs creation methods)
   - [ ] Prefix Commands
     - [x] Invocation
-    - [ ] Parsing
+    - [x] Parsing
     - [ ] Groups & subcommands
   - [ ] Slash Commands
     - [x] Option Types
@@ -66,7 +66,8 @@
   - [ ] ~~Message Context~~ (blocked)
   - [ ] ~~User Context~~ (blocked)
 
-- [ ] Converters (Reuse?)
+- [ ] Converters
+  - [x] Base Converter
   - [ ] User Converter
   - [ ] Member Converter
   - [ ] Text Channel Converter
@@ -80,9 +81,9 @@
   - [ ] Colo(u)r Converter
   - [ ] Timestamp Converter
 
-- [ ] Special Args
-  - [ ] Greedy
-  - [ ] Consume Rest
+- [x] Special Args
+  - [x] Greedy
+  - [x] Consume Rest
 
 - [ ] Cooldowns (Reuse?)
 
@@ -94,9 +95,9 @@
 - [ ] Errors (Reuse?)
 
 - [ ] Parsing
-  - [ ] Standard Parser
+  - [x] Standard Parser
   - [ ] CLI Parser
-  - [ ] Custom Parsing
+  - [x] Custom Parsing
 
 - [ ] Help Command
 

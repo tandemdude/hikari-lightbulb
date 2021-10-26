@@ -21,10 +21,11 @@ __all__ = ["BotApp", "when_mentioned_or"]
 
 import functools
 import inspect
-import typing
+import sys
 import typing as t
 
 import hikari
+from hikari.internal import ux
 
 from lightbulb_v2 import checks
 from lightbulb_v2 import commands
@@ -32,6 +33,7 @@ from lightbulb_v2 import context as context_
 from lightbulb_v2 import errors
 from lightbulb_v2 import events
 from lightbulb_v2 import plugins
+from lightbulb_v2.utils import data_store
 
 _PrefixT = t.Union[
     t.Sequence[str],
@@ -143,6 +145,9 @@ class BotApp(hikari.GatewayBot):
         self.application: t.Optional[hikari.Application] = None
         """The :obj:`~hikari.applications.Application` for the bot account. This will always be ``None`` before the bot has logged in."""
 
+        self.d = data_store.DataStore()
+        """A :obj:`~.utils.data_store.DataStore` instance enabling storage of custom data without subclassing."""
+
         self._prefix_commands: t.MutableMapping[str, commands.prefix.PrefixCommand] = {}
         self._slash_commands: t.MutableMapping[str, commands.slash.SlashCommand] = {}
         self._message_commands: t.MutableMapping[str, commands.message.MessageCommand] = {}
@@ -154,6 +159,12 @@ class BotApp(hikari.GatewayBot):
 
         if prefix is not None:
             self.subscribe(hikari.MessageCreateEvent, self.handle_messsage_create_for_prefix_commands)
+
+    @staticmethod
+    def print_banner(banner: t.Optional[str], allow_color: bool, force_color: bool) -> None:
+        ux.print_banner(banner, allow_color, force_color)
+        if banner == "hikari":
+            sys.stdout.write("Thank you for using lightbulb!\n")
 
     async def fetch_owner_ids(self) -> t.Sequence[hikari.SnowflakeishOr[int]]:
         """
@@ -176,12 +187,26 @@ class BotApp(hikari.GatewayBot):
 
     def _add_command_to_correct_attr(self, command: commands.base.Command) -> None:
         if isinstance(command, commands.prefix.PrefixCommand):
-            self._prefix_commands[command.name] = command
+            for item in [command.name, *command.aliases]:
+                if item in self._prefix_commands:
+                    raise errors.CommandAlreadyExists(
+                        f"A prefix command with name or alias {item!r} is already registered."
+                    )
+            for item in [command.name, *command.aliases]:
+                self._prefix_commands[item] = command
         elif isinstance(command, commands.slash.SlashCommand):
+            if command.name in self._slash_commands:
+                raise errors.CommandAlreadyExists(f"A slash command with name {command.name!r} is already registered.")
             self._slash_commands[command.name] = command
         elif isinstance(command, commands.message.MessageCommand):
+            if command.name in self._message_commands:
+                raise errors.CommandAlreadyExists(
+                    f"A message command with name {command.name!r} is already registered."
+                )
             self._message_commands[command.name] = command
         elif isinstance(command, commands.user.UserCommand):
+            if command.name in self._user_commands:
+                raise errors.CommandAlreadyExists(f"A user command with name {command.name!r} is already registered.")
             self._user_commands[command.name] = command
 
     async def maybe_dispatch_error_event(
@@ -217,6 +242,66 @@ class BotApp(hikari.GatewayBot):
 
         return handled
 
+    def get_prefix_command(self, name: str) -> t.Optional[commands.prefix.PrefixCommand]:
+        """
+        Gets the prefix command with the given name, or ``None`` if no command with that name was found.
+
+        Args:
+            name (:obj:`str`): Name of the prefix command to get.
+
+        Returns:
+            Optional[:obj:`~.commands.prefix.PrefixCommand`]: Prefix command object with the given name, or ``None``
+                if not found.
+        """
+        return self._prefix_commands.get(name)
+
+    def get_slash_command(self, name: str) -> t.Optional[commands.slash.SlashCommand]:
+        """
+        Gets the slash command with the given name, or ``None`` if no command with that name was found.
+
+        Args:
+            name (:obj:`str`): Name of the slash command to get.
+
+        Returns:
+            Optional[:obj:`~.commands.slash.SlashCommand`]: Slash command object with the given name, or ``None``
+                if not found.
+        """
+        return self._slash_commands.get(name)
+
+    def get_message_command(self, name: str) -> t.Optional[commands.message.MessageCommand]:
+        """
+        Gets the message command with the given name, or ``None`` if no command with that name was found.
+
+        Args:
+            name (:obj:`str`): Name of the message command to get.
+
+        Returns:
+            Optional[:obj:`~.commands.message.MessageCommand`]: Message command object with the given name, or ``None``
+                if not found.
+        """
+        return self._message_commands.get(name)
+
+    def get_user_command(self, name: str) -> t.Optional[commands.user.UserCommand]:
+        """
+        Gets the user command with the given name, or ``None`` if no command with that name was found.
+
+        Args:
+            name (:obj:`str`): Name of the user command to get.
+
+        Returns:
+            Optional[:obj:`~.commands.user.UserCommand`]: User command object with the given name, or ``None``
+                if not found.
+        """
+        return self._user_commands.get(name)
+
+    def add_command(
+        self, cmd_like: t.Optional[commands.base.CommandLike] = None
+    ) -> t.Union[commands.base.CommandLike, t.Callable[[commands.base.CommandLike], commands.base.CommandLike]]:
+        """
+        Alias for :obj:`~BotApp.command`.
+        """
+        return self.command(cmd_like)
+
     def command(
         self, cmd_like: t.Optional[commands.base.CommandLike] = None
     ) -> t.Union[commands.base.CommandLike, t.Callable[[commands.base.CommandLike], commands.base.CommandLike]]:
@@ -243,6 +328,59 @@ class BotApp(hikari.GatewayBot):
 
         return decorate
 
+    def remove_command(self, command: t.Union[commands.base.Command, commands.base.CommandLike]) -> None:
+        """
+        Removes a command or command-like object from the bot.
+
+        Args:
+            command (Union[:obj:`~.commands.base.Command`, :obj:`~.commands.base.CommandLike`): Command or
+                command-like object to remove from the bot.
+
+        Returns:
+            ``None``
+        """
+        if isinstance(command, commands.base.CommandLike):
+            self._remove_commandlike(command)
+            return
+
+        if isinstance(command, commands.prefix.PrefixCommand):
+            for item in [command.name, *command.aliases]:
+                self._prefix_commands.pop(item, None)
+        elif isinstance(command, commands.slash.SlashCommand):
+            self._slash_commands.pop(command.name, None)
+        elif isinstance(command, commands.message.MessageCommand):
+            self._message_commands.pop(command.name, None)
+        elif isinstance(command, commands.user.UserCommand):
+            self._user_commands.pop(command.name, None)
+
+    def _remove_commandlike(self, cmd_like: commands.base.CommandLike) -> None:
+        commands_to_remove: t.List[t.Optional[commands.base.Command]] = []
+        cmd_types: t.Sequence[t.Type[commands.base.Command]] = getattr(cmd_like.callback, "__cmd_types__", [])
+        for cmd_type in cmd_types:
+            if issubclass(cmd_type, commands.prefix.PrefixCommand):
+                commands_to_remove.append(self.get_prefix_command(cmd_like.name))
+            elif issubclass(cmd_type, commands.slash.SlashCommand):
+                commands_to_remove.append(self.get_slash_command(cmd_like.name))
+            elif issubclass(cmd_type, commands.message.MessageCommand):
+                commands_to_remove.append(self.get_message_command(cmd_like.name))
+            elif issubclass(cmd_type, commands.user.UserCommand):
+                commands_to_remove.append(self.get_user_command(cmd_like.name))
+
+        for command in filter(None, commands_to_remove):
+            self.remove_command(command)
+
+    def get_plugin(self, name: str) -> t.Optional[plugins.Plugin]:
+        """
+        Gets the plugin with the given name, or ``None`` if no plugin with that name was found.
+
+        Args:
+            name (:obj:`str`): Name of the plugin to get.
+
+        Returns:
+            Optional[:obj:`~.plugins.Plugin`]: Plugin object with the given name, or ``None`` if not found.
+        """
+        return self._plugins.get(name)
+
     def add_plugin(self, plugin: plugins.Plugin) -> None:
         """
         Registers a plugin to the bot, adding all commands and listeners present
@@ -258,21 +396,33 @@ class BotApp(hikari.GatewayBot):
         for command in plugin._all_commands:
             self._add_command_to_correct_attr(command)
         for event, listeners in plugin._listeners.items():
-            for listener_func in listeners:
-                self.subscribe(event, listener_func)
+            for listener in listeners:
+                self.subscribe(event, listener)
 
-    def get_prefix_command(self, name: str) -> t.Optional[commands.prefix.PrefixCommand]:
+    def remove_plugin(self, plugin_or_name: t.Union[plugins.Plugin, str]) -> None:
         """
-        Gets the prefix command with the given name, or ``None`` if no command with that name was found.
+        Unregisters a plugin from the bot, removing all commands and listeners
+        present in the plugin.
 
         Args:
-            name (:obj:`str`): Name of the prefix command to get.
+            plugin_or_name (Union[:obj:`~.plugins.Plugin`, :obj:`str`]): Plugin or name of the plugin
+                to unregister from the bot.
 
         Returns:
-            Optional[:obj:`~.commands.prefix.PrefixCommand`]: Prefix command object with the given name, or ``None``
-                if not found.
+            ``None``
         """
-        return self._prefix_commands.get(name)
+        plugin: t.Optional[t.Union[plugins.Plugin, str]] = plugin_or_name
+        if isinstance(plugin, str):
+            plugin = self.get_plugin(plugin)
+
+        if plugin is None:
+            return
+
+        for command in plugin._raw_commands:
+            self.remove_command(command)
+        for event, listeners in plugin._listeners.items():
+            for listener in listeners:
+                self.unsubscribe(event, listener)
 
     async def get_prefix_context(
         self,
@@ -378,7 +528,7 @@ class BotApp(hikari.GatewayBot):
                 new_exc = errors.CommandInvocationError(
                     f"An error occurred during command {context.command.name!r} invocation", original=exc
                 )
-            new_exc = typing.cast(errors.LightbulbError, new_exc)
+            new_exc = t.cast(errors.LightbulbError, new_exc)
             error_event = events.PrefixCommandErrorEvent(app=self, exception=new_exc, context=context)
             handled = await self.maybe_dispatch_error_event(error_event, [getattr(context.command, "error_handler")])
 

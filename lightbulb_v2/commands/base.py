@@ -209,6 +209,8 @@ class Command(abc.ABC):
         """The parent for the command."""
         self.plugin: t.Optional[plugins.Plugin] = None
         """The plugin that the command belongs to."""
+        self.aliases: t.Sequence[str] = initialiser.aliases
+        """The aliases for the command. This value means nothing for application commands."""
 
     async def __call__(self, context: context_.base.Context) -> None:
         return await self.callback(context)

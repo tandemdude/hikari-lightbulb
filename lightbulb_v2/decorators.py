@@ -17,7 +17,7 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__ = ["implements", "command", "option"]
+__all__ = ["implements", "command", "option", "add_checks"]
 
 import typing as t
 
@@ -115,7 +115,7 @@ def option(
     return decorate
 
 
-def checks(*cmd_checks: checks_.Check) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
+def add_checks(*cmd_checks: checks_.Check) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
     """
     Second order decorator that adds one or more checks to the decorated :obj:`~.commands.base.CommandLike`
     object.

@@ -24,6 +24,8 @@ from collections import defaultdict
 
 import hikari
 
+from lightbulb_v2.utils import data_store
+
 if t.TYPE_CHECKING:
     from lightbulb_v2 import app as app_
     from lightbulb_v2 import commands
@@ -39,13 +41,20 @@ class Plugin:
         description (Optional[:obj:`str`]): Description of the plugin. Defaults to ``None``.
     """
 
-    __slots__ = ("name", "description", "_raw_commands", "_all_commands", "_listeners", "_app")
+    __slots__ = ("name", "description", "d", "_raw_commands", "_all_commands", "_listeners", "_app")
 
-    def __init__(self, name: str, description: t.Optional[str] = None) -> None:
+    def __init__(self, name: str, description: t.Optional[str] = None, include_datastore: bool = False) -> None:
         self.name = name
         """The plugin's name."""
         self.description = description or ""
         """The plugin's description."""
+        self.d: t.Optional[data_store.DataStore] = None
+        """A :obj:`~.utils.data_store.DataStore` instance enabling storage of custom data without subclassing.
+        This will be ``None`` unless you explicitly specify you want the data storage instance included by passing
+        in the kwarg ``include_datastore=True`` to the constructor.
+        """
+        if include_datastore:
+            self.d = data_store.DataStore()
 
         self._raw_commands: t.List[commands.base.CommandLike] = []
         self._all_commands: t.List[commands.base.Command] = []

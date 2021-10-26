@@ -15,9 +15,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
+from lightbulb_v2.utils import data_store
 from lightbulb_v2.utils import permissions
 from lightbulb_v2.utils import search
+from lightbulb_v2.utils.data_store import *
 from lightbulb_v2.utils.permissions import *
 from lightbulb_v2.utils.search import *
 
-__all__ = [*permissions.__all__, *search.__all__]
+__all__ = [*data_store.__all__, *permissions.__all__, *search.__all__]

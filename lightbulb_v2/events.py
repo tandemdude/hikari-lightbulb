@@ -17,7 +17,22 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__ = ["LightbulbEvent", "CommandErrorEvent"]
+__all__ = [
+    "LightbulbEvent",
+    "CommandErrorEvent",
+    "PrefixCommandErrorEvent",
+    "PrefixCommandInvocationEvent",
+    "PrefixCommandCompletionEvent",
+    "SlashCommandErrorEvent",
+    "SlashCommandInvocationEvent",
+    "SlashCommandCompletionEvent",
+    "MessageCommandErrorEvent",
+    "MessageCommandCompletionEvent",
+    "MessageCommandInvocationEvent",
+    "UserCommandErrorEvent",
+    "UserCommandCompletionEvent",
+    "UserCommandInvocationEvent",
+]
 
 import abc
 import types

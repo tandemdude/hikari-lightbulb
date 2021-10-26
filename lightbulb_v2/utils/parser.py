@@ -109,6 +109,9 @@ class Parser(BaseParser):
     def get_current(self) -> str | None:
         return None if self.is_eof else self.buffer[self.idx]
 
+    def get_previous(self) -> str | None:
+        return None if self.idx == 0 else self.buffer[self.idx - 1]
+
     def get_word(self) -> str:
         """Gets the next word, will return an empty strig if EOF."""
         self.skip_ws()
@@ -125,7 +128,7 @@ class Parser(BaseParser):
             return self.get_word()
 
         while (char := self.get_char()) is not None:
-            if char == closing:
+            if char == closing and self.get_previous() != "\\":
                 break
         else:
             # EOF
@@ -135,7 +138,7 @@ class Parser(BaseParser):
             raise RuntimeError("expected a space after the closing quote")  # TODO: raise proper error
 
         self.prev = prev
-        return self.buffer[prev + 1 : self.idx - 1]
+        return self.buffer[prev + 1 : self.idx - 1].replace(f"\\{closing}", closing)
 
     def read_rest(self) -> str:
         self.idx = self.n

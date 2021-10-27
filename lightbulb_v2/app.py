@@ -161,6 +161,30 @@ class BotApp(hikari.GatewayBot):
         if prefix is not None:
             self.subscribe(hikari.MessageCreateEvent, self.handle_messsage_create_for_prefix_commands)
 
+    def _add_command_to_correct_attr(self, command: commands.base.Command) -> None:
+        if isinstance(command, commands.prefix.PrefixCommand):
+            for item in [command.name, *command.aliases]:
+                if item in self._prefix_commands:
+                    raise errors.CommandAlreadyExists(
+                        f"A prefix command with name or alias {item!r} is already registered."
+                    )
+            for item in [command.name, *command.aliases]:
+                self._prefix_commands[item] = command
+        elif isinstance(command, commands.slash.SlashCommand):
+            if command.name in self._slash_commands:
+                raise errors.CommandAlreadyExists(f"A slash command with name {command.name!r} is already registered.")
+            self._slash_commands[command.name] = command
+        elif isinstance(command, commands.message.MessageCommand):
+            if command.name in self._message_commands:
+                raise errors.CommandAlreadyExists(
+                    f"A message command with name {command.name!r} is already registered."
+                )
+            self._message_commands[command.name] = command
+        elif isinstance(command, commands.user.UserCommand):
+            if command.name in self._user_commands:
+                raise errors.CommandAlreadyExists(f"A user command with name {command.name!r} is already registered.")
+            self._user_commands[command.name] = command
+
     @staticmethod
     def print_banner(banner: t.Optional[str], allow_color: bool, force_color: bool) -> None:
         ux.print_banner(banner, allow_color, force_color)
@@ -185,30 +209,6 @@ class BotApp(hikari.GatewayBot):
         if self.application.team is not None:
             owner_ids.extend([member_id for member_id in self.application.team.members])
         return owner_ids
-
-    def _add_command_to_correct_attr(self, command: commands.base.Command) -> None:
-        if isinstance(command, commands.prefix.PrefixCommand):
-            for item in [command.name, *command.aliases]:
-                if item in self._prefix_commands:
-                    raise errors.CommandAlreadyExists(
-                        f"A prefix command with name or alias {item!r} is already registered."
-                    )
-            for item in [command.name, *command.aliases]:
-                self._prefix_commands[item] = command
-        elif isinstance(command, commands.slash.SlashCommand):
-            if command.name in self._slash_commands:
-                raise errors.CommandAlreadyExists(f"A slash command with name {command.name!r} is already registered.")
-            self._slash_commands[command.name] = command
-        elif isinstance(command, commands.message.MessageCommand):
-            if command.name in self._message_commands:
-                raise errors.CommandAlreadyExists(
-                    f"A message command with name {command.name!r} is already registered."
-                )
-            self._message_commands[command.name] = command
-        elif isinstance(command, commands.user.UserCommand):
-            if command.name in self._user_commands:
-                raise errors.CommandAlreadyExists(f"A user command with name {command.name!r} is already registered.")
-            self._user_commands[command.name] = command
 
     async def maybe_dispatch_error_event(
         self,
@@ -242,6 +242,36 @@ class BotApp(hikari.GatewayBot):
                 handled = True
 
         return handled
+
+    def check(
+        self,
+        check: t.Optional[
+            t.Union[checks.Check, t.Callable[[context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]]]
+        ] = None,
+    ) -> t.Union[
+        checks.Check,
+        t.Callable[[t.Callable[[context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]]], checks.Check],
+    ]:
+        """
+        Adds a :obj:`~.checks.Check` object or check function the bot's checks. This method can be used as a
+        first or second order decorator, or called manually with the :obj:`~.checks.Check` instance or function to
+        add as a check. If a function is decorated or passed in then it will be wrapped in a :obj:`~.checks.Check`
+        object before it is added to the bot.
+        """
+        if check is not None:
+            if not isinstance(check, checks.Check):
+                check = checks.Check(check)
+            self._checks.append(check)
+            return check
+
+        def decorate(
+            check_func: t.Callable[[context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]]
+        ) -> checks.Check:
+            new_check = checks.Check(check_func)
+            self._checks.append(new_check)
+            return new_check
+
+        return decorate
 
     def get_prefix_command(self, name: str) -> t.Optional[commands.prefix.PrefixCommand]:
         """
@@ -294,14 +324,6 @@ class BotApp(hikari.GatewayBot):
                 if not found.
         """
         return self._user_commands.get(name)
-
-    def add_command(
-        self, cmd_like: t.Optional[commands.base.CommandLike] = None
-    ) -> t.Union[commands.base.CommandLike, t.Callable[[commands.base.CommandLike], commands.base.CommandLike]]:
-        """
-        Alias for :obj:`~BotApp.command`.
-        """
-        return self.command(cmd_like)
 
     def command(
         self, cmd_like: t.Optional[commands.base.CommandLike] = None

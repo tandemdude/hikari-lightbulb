@@ -266,7 +266,7 @@ class Command(abc.ABC):
         ``True`` if all the checks passed or it will raise :obj:`~.errors.CheckFailure`.
         """
         failed_checks: t.List[errors.CheckFailure] = []
-        for check in self.checks:
+        for check in [*self.app._checks, *getattr(self.plugin, "_checks", []), *self.checks]:
             try:
                 result = check(context)
                 if inspect.iscoroutine(result):

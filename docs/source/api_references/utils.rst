@@ -10,6 +10,14 @@ Data Store
 
 ----
 
+Parser
+======
+
+.. automodule:: lightbulb_v2.utils.parser
+   :members:
+
+----
+
 Permissions
 ===========
 

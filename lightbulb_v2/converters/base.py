@@ -34,5 +34,5 @@ class BaseConverter(abc.ABC, t.Generic[T]):
         self.context = context
 
     @abc.abstractmethod
-    def convert(self, arg: str) -> T:
+    async def convert(self, arg: str) -> T:
         ...

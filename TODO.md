@@ -3,7 +3,7 @@
 ## Main
 
 - [ ] Custom Bot Class
-  - [ ] Bot Checks
+  - [x] Bot Checks
   - [x] Multiple Owners
   - [x] Get prefix function (sync or async)
   - [ ] Regex prefix?
@@ -15,7 +15,7 @@
   - [x] Support User Commands
   - [x] Support Listeners
   - [ ] Plugin Unload Hook
-  - [ ] Plugin Check
+  - [x] Plugin Check
   - [ ] Plugin error handler
 
 - [ ] Extensions
@@ -66,20 +66,21 @@
   - [ ] ~~Message Context~~ (blocked)
   - [ ] ~~User Context~~ (blocked)
 
-- [ ] Converters
+- [x] Converters
   - [x] Base Converter
-  - [ ] User Converter
-  - [ ] Member Converter
-  - [ ] Text Channel Converter
-  - [ ] Guild Voice Channel Converter
-  - [ ] Category Converter
-  - [ ] Role Converter
-  - [ ] Emoji Converter
-  - [ ] Guild Converter
-  - [ ] Message Converter
-  - [ ] Invite Converter
-  - [ ] Colo(u)r Converter
-  - [ ] Timestamp Converter
+  - [x] User Converter
+  - [x] Member Converter
+  - [x] Guild Channel Converter
+  - [x] Guild Voice Channel Converter
+  - [x] Category Converter
+  - [x] Guild Text Channel Converter
+  - [x] Role Converter
+  - [x] Emoji Converter
+  - [x] Guild Converter
+  - [x] Message Converter
+  - [x] Invite Converter
+  - [x] Colo(u)r Converter
+  - [x] Timestamp Converter
 
 - [x] Special Args
   - [x] Greedy

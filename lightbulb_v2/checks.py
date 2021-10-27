@@ -70,8 +70,8 @@ class Check:
         self.user_callback = u_callback or p_callback
         self.add_to_object_hook = add_hook or (lambda o: o)
 
-    def __str__(self) -> str:
-        return self.__name__
+    def __repr__(self) -> str:
+        return f"Check({self.__name__.strip('_')})"
 
     @property
     def __name__(self) -> str:

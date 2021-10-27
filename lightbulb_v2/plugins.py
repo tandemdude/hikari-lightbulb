@@ -28,6 +28,7 @@ from lightbulb_v2.utils import data_store
 
 if t.TYPE_CHECKING:
     from lightbulb_v2 import app as app_
+    from lightbulb_v2 import checks as checks_
     from lightbulb_v2 import commands
 
 
@@ -43,7 +44,7 @@ class Plugin:
             internally for this plugin.
     """
 
-    __slots__ = ("name", "description", "d", "_raw_commands", "_all_commands", "_listeners", "_app")
+    __slots__ = ("name", "description", "d", "_raw_commands", "_all_commands", "_listeners", "_app", "_checks")
 
     def __init__(self, name: str, description: t.Optional[str] = None, include_datastore: bool = False) -> None:
         self.name = name
@@ -64,6 +65,8 @@ class Plugin:
         self._listeners: t.MutableMapping[
             t.Type[hikari.Event], t.List[t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]]]
         ] = defaultdict(list)
+
+        self._checks: t.List[checks_.Check] = []
 
         self._app: t.Optional[app_.BotApp] = None
 
@@ -145,3 +148,16 @@ class Plugin:
             return func
 
         return decorate
+
+    def add_checks(self, *checks: checks_.Check) -> None:
+        """
+        Adds one or more checks to the plugin object. These checks will be run for
+        all commands in the plugin.
+
+        Args:
+            *checks (:obj:`~.checks.Check`): Check object(s) to add to the command.
+
+        Returns:
+            ``None``
+        """
+        self._checks.extend(checks)

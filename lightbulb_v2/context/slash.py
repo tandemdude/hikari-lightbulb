@@ -41,7 +41,7 @@ class SlashContext(base.Context):
         command (:obj:`~.commands.slash.SlashCommand`): The command that the context is for.
     """
 
-    __slots__ = ("_event", "_interaction", "_command", "initial_response_sent")
+    __slots__ = ("_event", "_interaction", "_command", "initial_response_sent", "_options")
 
     def __init__(
         self, app: app_.BotApp, event: hikari.InteractionCreateEvent, command: commands.slash.SlashCommand
@@ -51,12 +51,32 @@ class SlashContext(base.Context):
         assert isinstance(event.interaction, hikari.CommandInteraction)
         self._interaction: hikari.CommandInteraction = event.interaction
         self._command = command
+
+        self._options: t.Dict[str, t.Any] = {}
+        for opt in (self._interaction.options or []):
+            # Why is mypy so annoying about this ??
+            if opt.type is hikari.OptionType.USER and self.resolved is not None:
+                val = t.cast(hikari.Snowflake, opt.value)
+                self._options[opt.name] = self.resolved.members.get(val, self.resolved.users.get(val, opt.value))
+            elif opt.type is hikari.OptionType.CHANNEL and self.resolved is not None:
+                val = t.cast(hikari.Snowflake, opt.value)
+                self._options[opt.name] = self.resolved.channels.get(val, opt.value)
+            elif opt.type is hikari.OptionType.ROLE and self.resolved is not None:
+                val = t.cast(hikari.Snowflake, opt.value)
+                self._options[opt.name] = self.resolved.roles.get(val, opt.value)
+            else:
+                self._options[opt.name] = opt.value
+
         self.initial_response_sent: bool = False
         """Whether or not the initial response has been sent for this interaction."""
 
     @property
     def event(self) -> hikari.InteractionCreateEvent:
         return self._event
+
+    @property
+    def raw_options(self) -> t.Dict[str, t.Any]:
+        return self._options
 
     @property
     def interaction(self) -> hikari.CommandInteraction:

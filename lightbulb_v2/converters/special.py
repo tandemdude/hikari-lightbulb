@@ -32,6 +32,7 @@ __all__ = [
     "ColourConverter",
     "ColorConverter",
     "TimestampConverter",
+    "SnowflakeConverter",
 ]
 
 import datetime
@@ -231,3 +232,12 @@ class TimestampConverter(base.BaseConverter[datetime.datetime]):
         if timestamp is None:
             raise TypeError("Could not resolve timestamp")
         return datetime.datetime.fromtimestamp(int(timestamp), datetime.timezone.utc)
+
+
+class SnowflakeConverter(base.BaseConverter[hikari.Snowflake]):
+    async def convert(self, arg: str) -> hikari.Snowflake:
+        try:
+            snowflake = hikari.Snowflake(arg)
+        except ValueError:
+            raise TypeError("Could not resolve snowflake")
+        return snowflake

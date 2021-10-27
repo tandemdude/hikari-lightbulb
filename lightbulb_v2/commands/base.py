@@ -21,6 +21,7 @@ __all__ = ["OptionModifier", "OptionLike", "CommandLike", "Command", "Applicatio
 
 import abc
 import dataclasses
+import datetime
 import enum
 import inspect
 import typing as t
@@ -40,12 +41,24 @@ if t.TYPE_CHECKING:
 OPTION_TYPE_MAPPING = {
     str: hikari.OptionType.STRING,
     int: hikari.OptionType.INTEGER,
+    float: hikari.OptionType.FLOAT,
     bool: hikari.OptionType.BOOLEAN,
     hikari.User: hikari.OptionType.USER,
+    hikari.Member: hikari.OptionType.USER,
+    hikari.GuildChannel: hikari.OptionType.CHANNEL,
+    hikari.TextableGuildChannel: hikari.OptionType.CHANNEL,
     hikari.TextableChannel: hikari.OptionType.CHANNEL,
+    hikari.GuildCategory: hikari.OptionType.CHANNEL,
+    hikari.GuildVoiceChannel: hikari.OptionType.CHANNEL,
     hikari.Role: hikari.OptionType.ROLE,
+    hikari.Emoji: hikari.OptionType.STRING,
+    hikari.Guild: hikari.OptionType.MENTIONABLE,
+    hikari.Message: hikari.OptionType.MENTIONABLE,
+    hikari.Invite: hikari.OptionType.STRING,
+    hikari.Colour: hikari.OptionType.STRING,
+    hikari.Color: hikari.OptionType.STRING,
     hikari.Snowflake: hikari.OptionType.MENTIONABLE,
-    float: hikari.OptionType.FLOAT,
+    datetime.datetime: hikari.OptionType.STRING,
 }
 
 

@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from lightbulb_v2.converters import base
+from lightbulb_v2.converters import special
 from lightbulb_v2.converters.base import *
+from lightbulb_v2.converters.special import *
 
-__all__ = [*base.__all__]
+__all__ = [*base.__all__, *special.__all__]

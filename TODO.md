@@ -82,6 +82,8 @@
   - [x] Colo(u)r Converter
   - [x] Timestamp Converter
 
+- [ ] Special Converter Support for Slash Commands?
+
 - [x] Special Args
   - [x] Greedy
   - [x] Consume Rest

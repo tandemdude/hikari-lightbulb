@@ -65,7 +65,6 @@ def command(
         description (:obj:`str`): The description of the command.
 
     Keyword Args:
-        cooldown_manager (Optional[...]): The cooldown manager to use for the command. Defaults to ``None``.
         error_handler (Optional[ListenerT]): The function to register as the command's error handler. Defaults to
             ``None``. This can also be set with the :obj:`~.commands.base.CommandLike.set_error_handler`
             decorator.

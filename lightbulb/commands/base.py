@@ -136,8 +136,6 @@ class CommandLike:
     """The options for the command."""
     checks: t.Sequence[checks.Check] = dataclasses.field(default_factory=list)
     """The checks for the command."""
-    cooldown_manager: t.Optional[...] = None  # TODO
-    """The cooldown manager for the command."""
     error_handler: t.Optional[
         t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]
     ] = None
@@ -211,7 +209,6 @@ class Command(abc.ABC):
         "description",
         "options",
         "checks",
-        "cooldown_manager",
         "error_handler",
         "parent",
         "plugin",
@@ -232,8 +229,6 @@ class Command(abc.ABC):
         """The options for the command."""
         self.checks = initialiser.checks
         """The checks for the command."""
-        self.cooldown_manager = initialiser.cooldown_manager
-        """The cooldown manager for the command."""
         self.error_handler = initialiser.error_handler
         """The error handler function for the command."""
         self.parent: t.Optional[Command] = None
@@ -305,8 +300,7 @@ class Command(abc.ABC):
         Evaluate the command's cooldown under the given context. This method will either return
         ``None`` if the command is not on cooldown or raise :obj:`.errors.CommandIsOnCooldown`.
         """
-        if self.cooldown_manager is not None:
-            pass  # TODO
+        return  # TODO
 
 
 class ApplicationCommand(Command, abc.ABC):

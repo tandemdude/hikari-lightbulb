@@ -28,7 +28,7 @@ SCRIPT_PATHS = [
     "docs/source/conf.py",
 ]
 
-options.sessions = ["format_fix", "sphinx"]
+options.sessions = ["format_fix", "mypy", "sphinx"]
 
 
 @nox.session()
@@ -42,8 +42,15 @@ def format_fix(session):
 # noinspection PyShadowingBuiltins
 @nox.session()
 def format(session):
-    session.run("pip", "install", "-U", "black")
+    session.install("-U", "black")
     session.run("python", "-m", "black", *SCRIPT_PATHS, "--check")
+
+
+@nox.session()
+def mypy(session):
+    session.install("-Ur", "requirements.txt")
+    session.install("-U", "mypy")
+    session.run("python", "-m", "mypy", "lightbulb")
 
 
 @nox.session(reuse_venv=True)

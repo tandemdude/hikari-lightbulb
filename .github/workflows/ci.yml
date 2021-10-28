@@ -24,3 +24,6 @@ jobs:
 
       - name: Run black
         run: nox -s format
+
+      - name: Run mypy
+        run: nox -s mypy

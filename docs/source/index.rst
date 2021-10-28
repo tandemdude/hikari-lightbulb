@@ -3,8 +3,13 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
-.. image:: https://img.shields.io/pypi/v/hikari-lightbulb.svg
+.. |b1| image:: https://img.shields.io/badge/code%20style-black-000000.svg
+.. |b2| image:: https://img.shields.io/pypi/v/hikari-lightbulb.svg
+.. |b3| image:: http://www.mypy-lang.org/static/mypy_badge.svg
+.. |b4| image:: https://img.shields.io/pypi/pyversions/hikari-lightbulb
+.. |b5| image:: https://github.com/tandemdude/hikari-lightbulb/actions/workflows/ci.yml/badge.svg?branch=master&event=push
+
+|b1| |b2| |b3| |b4| |b5|
 
 ----
 

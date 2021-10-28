@@ -73,7 +73,8 @@ class ResponseProxy:
         if self._message is not None:
             return self._message
         assert self._fetcher is not None
-        return await self._fetcher()
+        msg = await self._fetcher()
+        return msg
 
 
 class Context(abc.ABC):

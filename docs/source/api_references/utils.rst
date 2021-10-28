@@ -10,6 +10,22 @@ Data Store
 
 ----
 
+Nav
+===
+
+.. automodule:: lightbulb.utils.nav
+   :members:
+
+----
+
+Pag
+===
+
+.. automodule:: lightbulb.utils.pag
+   :members:
+
+----
+
 Parser
 ======
 

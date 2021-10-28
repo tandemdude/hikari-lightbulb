@@ -37,7 +37,7 @@
     - [ ] ~~Autocomplete~~ (blocked)
   - [ ] ~~Message Commands~~ (blocked)
   - [ ] ~~User Commands~~ (blocked)
-  - [ ] Per-Command Error Handler
+  - [x] Per-Command Error Handler
     - [x] Prefix commands
     - [ ] Slash commands
     - [ ] ~~Message commands~~ (blocked)
@@ -56,7 +56,7 @@
   - [ ] (Bot) Has Role Permissions
   - [ ] (Bot) Has Channel Permissions
   - [ ] Has Attachment
-  - [ ] Custom Checks
+  - [x] Custom Checks
   - [ ] Check Exempt?
 
 - [ ] Context
@@ -104,9 +104,9 @@
 
 - [ ] Help Command
 
-- [ ] Paginators (Reuse?)
+- [x] Paginators (Reuse?)
 
-- [ ] Navigators (Reuse?)
+- [x] Navigators (Reuse?)
 
 - [x] Utils (Reuse?)
   - [x] get

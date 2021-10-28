@@ -118,6 +118,20 @@ class BotApp(hikari.GatewayBot):
             class.
     """
 
+    __slots__ = (
+        "get_prefix",
+        "ignore_bots",
+        "owner_ids",
+        "application",
+        "d",
+        "_prefix_commands",
+        "_slash_commands",
+        "_message_commands",
+        "_user_commands",
+        "_plugins",
+        "_checks",
+    )
+
     def __init__(
         self,
         token: str,

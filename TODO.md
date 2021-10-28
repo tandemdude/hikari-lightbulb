@@ -39,9 +39,9 @@
   - [ ] ~~User Commands~~ (blocked)
   - [x] Per-Command Error Handler
     - [x] Prefix commands
-    - [ ] Slash commands
-    - [ ] ~~Message commands~~ (blocked)
-    - [ ] ~~User commands~~ (blocked)
+    - [x] Slash commands
+    - [x] ~~Message commands~~ (blocked)
+    - [x] ~~User commands~~ (blocked)
   - [ ] Auto-managing of Application Commands
   
 - [ ] Checks (Reuse?)

@@ -20,6 +20,5 @@ __all__ = ["MessageContext"]
 from lightbulb.context import base
 
 
-class MessageContext(base.Context):
+class MessageContext(base.ApplicationContext):
     __slots__ = ()
-    pass

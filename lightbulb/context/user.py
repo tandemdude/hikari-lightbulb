@@ -20,6 +20,5 @@ __all__ = ["UserContext"]
 from lightbulb.context import base
 
 
-class UserContext(base.Context):
+class UserContext(base.ApplicationContext):
     __slots__ = ()
-    pass

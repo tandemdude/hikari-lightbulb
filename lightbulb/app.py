@@ -41,6 +41,24 @@ _PrefixT = t.Union[
     t.Callable[["BotApp", hikari.Message], t.Union[t.Sequence[str], t.Coroutine[t.Any, t.Any, t.Sequence[str]]]],
 ]
 
+APPLICATION_COMMANDS_EVENTS_MAPPING = {
+    commands.slash.SlashCommand: (
+        events.SlashCommandInvocationEvent,
+        events.SlashCommandCompletionEvent,
+        events.SlashCommandErrorEvent,
+    ),
+    commands.message.MessageCommand: (
+        events.MessageCommandInvocationEvent,
+        events.MessageCommandCompletionEvent,
+        events.MessageCommandErrorEvent,
+    ),
+    commands.user.UserCommand: (
+        events.UserCommandInvocationEvent,
+        events.UserCommandCompletionEvent,
+        events.UserCommandErrorEvent,
+    ),
+}
+
 
 def when_mentioned_or(
     prefix_provider: _PrefixT,
@@ -174,6 +192,8 @@ class BotApp(hikari.GatewayBot):
 
         if prefix is not None:
             self.subscribe(hikari.MessageCreateEvent, self.handle_messsage_create_for_prefix_commands)
+        self.subscribe(hikari.StartingEvent, self._manage_application_commands)
+        self.subscribe(hikari.InteractionCreateEvent, self.handle_interaction_create_for_application_commands)
 
     def _add_command_to_correct_attr(self, command: commands.base.Command) -> None:
         if isinstance(command, commands.prefix.PrefixCommand):
@@ -531,7 +551,7 @@ class BotApp(hikari.GatewayBot):
                 invoked_with=context.invoked_with,
             )
 
-        await context.command.invoke(context)
+        await context.invoke()
 
     async def handle_messsage_create_for_prefix_commands(self, event: hikari.MessageCreateEvent) -> None:
         """
@@ -567,7 +587,7 @@ class BotApp(hikari.GatewayBot):
                 new_exc = errors.CommandInvocationError(
                     f"An error occurred during command {context.command.name!r} invocation", original=exc
                 )
-            new_exc = t.cast(errors.LightbulbError, new_exc)
+            assert isinstance(new_exc, errors.LightbulbError)
             error_event = events.PrefixCommandErrorEvent(app=self, exception=new_exc, context=context)
             handled = await self.maybe_dispatch_error_event(
                 error_event,
@@ -582,3 +602,98 @@ class BotApp(hikari.GatewayBot):
         else:
             assert context.command is not None
             await self.dispatch(events.PrefixCommandCompletionEvent(app=self, command=context.command, context=context))
+
+    async def get_slash_context(
+        self,
+        event: hikari.InteractionCreateEvent,
+        command: commands.slash.SlashCommand,
+        cls: t.Type[context_.slash.SlashContext] = context_.slash.SlashContext,
+    ) -> context_.slash.SlashContext:
+        return cls(self, event, command)
+
+    async def get_message_context(
+        self,
+        event: hikari.InteractionCreateEvent,
+        command: commands.message.MessageCommand,
+        cls: t.Type[context_.message.MessageContext] = context_.message.MessageContext,
+    ) -> context_.message.MessageContext:
+        return cls(self, event, command)
+
+    async def get_user_context(
+        self,
+        event: hikari.InteractionCreateEvent,
+        command: commands.user.UserCommand,
+        cls: t.Type[context_.user.UserContext] = context_.user.UserContext,
+    ) -> context_.user.UserContext:
+        return cls(self, event, command)
+
+    def _get_application_command(
+        self, interaction: hikari.CommandInteraction
+    ) -> t.Optional[commands.base.ApplicationCommand]:
+        return self.get_slash_command(interaction.command_name)
+
+    async def get_application_command_context(
+        self, event: hikari.InteractionCreateEvent
+    ) -> t.Optional[context_.base.ApplicationContext]:
+        assert isinstance(event.interaction, hikari.CommandInteraction)
+        cmd = self._get_application_command(event.interaction)
+        if cmd is None:
+            return None
+        assert isinstance(cmd, commands.slash.SlashCommand)
+        return await self.get_slash_context(event, cmd)
+
+    @staticmethod
+    def get_events_for_application_command(
+        command: commands.base.ApplicationCommand,
+    ) -> t.Tuple[
+        t.Type[events.CommandInvocationEvent], t.Type[events.CommandCompletionEvent], t.Type[events.CommandErrorEvent]
+    ]:
+        for k in APPLICATION_COMMANDS_EVENTS_MAPPING:
+            if isinstance(command, k):
+                return APPLICATION_COMMANDS_EVENTS_MAPPING[k]
+        raise TypeError("Application command type not recognised")  # TODO?
+
+    async def _manage_application_commands(self, _: hikari.StartingEvent) -> None:
+        if self.application is None:
+            self.application = await self.rest.fetch_application()
+
+        for command in self._slash_commands.values():
+            print(f"CREATING SLASH COMMAND {command.name!r}")  # TODO Logging
+            await command._auto_create()
+
+    async def invoke_application_command(self, context: context_.base.ApplicationContext) -> None:
+        cmd_events = self.get_events_for_application_command(context.command)
+        await self.dispatch(cmd_events[0](app=self, command=context.command, context=context))
+
+        try:
+            await context.invoke()
+        except Exception as exc:
+            new_exc = exc
+            if not isinstance(exc, errors.LightbulbError):
+                new_exc = errors.CommandInvocationError(
+                    f"An error occurred during command {context.command.name!r} invocation", original=exc
+                )
+            assert isinstance(new_exc, errors.LightbulbError)
+            error_event = cmd_events[2](app=self, exception=new_exc, context=context)
+            handled = await self.maybe_dispatch_error_event(
+                error_event,
+                [
+                    getattr(context.command, "error_handler", None),
+                    getattr(context.command.plugin, "_error_handler", None),
+                ],
+            )
+
+            if not handled:
+                raise new_exc
+        else:
+            await self.dispatch(cmd_events[1](app=self, command=context.command, context=context))
+
+    async def handle_interaction_create_for_application_commands(self, event: hikari.InteractionCreateEvent) -> None:
+        if not isinstance(event.interaction, hikari.CommandInteraction):
+            return
+
+        context = await self.get_application_command_context(event)
+        if context is None:
+            return
+
+        await self.invoke_application_command(context)

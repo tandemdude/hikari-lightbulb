@@ -203,6 +203,7 @@ class Command(abc.ABC):
     """
 
     __slots__ = (
+        "_initialiser",
         "app",
         "callback",
         "name",
@@ -217,6 +218,7 @@ class Command(abc.ABC):
     )
 
     def __init__(self, app: app_.BotApp, initialiser: CommandLike) -> None:
+        self._initialiser = initialiser
         self.app = app
         """The ``BotApp`` instance the command is registered to."""
         self.callback = initialiser.callback
@@ -347,6 +349,13 @@ class ApplicationCommand(Command, abc.ABC):
         self.instances[guild] = created_cmd
         return created_cmd
 
+    async def _auto_create(self) -> None:
+        if self.guilds:
+            for guild_id in self.guilds:
+                await self.create(guild_id)
+        else:
+            await self.create()
+
     async def delete(self, guild: t.Optional[int]) -> None:
         """
         Deletes the command in the guild with the given ID, or globally if no
@@ -362,6 +371,11 @@ class ApplicationCommand(Command, abc.ABC):
         if cmd is None:
             return
         await cmd.delete()
+
+    async def _auto_delete(self) -> None:
+        for cmd in self.instances.values():
+            await cmd.delete()
+        self.instances.clear()
 
     @abc.abstractmethod
     def as_create_kwargs(self) -> t.Dict[str, t.Any]:

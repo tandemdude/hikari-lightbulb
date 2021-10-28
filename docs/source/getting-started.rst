@@ -18,7 +18,7 @@ Your first bot can be written in just a few lines of code:
 ::
 
     # Import the command handler
-    import lightbulb_v2 as lightbulb
+    import lightbulb
 
     # Instantiate a Bot instance
     bot = lightbulb.BotApp(token="your_token_here", prefix="your_prefix_here")
@@ -59,7 +59,7 @@ Changing the logging level with using the ``logs`` argument:
 ::
 
     import logging
-    import lightbulb_v2 as lightbulb
+    import lightbulb
 
     # Set to debug for both lightbulb and hikari
     bot = lightbulb.BotApp(..., logs="DEBUG")
@@ -70,7 +70,7 @@ Using different logging levels for both ``hikari`` and ``lightbulb``:
 ::
 
     import logging
-    import lightbulb_v2 as lightbulb
+    import lightbulb
 
     # Set different logging levels for both lightbulb and hikari
     bot = lightbulb.BotApp(

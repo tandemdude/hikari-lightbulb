@@ -5,7 +5,7 @@ Utils API Reference
 Data Store
 ==========
 
-.. automodule:: lightbulb_v2.utils.data_store
+.. automodule:: lightbulb.utils.data_store
    :members:
 
 ----
@@ -13,7 +13,7 @@ Data Store
 Parser
 ======
 
-.. automodule:: lightbulb_v2.utils.parser
+.. automodule:: lightbulb.utils.parser
    :members:
 
 ----
@@ -21,7 +21,7 @@ Parser
 Permissions
 ===========
 
-.. automodule:: lightbulb_v2.utils.permissions
+.. automodule:: lightbulb.utils.permissions
    :members:
 
 ----
@@ -29,5 +29,5 @@ Permissions
 Search
 ======
 
-.. automodule:: lightbulb_v2.utils.search
+.. automodule:: lightbulb.utils.search
    :members:

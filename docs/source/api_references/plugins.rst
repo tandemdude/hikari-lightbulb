@@ -2,5 +2,5 @@
 Plugins API Reference
 =====================
 
-.. automodule:: lightbulb_v2.plugins
+.. automodule:: lightbulb.plugins
    :members:

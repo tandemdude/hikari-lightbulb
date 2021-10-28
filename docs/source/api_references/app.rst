@@ -2,5 +2,5 @@
 App API Reference
 =================
 
-.. automodule:: lightbulb_v2.app
+.. automodule:: lightbulb.app
    :members:

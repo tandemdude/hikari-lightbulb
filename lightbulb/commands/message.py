@@ -15,23 +15,27 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-from lightbulb import app
-from lightbulb import checks
-from lightbulb import commands
-from lightbulb import context
-from lightbulb import converters
-from lightbulb import decorators
-from lightbulb import errors
-from lightbulb import events
-from lightbulb import plugins
-from lightbulb import utils
-from lightbulb.app import *
-from lightbulb.checks import *
-from lightbulb.decorators import *
-from lightbulb.errors import *
-from lightbulb.events import *
-from lightbulb.plugins import *
+from __future__ import annotations
 
-__all__ = [*app.__all__, *checks.__all__, *decorators.__all__, *errors.__all__, *events.__all__, *plugins.__all__]
+__all__ = ["MessageCommand"]
 
-__version__ = "2.0.0.dev0"
+import typing as t
+
+from lightbulb.commands import base
+
+
+class MessageCommand(base.ApplicationCommand):
+    """
+    An implementation of :obj:`~.commabds.base.Command` representing a message context menu command.
+
+    See the `API Documentation <https://discord.com/developers/docs/interactions/application-commands#message-commands>`_.
+    """
+
+    __slots__ = ()
+
+    def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.options: t.Dict[str, t.Any] = {}
+
+    def as_create_kwargs(self) -> t.Dict[str, t.Any]:
+        raise NotImplementedError

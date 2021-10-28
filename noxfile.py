@@ -28,14 +28,7 @@ SCRIPT_PATHS = [
     "docs/source/conf.py",
 ]
 
-options.sessions = ["format_fix", "test", "sphinx"]
-
-
-@nox.session()
-def test(session):
-    session.install("-r", "test_requirements.txt")
-    session.install("-r", "requirements.txt")
-    session.run("python", "-m", "pytest", "tests")
+options.sessions = ["format_fix", "sphinx"]
 
 
 @nox.session()

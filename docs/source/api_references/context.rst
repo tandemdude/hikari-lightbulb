@@ -5,7 +5,7 @@ Context API Reference
 Base
 ====
 
-.. automodule:: lightbulb_v2.context.base
+.. automodule:: lightbulb.context.base
    :members:
 
 ----
@@ -13,7 +13,7 @@ Base
 Prefix Context
 ==============
 
-.. automodule:: lightbulb_v2.context.prefix
+.. automodule:: lightbulb.context.prefix
    :members:
    :show-inheritance:
 
@@ -22,7 +22,7 @@ Prefix Context
 Slash Context
 =============
 
-.. automodule:: lightbulb_v2.context.slash
+.. automodule:: lightbulb.context.slash
    :members:
    :show-inheritance:
 
@@ -31,7 +31,7 @@ Slash Context
 Message Context
 ===============
 
-.. automodule:: lightbulb_v2.context.message
+.. automodule:: lightbulb.context.message
    :members:
    :show-inheritance:
 
@@ -40,6 +40,6 @@ Message Context
 User Context
 ============
 
-.. automodule:: lightbulb_v2.context.user
+.. automodule:: lightbulb.context.user
    :members:
    :show-inheritance:

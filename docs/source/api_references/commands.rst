@@ -6,7 +6,7 @@ Commands API Reference
 Base
 ====
 
-.. automodule:: lightbulb_v2.commands.base
+.. automodule:: lightbulb.commands.base
    :members:
 
 ----
@@ -14,7 +14,7 @@ Base
 Prefix Commands
 ===============
 
-.. automodule:: lightbulb_v2.commands.prefix
+.. automodule:: lightbulb.commands.prefix
    :members:
    :show-inheritance:
 
@@ -23,7 +23,7 @@ Prefix Commands
 Slash Commands
 ==============
 
-.. automodule:: lightbulb_v2.commands.slash
+.. automodule:: lightbulb.commands.slash
    :members:
    :show-inheritance:
 
@@ -32,7 +32,7 @@ Slash Commands
 Message Commands
 ================
 
-.. automodule:: lightbulb_v2.commands.message
+.. automodule:: lightbulb.commands.message
    :members:
    :show-inheritance:
 
@@ -41,6 +41,6 @@ Message Commands
 User Commands
 =============
 
-.. automodule:: lightbulb_v2.commands.user
+.. automodule:: lightbulb.commands.user
    :members:
    :show-inheritance:

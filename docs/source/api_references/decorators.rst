@@ -2,5 +2,5 @@
 Decorators API Reference
 ========================
 
-.. automodule:: lightbulb_v2.decorators
+.. automodule:: lightbulb.decorators
    :members:

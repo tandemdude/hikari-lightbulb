@@ -15,29 +15,13 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-import inspect
-import typing
-
-from lightbulb.utils import nav
-from lightbulb.utils import pag
+from lightbulb.utils import data_store
+from lightbulb.utils import parser
 from lightbulb.utils import permissions
 from lightbulb.utils import search
-from lightbulb.utils.nav import *
-from lightbulb.utils.pag import *
+from lightbulb.utils.data_store import *
+from lightbulb.utils.parser import *
 from lightbulb.utils.permissions import *
 from lightbulb.utils.search import *
 
-__all__: typing.Final[typing.List[str]] = [
-    *nav.__all__,
-    *pag.__all__,
-    *search.__all__,
-    *permissions.__all__,
-    "maybe_await",
-]
-
-
-async def maybe_await(callable_, *args, **kwargs):
-    result = callable_(*args, **kwargs)
-    if inspect.iscoroutine(result):
-        result = await result
-    return result
+__all__ = [*data_store.__all__, *permissions.__all__, *search.__all__, *parser.__all__]

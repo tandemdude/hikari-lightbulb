@@ -15,23 +15,15 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-from lightbulb import app
-from lightbulb import checks
-from lightbulb import commands
-from lightbulb import context
-from lightbulb import converters
-from lightbulb import decorators
-from lightbulb import errors
-from lightbulb import events
-from lightbulb import plugins
-from lightbulb import utils
-from lightbulb.app import *
-from lightbulb.checks import *
-from lightbulb.decorators import *
-from lightbulb.errors import *
-from lightbulb.events import *
-from lightbulb.plugins import *
+from lightbulb.context import base
+from lightbulb.context import message
+from lightbulb.context import prefix
+from lightbulb.context import slash
+from lightbulb.context import user
+from lightbulb.context.base import *
+from lightbulb.context.message import *
+from lightbulb.context.prefix import *
+from lightbulb.context.slash import *
+from lightbulb.context.user import *
 
-__all__ = [*app.__all__, *checks.__all__, *decorators.__all__, *errors.__all__, *events.__all__, *plugins.__all__]
-
-__version__ = "2.0.0.dev0"
+__all__ = [*base.__all__, *message.__all__, *prefix.__all__, *slash.__all__, *user.__all__]

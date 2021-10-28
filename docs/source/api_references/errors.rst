@@ -2,5 +2,5 @@
 Errors API Reference
 ====================
 
-.. automodule:: lightbulb_v2.errors
+.. automodule:: lightbulb.errors
    :members:

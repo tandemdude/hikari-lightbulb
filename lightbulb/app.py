@@ -21,6 +21,7 @@ __all__ = ["BotApp", "when_mentioned_or"]
 
 import functools
 import inspect
+import logging
 import sys
 import typing as t
 
@@ -35,6 +36,8 @@ from lightbulb import events
 from lightbulb import plugins
 from lightbulb.utils import data_store
 from lightbulb.utils import parser
+
+_LOGGER = logging.getLogger("lightbulb.app")
 
 _PrefixT = t.Union[
     t.Sequence[str],
@@ -481,6 +484,37 @@ class BotApp(hikari.GatewayBot):
             for listener in listeners:
                 self.unsubscribe(event, listener)
 
+    async def purge_application_commands(self, *guild_ids: hikari.Snowflakeish, global_commands: bool = False) -> None:
+        """
+        Purges all application commands from the guilds with the specified IDs, and all the global application
+        commands if ``global_commands`` is ``True``. Useful if you want to teardown old slash commands from
+        the bot and cannot be bothered to fetch them individually yourself. If neither `guild_ids` nor `global_commands`
+        is specified then this method will do nothing.
+
+        Args:
+            *guild_ids (:obj:`hikari.Snowflakeish`): IDs for the guilds to purge application commands from.
+
+        Keyword Args:
+            global_commands (:obj:`bool`): Whether or not to purge global slash commands from the bot.
+
+        Returns:
+            ``None``
+        """
+        assert self.application is not None
+        commands_to_remove: t.List[hikari.Command] = []
+        if global_commands:
+            commands_to_remove.extend(await self.rest.fetch_application_commands(self.application))
+        if guild_ids:
+            for guild_id in guild_ids:
+                commands_to_remove.extend(await self.rest.fetch_application_commands(self.application, guild_id))
+
+        for command in commands_to_remove:
+            if command.guild_id is None:
+                _LOGGER.debug("deleting global application command %r", command.name)
+            else:
+                _LOGGER.debug("deleting application command %r from guild %r", command.name, str(command.guild_id))
+            await command.delete()
+
     async def get_prefix_context(
         self,
         event: hikari.MessageCreateEvent,
@@ -609,6 +643,18 @@ class BotApp(hikari.GatewayBot):
         command: commands.slash.SlashCommand,
         cls: t.Type[context_.slash.SlashContext] = context_.slash.SlashContext,
     ) -> context_.slash.SlashContext:
+        """
+        Get the :obj:`~.context.slash.SlashContext` instance for the given event.
+
+        Args:
+            event (:obj:`~hikari.events.interaction_events.InteractionCreateEvent`): Event to get the slash context for.
+            command (:obj:`~.commands.slash.SlashCommand`); Command that the context is for.
+            cls (Type[:obj:`~.context.slash.SlashContext`]): Context class to instantiate. Defaults to
+                :obj:`~.context.slash.SlashContext`.
+
+        Returns:
+            :obj:`~.context.slash.SlashContext`: Slash context instance for the given event.
+        """
         return cls(self, event, command)
 
     async def get_message_context(
@@ -617,6 +663,19 @@ class BotApp(hikari.GatewayBot):
         command: commands.message.MessageCommand,
         cls: t.Type[context_.message.MessageContext] = context_.message.MessageContext,
     ) -> context_.message.MessageContext:
+        """
+        Get the :obj:`~.context.message.MessageContext` instance for the given event.
+
+        Args:
+            event (:obj:`~hikari.events.interaction_events.InteractionCreateEvent`): Event to get the message context
+                for.
+            command (:obj:`~.commands.message.MessageCommand`); Command that the context is for.
+            cls (Type[:obj:`~.context.message.MessageContext`]): Context class to instantiate. Defaults to
+                :obj:`~.context.message.MessageContext`.
+
+        Returns:
+            :obj:`~.context.message.MessageContext`: Message context instance for the given event.
+        """
         return cls(self, event, command)
 
     async def get_user_context(
@@ -625,6 +684,18 @@ class BotApp(hikari.GatewayBot):
         command: commands.user.UserCommand,
         cls: t.Type[context_.user.UserContext] = context_.user.UserContext,
     ) -> context_.user.UserContext:
+        """
+        Get the :obj:`~.context.user.UserContext` instance for the given event.
+
+        Args:
+            event (:obj:`~hikari.events.interaction_events.InteractionCreateEvent`): Event to get the user context for.
+            command (:obj:`~.commands.slash.SlashCommand`); Command that the context is for.
+            cls (Type[:obj:`~.context.user.UserContext`]): Context class to instantiate. Defaults to
+                :obj:`~.context.user.UserContext`.
+
+        Returns:
+            :obj:`~.context.user.UserContext`: User context instance for the given event.
+        """
         return cls(self, event, command)
 
     def _get_application_command(
@@ -635,15 +706,25 @@ class BotApp(hikari.GatewayBot):
     async def get_application_command_context(
         self, event: hikari.InteractionCreateEvent
     ) -> t.Optional[context_.base.ApplicationContext]:
+        """
+        Get the appropriate subclass instance of :obj:`~.context.base.Application` for the given event.
+
+        Args:
+            event (:obj:`~hikari.events.interaction_events.InteractionCreateEvent`): Event to get the context for.
+
+        Returns:
+            :obj:`~.context.base.ApplicationContext`: Context instance for the given event.
+        """
         assert isinstance(event.interaction, hikari.CommandInteraction)
         cmd = self._get_application_command(event.interaction)
         if cmd is None:
             return None
+        # TODO - make this work for other application command types
         assert isinstance(cmd, commands.slash.SlashCommand)
         return await self.get_slash_context(event, cmd)
 
     @staticmethod
-    def get_events_for_application_command(
+    def _get_events_for_application_command(
         command: commands.base.ApplicationCommand,
     ) -> t.Tuple[
         t.Type[events.CommandInvocationEvent], t.Type[events.CommandCompletionEvent], t.Type[events.CommandErrorEvent]
@@ -662,7 +743,7 @@ class BotApp(hikari.GatewayBot):
             await command._auto_create()
 
     async def invoke_application_command(self, context: context_.base.ApplicationContext) -> None:
-        cmd_events = self.get_events_for_application_command(context.command)
+        cmd_events = self._get_events_for_application_command(context.command)
         await self.dispatch(cmd_events[0](app=self, command=context.command, context=context))
 
         try:

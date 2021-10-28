@@ -55,6 +55,7 @@ class Plugin:
         "_app",
         "_checks",
         "_error_handler",
+        "_remove_hook",
     )
 
     def __init__(self, name: str, description: t.Optional[str] = None, include_datastore: bool = False) -> None:
@@ -81,6 +82,7 @@ class Plugin:
         self._error_handler: t.Optional[
             t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]
         ] = None
+        self._remove_hook: t.Optional[t.Callable[[], t.Coroutine[t.Any, t.Any, None]]] = None
 
         self._app: t.Optional[app_.BotApp] = None
 
@@ -205,6 +207,39 @@ class Plugin:
             if bind:
                 func_ = func_.__get__(self)  # type: ignore
             self._error_handler = func_
+            return func_
+
+        return decorate
+
+    def remove_hook(
+        self, func: t.Optional[t.Callable[[], t.Coroutine[t.Any, t.Any, None]]] = None, bind: bool = False
+    ) -> t.Union[
+        t.Callable[[], t.Coroutine[t.Any, t.Any, None]],
+        t.Callable[[t.Callable[[], t.Coroutine[t.Any, t.Any, None]]], t.Callable[[], t.Coroutine[t.Any, t.Any, None]]],
+    ]:
+        """
+        Sets the remove hook function for the plugin. This method can be used as a second order decorator,
+        or called manually with the function to set the plugin's remove hook to. The registered function will
+        be called when the plugin is removed from the bot so may be useful for teardown.
+
+        Args:
+            bind (:obj:`bool`): Whether or not to bind the remove hook function to the plugin. If ``True``, the
+                function will be converted into a bound method and so will be called with the plugin as an
+                argument. Defaults to ``False``.
+        """
+        if func is not None:
+            if bind:
+                func = func.__get__(self)  # type: ignore
+            assert func is not None
+            self._remove_hook = func
+            return func
+
+        def decorate(
+            func_: t.Callable[[], t.Coroutine[t.Any, t.Any, None]]
+        ) -> t.Callable[[], t.Coroutine[t.Any, t.Any, None]]:
+            if bind:
+                func_ = func_.__get__(self)  # type: ignore
+            self._remove_hook = func_
             return func_
 
         return decorate

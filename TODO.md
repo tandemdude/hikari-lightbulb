@@ -8,13 +8,13 @@
   - [x] Get prefix function (sync or async)
   - [ ] Regex prefix?
 
-- [ ] Plugins
+- [x] Plugins
   - [x] Support Prefix Commands
   - [x] Support Slash Commands
   - [x] Support Message Commands
   - [x] Support User Commands
   - [x] Support Listeners
-  - [ ] Plugin Unload Hook
+  - [x] Plugin Unload Hook
   - [x] Plugin Check
   - [x] Plugin error handler
 

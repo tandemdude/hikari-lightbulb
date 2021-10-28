@@ -53,7 +53,7 @@ class SlashContext(base.Context):
         self._command = command
 
         self._options: t.Dict[str, t.Any] = {}
-        for opt in (self._interaction.options or []):
+        for opt in self._interaction.options or []:
             # Why is mypy so annoying about this ??
             if opt.type is hikari.OptionType.USER and self.resolved is not None:
                 val = t.cast(hikari.Snowflake, opt.value)

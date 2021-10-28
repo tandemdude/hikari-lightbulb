@@ -30,6 +30,7 @@ if t.TYPE_CHECKING:
     from lightbulb import app as app_
     from lightbulb import checks as checks_
     from lightbulb import commands
+    from lightbulb import events
 
 
 class Plugin:
@@ -44,7 +45,17 @@ class Plugin:
             internally for this plugin.
     """
 
-    __slots__ = ("name", "description", "d", "_raw_commands", "_all_commands", "_listeners", "_app", "_checks")
+    __slots__ = (
+        "name",
+        "description",
+        "d",
+        "_raw_commands",
+        "_all_commands",
+        "_listeners",
+        "_app",
+        "_checks",
+        "_error_handler",
+    )
 
     def __init__(self, name: str, description: t.Optional[str] = None, include_datastore: bool = False) -> None:
         self.name = name
@@ -67,6 +78,9 @@ class Plugin:
         ] = defaultdict(list)
 
         self._checks: t.List[checks_.Check] = []
+        self._error_handler: t.Optional[
+            t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]
+        ] = None
 
         self._app: t.Optional[app_.BotApp] = None
 
@@ -122,6 +136,7 @@ class Plugin:
         self,
         event: t.Type[hikari.Event],
         listener_func: t.Optional[t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]]] = None,
+        bind: bool = False,
     ) -> t.Union[
         t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]],
         t.Callable[
@@ -135,8 +150,14 @@ class Plugin:
 
         Args:
             event (Type[:obj:`~hikari.events.base_events.Event`): Event that the listener is for.
+            bind (:obj:`bool`): Whether or not to bind the listener function to the plugin. If ``True``, the
+                function will be converted into a bound method and so will be called with the plugin as the
+                first argument, and the error event as the second argument. Defaults to ``False``.
         """
         if listener_func is not None:
+            if bind:
+                listener_func = listener_func.__get__(self)  # type: ignore
+            assert listener_func is not None
             self._listeners[event].append(listener_func)
             return listener_func
 
@@ -144,8 +165,47 @@ class Plugin:
             func: t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]]
         ) -> t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]]:
             # TODO - allow getting event type from type hint
+            if bind:
+                func = func.__get__(self)  # type: ignore
             self.listener(event, func)
             return func
+
+        return decorate
+
+    def error_handler(
+        self,
+        func: t.Optional[t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]] = None,
+        bind: bool = False,
+    ) -> t.Union[
+        t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, t.Optional[bool]]],
+        t.Callable[
+            [t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]],
+            t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, t.Optional[bool]]],
+        ],
+    ]:
+        """
+        Sets the error handler function for the plugin. This method can be used as a second order decorator,
+        or called manually with the event type and function to set the plugin's error handler to.
+
+        Args:
+            bind (:obj:`bool`): Whether or not to bind the error handler function to the plugin. If ``True``, the
+                function will be converted into a bound method and so will be called with the plugin as the
+                first argument, and the error event as the second argument. Defaults to ``False``.
+        """
+        if func is not None:
+            if bind:
+                func = func.__get__(self)  # type: ignore
+            assert func is not None
+            self._error_handler = func
+            return func
+
+        def decorate(
+            func_: t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]
+        ) -> t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]:
+            if bind:
+                func_ = func_.__get__(self)  # type: ignore
+            self._error_handler = func_
+            return func_
 
         return decorate
 

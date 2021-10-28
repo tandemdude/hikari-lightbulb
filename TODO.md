@@ -16,7 +16,7 @@
   - [x] Support Listeners
   - [ ] Plugin Unload Hook
   - [x] Plugin Check
-  - [ ] Plugin error handler
+  - [x] Plugin error handler
 
 - [ ] Extensions
   - [ ] Load

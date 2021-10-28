@@ -556,7 +556,11 @@ class BotApp(hikari.GatewayBot):
             new_exc = t.cast(errors.LightbulbError, new_exc)
             error_event = events.PrefixCommandErrorEvent(app=self, exception=new_exc, context=context)
             handled = await self.maybe_dispatch_error_event(
-                error_event, [getattr(context.command, "error_handler", None)]
+                error_event,
+                [
+                    getattr(context.command, "error_handler", None),
+                    getattr(context.command.plugin, "_error_handler", None) if context.command is not None else None,
+                ],
             )
 
             if not handled:

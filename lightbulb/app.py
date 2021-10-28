@@ -743,6 +743,16 @@ class BotApp(hikari.GatewayBot):
             await command._auto_create()
 
     async def invoke_application_command(self, context: context_.base.ApplicationContext) -> None:
+        """
+        Invokes the appropriate application command for the given context and handles event
+        dispatching for the command invocation.
+
+        Args:
+            context (:obj:`~.context.base.ApplicationContext`): Context to invoke application commands under.
+
+        Returns:
+            ``None``
+        """
         cmd_events = self._get_events_for_application_command(context.command)
         await self.dispatch(cmd_events[0](app=self, command=context.command, context=context))
 
@@ -770,6 +780,17 @@ class BotApp(hikari.GatewayBot):
             await self.dispatch(cmd_events[1](app=self, command=context.command, context=context))
 
     async def handle_interaction_create_for_application_commands(self, event: hikari.InteractionCreateEvent) -> None:
+        """
+        Application command :obj:`~hikari.events.interaction_events.InteractionCreateEvent` listener. This handles
+        fetching the context, dispatching events, and invoking the appropriate command.
+
+        Args:
+            event (:obj:`~hikari.events.interaction_events.InteractionCreateEvent`): Event that application commands
+                will be processed for.
+
+        Returns:
+            ``None``
+        """
         if not isinstance(event.interaction, hikari.CommandInteraction):
             return
 

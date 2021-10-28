@@ -15,43 +15,26 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-import hikari
-
 import lightbulb
+from lightbulb import commands
 
-bot = lightbulb.Bot(prefix="!", token="YOUR_TOKEN")
-
-
-class Ping(lightbulb.slash_commands.SlashCommand):
-    description = "Checks that the bot is alive"
-    # enabled_guilds is set to an empty list by default - this means that the command
-    # will be global. To restrict the command to certain guilds only you would set enabled_guilds
-    # to a sequence of guild IDs as seen below:
-    # enabled_guilds = [123456, 92649673]
-
-    # This function is called when the slash command is invoked by a user. It **must** be called "callback"
-    # otherwise the interaction **will** fail.
-    async def callback(self, context):
-        # To send an ephemeral message instead pass the kwarg:
-        # flags=hikari.MessageFlag.EPHEMERAL
-        # e.g. await context.respond("Pong!", flags=hikari.MessageFlag.EPHEMERAL)
-        await context.respond("Pong!")
+bot = lightbulb.BotApp(prefix="!", token="YOUR_TOKEN")
 
 
-class Echo(lightbulb.slash_commands.SlashCommand):
-    description = "Repeats the user's input"
-    # Defining command options
-    text: str = lightbulb.slash_commands.Option("Text to repeat")
-    # To create an optional command option you would need to typehint the attribute
-    # as Optional. See below:
-    # text: typing.Optional[str] = Option(...)
-    # available option types can be seen in the documentation:
-    # https://hikari-lightbulb.readthedocs.io/en/latest/slash-commands.html
-
-    async def callback(self, context):
-        # Respond with the value of the 'text' option - the text that the user input.
-        await context.respond(context.options.text)
+@bot.command()
+@lightbulb.command("ping", "Checks that the bot is alive")
+@lightbulb.implements(commands.SlashCommand)
+async def ping(ctx):
+    """Checks that the bot is alive"""
+    await ctx.respond("Pong!")
 
 
-bot.add_slash_command(Ping)
+@bot.command()
+@lightbulb.option("text", "Text to repeat")
+@lightbulb.command("echo", "Repeats the user's input")
+@lightbulb.implements(commands.SlashCommand)
+async def echo(ctx):
+    await ctx.respond(ctx.options.text)
+
+
 bot.run()

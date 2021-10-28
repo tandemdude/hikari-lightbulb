@@ -15,31 +15,4 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-import lightbulb
-
-
-class ExamplePlugin(lightbulb.Plugin):
-    @lightbulb.command()
-    async def ping(self, ctx):
-        """Checks that the bot is alive"""
-        await ctx.respond("Pong!")
-
-
-class ExampleSlashCommand(lightbulb.slash_commands.SlashCommand):
-    name = "ping"
-    description = "Checks that the bot is alive"
-
-    async def callback(self, context):
-        await context.respond("Pong!")
-
-
-def load(bot):
-    bot.add_plugin(ExamplePlugin())
-    bot.add_slash_command(ExampleSlashCommand)
-
-
-def unload(bot):
-    bot.remove_plugin("ExamplePlugin")
-    # Name passed in here must be the name of the slash command
-    # as discord sees it. So "ping" in the above example, not "exampleslashcommand"
-    bot.remove_slash_command("ping")
+raise NotImplementedError

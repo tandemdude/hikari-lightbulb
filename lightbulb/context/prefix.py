@@ -103,7 +103,7 @@ class PrefixContext(base.Context):
             return self.app.cache.get_guild_channel(self.channel_id)
         return self.app.cache.get_dm_channel_id(self.author.id)
 
-    async def respond(self, *args: t.Any, **kwargs: t.Any) -> hikari.Message:
+    async def respond(self, *args: t.Any, **kwargs: t.Any) -> base.ResponseProxy:
         """
         Create a response for this context. This method directly calls :obj:`~hikari.messages.Message.respond`.
 
@@ -114,4 +114,5 @@ class PrefixContext(base.Context):
         Returns:
             :obj:`~hikari.messages.Message`: The created message object.
         """
-        return await self.event.message.respond(*args, **kwargs)
+        msg = await self.event.message.respond(*args, **kwargs)
+        return base.ResponseProxy(msg)

@@ -266,7 +266,8 @@ class ReactionNavigator(t.Generic[T]):
 
     async def _send_initial_msg(self, page: T) -> hikari.Message:
         assert self._context is not None
-        return await self._context.respond(page)
+        resp = await self._context.respond(page)
+        return await resp.message()
 
     def create_default_buttons(self) -> t.List[ReactionButton]:
         buttons = [
@@ -405,8 +406,8 @@ class ButtonNavigator(t.Generic[T]):
     async def _send_initial_msg(self, page: T) -> hikari.Message:
         assert self._context is not None
         buttons = await self.build_buttons()
-        message = await self._context.respond(page, component=buttons)
-        return message
+        resp = await self._context.respond(page, component=buttons)
+        return await resp.message()
 
     async def _edit_msg(self, inter: hikari.ComponentInteraction, page: T) -> None:
         buttons = await self.build_buttons(disabled=True if self._msg is None else False)

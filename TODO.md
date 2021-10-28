@@ -2,7 +2,7 @@
 
 ## Main
 
-- [ ] Custom Bot Class
+- [x] Custom Bot Class
   - [x] Bot Checks
   - [x] Multiple Owners
   - [x] Get prefix function (sync or async)

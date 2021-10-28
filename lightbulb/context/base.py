@@ -17,7 +17,7 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__ = ["Context", "ApplicationContext", "OptionsProxy"]
+__all__ = ["Context", "ApplicationContext", "OptionsProxy", "ResponseProxy"]
 
 import abc
 import typing as t
@@ -45,6 +45,37 @@ class OptionsProxy:
         return self._options.get(item)
 
 
+class ResponseProxy:
+    """
+    Proxy for context responses. Allows fetching of the message created from the response
+    lazily instead of a follow-up request being made immediately.
+    """
+
+    __slots__ = ("_message", "_fetcher")
+
+    def __init__(
+        self,
+        message: t.Optional[hikari.Message] = None,
+        fetcher: t.Optional[t.Callable[[], t.Coroutine[t.Any, t.Any, hikari.Message]]] = None,
+    ) -> None:
+        if message is None and fetcher is None:
+            raise ValueError("One of message or fetcher arguments cannot be None")
+        self._message = message
+        self._fetcher = fetcher
+
+    async def message(self) -> hikari.Message:
+        """
+        Fetches and/or returns the created message from the context response.
+
+        Returns:
+            :obj:`~hikari.messages.Message`: The response's created message.
+        """
+        if self._message is not None:
+            return self._message
+        assert self._fetcher is not None
+        return await self._fetcher()
+
+
 class Context(abc.ABC):
     """
     Abstract base class for all context types.
@@ -57,6 +88,16 @@ class Context(abc.ABC):
 
     def __init__(self, app: app_.BotApp):
         self._app = app
+
+    @property
+    def interaction(self) -> t.Optional[hikari.CommandInteraction]:
+        # Just to keep the interfaces the same for prefix commands and application commands
+        return None
+
+    @property
+    def resolved(self) -> t.Optional[hikari.ResolvedOptionData]:
+        # Just to keep the interfaces the same for prefix commands and application commands
+        return None
 
     @property
     def app(self) -> app_.BotApp:
@@ -148,7 +189,7 @@ class Context(abc.ABC):
         await self.command.invoke(self)
 
     @abc.abstractmethod
-    async def respond(self, *args: t.Any, **kwargs: t.Any) -> hikari.Message:
+    async def respond(self, *args: t.Any, **kwargs: t.Any) -> ResponseProxy:
         """
         Create a response to this context.
         """
@@ -216,7 +257,7 @@ class ApplicationContext(Context, abc.ABC):
             return self.app.cache.get_guild_channel(self.channel_id)
         return self.app.cache.get_dm_channel_id(self.user)
 
-    async def respond(self, *args: t.Any, **kwargs: t.Any) -> hikari.Message:
+    async def respond(self, *args: t.Any, **kwargs: t.Any) -> ResponseProxy:
         """
         Create a response for this context. The first time this method is called, the initial
         interaction response will be created by calling
@@ -234,13 +275,14 @@ class ApplicationContext(Context, abc.ABC):
                 ``CommandInteraction.execute``.
 
         Returns:
-            :obj:`~hikari.messages.Message`: The created message object.
+            :obj:`~ResponseProxy`: Proxy wrapping the response of the ``respond`` call.
         """
         if self.initial_response_sent:
-            return await self._interaction.execute(*args, **kwargs)
+            msg = await self._interaction.execute(*args, **kwargs)
+            return ResponseProxy(msg)
 
         if args and not isinstance(args[0], hikari.ResponseType):
             kwargs["content"] = args[0]
             kwargs.setdefault("response_type", hikari.ResponseType.MESSAGE_CREATE)
         await self._interaction.create_initial_response(**kwargs)
-        return await self._interaction.fetch_initial_response()
+        return ResponseProxy(fetcher=self._interaction.fetch_initial_response)

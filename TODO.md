@@ -18,10 +18,10 @@
   - [x] Plugin Check
   - [x] Plugin error handler
 
-- [ ] Extensions
-  - [ ] Load
-  - [ ] Unload
-  - [ ] Reload
+- [x] Extensions
+  - [x] Load
+  - [x] Unload
+  - [x] Reload
 
 - [ ] Commands
   - [x] Base Command

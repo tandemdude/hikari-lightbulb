@@ -20,6 +20,7 @@ from __future__ import annotations
 __all__ = ["BotApp", "when_mentioned_or"]
 
 import functools
+import importlib
 import inspect
 import logging
 import sys
@@ -43,6 +44,15 @@ _PrefixT = t.Union[
     t.Sequence[str],
     t.Callable[["BotApp", hikari.Message], t.Union[t.Sequence[str], t.Coroutine[t.Any, t.Any, t.Sequence[str]]]],
 ]
+
+
+class _ExtensionT(t.Protocol):
+    def load(self, bot: BotApp) -> None:
+        ...
+
+    def unload(self, bot: BotApp) -> None:
+        ...
+
 
 APPLICATION_COMMANDS_EVENTS_MAPPING = {
     commands.slash.SlashCommand: (
@@ -151,6 +161,8 @@ class BotApp(hikari.GatewayBot):
         "_user_commands",
         "_plugins",
         "_checks",
+        "extensions",
+        "_current_extension",
     )
 
     def __init__(
@@ -184,6 +196,9 @@ class BotApp(hikari.GatewayBot):
         self.d = data_store.DataStore()
         """A :obj:`~.utils.data_store.DataStore` instance enabling storage of custom data without subclassing."""
 
+        self.extensions: t.List[str] = []
+        self._current_extension: t.Optional[_ExtensionT] = None
+
         self._prefix_commands: t.MutableMapping[str, commands.prefix.PrefixCommand] = {}
         self._slash_commands: t.MutableMapping[str, commands.slash.SlashCommand] = {}
         self._message_commands: t.MutableMapping[str, commands.message.MessageCommand] = {}
@@ -195,7 +210,7 @@ class BotApp(hikari.GatewayBot):
 
         if prefix is not None:
             self.subscribe(hikari.MessageCreateEvent, self.handle_messsage_create_for_prefix_commands)
-        self.subscribe(hikari.StartingEvent, self._manage_application_commands)
+        self.subscribe(hikari.StartedEvent, self._manage_application_commands)
         self.subscribe(hikari.InteractionCreateEvent, self.handle_interaction_create_for_application_commands)
 
     def _add_command_to_correct_attr(self, command: commands.base.Command) -> None:
@@ -222,11 +237,150 @@ class BotApp(hikari.GatewayBot):
                 raise errors.CommandAlreadyExists(f"A user command with name {command.name!r} is already registered.")
             self._user_commands[command.name] = command
 
+    def _get_application_command(
+        self, interaction: hikari.CommandInteraction
+    ) -> t.Optional[commands.base.ApplicationCommand]:
+        return self.get_slash_command(interaction.command_name)
+
+    async def _manage_application_commands(self, _: hikari.StartingEvent) -> None:
+        if self.application is None:
+            self.application = await self.rest.fetch_application()
+
+        for command in self._slash_commands.values():
+            _LOGGER.info("Creating slash command %s", command.name)
+            await command._auto_create()
+
+    @staticmethod
+    def _get_events_for_application_command(
+        command: commands.base.ApplicationCommand,
+    ) -> t.Tuple[
+        t.Type[events.CommandInvocationEvent], t.Type[events.CommandCompletionEvent], t.Type[events.CommandErrorEvent]
+    ]:
+        for k in APPLICATION_COMMANDS_EVENTS_MAPPING:
+            if isinstance(command, k):
+                return APPLICATION_COMMANDS_EVENTS_MAPPING[k]
+        raise TypeError("Application command type not recognised")
+
     @staticmethod
     def print_banner(banner: t.Optional[str], allow_color: bool, force_color: bool) -> None:
         ux.print_banner(banner, allow_color, force_color)
         if banner == "hikari":
             sys.stdout.write("Thank you for using lightbulb!\n")
+
+    def load_extensions(self, *extensions: str) -> None:
+        """
+        Load external extension(s) into the bot. Extension name follows the format ``<directory>.<filename>``
+        Each extension **must** contain a function ``load`` which takes a single argument which will be the
+        bot instance you are loading the extension into.
+
+        Args:
+            extensions (:obj:`str`): The name of the extension(s) to load.
+
+        Returns:
+            ``None``
+
+        Raises:
+            :obj:`~.errors.ExtensionAlreadyLoaded`: If the extension has already been loaded.
+            :obj:`~.errors.ExtensionMissingLoad`: If the extension to be loaded does not contain a ``load`` function.
+            :obj:`~.errors.ExtensionNotFound`: If the extension to be loaded does not exist.
+        """
+        if len(extensions) > 1 or not extensions:
+            for extension in extensions:
+                self.load_extensions(extension)
+                return
+        extension = extensions[0]
+
+        if extension in self.extensions:
+            raise errors.ExtensionAlreadyLoaded(f"Extension {extension!r} is already loaded.")
+
+        try:
+            module = importlib.import_module(extension)
+        except ModuleNotFoundError:
+            raise errors.ExtensionNotFound(f"No extension by the name {extension!r} was found") from None
+
+        ext = t.cast(_ExtensionT, module)
+        self._current_extension = ext
+
+        if not hasattr(module, "load"):
+            raise errors.ExtensionMissingLoad(f"Extension {extension!r} is missing a load function")
+        else:
+            ext.load(self)
+            self.extensions.append(extension)
+            _LOGGER.debug("Extension loaded %r", extension)
+        self._current_extension = None
+
+    def unload_extensions(self, *extensions: str) -> None:
+        """
+        Unload external extension(s) from the bot. This method relies on a function, ``unload``
+        existing in the extensions which the bot will use to remove all commands and/or plugins
+        from the bot.
+
+        Args:
+            extensions (:obj:`str`): The name of the extension(s) to unload.
+
+        Returns:
+            ``None``
+
+        Raises:
+            :obj:`~.errors.ExtensionNotLoaded`: If the extension has not been loaded.
+            :obj:`~.errors.ExtensionMissingUnload`: If the extension does not contain an ``unload`` function.
+            :obj:`~.errors.ExtensionNotFound`: If the extension to be unloaded does not exist.
+        """
+        if len(extensions) > 1 or not extensions:
+            for extension in extensions:
+                self.unload_extensions(extension)
+                return
+        extension = extensions[0]
+
+        if extension not in self.extensions:
+            raise errors.ExtensionNotLoaded(f"Extension {extension!r} is not loaded.")
+
+        try:
+            module = importlib.import_module(extension)
+        except ModuleNotFoundError:
+            raise errors.ExtensionNotFound(f"No extension by the name {extension!r} was found") from None
+
+        ext = t.cast(_ExtensionT, module)
+        self._current_extension = ext
+
+        if not hasattr(module, "unload"):
+            raise errors.ExtensionMissingUnload(f"Extension {extension!r} is missing an unload function")
+        else:
+            ext.unload(self)
+            self.extensions.remove(extension)
+            del sys.modules[extension]
+            _LOGGER.debug("Extension unloaded %r", extension)
+        self._current_extension = None
+
+    def reload_extensions(self, *extensions: str) -> None:
+        """
+        Reload bot extension(s). This method is atomic and so the bot will
+        revert to the previous loaded state if an extension encounters a problem
+        during unloading or loading.
+
+        Args:
+            extensions (:obj:`str`): The name of the extension(s) to be reloaded.
+
+        Returns:
+            ``None``
+        """
+        if len(extensions) > 1 or not extensions:
+            for extension in extensions:
+                self.reload_extensions(extension)
+                return
+        extension = extensions[0]
+
+        _LOGGER.debug("Reloading extension %r", extension)
+        old = sys.modules[extension]
+        try:
+            self.unload_extensions(extension)
+            self.load_extensions(extension)
+        except Exception as e:
+            sys.modules[extension] = old
+            self.load_extensions(extension)
+            raise e
+        else:
+            del old
 
     async def fetch_owner_ids(self) -> t.Sequence[hikari.SnowflakeishOr[int]]:
         """
@@ -698,11 +852,6 @@ class BotApp(hikari.GatewayBot):
         """
         return cls(self, event, command)
 
-    def _get_application_command(
-        self, interaction: hikari.CommandInteraction
-    ) -> t.Optional[commands.base.ApplicationCommand]:
-        return self.get_slash_command(interaction.command_name)
-
     async def get_application_command_context(
         self, event: hikari.InteractionCreateEvent
     ) -> t.Optional[context_.base.ApplicationContext]:
@@ -722,25 +871,6 @@ class BotApp(hikari.GatewayBot):
         # TODO - make this work for other application command types
         assert isinstance(cmd, commands.slash.SlashCommand)
         return await self.get_slash_context(event, cmd)
-
-    @staticmethod
-    def _get_events_for_application_command(
-        command: commands.base.ApplicationCommand,
-    ) -> t.Tuple[
-        t.Type[events.CommandInvocationEvent], t.Type[events.CommandCompletionEvent], t.Type[events.CommandErrorEvent]
-    ]:
-        for k in APPLICATION_COMMANDS_EVENTS_MAPPING:
-            if isinstance(command, k):
-                return APPLICATION_COMMANDS_EVENTS_MAPPING[k]
-        raise TypeError("Application command type not recognised")  # TODO?
-
-    async def _manage_application_commands(self, _: hikari.StartingEvent) -> None:
-        if self.application is None:
-            self.application = await self.rest.fetch_application()
-
-        for command in self._slash_commands.values():
-            print(f"CREATING SLASH COMMAND {command.name!r}")  # TODO Logging
-            await command._auto_create()
 
     async def invoke_application_command(self, context: context_.base.ApplicationContext) -> None:
         """

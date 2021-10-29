@@ -32,6 +32,12 @@ __all__ = [
     "WebhookOnly",
     "HumanOnly",
     "NSFWChannelOnly",
+    "ExtensionMissingUnload",
+    "ExtensionNotFound",
+    "ExtensionNotLoaded",
+    "ExtensionMissingLoad",
+    "ExtensionAlreadyLoaded",
+    "CommandAlreadyExists",
 ]
 
 import typing as t
@@ -46,7 +52,25 @@ class LightbulbError(Exception):
     of this exception.
     """
 
-    pass
+
+class ExtensionNotFound(LightbulbError):
+    """Exception raised when an attempt is made to load an extension that does not exist."""
+
+
+class ExtensionAlreadyLoaded(LightbulbError):
+    """Exception raised when an extension already loaded is attempted to be loaded."""
+
+
+class ExtensionMissingLoad(LightbulbError):
+    """Exception raised when an extension is attempted to be loaded but does not contain a load function"""
+
+
+class ExtensionMissingUnload(LightbulbError):
+    """Exception raised when an extension is attempted to be unloaded but does not contain an unload function"""
+
+
+class ExtensionNotLoaded(LightbulbError):
+    """Exception raised when an extension not already loaded is attempted to be unloaded."""
 
 
 class CommandAlreadyExists(LightbulbError):
@@ -54,8 +78,6 @@ class CommandAlreadyExists(LightbulbError):
     Error raised when attempting to add a command to the bot but a name or alias
     for the command conflicts with a command that already exists.
     """
-
-    pass
 
 
 class CommandNotFound(LightbulbError):

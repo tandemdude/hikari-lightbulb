@@ -197,6 +197,7 @@ class BotApp(hikari.GatewayBot):
         """A :obj:`~.utils.data_store.DataStore` instance enabling storage of custom data without subclassing."""
 
         self.extensions: t.List[str] = []
+        """A list of the currently loaded extensions."""
         self._current_extension: t.Optional[_ExtensionT] = None
 
         self._prefix_commands: t.MutableMapping[str, commands.prefix.PrefixCommand] = {}
@@ -271,7 +272,7 @@ class BotApp(hikari.GatewayBot):
         """
         Load external extension(s) into the bot. Extension name follows the format ``<directory>.<filename>``
         Each extension **must** contain a function ``load`` which takes a single argument which will be the
-        bot instance you are loading the extension into.
+        ``BotApp`` instance you are loading the extension into.
 
         Args:
             extensions (:obj:`str`): The name of the extension(s) to load.

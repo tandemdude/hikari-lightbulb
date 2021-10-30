@@ -51,7 +51,7 @@
   - [x] Bot Only
   - [x] Webhook Only
   - [x] Owner Only
-  - [ ] Has Roles
+  - [x] Has Roles
   - [ ] (Bot) Has Guild Permissions
   - [ ] (Bot) Has Role Permissions
   - [ ] (Bot) Has Channel Permissions

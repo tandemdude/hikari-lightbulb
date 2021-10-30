@@ -25,6 +25,7 @@ __all__ = [
     "ConverterFailure",
     "NotEnoughArguments",
     "CheckFailure",
+    "InsufficientCache",
     "NotOwner",
     "OnlyInGuild",
     "OnlyInDM",
@@ -38,9 +39,14 @@ __all__ = [
     "ExtensionMissingLoad",
     "ExtensionAlreadyLoaded",
     "CommandAlreadyExists",
+    "MissingRequiredRole",
+    "MissingRequiredPermission",
+    "BotMissingRequiredPermission",
 ]
 
 import typing as t
+
+import hikari
 
 if t.TYPE_CHECKING:
     from lightbulb import commands
@@ -156,6 +162,10 @@ class CheckFailure(LightbulbError):
     """
 
 
+class InsufficientCache(CheckFailure):
+    pass
+
+
 class NotOwner(CheckFailure):
     """
     Error raised when a user who is not the owner of the bot attempts to use a command
@@ -203,3 +213,21 @@ class NSFWChannelOnly(CheckFailure):
     Error raised when a user attempts to use a command in a non-NSFW channel that has
     been restricted to only being used in NSFW channels.
     """
+
+
+class MissingRequiredRole(CheckFailure):
+    """
+    Error raised when the member invoking a command is missing one or more of the required roles.
+    """
+
+
+class MissingRequiredPermission(CheckFailure):
+    def __init__(self, *args: t.Any, perms: hikari.Permissions) -> None:
+        super().__init__(*args)
+        self.missing_perms = perms
+
+
+class BotMissingRequiredPermission(CheckFailure):
+    def __init__(self, *args: t.Any, perms: hikari.Permissions) -> None:
+        super().__init__(*args)
+        self.missing_perms = perms

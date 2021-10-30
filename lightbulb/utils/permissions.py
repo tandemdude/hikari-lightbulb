@@ -39,6 +39,10 @@ def permissions_for(member: hikari.Member) -> hikari.Permissions:
     permissions = hikari.Permissions.NONE
     for role in member.get_roles():
         permissions |= role.permissions
+
+    if hikari.Permissions.ADMINISTRATOR in permissions:
+        return hikari.Permissions.all_permissions()
+
     return permissions
 
 
@@ -60,6 +64,9 @@ def permissions_in(
     allowed_perms = hikari.Permissions.NONE
     if include_guild_permissions:
         allowed_perms |= permissions_for(member)
+
+    if hikari.Permissions.ADMINISTRATOR in allowed_perms:
+        return hikari.Permissions.all_permissions()
 
     overwrites = channel.permission_overwrites
 

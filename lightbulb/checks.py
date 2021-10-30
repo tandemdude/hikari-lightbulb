@@ -24,15 +24,24 @@ __all__ = [
     "webhook_only",
     "human_only",
     "nsfw_channel_only",
+    "has_roles",
+    "has_role_permissions",
+    "has_channel_permissions",
+    "has_guild_permissions",
+    "bot_has_guild_permissions",
+    "bot_has_role_permissions",
+    "bot_has_channel_permissions",
 ]
 
 import functools
+import operator
 import typing as t
 
 import hikari
 
 from lightbulb import context as context_
 from lightbulb import errors
+from lightbulb.utils import permissions
 
 T = t.TypeVar("T")
 _CallbackT = t.Union[
@@ -144,6 +153,122 @@ def _nsfw_channel_only(context: context_.base.Context) -> bool:
     return True
 
 
+def _has_roles(
+    context: context_.base.Context, *, roles: t.Sequence[int], check_func: t.Callable[[t.Sequence[bool]], bool]
+) -> bool:
+    _guild_only(context)
+    assert context.member is not None
+    if not check_func([r in context.member.role_ids for r in roles]):
+        raise errors.MissingRequiredRole("You are missing one or more roles required in order to run this command")
+    return True
+
+
+def _has_guild_permissions(context: context_.base.Context, *, perms: hikari.Permissions) -> bool:
+    _guild_only(context)
+
+    channel, guild = context.get_channel(), context.get_guild()
+    if channel is None or guild is None:
+        raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
+
+    if guild.owner_id == context.author.id:
+        return True
+
+    assert context.member is not None and isinstance(channel, hikari.GuildChannel)
+    missing_perms = ~permissions.permissions_in(channel, context.member) & perms
+    if missing_perms is not hikari.Permissions.NONE:
+        raise errors.MissingRequiredPermission(
+            "You are missing one or more permissions required in order to run this command", perms=missing_perms
+        )
+    return True
+
+
+def _has_role_permissions(context: context_.base.Context, *, perms: hikari.Permissions) -> bool:
+    _guild_only(context)
+
+    assert context.member is not None
+    missing_perms = ~permissions.permissions_for(context.member) & perms
+    if missing_perms is not hikari.Permissions.NONE:
+        raise errors.MissingRequiredPermission(
+            "You are missing one or more permissions required in order to run this command", perms=missing_perms
+        )
+    return True
+
+
+def _has_channel_permissions(context: context_.base.Context, *, perms: hikari.Permissions) -> bool:
+    _guild_only(context)
+
+    channel = context.get_channel()
+    if channel is None:
+        raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
+
+    assert context.member is not None and isinstance(channel, hikari.GuildChannel)
+    missing_perms = ~permissions.permissions_in(channel, context.member, include_guild_permissions=False) & perms
+    if missing_perms is not hikari.Permissions.NONE:
+        raise errors.MissingRequiredPermission(
+            "You are missing one or more permissions required in order to run this command", perms=missing_perms
+        )
+    return True
+
+
+def _bot_has_guild_permissions(context: context_.base.Context, *, perms: hikari.Permissions) -> bool:
+    _guild_only(context)
+
+    channel, guild = context.get_channel(), context.get_guild()
+    if channel is None or guild is None:
+        raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
+    member = guild.get_my_member()
+    if member is None:
+        raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
+
+    if guild.owner_id == member.id:
+        return True
+
+    assert isinstance(channel, hikari.GuildChannel)
+    missing_perms = ~permissions.permissions_in(channel, member) & perms
+    if missing_perms is not hikari.Permissions.NONE:
+        raise errors.BotMissingRequiredPermission(
+            "The bot is missing one or more permissions required in order to run this command", perms=missing_perms
+        )
+    return True
+
+
+def _bot_has_role_permissions(context: context_.base.Context, *, perms: hikari.Permissions) -> bool:
+    _guild_only(context)
+
+    guild = context.get_guild()
+    if guild is None:
+        raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
+    member = guild.get_my_member()
+    if member is None:
+        raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
+
+    missing_perms = ~permissions.permissions_for(member) & perms
+    if missing_perms is not hikari.Permissions.NONE:
+        raise errors.BotMissingRequiredPermission(
+            "The bot is missing one or more permissions required in order to run this command", perms=missing_perms
+        )
+    return True
+
+
+def _bot_has_channel_permissions(context: context_.base.Context, *, perms: hikari.Permissions) -> bool:
+    _guild_only(context)
+
+    channel, guild = context.get_channel(), context.get_guild()
+    if channel is None or guild is None:
+        raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
+    member = guild.get_my_member()
+    if member is None:
+        raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
+
+    assert isinstance(channel, hikari.GuildChannel)
+    missing_perms = ~permissions.permissions_in(channel, member, include_guild_permissions=False) & perms
+    if missing_perms is not hikari.Permissions.NONE:
+        raise errors.BotMissingRequiredPermission(
+            "The bot is missing one or more permissions required in order to run this command", perms=missing_perms
+        )
+    return True
+
+
 owner_only = Check(_owner_only)
 """Prevents a command from being used by anyone other than the owner of the application."""
 guild_only = Check(_guild_only)
@@ -158,3 +283,157 @@ human_only = Check(_human_only)
 """Prevents a command from being used by anyone other than a human."""
 nsfw_channel_only = Check(_nsfw_channel_only)
 """Prevents a command from being used in any channel other than one marked as NSFW."""
+
+
+def has_roles(role1: int, *roles: int, mode: t.Callable[[t.Sequence[bool]], bool] = all) -> Check:
+    """
+    Prevents a command from being used by anyone missing roles according to the given mode.
+    This check supports slash commands.
+
+    Args:
+        role1 (:obj:`int`): Role ID to check for.
+        *roles (:obj:`int`): Additional role IDs to check for.
+
+    Keyword Args:
+        mode (``all`` or ``any``): The mode to check roles using. If ``all``, all role IDs passed will
+            be required. If ``any``, only one of the role IDs will be required. Defaults to ``all``.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have roles
+        in a DM channel.
+    """
+    if mode not in (any, all):
+        raise TypeError("mode must be one of: any, all")
+    return Check(functools.partial(_has_roles, roles=[role1, *roles], check_func=mode))
+
+
+def has_guild_permissions(perm1: hikari.Permissions, *perms: hikari.Permissions) -> Check:
+    """
+    Prevents the command from being used by a member missing any of the required
+    permissions (this takes into account permissions granted by both roles and permission overwrites).
+
+    Args:
+        perm1 (:obj:`hikari.Permissions`): Permission to check for.
+        *perms (:obj:`hikari.Permissions`): Additional permissions to check for.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have permissions
+        in a DM channel.
+
+    Warning:
+        This check is unavailable if your application is stateless and/or missing the intent
+        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
+        either of these conditions are not met.
+    """
+    reduced = functools.reduce(operator.or_, [perm1, *perms])
+    return Check(functools.partial(_has_guild_permissions, perms=reduced))
+
+
+def has_role_permissions(perm1: hikari.Permissions, *perms: hikari.Permissions) -> Check:
+    """
+    Prevents the command from being used by a member missing any of the required role
+    permissions.
+
+    Args:
+        perm1 (:obj:`hikari.Permissions`): Permission to check for.
+        *perms (:obj:`hikari.Permissions`): Additional permissions to check for.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have permissions
+        in a DM channel.
+
+    Warning:
+        This check is unavailable if your application is stateless and/or missing the intent
+        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
+        either of these conditions are not met.
+    """
+    reduced = functools.reduce(operator.or_, [perm1, *perms])
+    return Check(functools.partial(_has_role_permissions, perms=reduced))
+
+
+def has_channel_permissions(perm1: hikari.Permissions, *perms: hikari.Permissions) -> Check:
+    """
+    Prevents the command from being used by a member missing any of the required
+    channel permissions (permissions granted by a permission overwrite).
+
+    Args:
+        perm1 (:obj:`hikari.Permissions`): Permission to check for.
+        *perms (:obj:`hikari.Permissions`): Additional permissions to check for.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have permissions
+        in a DM channel.
+
+    Warning:
+        This check is unavailable if your application is stateless and/or missing the intent
+        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
+        either of these conditions are not met.
+    """
+    reduced = functools.reduce(operator.or_, [perm1, *perms])
+    return Check(functools.partial(_has_channel_permissions, perms=reduced))
+
+
+def bot_has_guild_permissions(perm1: hikari.Permissions, *perms: hikari.Permissions) -> Check:
+    """
+    Prevents the command from being used if the bot is missing any of the required
+    permissions (this takes into account permissions granted by both roles and permission overwrites).
+
+    Args:
+        perm1 (:obj:`hikari.Permissions`): Permission to check for.
+        *perms (:obj:`hikari.Permissions`): Additional permissions to check for.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have permissions
+        in a DM channel.
+
+    Warning:
+        This check is unavailable if your application is stateless and/or missing the intent
+        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
+        either of these conditions are not met.
+    """
+    reduced = functools.reduce(operator.or_, [perm1, *perms])
+    return Check(functools.partial(_bot_has_guild_permissions, perms=reduced))
+
+
+def bot_has_role_permissions(perm1: hikari.Permissions, *perms: hikari.Permissions) -> Check:
+    """
+    Prevents the command from being used if the bot is missing any of the required role
+    permissions.
+
+    Args:
+        perm1 (:obj:`hikari.Permissions`): Permission to check for.
+        *perms (:obj:`hikari.Permissions`): Additional permissions to check for.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have permissions
+        in a DM channel.
+
+    Warning:
+        This check is unavailable if your application is stateless and/or missing the intent
+        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
+        either of these conditions are not met.
+    """
+    reduced = functools.reduce(operator.or_, [perm1, *perms])
+    return Check(functools.partial(_bot_has_role_permissions, perms=reduced))
+
+
+def bot_has_channel_permissions(perm1: hikari.Permissions, *perms: hikari.Permissions) -> Check:
+    """
+    Prevents the command from being used if the bot is missing any of the required channel
+    permissions (permissions granted a permission overwrite).
+
+    Args:
+        perm1 (:obj:`hikari.Permissions`): Permission to check for.
+        *perms (:obj:`hikari.Permissions`): Additional permissions to check for.
+
+    Note:
+        This check will also prevent commands from being used in DMs, as you cannot have permissions
+        in a DM channel.
+
+    Warning:
+        This check is unavailable if your application is stateless and/or missing the intent
+        :obj:`hikari.Intents.GUILDS` and will **always** raise an error on command invocation if
+        either of these conditions are not met.
+    """
+    reduced = functools.reduce(operator.or_, [perm1, *perms])
+    return Check(functools.partial(_bot_has_channel_permissions, perms=reduced))

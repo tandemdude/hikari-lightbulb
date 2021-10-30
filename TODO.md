@@ -52,9 +52,9 @@
   - [x] Webhook Only
   - [x] Owner Only
   - [x] Has Roles
-  - [ ] (Bot) Has Guild Permissions
-  - [ ] (Bot) Has Role Permissions
-  - [ ] (Bot) Has Channel Permissions
+  - [x] (Bot) Has Guild Permissions
+  - [x] (Bot) Has Role Permissions
+  - [x] (Bot) Has Channel Permissions
   - [ ] Has Attachment
   - [x] Custom Checks
   - [ ] Check Exempt?

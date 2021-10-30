@@ -26,10 +26,10 @@
 - [ ] Commands
   - [x] Base Command
   - [x] Base Application Command (needs creation methods)
-  - [ ] Prefix Commands
+  - [x] Prefix Commands
     - [x] Invocation
     - [x] Parsing
-    - [ ] Groups & subcommands
+    - [x] Groups & subcommands
   - [ ] Slash Commands
     - [x] Option Types
     - [x] Channel Types
@@ -43,7 +43,7 @@
     - [x] ~~Message commands~~ (blocked)
     - [x] ~~User commands~~ (blocked)
   - [ ] Auto-managing of Application Commands
-  
+
 - [ ] Checks (Reuse?)
   - [x] DM Only
   - [x] Guild Only

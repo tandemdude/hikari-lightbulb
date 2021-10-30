@@ -17,7 +17,7 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__ = ["OptionModifier", "OptionLike", "CommandLike", "Command", "ApplicationCommand"]
+__all__ = ["OptionModifier", "OptionLike", "CommandLike", "Command", "ApplicationCommand", "SubcommandTrait"]
 
 import abc
 import dataclasses
@@ -193,6 +193,10 @@ class CommandLike:
         return decorate
 
 
+class SubcommandTrait(abc.ABC):
+    pass
+
+
 class Command(abc.ABC):
     """
     Abstract base class for all command types.
@@ -247,8 +251,7 @@ class Command(abc.ABC):
 
     @property
     def is_subcommand(self) -> bool:
-        """Whether or not the command is a subcommand."""
-        return self.parent is not None
+        return isinstance(self, SubcommandTrait)
 
     @property
     def qualname(self) -> str:

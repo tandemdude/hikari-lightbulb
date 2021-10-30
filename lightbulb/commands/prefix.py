@@ -17,10 +17,50 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__ = ["PrefixCommand"]
+__all__ = ["PrefixCommand", "PrefixSubCommand", "PrefixSubGroup", "PrefixCommandGroup", "PrefixGroupMixin"]
+
+import abc
+import typing as t
 
 from lightbulb import context as context_
+from lightbulb import errors
 from lightbulb.commands import base
+
+if t.TYPE_CHECKING:
+    from lightbulb import app as app_
+
+
+class PrefixGroupMixin(abc.ABC):
+    __slots__ = ()
+    name: str
+    _subcommands: t.Dict[str, t.Union[PrefixSubGroup, PrefixSubCommand]]
+
+    def maybe_resolve_subcommand(
+        self, arg_string: str
+    ) -> t.Tuple[t.Optional[t.Union[PrefixSubGroup, PrefixSubCommand]], str]:
+        if not arg_string:
+            return None, ""
+
+        maybe_subcmd, *remainder = arg_string.split(maxsplit=1)
+        remainder = "".join(remainder)
+
+        if (cmd := self._subcommands.get(maybe_subcmd)) is not None:
+            return cmd, remainder
+        return None, ""
+
+    def create_subcommands(self, raw_cmds: t.Sequence[base.CommandLike], app: app_.BotApp) -> None:
+        for raw_cmd in raw_cmds:
+            impls: t.List[t.Type[base.Command]] = getattr(raw_cmd.callback, "__cmd_types__", [])
+            for impl in impls:
+                if issubclass(impl, (PrefixSubCommand, PrefixSubGroup)):
+                    cmd = impl(app, raw_cmd)
+                    cmd.parent = self  # type: ignore
+                    for name in [cmd.name, *cmd.aliases]:
+                        if name in self._subcommands:
+                            raise errors.CommandAlreadyExists(
+                                f"A prefix subcommand with name or alias {name!r} already exists for group {self.name!r}"
+                            )
+                        self._subcommands[name] = cmd
 
 
 class PrefixCommand(base.Command):
@@ -43,3 +83,62 @@ class PrefixCommand(base.Command):
         assert isinstance(context, context_.prefix.PrefixContext)
         await context._parser.inject_args_to_context()
         await self(context)
+
+
+class PrefixSubCommand(PrefixCommand, base.SubcommandTrait):
+    __slots__ = ()
+
+    async def invoke(self, context: context_.base.Context, *, arg_buffer: str = "") -> None:
+        await self.evaluate_checks(context)
+        await self.evaluate_cooldowns(context)
+        assert isinstance(context, context_.prefix.PrefixContext)
+        context._parser = type(context._parser)(context, arg_buffer)
+        context._parser.options = list(self.options.values())
+        await context._parser.inject_args_to_context()
+        await self(context)
+
+
+class PrefixSubGroup(PrefixCommand, PrefixGroupMixin, base.SubcommandTrait):
+    __slots__ = ("_raw_subcommands", "_subcommands")
+
+    def __init__(self, app: app_.BotApp, initialiser: base.CommandLike):
+        super().__init__(app, initialiser)
+        self._raw_subcommands = initialiser.subcommands
+        self._subcommands = {}
+        self.create_subcommands(self._raw_subcommands, app)
+
+    async def invoke(self, context: context_.base.Context, *, arg_buffer: str = "") -> None:
+        subcmd, remainder = self.maybe_resolve_subcommand(arg_buffer)
+        if subcmd is not None:
+            await subcmd.invoke(context, arg_buffer=remainder)
+            return
+
+        await self.evaluate_checks(context)
+        await self.evaluate_cooldowns(context)
+        assert isinstance(context, context_.prefix.PrefixContext)
+        context._parser = type(context._parser)(context, arg_buffer)
+        context._parser.options = list(self.options.values())
+        await context._parser.inject_args_to_context()
+        await self(context)
+
+
+class PrefixCommandGroup(PrefixCommand, PrefixGroupMixin):
+    __slots__ = ("_raw_subcommands", "_subcommands")
+
+    def __init__(self, app: app_.BotApp, initialiser: base.CommandLike):
+        super().__init__(app, initialiser)
+        self._raw_subcommands = initialiser.subcommands
+        self._subcommands = {}
+        self.create_subcommands(self._raw_subcommands, app)
+
+    async def invoke(self, context: context_.base.Context) -> None:
+        assert isinstance(context, context_.prefix.PrefixContext) and context.event.message.content is not None
+
+        subcmd, remainder = self.maybe_resolve_subcommand(
+            context.event.message.content[len(context.prefix) + len(context.invoked_with) :].strip()
+        )
+        if subcmd is not None:
+            await subcmd.invoke(context, arg_buffer=remainder)
+            return
+
+        await super().invoke(context)

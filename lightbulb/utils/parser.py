@@ -30,6 +30,7 @@ import hikari
 from lightbulb import commands
 from lightbulb import context as context_
 from lightbulb import errors
+from lightbulb.commands.base import OptionLike
 from lightbulb.commands.base import OptionModifier
 from lightbulb.converters import special
 from lightbulb.converters.base import BaseConverter
@@ -79,6 +80,8 @@ CONVERTER_TYPE_MAPPING = {
 
 class BaseParser(abc.ABC):
     __slots__ = ()
+
+    options: t.List[OptionLike]
 
     @abc.abstractmethod
     def __init__(self, context: context_.prefix.PrefixContext, args: t.Optional[str]) -> None:

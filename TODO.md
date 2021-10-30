@@ -55,7 +55,7 @@
   - [x] (Bot) Has Guild Permissions
   - [x] (Bot) Has Role Permissions
   - [x] (Bot) Has Channel Permissions
-  - [ ] Has Attachment
+  - [x] Has Attachment
   - [x] Custom Checks
   - [ ] Check Exempt?
 

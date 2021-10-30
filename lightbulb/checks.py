@@ -269,6 +269,18 @@ def _bot_has_channel_permissions(context: context_.base.Context, *, perms: hikar
     return True
 
 
+def _has_attachments(context: context_.base.Context, *, file_exts: t.Sequence[str] = ()) -> bool:
+    if not context.attachments:
+        raise errors.MissingRequiredAttachment("Missing attachment(s) required to run the command")
+
+    if file_exts:
+        for attachment in context.attachments:
+            if not any(attachment.filename.endswith(ext) for ext in file_exts):
+                raise errors.MissingRequiredAttachment("Missing attachment(s) required to run the command")
+
+    return True
+
+
 owner_only = Check(_owner_only)
 """Prevents a command from being used by anyone other than the owner of the application."""
 guild_only = Check(_guild_only)
@@ -437,3 +449,18 @@ def bot_has_channel_permissions(perm1: hikari.Permissions, *perms: hikari.Permis
     """
     reduced = functools.reduce(operator.or_, [perm1, *perms])
     return Check(functools.partial(_bot_has_channel_permissions, perms=reduced))
+
+
+def has_attachments(*extensions: str) -> Check:
+    """
+    Prevents the command from being used if the invocation message
+    does not include any attachments.
+
+    Args:
+        *extensions (:obj:`str`): If specified, attachments with different file extensions
+            will cause the check to fail.
+
+    Note:
+        If ``extensions`` is specified then all attachments must conform to the restriction.
+    """
+    return Check(functools.partial(_has_attachments, file_exts=extensions))

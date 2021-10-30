@@ -79,6 +79,10 @@ class PrefixContext(base.Context):
         return self.event.message.guild_id
 
     @property
+    def attachments(self) -> t.Sequence[hikari.Attachment]:
+        return self.event.message.attachments
+
+    @property
     def member(self) -> t.Optional[hikari.Member]:
         return self.event.message.member
 

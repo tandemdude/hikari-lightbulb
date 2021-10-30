@@ -231,3 +231,7 @@ class BotMissingRequiredPermission(CheckFailure):
     def __init__(self, *args: t.Any, perms: hikari.Permissions) -> None:
         super().__init__(*args)
         self.missing_perms = perms
+
+
+class MissingRequiredAttachment(CheckFailure):
+    pass

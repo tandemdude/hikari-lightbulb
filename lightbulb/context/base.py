@@ -135,6 +135,11 @@ class Context(abc.ABC):
 
     @property
     @abc.abstractmethod
+    def attachments(self) -> t.Sequence[hikari.Attachment]:
+        ...
+
+    @property
+    @abc.abstractmethod
     def member(self) -> t.Optional[hikari.Member]:
         """The member for the context."""
         ...
@@ -232,6 +237,10 @@ class ApplicationContext(Context, abc.ABC):
     @property
     def guild_id(self) -> t.Optional[hikari.Snowflakeish]:
         return self._interaction.guild_id
+
+    @property
+    def attachments(self) -> t.Sequence[hikari.Attachment]:
+        return []
 
     @property
     def member(self) -> t.Optional[hikari.Member]:

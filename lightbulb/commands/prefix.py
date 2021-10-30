@@ -89,13 +89,10 @@ class PrefixSubCommand(PrefixCommand, base.SubcommandTrait):
     __slots__ = ()
 
     async def invoke(self, context: context_.base.Context, *, arg_buffer: str = "") -> None:
-        await self.evaluate_checks(context)
-        await self.evaluate_cooldowns(context)
         assert isinstance(context, context_.prefix.PrefixContext)
         context._parser = type(context._parser)(context, arg_buffer)
         context._parser.options = list(self.options.values())
-        await context._parser.inject_args_to_context()
-        await self(context)
+        await super().invoke(context)
 
 
 class PrefixSubGroup(PrefixCommand, PrefixGroupMixin, base.SubcommandTrait):
@@ -113,13 +110,10 @@ class PrefixSubGroup(PrefixCommand, PrefixGroupMixin, base.SubcommandTrait):
             await subcmd.invoke(context, arg_buffer=remainder)
             return
 
-        await self.evaluate_checks(context)
-        await self.evaluate_cooldowns(context)
         assert isinstance(context, context_.prefix.PrefixContext)
         context._parser = type(context._parser)(context, arg_buffer)
         context._parser.options = list(self.options.values())
-        await context._parser.inject_args_to_context()
-        await self(context)
+        await super().invoke(context)
 
 
 class PrefixCommandGroup(PrefixCommand, PrefixGroupMixin):

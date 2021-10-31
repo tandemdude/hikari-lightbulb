@@ -88,6 +88,11 @@ class PrefixCommand(base.Command):
 class PrefixSubCommand(PrefixCommand, base.SubcommandTrait):
     __slots__ = ()
 
+    @property
+    def qualname(self) -> str:
+        assert self.parent is not None
+        return f"{self.parent.qualname} {self.name}"
+
     async def invoke(self, context: context_.base.Context, *, arg_buffer: str = "") -> None:
         assert isinstance(context, context_.prefix.PrefixContext)
         context._parser = type(context._parser)(context, arg_buffer)
@@ -98,11 +103,16 @@ class PrefixSubCommand(PrefixCommand, base.SubcommandTrait):
 class PrefixSubGroup(PrefixCommand, PrefixGroupMixin, base.SubcommandTrait):
     __slots__ = ("_raw_subcommands", "_subcommands")
 
-    def __init__(self, app: app_.BotApp, initialiser: base.CommandLike):
+    def __init__(self, app: app_.BotApp, initialiser: base.CommandLike) -> None:
         super().__init__(app, initialiser)
         self._raw_subcommands = initialiser.subcommands
         self._subcommands = {}
         self.create_subcommands(self._raw_subcommands, app)
+
+    @property
+    def qualname(self) -> str:
+        assert self.parent is not None
+        return f"{self.parent.qualname} {self.name}"
 
     async def invoke(self, context: context_.base.Context, *, arg_buffer: str = "") -> None:
         subcmd, remainder = self.maybe_resolve_subcommand(arg_buffer)
@@ -119,7 +129,7 @@ class PrefixSubGroup(PrefixCommand, PrefixGroupMixin, base.SubcommandTrait):
 class PrefixCommandGroup(PrefixCommand, PrefixGroupMixin):
     __slots__ = ("_raw_subcommands", "_subcommands")
 
-    def __init__(self, app: app_.BotApp, initialiser: base.CommandLike):
+    def __init__(self, app: app_.BotApp, initialiser: base.CommandLike) -> None:
         super().__init__(app, initialiser)
         self._raw_subcommands = initialiser.subcommands
         self._subcommands = {}

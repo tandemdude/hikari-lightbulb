@@ -41,15 +41,18 @@ class SlashContext(base.ApplicationContext):
         command (:obj:`~.commands.slash.SlashCommand`): The command that the context is for.
     """
 
-    __slots__ = ("_options",)
+    __slots__ = ("_options", "_raw_options")
 
     def __init__(
         self, app: app_.BotApp, event: hikari.InteractionCreateEvent, command: commands.slash.SlashCommand
     ) -> None:
         super().__init__(app, event, command)
-
         self._options: t.Dict[str, t.Any] = {}
-        for opt in self._interaction.options or []:
+        self._raw_options: t.Sequence[hikari.CommandInteractionOption] = self.interaction.options or []
+        self._parse_options(self.interaction.options)
+
+    def _parse_options(self, options: t.Optional[t.Sequence[hikari.CommandInteractionOption]]) -> None:
+        for opt in options or []:
             # Why is mypy so annoying about this ??
             if opt.type is hikari.OptionType.USER and self.resolved is not None:
                 val = t.cast(hikari.Snowflake, opt.value)

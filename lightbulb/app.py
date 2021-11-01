@@ -32,6 +32,7 @@ from hikari.internal import ux
 from lightbulb import checks
 from lightbulb import commands
 from lightbulb import context as context_
+from lightbulb import decorators
 from lightbulb import errors
 from lightbulb import events
 from lightbulb import help_command
@@ -146,6 +147,10 @@ class BotApp(hikari.GatewayBot):
             to ``True``.
         owner_ids (Sequence[int]): The IDs of the users that own the bot. If not provided then it will be fetched
             by :obj:`~BotApp.fetch_owner_ids`.
+        help_class (Type[:obj:`~.help_command.BaseHelpCommand`]): Class to use for the bot's help command. Defaults
+            to :obj:`~.help_command.DefaultHelpCommand`.
+        help_slash_command (:obj:`bool`): Whether or not the help command should be implemented as a slash command
+            as well as a prefix command. Defaults to ``False``.
         **kwargs (Any): Additional keyword arguments passed to the constructor of the :obj:`~hikari.impl.bot.GatewayBot`
             class.
     """
@@ -175,6 +180,8 @@ class BotApp(hikari.GatewayBot):
         ignore_bots: bool = True,
         owner_ids: t.Sequence[int] = (),
         default_enabled_guilds: t.Union[int, t.Sequence[int]] = (),
+        help_class: t.Type[help_command.BaseHelpCommand] = help_command.DefaultHelpCommand,
+        help_slash_command: bool = False,
         **kwargs: t.Any,
     ) -> None:
         super().__init__(token, **kwargs)
@@ -217,7 +224,21 @@ class BotApp(hikari.GatewayBot):
 
         self._checks: t.List[checks.Check] = []
 
-        self._help_command = help_command.DefaultHelpCommand(self)
+        self._help_command: help_command.BaseHelpCommand = help_class(self)
+
+        help_cmd_types: t.List[t.Type[commands.base.Command]] = [commands.prefix.PrefixCommand]
+        if help_slash_command:
+            help_cmd_types.append(commands.slash.SlashCommand)
+
+        @decorators.option(
+            "obj", "Object to get help for", required=False, modifier=commands.base.OptionModifier.CONSUME_REST
+        )
+        @decorators.command("help", "Get help information for the bot")
+        @decorators.implements(*help_cmd_types)
+        async def __default_help(ctx: context_.base.Context) -> None:
+            await self._help_command.send_help(ctx, ctx.options.obj)
+
+        self.command(__default_help)
 
         if prefix is not None:
             self.subscribe(hikari.MessageCreateEvent, self.handle_messsage_create_for_prefix_commands)

@@ -95,14 +95,14 @@
   - [x] *Command Invocation Event
   - [x] *Command Error Event
 
-- [ ] Errors (Reuse?)
+- [x] Errors (Reuse?)
 
 - [ ] Parsing
   - [x] Standard Parser
   - [ ] CLI Parser
   - [x] Custom Parsing
 
-- [ ] Help Command
+- [x] Help Command
 
 - [x] Paginators (Reuse?)
 
@@ -116,7 +116,7 @@
 
 ## Other
 
-- [ ] Paginated/Navigated Help Command
+- [x] Paginated/Navigated Help Command
 - [ ] Embed Help Command
 - [ ] Default Ephemeral Flags
 - [ ] Reinvoke on edits

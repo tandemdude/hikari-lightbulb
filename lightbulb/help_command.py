@@ -17,7 +17,7 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__ = ["BaseHelpCommand"]
+__all__ = ["BaseHelpCommand", "DefaultHelpCommand"]
 
 import abc
 import collections
@@ -36,6 +36,17 @@ if t.TYPE_CHECKING:
 async def filter_commands(
     cmds: t.Sequence[commands.base.Command], context: context_.base.Context
 ) -> t.Sequence[commands.base.Command]:
+    """
+    Evaluates the checks for each command provided, removing any that the checks fail for. This effectively
+    removes any commands from the given collection that could not be invoked under the given context.
+
+    Args:
+        cmds (Sequence[:obj:`~.commands.base.Command`]): Commands to filter.
+        context (:obj:`~.context.base.Context`): Context to filter the commands under.
+
+    Returns:
+        Sequence[:obj:`~.commands.base.Command`]: Filtered commands.
+    """
     new_cmds = []
     for cmd in cmds:
         try:
@@ -47,12 +58,34 @@ async def filter_commands(
 
 
 class BaseHelpCommand(abc.ABC):
+    """
+    Base class for auto-generated help commands.
+
+    Args:
+        app (:obj:`~.app.BotApp`): The ``BotApp`` instance that the help command is registered to.
+    """
+
     __slots__ = ("app",)
 
     def __init__(self, app: app_.BotApp) -> None:
         self.app = app
 
     async def send_help(self, context: context_.base.Context, obj: t.Optional[str]) -> None:
+        """
+        Resolve the given object and send the help text for it to the given context.
+
+        Help resolution order:
+
+        - Prefix command
+        - Slash command
+        - Message command
+        - User command
+        - Plugin
+
+        Args:
+            context (:obj:`~.context.base.Context`): Context to send help to.
+            obj (:obj:`str`): String representation of the object to send help for.
+        """
         await self._send_help(context, obj)
 
     async def _send_help(self, context: context_.base.Context, obj: t.Optional[str]) -> None:
@@ -92,10 +125,30 @@ class BaseHelpCommand(abc.ABC):
 
     @abc.abstractmethod
     async def send_bot_help(self, context: context_.base.Context) -> None:
+        """
+        Sends an overall help message for the bot. This is called when no object is provided
+        when the help command is invoked.
+
+        Args:
+            context (:obj:`~.context.base.Context`): Context to send help to.
+
+        Returns:
+            ``None``
+        """
         ...
 
     @abc.abstractmethod
     async def send_command_help(self, context: context_.base.Context, command: commands.base.Command) -> None:
+        """
+        Sends a help message for the given command.
+
+        Args:
+            context (:obj:`~.context.base.Context`): Context to send help to.
+            command (:obj:`~.commands.base.Command`): Command to send help for.
+
+        Returns:
+            ``None``
+        """
         ...
 
     @abc.abstractmethod
@@ -109,17 +162,52 @@ class BaseHelpCommand(abc.ABC):
             commands.slash.SlashSubGroup,
         ],
     ) -> None:
+        """
+        Sends a help message for the given command group.
+
+        Args:
+            context (:obj:`~.context.base.Context`): Context to send help to.
+            group: Command group to send help for.
+
+        Returns:
+            ``None``
+        """
         ...
 
     @abc.abstractmethod
     async def send_plugin_help(self, context: context_.base.Context, plugin: plugins.Plugin) -> None:
+        """
+        Sends a help message for the given plugin.
+
+        Args:
+            context (:obj:`~.context.base.Context`): Context to send help to.
+            plugin (:obj:`~.plugins.Plugin`): Plugin to send help for.
+
+        Returns:
+            ``None``
+        """
         ...
 
     async def object_not_found(self, context: context_.base.Context, obj: str) -> None:
+        """
+        Method called when no object could be resolved from the given name.
+
+        Args:
+            context (:obj:`~.context.base.Context`): Context to send help to.
+            obj (:obj:`str`): String that the help command was invoked with but that could not be resolved
+                into an object.
+
+        Returns:
+            ``None``
+        """
         await context.respond(f"No command or category with the name `{obj}` could be found.")
 
 
 class DefaultHelpCommand(BaseHelpCommand):
+    """
+    An implementation of the :obj:`~BaseHelpCommand` that the bot uses by default.
+    """
+
     @staticmethod
     async def _get_command_plugin_map(
         cmd_map: t.Mapping[str, commands.base.Command], context: context_.base.Context

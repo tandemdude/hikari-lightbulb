@@ -28,11 +28,28 @@ T = t.TypeVar("T")
 
 
 class BaseConverter(abc.ABC, t.Generic[T]):
+    """
+    Base converter class
+
+    Args:
+        context (:obj:`~.context.base.Context`): Context to convert the argument under.
+    """
+
     __slots__ = ("context",)
 
     def __init__(self, context: context_.base.Context) -> None:
         self.context = context
+        """Context to convert the argument(s) under."""
 
     @abc.abstractmethod
     async def convert(self, arg: str) -> T:
+        """
+        Conversion method for the converter.
+
+        Args:
+            arg (:obj:`str`): Argument to convert.
+
+        Returns:
+            T: Converted argument.
+        """
         ...

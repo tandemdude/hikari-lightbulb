@@ -94,6 +94,10 @@ def _raise_if_not_none(obj: t.Optional[T]) -> T:
 
 
 class BooleanConverter(base.BaseConverter[bool]):
+    """Implementation of the base converter for converting arguments into a boolean."""
+
+    __slots__ = ()
+
     async def convert(self, arg: str) -> bool:
         try:
             return BOOLEAN_MAPPING[arg]
@@ -102,6 +106,10 @@ class BooleanConverter(base.BaseConverter[bool]):
 
 
 class UserConverter(base.BaseConverter[hikari.User]):
+    """Implementation of the base converter for converting arguments into a User object."""
+
+    __slots__ = ()
+
     async def convert(self, arg: str) -> hikari.User:
         try:
             user_id = _resolve_id_from_arg(arg, USER_MENTION_REGEX)
@@ -116,6 +124,10 @@ class UserConverter(base.BaseConverter[hikari.User]):
 
 
 class MemberConverter(base.BaseConverter[hikari.Member]):
+    """Implementation of the base converter for converting arguments into a Member object."""
+
+    __slots__ = ()
+
     async def convert(self, arg: str) -> hikari.Member:
         if self.context.guild_id is None:
             raise TypeError("Cannot resolve a member object for a command run outside of a guild")
@@ -135,6 +147,10 @@ class MemberConverter(base.BaseConverter[hikari.Member]):
 
 
 class GuildChannelConverter(base.BaseConverter[hikari.GuildChannel]):
+    """Implementation of the base converter for converting arguments into a GuildChannel object."""
+
+    __slots__ = ()
+
     async def convert(self, arg: str) -> hikari.GuildChannel:
         channel = await _try_convert_to_guild_channel(self.context, arg)
         if not isinstance(channel, hikari.GuildChannel):
@@ -143,6 +159,10 @@ class GuildChannelConverter(base.BaseConverter[hikari.GuildChannel]):
 
 
 class TextableGuildChannelConverter(base.BaseConverter[hikari.TextableGuildChannel]):
+    """Implementation of the base converter for converting arguments into a TextableGuildChannel object."""
+
+    __slots__ = ()
+
     async def convert(self, arg: str) -> hikari.TextableGuildChannel:
         channel = await _try_convert_to_guild_channel(self.context, arg)
         if not isinstance(channel, hikari.TextableGuildChannel):
@@ -151,6 +171,10 @@ class TextableGuildChannelConverter(base.BaseConverter[hikari.TextableGuildChann
 
 
 class GuildCategoryConverter(base.BaseConverter[hikari.GuildCategory]):
+    """Implementation of the base converter for converting arguments into a GuildCategory object."""
+
+    __slots__ = ()
+
     async def convert(self, arg: str) -> hikari.GuildCategory:
         channel = await _try_convert_to_guild_channel(self.context, arg)
         if not isinstance(channel, hikari.GuildCategory):
@@ -159,6 +183,10 @@ class GuildCategoryConverter(base.BaseConverter[hikari.GuildCategory]):
 
 
 class GuildVoiceChannelConverter(base.BaseConverter[hikari.GuildVoiceChannel]):
+    """Implementation of the base converter for converting arguments into a GuildVoiceChannel object."""
+
+    __slots__ = ()
+
     async def convert(self, arg: str) -> hikari.GuildVoiceChannel:
         channel = await _try_convert_to_guild_channel(self.context, arg)
         if not isinstance(channel, hikari.GuildVoiceChannel):
@@ -167,6 +195,10 @@ class GuildVoiceChannelConverter(base.BaseConverter[hikari.GuildVoiceChannel]):
 
 
 class RoleConverter(base.BaseConverter[hikari.Role]):
+    """Implementation of the base converter for converting arguments into a Role object."""
+
+    __slots__ = ()
+
     async def convert(self, arg: str) -> hikari.Role:
         if self.context.guild_id is None:
             raise TypeError("Cannot resolve a role object for a command run outside of a guild")
@@ -184,11 +216,19 @@ class RoleConverter(base.BaseConverter[hikari.Role]):
 
 
 class EmojiConverter(base.BaseConverter[hikari.Emoji]):
+    """Implementation of the base converter for converting arguments into an Emoji object."""
+
+    __slots__ = ()
+
     async def convert(self, arg: str) -> hikari.Emoji:
         return hikari.Emoji.parse(arg)
 
 
 class GuildConverter(base.BaseConverter[hikari.GuildPreview]):
+    """Implementation of the base converter for converting arguments into a GuildPreview object."""
+
+    __slots__ = ()
+
     async def convert(self, arg: str) -> hikari.GuildPreview:
         if self.context.guild_id is None:
             raise TypeError("Cannot resolve a guild object for a command run outside of a guild")
@@ -205,6 +245,10 @@ class GuildConverter(base.BaseConverter[hikari.GuildPreview]):
 
 
 class MessageConverter(base.BaseConverter[hikari.Message]):
+    """Implementation of the base converter for converting arguments into a Message object."""
+
+    __slots__ = ()
+
     async def convert(self, arg: str) -> hikari.Message:
         try:
             m_id, c_id = int(arg), self.context.channel_id
@@ -219,6 +263,10 @@ class MessageConverter(base.BaseConverter[hikari.Message]):
 
 
 class InviteConverter(base.BaseConverter[hikari.Invite]):
+    """Implementation of the base converter for converting arguments into an Invite object."""
+
+    __slots__ = ()
+
     async def convert(self, arg: str) -> hikari.Invite:
         inv_code = arg.rstrip("/").split("/")[-1]
         invite: t.Optional[hikari.Invite] = self.context.app.cache.get_invite(inv_code)
@@ -228,14 +276,23 @@ class InviteConverter(base.BaseConverter[hikari.Invite]):
 
 
 class ColourConverter(base.BaseConverter[hikari.Colour]):
+    """Implementation of the base converter for converting arguments into a Colour object."""
+
+    __slots__ = ()
+
     async def convert(self, arg: str) -> hikari.Colour:
         return hikari.Colour.of(arg)
 
 
 ColorConverter = ColourConverter
+"""Alias for :obj:`~ColorConverter`."""
 
 
 class TimestampConverter(base.BaseConverter[datetime.datetime]):
+    """Implementation of the base converter for converting arguments into a datetime object."""
+
+    __slots__ = ()
+
     async def convert(self, arg: str) -> datetime.datetime:
         timestamp: t.Optional[str] = None
         if match := TIMESTAMP_MENTION_REGEX.match(arg):
@@ -246,6 +303,10 @@ class TimestampConverter(base.BaseConverter[datetime.datetime]):
 
 
 class SnowflakeConverter(base.BaseConverter[hikari.Snowflake]):
+    """Implementation of the base converter for converting arguments into a Snowflake object."""
+
+    __slots__ = ()
+
     async def convert(self, arg: str) -> hikari.Snowflake:
         try:
             snowflake = hikari.Snowflake(arg)

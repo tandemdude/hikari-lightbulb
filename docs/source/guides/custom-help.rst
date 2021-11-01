@@ -8,7 +8,7 @@ point want to customise it to change its appearance or order of commands, etc.
 Method 1: Manually Generated
 ============================
 
-The easy way to go about creating your custom help command is by simply removing the default one, and
+The easy way to go about creating your custom help command is by simply disabling the default one, and
 creating a command named ``help`` and adding it to the bot yourself.
 
 Example:
@@ -17,8 +17,7 @@ Example:
     import lightbulb
     from lightbulb import commands
 
-    bot = lightbulb.BotApp(...)
-    bot.remove_prefix_command("help")
+    bot = lightbulb.BotApp(..., help_class=None)
 
     HELP_MESSAGE = """
     Commands Available:

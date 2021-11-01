@@ -62,6 +62,9 @@ class SlashGroupMixin(abc.ABC):
         context._parse_options(cmd_option.options)
         await self._subcommands[cmd_option.name].invoke(context)
 
+    def get_subcommand(self, name: str) -> t.Optional[t.Union[SlashSubGroup, SlashSubcommand]]:
+        return self._subcommands.get(name)
+
 
 class SlashCommand(base.ApplicationCommand):
     """
@@ -82,6 +85,10 @@ class SlashCommand(base.ApplicationCommand):
 
 
 class SlashSubcommand(SlashCommand, base.SubcommandTrait):
+    """
+    Class representing a slash subcommand.
+    """
+
     __slots__ = ()
 
     @property
@@ -101,11 +108,16 @@ class SlashSubcommand(SlashCommand, base.SubcommandTrait):
 
 
 class SlashSubGroup(SlashCommand, SlashGroupMixin, base.SubcommandTrait):
+    """
+    Class representing a slash subgroup of commands.
+    """
+
     __slots__ = ("_raw_subcommands", "_subcommands")
 
     def __init__(self, app: app_.BotApp, initialiser: base.CommandLike) -> None:
         super().__init__(app, initialiser)
         self._raw_subcommands = initialiser.subcommands
+        initialiser.subcommands = base._SubcommandListProxy(initialiser.subcommands, parent=self)  # type: ignore
         # Just to keep mypy happy we leave SlashSubGroup here
         self._subcommands: t.Dict[str, t.Union[SlashSubGroup, SlashSubcommand]] = {}
         self.create_subcommands(self._raw_subcommands, app, SlashSubcommand)
@@ -129,11 +141,16 @@ class SlashSubGroup(SlashCommand, SlashGroupMixin, base.SubcommandTrait):
 
 
 class SlashCommandGroup(SlashCommand, SlashGroupMixin):
+    """
+    Class representing a slash command group.
+    """
+
     __slots__ = ("_raw_subcommands", "_subcommands")
 
     def __init__(self, app: app_.BotApp, initialiser: base.CommandLike) -> None:
         super().__init__(app, initialiser)
         self._raw_subcommands = initialiser.subcommands
+        initialiser.subcommands = base._SubcommandListProxy(initialiser.subcommands, parent=self)  # type: ignore
         self._subcommands: t.Dict[str, t.Union[SlashSubGroup, SlashSubcommand]] = {}
         self.create_subcommands(self._raw_subcommands, app, (SlashSubcommand, SlashSubGroup))
 

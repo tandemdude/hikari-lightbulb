@@ -139,6 +139,20 @@ def set_help(
     *,
     docstring: bool = False,
 ) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
+    """
+    Second order decorator that defines the long help text for a command, or how the long help
+    text should be retrieved. If ``text`` is provided then it will override the value for ``docstring``.
+
+    Args:
+        text (Union[Callable[[:obj:`~.commands.base.Command`, :obj:`~.context.base.Context`], :obj:`str`], :obj:`str`]): The
+            long help text for the command, or a **syncronous** function called with the :obj:`~.commands.base.Command`
+            object to get help text for and the :obj:`~.context.base.Context` that the help text should be
+            retrieved for. If this is not provided, then you **must** pass the kwarg ``docstring=True``.
+
+    Keyword Args:
+        docstring (:obj:`bool`): Whether or not the command help text should be extracted from the command's docstring.
+            If this is ``False`` (default) then a value **must** be provided for the ``text`` arg.
+    """
     if text is None and docstring is False:
         raise ValueError("Either help text/callable or docstring=True must be provided")
 

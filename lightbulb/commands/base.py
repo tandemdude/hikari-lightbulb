@@ -20,6 +20,7 @@ from __future__ import annotations
 __all__ = ["OptionModifier", "OptionLike", "CommandLike", "Command", "ApplicationCommand", "SubcommandTrait"]
 
 import abc
+import collections
 import dataclasses
 import datetime
 import enum
@@ -60,6 +61,25 @@ OPTION_TYPE_MAPPING = {
     hikari.Snowflake: hikari.OptionType.MENTIONABLE,
     datetime.datetime: hikari.OptionType.STRING,
 }
+
+
+class _HasRecreateSubcommands(t.Protocol):
+    app: app_.BotApp
+
+    def recreate_subcommands(self, raw_cmds: t.Sequence[CommandLike], app: app_.BotApp) -> None:
+        ...
+
+
+class _SubcommandListProxy(collections.UserList["CommandLike"]):
+    __slots__ = ("parent",)
+
+    def __init__(self, *args: t.Any, parent: _HasRecreateSubcommands, **kwargs: t.Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.parent = parent
+
+    def append(self, item: t.Any) -> None:
+        super().append(item)
+        self.parent.recreate_subcommands(self.data, self.parent.app)
 
 
 def _get_choice_objects_from_choices(
@@ -196,6 +216,13 @@ class CommandLike:
 
 
 class SubcommandTrait(abc.ABC):
+    """
+    Trait that all subcommands and subgroups have.
+
+    You can check if any given command is a subcommand by checking ``issubclass``
+    on the command's class or ``isinstance`` if you have the object.
+    """
+
     pass
 
 
@@ -254,12 +281,24 @@ class Command(abc.ABC):
         return await self.callback(context)
 
     def get_help(self, context: context_.base.Context) -> str:
+        """
+        Get the help text for the command under the given context. This method calls the help getter
+        provided by the :obj:`~.decorators.set_help` decorator. An empty string will be returned
+        if no help getter function was set.
+
+        Args:
+            context (:obj:`~.context.base.Context`): Context to get the help text under.
+
+        Returns:
+            :obj:`str`: Command's help text.
+        """
         if self._help_getter is None:
             return ""
         return self._help_getter(self, context)
 
     @property
     def is_subcommand(self) -> bool:
+        """Boolean representing whether or not this object is a subcommand."""
         return isinstance(self, SubcommandTrait)
 
     @property

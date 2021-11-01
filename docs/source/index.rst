@@ -67,6 +67,7 @@ look at both Lightbulb and Tanjun before choosing which one you wish to use for 
    :maxdepth: 2
 
    getting-started
+   guide
    api-reference
    changelog
 

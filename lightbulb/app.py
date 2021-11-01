@@ -384,7 +384,8 @@ class BotApp(hikari.GatewayBot):
             self.load_extensions(extension)
         except Exception as e:
             sys.modules[extension] = old
-            self.load_extensions(extension)
+            if not isinstance(e, errors.ExtensionAlreadyLoaded):
+                self.load_extensions(extension)
             raise e
         else:
             del old
@@ -482,7 +483,25 @@ class BotApp(hikari.GatewayBot):
             Optional[:obj:`~.commands.prefix.PrefixCommand`]: Prefix command object with the given name, or ``None``
                 if not found.
         """
-        return self._prefix_commands.get(name)
+        parts = name.split()
+        if len(parts) == 1:
+            return self._prefix_commands.get(name)
+
+        maybe_group = self._prefix_commands.get(parts.pop(0))
+        if not isinstance(maybe_group, commands.prefix.PrefixCommandGroup):
+            return None
+
+        this: t.Optional[
+            t.Union[
+                commands.prefix.PrefixCommandGroup, commands.prefix.PrefixSubGroup, commands.prefix.PrefixSubCommand
+            ]
+        ] = maybe_group
+        for part in parts:
+            if this is None or isinstance(this, commands.prefix.PrefixSubCommand):
+                return None
+            this = this.get_subcommand(part)
+
+        return this
 
     def get_slash_command(self, name: str) -> t.Optional[commands.slash.SlashCommand]:
         """
@@ -542,6 +561,7 @@ class BotApp(hikari.GatewayBot):
                     continue
 
                 self._add_command_to_correct_attr(cmd)
+            return cmd_like
 
         def decorate(cmd_like_: commands.base.CommandLike) -> commands.base.CommandLike:
             self.command(cmd_like_)

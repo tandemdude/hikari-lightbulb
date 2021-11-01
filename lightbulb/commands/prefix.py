@@ -62,6 +62,13 @@ class PrefixGroupMixin(abc.ABC):
                             )
                         self._subcommands[name] = cmd
 
+    def recreate_subcommands(self, raw_cmds: t.Sequence[base.CommandLike], app: app_.BotApp) -> None:
+        self._subcommands.clear()
+        self.create_subcommands(raw_cmds, app)
+
+    def get_subcommand(self, name: str) -> t.Optional[t.Union[PrefixSubGroup, PrefixSubCommand]]:
+        return self._subcommands.get(name)
+
 
 class PrefixCommand(base.Command):
     """
@@ -86,6 +93,10 @@ class PrefixCommand(base.Command):
 
 
 class PrefixSubCommand(PrefixCommand, base.SubcommandTrait):
+    """
+    Class representing a prefix subcommand.
+    """
+
     __slots__ = ()
 
     @property
@@ -101,11 +112,16 @@ class PrefixSubCommand(PrefixCommand, base.SubcommandTrait):
 
 
 class PrefixSubGroup(PrefixCommand, PrefixGroupMixin, base.SubcommandTrait):
+    """
+    Class representing a prefix subgroup of commands.
+    """
+
     __slots__ = ("_raw_subcommands", "_subcommands")
 
     def __init__(self, app: app_.BotApp, initialiser: base.CommandLike) -> None:
         super().__init__(app, initialiser)
         self._raw_subcommands = initialiser.subcommands
+        initialiser.subcommands = base._SubcommandListProxy(initialiser.subcommands, parent=self)  # type: ignore
         self._subcommands = {}
         self.create_subcommands(self._raw_subcommands, app)
 
@@ -127,11 +143,16 @@ class PrefixSubGroup(PrefixCommand, PrefixGroupMixin, base.SubcommandTrait):
 
 
 class PrefixCommandGroup(PrefixCommand, PrefixGroupMixin):
+    """
+    Class representing a prefix command group.
+    """
+
     __slots__ = ("_raw_subcommands", "_subcommands")
 
     def __init__(self, app: app_.BotApp, initialiser: base.CommandLike) -> None:
         super().__init__(app, initialiser)
         self._raw_subcommands = initialiser.subcommands
+        initialiser.subcommands = base._SubcommandListProxy(initialiser.subcommands, parent=self)  # type: ignore
         self._subcommands = {}
         self.create_subcommands(self._raw_subcommands, app)
 

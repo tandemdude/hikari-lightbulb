@@ -163,6 +163,7 @@ class BotApp(hikari.GatewayBot):
         "_checks",
         "extensions",
         "_current_extension",
+        "default_enabled_guilds",
     )
 
     def __init__(
@@ -171,6 +172,7 @@ class BotApp(hikari.GatewayBot):
         prefix: t.Optional[_PrefixT] = None,
         ignore_bots: bool = True,
         owner_ids: t.Sequence[int] = (),
+        default_enabled_guilds: t.Union[int, t.Sequence[int]] = (),
         **kwargs: t.Any,
     ) -> None:
         super().__init__(token, **kwargs)
@@ -189,6 +191,10 @@ class BotApp(hikari.GatewayBot):
         """Whether or not other bots will be ignored when invoking prefix commands."""
         self.owner_ids = owner_ids
         """The owner ID(s) for the owner(s) of the bot account."""
+        self.default_enabled_guilds: t.Sequence[int] = (
+            (default_enabled_guilds,) if isinstance(default_enabled_guilds, int) else default_enabled_guilds
+        )
+        """The default guilds that application commands will be enabled in."""
 
         self.application: t.Optional[hikari.Application] = None
         """The :obj:`~hikari.applications.Application` for the bot account. This will always be ``None`` before the bot has logged in."""

@@ -17,8 +17,9 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__ = ["implements", "command", "option", "add_checks"]
+__all__ = ["implements", "command", "option", "add_checks", "set_help"]
 
+import inspect
 import typing as t
 
 import hikari
@@ -128,6 +129,32 @@ def add_checks(*cmd_checks: checks_.Check) -> t.Callable[[commands.base.CommandL
     def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
         new_checks = [*c_like.checks, *cmd_checks]
         c_like.checks = new_checks
+        return c_like
+
+    return decorate
+
+
+def set_help(
+    text: t.Optional[t.Union[str, t.Callable[[commands.base.Command, context.base.Context], str]]] = None,
+    *,
+    docstring: bool = False,
+) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
+    if text is None and docstring is False:
+        raise ValueError("Either help text/callable or docstring=True must be provided")
+
+    def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
+        if isinstance(text, str):
+            getter = lambda _, __: text
+        elif docstring:
+            cmd_doc = inspect.getdoc(c_like.callback)
+            if cmd_doc is None:
+                raise ValueError("docstring=True was provided but the command does not have a docstring")
+            getter = lambda _, __: cmd_doc  # type: ignore
+        else:
+            assert text is not None
+            getter = text
+
+        c_like.help_getter = getter
         return c_like
 
     return decorate

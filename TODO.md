@@ -33,7 +33,7 @@
   - [ ] Slash Commands
     - [x] Option Types
     - [x] Channel Types
-    - [ ] Groups & subcommands
+    - [x] Groups & subcommands
     - [ ] ~~Autocomplete~~ (blocked)
   - [ ] ~~Message Commands~~ (blocked)
   - [ ] ~~User Commands~~ (blocked)
@@ -122,3 +122,4 @@
 - [ ] Reinvoke on edits
 - [ ] Default allowed mentions
 - [ ] Broadcast typing on command invocation
+- [x] Default enabled guilds

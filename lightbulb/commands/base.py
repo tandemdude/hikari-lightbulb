@@ -142,12 +142,14 @@ class CommandLike:
     """The error handler for the command."""
     aliases: t.Sequence[str] = dataclasses.field(default_factory=list)
     """The aliases for the command. This only affects prefix commands."""
-    guilds: t.Sequence[int] = dataclasses.field(default_factory=list)
+    guilds: hikari.UndefinedOr[t.Sequence[int]] = hikari.UNDEFINED
     """The guilds for the command. This only affects application commands."""
     subcommands: t.List[CommandLike] = dataclasses.field(default_factory=list)
     """Subcommands for the command."""
     parser: t.Optional[t.Type[parser_.BaseParser]] = None
     """The argument parser to use for prefix commands."""
+    help_getter: t.Optional[t.Callable[[Command, context_.base.Context], str]] = None
+    """The function to call to get the command's long help text."""
 
     def set_error_handler(
         self,
@@ -208,6 +210,7 @@ class Command(abc.ABC):
 
     __slots__ = (
         "_initialiser",
+        "_help_getter",
         "app",
         "callback",
         "name",
@@ -223,6 +226,7 @@ class Command(abc.ABC):
 
     def __init__(self, app: app_.BotApp, initialiser: CommandLike) -> None:
         self._initialiser = initialiser
+        self._help_getter = initialiser.help_getter
         self.app = app
         """The ``BotApp`` instance the command is registered to."""
         self.callback = initialiser.callback
@@ -248,6 +252,11 @@ class Command(abc.ABC):
 
     async def __call__(self, context: context_.base.Context) -> None:
         return await self.callback(context)
+
+    def get_help(self, context: context_.base.Context) -> str:
+        if self._help_getter is None:
+            return ""
+        return self._help_getter(self, context)
 
     @property
     def is_subcommand(self) -> bool:
@@ -311,14 +320,18 @@ class Command(abc.ABC):
 class ApplicationCommand(Command, abc.ABC):
     """Abstract base class for all application command types."""
 
-    __slots__ = ("guilds", "instances")
+    __slots__ = ("_guilds", "instances")
 
     def __init__(self, app: app_.BotApp, initialiser: CommandLike) -> None:
         super().__init__(app, initialiser)
-        self.guilds = initialiser.guilds
-        """The guilds that this command is available in."""
+        self._guilds = initialiser.guilds
         self.instances: t.Dict[t.Union[int, None], hikari.Command] = {}
         """Mapping of guild ID to created hikari ``Command`` objects for this command."""
+
+    @property
+    def guilds(self) -> t.Sequence[int]:
+        """The guilds that this command is available in."""
+        return self.app.default_enabled_guilds if self._guilds is hikari.UNDEFINED else self._guilds
 
     @property
     def signature(self) -> str:

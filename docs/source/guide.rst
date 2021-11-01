@@ -11,4 +11,8 @@ If you feel like any feature is unclear then either make a pull request to add a
 .. toctree::
    :maxdepth: 2
 
+   guides/command-groups
+   guides/commands
    guides/custom-help
+   guides/extensions
+   guides/plugins

@@ -20,5 +20,6 @@ If you think anything is missing, make a merge request to add it, or contact tho
    api_references/decorators
    api_references/errors
    api_references/events
+   api_references/help
    api_references/plugins
    api_references/utils

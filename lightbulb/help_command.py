@@ -17,7 +17,7 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__ = ["BaseHelpCommand", "DefaultHelpCommand"]
+__all__ = ["BaseHelpCommand", "DefaultHelpCommand", "filter_commands"]
 
 import abc
 import collections

@@ -35,7 +35,7 @@ from lightbulb import context as context_
 from lightbulb import decorators
 from lightbulb import errors
 from lightbulb import events
-from lightbulb import help_command
+from lightbulb import help_command as help_command_
 from lightbulb import plugins
 from lightbulb.utils import data_store
 from lightbulb.utils import parser
@@ -181,7 +181,7 @@ class BotApp(hikari.GatewayBot):
         ignore_bots: bool = True,
         owner_ids: t.Sequence[int] = (),
         default_enabled_guilds: t.Union[int, t.Sequence[int]] = (),
-        help_class: t.Optional[t.Type[help_command.BaseHelpCommand]] = help_command.DefaultHelpCommand,
+        help_class: t.Optional[t.Type[help_command_.BaseHelpCommand]] = help_command_.DefaultHelpCommand,
         help_slash_command: bool = False,
         **kwargs: t.Any,
     ) -> None:
@@ -225,7 +225,7 @@ class BotApp(hikari.GatewayBot):
 
         self._checks: t.List[checks.Check] = []
 
-        self._help_command: t.Optional[help_command.BaseHelpCommand] = None
+        self._help_command: t.Optional[help_command_.BaseHelpCommand] = None
         if help_class is not None:
             self._help_command = help_class(self)
 
@@ -248,6 +248,15 @@ class BotApp(hikari.GatewayBot):
             self.subscribe(hikari.MessageCreateEvent, self.handle_messsage_create_for_prefix_commands)
         self.subscribe(hikari.StartedEvent, self._manage_application_commands)
         self.subscribe(hikari.InteractionCreateEvent, self.handle_interaction_create_for_application_commands)
+
+    @property
+    def help_command(self) -> t.Optional[help_command_.BaseHelpCommand]:
+        """The current help command instance registered to the bot."""
+        return self._help_command
+
+    @help_command.setter
+    def help_command(self, val: help_command_.BaseHelpCommand) -> None:
+        self._help_command = val
 
     def _add_command_to_correct_attr(self, command: commands.base.Command) -> None:
         if isinstance(command, commands.prefix.PrefixCommand):

@@ -70,7 +70,7 @@ class _HasRecreateSubcommands(t.Protocol):
         ...
 
 
-class _SubcommandListProxy(collections.UserList["CommandLike"]):
+class _SubcommandListProxy(collections.UserList):  # type: ignore
     __slots__ = ("parent",)
 
     def __init__(self, *args: t.Any, parent: _HasRecreateSubcommands, **kwargs: t.Any) -> None:

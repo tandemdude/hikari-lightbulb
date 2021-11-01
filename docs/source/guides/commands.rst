@@ -152,7 +152,85 @@ Lightbulb provides the :obj:`lightbulb.decorators.option` decorator for this pur
 Converters and Slash Command Option Types
 =========================================
 
-TODO
+**Prefix command converter mapping:**
+
+Acceptable primitives: ``str``, ``int``, ``float``
+
+- ``bool``: :obj:`lightbulb.converters.special.BooleanConverter`
+
+- ``hikari.User``: :obj:`lightbulb.converters.special.UserConverter`
+
+- ``hikari.Member``: :obj:`lightbulb.converters.special.MemberConverter`
+
+- ``hikari.GuildChannel``: :obj:`lightbulb.converters.special.GuildChannelConverter`
+
+- ``hikari.TextableGuildChannel``: :obj:`lightbulb.converters.special.TextableGuildChannelConverter`
+
+- ``hikari.TextableChannel``: :obj:`lightbulb.converters.special.TextableGuildChannelConverter`
+
+- ``hikari.GuildCategory``: :obj:`lightbulb.converters.special.GuildCategoryConverter`
+
+- ``hikari.GuildVoiceChannel``: :obj:`lightbulb.converters.special.GuildVoiceChannelConverter`
+
+- ``hikari.Role``: :obj:`lightbulb.converters.special.RoleConverter`
+
+- ``hikari.Emoji``: :obj:`lightbulb.converters.special.EmojiConverter`
+
+- ``hikari.Guild``: :obj:`lightbulb.converters.special.GuildConverter`
+
+- ``hikari.Message``: :obj:`lightbulb.converters.special.MessageConverter`
+
+- ``hikari.Invite``: :obj:`lightbulb.converters.special.InviteConverter`
+
+- ``hikari.Colour``: :obj:`lightbulb.converters.special.ColourConverter`
+
+- ``hikari.Color``: :obj:`lightbulb.converters.special.ColourConverter`
+
+- ``hikari.Snowflake``: :obj:`lightbulb.converters.special.SnowflakeConverter`
+
+- ``datetime.datetime``: :obj:`lightbulb.converters.special.TimestampConverter`
+
+**Slash command option type mapping:**
+
+- ``str``: ``hikari.OptionType.STRING``
+
+- ``int``: ``hikari.OptionType.INTEGER``
+
+- ``float``: ``hikari.OptionType.FLOAT``
+
+- ``bool``: ``hikari.OptionType.BOOLEAN``
+
+- ``hikari.User``: ``hikari.OptionType.USER``
+
+- ``hikari.Member``: ``hikari.OptionType.USER``
+
+- ``hikari.GuildChannel``: ``hikari.OptionType.CHANNEL``
+
+- ``hikari.TextableGuildChannel``: ``hikari.OptionType.CHANNEL``
+
+- ``hikari.TextableChannel``: ``hikari.OptionType.CHANNEL``
+
+- ``hikari.GuildCategory``: ``hikari.OptionType.CHANNEL``
+
+- ``hikari.GuildVoiceChannel``: ``hikari.OptionType.CHANNEL``
+
+- ``hikari.Role``: ``hikari.OptionType.ROLE``
+
+- ``hikari.Emoji``: ``hikari.OptionType.STRING``
+
+- ``hikari.Guild``: ``hikari.OptionType.MENTIONABLE``
+
+- ``hikari.Message``: ``hikari.OptionType.MENTIONABLE``
+
+- ``hikari.Invite``: ``hikari.OptionType.STRING``
+
+- ``hikari.Colour``: ``hikari.OptionType.STRING``
+
+- ``hikari.Color``: ``hikari.OptionType.STRING``
+
+- ``hikari.Snowflake``: ``hikari.OptionType.MENTIONABLE``
+
+- ``datetime.datetime``: ``hikari.OptionType.STRING``
 
 ----
 

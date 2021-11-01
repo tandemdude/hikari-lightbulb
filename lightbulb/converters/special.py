@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 __all__ = [
+    "BooleanConverter",
     "UserConverter",
     "MemberConverter",
     "GuildChannelConverter",
@@ -55,6 +56,8 @@ ROLE_MENTION_REGEX: t.Final[re.Pattern[str]] = re.compile(r"<@&(\d+)>")
 EMOJI_MENTION_REGEX: t.Final[re.Pattern[str]] = re.compile(r"<a?:\w+:(\d+)>")
 TIMESTAMP_MENTION_REGEX: t.Final[re.Pattern[str]] = re.compile(r"<t:(\d+)(?::[tTdDfFR])?>")
 
+BOOLEAN_MAPPING: t.Dict[str, bool] = {"yes": True, "y": True, "1": True, "no": False, "n": False, "0": False}
+
 
 def _resolve_id_from_arg(arg_string: str, regex: re.Pattern[str]) -> hikari.Snowflake:
     if match := regex.match(arg_string):
@@ -88,6 +91,14 @@ def _raise_if_not_none(obj: t.Optional[T]) -> T:
     if obj is None:
         raise TypeError("No object could be resolved from the argument")
     return obj
+
+
+class BooleanConverter(base.BaseConverter[bool]):
+    async def convert(self, arg: str) -> bool:
+        try:
+            return BOOLEAN_MAPPING[arg]
+        except KeyError:
+            raise TypeError("Invalid input for boolean type. Valid inputs are: 'yes', 'y', '1', 'no', 'n', '0'")
 
 
 class UserConverter(base.BaseConverter[hikari.User]):

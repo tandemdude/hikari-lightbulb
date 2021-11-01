@@ -460,9 +460,13 @@ class ButtonNavigator(t.Generic[T]):
         return buttons
 
     async def _process_interaction_create(self, event: hikari.InteractionCreateEvent) -> None:
-        assert self._msg is not None and self._context is not None
         if not isinstance(event.interaction, hikari.ComponentInteraction):
             return
+
+        if self._msg is None:
+            return
+
+        assert self._context is not None
 
         if event.interaction.message.id != self._msg.id or event.interaction.user.id != self._context.author.id:
             return

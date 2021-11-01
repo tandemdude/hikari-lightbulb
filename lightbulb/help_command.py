@@ -20,9 +20,12 @@ from __future__ import annotations
 __all__ = ["BaseHelpCommand"]
 
 import abc
+import collections
 import typing as t
 
 from lightbulb import commands
+from lightbulb import errors
+from lightbulb.utils import nav
 
 if t.TYPE_CHECKING:
     from lightbulb import app as app_
@@ -30,14 +33,33 @@ if t.TYPE_CHECKING:
     from lightbulb import plugins
 
 
+async def filter_commands(
+    cmds: t.Sequence[commands.base.Command], context: context_.base.Context
+) -> t.Sequence[commands.base.Command]:
+    new_cmds = []
+    for cmd in cmds:
+        try:
+            await cmd.evaluate_checks(context)
+        except errors.CheckFailure:
+            continue
+        new_cmds.append(cmd)
+    return new_cmds
+
+
 class BaseHelpCommand(abc.ABC):
+    __slots__ = ("app",)
+
     def __init__(self, app: app_.BotApp) -> None:
         self.app = app
 
-    async def send_help(self, context: context_.base.Context, obj: str) -> None:
+    async def send_help(self, context: context_.base.Context, obj: t.Optional[str]) -> None:
         await self._send_help(context, obj)
 
-    async def _send_help(self, context: context_.base.Context, obj: str) -> None:
+    async def _send_help(self, context: context_.base.Context, obj: t.Optional[str]) -> None:
+        if obj is None:
+            await self.send_bot_help(context)
+            return
+
         p_cmd = self.app.get_prefix_command(obj)
         if p_cmd is not None:
             if isinstance(p_cmd, (commands.prefix.PrefixCommandGroup, commands.prefix.PrefixSubGroup)):
@@ -66,7 +88,7 @@ class BaseHelpCommand(abc.ABC):
             await self.send_plugin_help(context, plugin)
             return
 
-        await self.object_not_found(context)
+        await self.object_not_found(context, obj)
 
     @abc.abstractmethod
     async def send_bot_help(self, context: context_.base.Context) -> None:
@@ -93,6 +115,143 @@ class BaseHelpCommand(abc.ABC):
     async def send_plugin_help(self, context: context_.base.Context, plugin: plugins.Plugin) -> None:
         ...
 
-    @abc.abstractmethod
-    async def object_not_found(self, context: context_.base.Context) -> None:
-        ...
+    async def object_not_found(self, context: context_.base.Context, obj: str) -> None:
+        await context.respond(f"No command or category with the name `{obj}` could be found.")
+
+
+class DefaultHelpCommand(BaseHelpCommand):
+    @staticmethod
+    async def _get_command_plugin_map(
+        cmd_map: t.Mapping[str, commands.base.Command], context: context_.base.Context
+    ) -> t.Dict[t.Optional[plugins.Plugin], t.List[commands.base.Command]]:
+        out = collections.defaultdict(list)
+        for cmd in cmd_map.values():
+            if await filter_commands([cmd], context):
+                out[cmd.plugin].append(cmd)
+        return out
+
+    @staticmethod
+    def _add_cmds_to_plugin_pages(
+        pages: t.MutableMapping[t.Optional[plugins.Plugin], t.List[str]],
+        cmds: t.Mapping[t.Optional[plugins.Plugin], t.List[commands.base.Command]],
+        header: str,
+    ) -> None:
+        for plugin, cmds in cmds.items():
+            pages[plugin].append(f"== {header} Commands")
+            for cmd in cmds:
+                pages[plugin].append(f"- {cmd.name} - {cmd.description}")
+
+    async def send_bot_help(self, context: context_.base.Context) -> None:
+        pages = []
+        lines = [
+            ">>> ```adoc",
+            "==== Bot Help ====",
+            "",
+            f"For more information: {context.prefix}help [command|category]",
+            "",
+            "==== Categories ====",
+        ]
+        for plugin in self.app._plugins.values():
+            lines.append(f"- {plugin.name}")
+        lines.append("```")
+
+        pages.append("\n".join(lines))
+        lines.clear()
+
+        p_commands = await self._get_command_plugin_map(self.app._prefix_commands, context)
+        s_commands = await self._get_command_plugin_map(self.app._slash_commands, context)
+        m_commands = await self._get_command_plugin_map(self.app._message_commands, context)
+        u_commands = await self._get_command_plugin_map(self.app._user_commands, context)
+
+        plugin_pages: t.MutableMapping[t.Optional[plugins.Plugin], t.List[str]] = collections.defaultdict(list)
+        self._add_cmds_to_plugin_pages(plugin_pages, p_commands, "Prefix")
+        self._add_cmds_to_plugin_pages(plugin_pages, s_commands, "Slash")
+        self._add_cmds_to_plugin_pages(plugin_pages, m_commands, "Message")
+        self._add_cmds_to_plugin_pages(plugin_pages, u_commands, "User")
+
+        for plugin, page in plugin_pages.items():
+            pages.append(
+                "\n".join(
+                    [
+                        ">>> ```adoc",
+                        f"==== {plugin.name if plugin is not None else 'Uncategorised'} ====",
+                        (f"{plugin.description}\n" if plugin.description else "No description provided\n")
+                        if plugin is not None
+                        else "",
+                        *page,
+                        "```",
+                    ]
+                )
+            )
+
+        navigator = nav.ButtonNavigator(pages)
+        await navigator.run(context)
+
+    async def send_command_help(self, context: context_.base.Context, command: commands.base.Command) -> None:
+        long_help = command.get_help(context)
+        lines = [
+            ">>> ```adoc",
+            "==== Command Help ====",
+            f"{command.name} - {command.description}",
+            "",
+            f"Usage: {context.prefix}{command.signature}",
+            "",
+            long_help if long_help else "No additional details provided.",
+            "```",
+        ]
+        await context.respond("\n".join(lines))
+
+    async def send_group_help(
+        self,
+        context: context_.base.Context,
+        group: t.Union[
+            commands.prefix.PrefixCommandGroup,
+            commands.prefix.PrefixSubGroup,
+            commands.slash.SlashCommandGroup,
+            commands.slash.SlashSubGroup,
+        ],
+    ) -> None:
+        long_help = group.get_help(context)
+        lines = [
+            ">>> ```adoc",
+            "==== Group Help ====",
+            f"{group.name} - {group.description}",
+            "",
+            f"Usage: {context.prefix}{group.signature}",
+            f"Or: {context.prefix}{group.qualname} [subcommand]",
+            "",
+            long_help if long_help else "No additional details provided.",
+            "",
+        ]
+        if group._subcommands:
+            lines.append("== Subcommands")
+            for cmd in group._subcommands.values():
+                lines.append(f"- {cmd.name} - {cmd.description}")
+        lines.append("```")
+        await context.respond("\n".join(lines))
+
+    async def send_plugin_help(self, context: context_.base.Context, plugin: plugins.Plugin) -> None:
+        lines = [
+            ">>> ```adoc",
+            "==== Category Help ====",
+            f"{plugin.name} - {plugin.description or 'No description provided'}",
+            "",
+        ]
+        p_cmds, s_cmds, m_cmds, u_cmds = [], [], [], []
+        for cmd in plugin._all_commands:
+            if isinstance(cmd, commands.prefix.PrefixCommand):
+                p_cmds.append(cmd)
+            elif isinstance(cmd, commands.slash.SlashCommand):
+                s_cmds.append(cmd)
+            elif isinstance(cmd, commands.message.MessageCommand):
+                m_cmds.append(cmd)
+            elif isinstance(cmd, commands.user.UserCommand):
+                u_cmds.append(cmd)
+
+        for cmd_list, header in [(p_cmds, "Prefix"), (s_cmds, "Slash"), (m_cmds, "Message"), (u_cmds, "User")]:
+            if cmd_list:
+                lines.append(f"== {header} Commands")
+                for cmd in p_cmds:
+                    lines.append(f"- {cmd.name} - {cmd.description}")
+        lines.append("```")
+        await context.respond("\n".join(lines))

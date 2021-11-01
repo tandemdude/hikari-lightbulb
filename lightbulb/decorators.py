@@ -109,6 +109,8 @@ def option(
             to ``OptionModifier.NONE``.
     """
     kwargs.setdefault("required", kwargs.get("default", hikari.UNDEFINED) is hikari.UNDEFINED)
+    if not kwargs["required"]:
+        kwargs.setdefault("default", None)
 
     def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
         c_like.options[name] = commands.base.OptionLike(name, description, type, **kwargs)

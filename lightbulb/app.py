@@ -34,6 +34,7 @@ from lightbulb import commands
 from lightbulb import context as context_
 from lightbulb import errors
 from lightbulb import events
+from lightbulb import help_command
 from lightbulb import plugins
 from lightbulb.utils import data_store
 from lightbulb.utils import parser
@@ -164,6 +165,7 @@ class BotApp(hikari.GatewayBot):
         "extensions",
         "_current_extension",
         "default_enabled_guilds",
+        "_help_command",
     )
 
     def __init__(
@@ -214,6 +216,8 @@ class BotApp(hikari.GatewayBot):
         self._plugins: t.MutableMapping[str, plugins.Plugin] = {}
 
         self._checks: t.List[checks.Check] = []
+
+        self._help_command = help_command.DefaultHelpCommand(self)
 
         if prefix is not None:
             self.subscribe(hikari.MessageCreateEvent, self.handle_messsage_create_for_prefix_commands)
@@ -639,6 +643,7 @@ class BotApp(hikari.GatewayBot):
         for event, listeners in plugin._listeners.items():
             for listener in listeners:
                 self.subscribe(event, listener)
+        self._plugins[plugin.name] = plugin
 
     def remove_plugin(self, plugin_or_name: t.Union[plugins.Plugin, str]) -> None:
         """

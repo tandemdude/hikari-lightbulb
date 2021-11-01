@@ -81,7 +81,7 @@ class PrefixCommand(base.Command):
     def signature(self) -> str:
         sig = self.qualname
         if self.options:
-            sig += f" {' '.join(f'<{o.name}>' if o.required else f'[{o.name}]' for o in self.options.values())}"
+            sig += f" {' '.join(f'<{o.name}>' if o.required else f'[{o.name}={o.default}]' for o in self.options.values())}"
         return sig
 
     async def invoke(self, context: context_.base.Context) -> None:

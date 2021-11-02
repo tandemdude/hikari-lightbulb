@@ -5,11 +5,20 @@
 
 .. |b1| image:: https://img.shields.io/badge/code%20style-black-000000.svg
 .. |b2| image:: https://img.shields.io/pypi/v/hikari-lightbulb.svg
-.. |b3| image:: http://www.mypy-lang.org/static/mypy_badge.svg
-.. |b4| image:: https://img.shields.io/pypi/pyversions/hikari-lightbulb
-.. |b5| image:: https://github.com/tandemdude/hikari-lightbulb/actions/workflows/ci.yml/badge.svg?branch=master&event=push
+.. |b3| image:: https://img.shields.io/pypi/pyversions/hikari-lightbulb
+.. |b4| image:: https://github.com/tandemdude/hikari-lightbulb/actions/workflows/ci.yml/badge.svg?branch=master&event=push
+.. |b5| image:: https://img.shields.io/readthedocs/hikari-lightbulb
+.. |b6| image:: https://img.shields.io/badge/license-LGPL--3.0-brightgreen
+.. |b7| image:: https://img.shields.io/github/stars/tandemdude/hikari-lightbulb
+.. |b8| image:: https://img.shields.io/github/forks/tandemdude/hikari-lightbulb
+.. |b9| image:: https://img.shields.io/pypi/status/hikari-lightbulb
+.. |b10| image:: https://img.shields.io/badge/mypy-checked-black
 
-|b1| |b2| |b3| |b4| |b5|
+|b1| |b10|
+
+|b2| |b3| |b7| |b8|
+
+|b4| |b5| |b6| |b9|
 
 ----
 

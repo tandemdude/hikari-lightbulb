@@ -32,7 +32,7 @@ if t.TYPE_CHECKING:
 
 class SlashContext(base.ApplicationContext):
     """
-    An implementation of :obj:`~.context.base.Context` for prefix commands.
+    An implementation of :obj:`~.context.base.Context` for slash commands.
 
     Args:
         app (:obj:`~.app.BotApp`): The ``BotApp`` instance that the context is linked to.

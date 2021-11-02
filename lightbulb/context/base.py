@@ -295,4 +295,5 @@ class ApplicationContext(Context, abc.ABC):
             kwargs["content"] = args[0]
             kwargs.setdefault("response_type", hikari.ResponseType.MESSAGE_CREATE)
         await self._interaction.create_initial_response(**kwargs)
+        self.initial_response_sent = True
         return ResponseProxy(fetcher=self._interaction.fetch_initial_response)

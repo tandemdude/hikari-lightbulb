@@ -20,6 +20,7 @@ from __future__ import annotations
 __all__ = ["Context", "ApplicationContext", "OptionsProxy", "ResponseProxy"]
 
 import abc
+import asyncio
 import typing as t
 
 import hikari
@@ -227,6 +228,9 @@ class ApplicationContext(Context, abc.ABC):
         self._interaction: hikari.CommandInteraction = event.interaction
         self._command = command
 
+        if self._command.auto_defer:
+            asyncio.create_task(self.respond(hikari.ResponseType.DEFERRED_MESSAGE_CREATE))
+
     @property
     @abc.abstractmethod
     def command(self) -> commands.base.ApplicationCommand:
@@ -309,9 +313,14 @@ class ApplicationContext(Context, abc.ABC):
             self._responses.append(ResponseProxy(await self._interaction.execute(*args, **kwargs)))
             return self._responses[-1]
 
-        if args and not isinstance(args[0], hikari.ResponseType):
-            kwargs["content"] = args[0]
-            kwargs.setdefault("response_type", hikari.ResponseType.MESSAGE_CREATE)
+        if args:
+            if not isinstance(args[0], hikari.ResponseType):
+                kwargs["content"] = args[0]
+                kwargs.setdefault("response_type", hikari.ResponseType.MESSAGE_CREATE)
+            else:
+                kwargs["response_type"] = args[0]
+                if len(args) > 1:
+                    kwargs.setdefault("content", args[1])
 
         kwargs.pop("attachment", None)
         kwargs.pop("attachments", None)

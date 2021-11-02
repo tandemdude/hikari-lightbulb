@@ -19,6 +19,7 @@ from __future__ import annotations
 
 __all__ = ["PrefixContext"]
 
+import asyncio
 import typing as t
 
 import hikari
@@ -61,6 +62,13 @@ class PrefixContext(base.Context):
         self._prefix = prefix
         self._options: t.Dict[str, t.Any] = {}
         self._parser: parser.BaseParser
+
+        if self._command is not None and self._command.auto_defer:
+
+            async def _defer() -> None:
+                await self.app.rest.trigger_typing(self.channel_id)
+
+            asyncio.create_task(_defer())
 
     @property
     def event(self) -> hikari.MessageCreateEvent:

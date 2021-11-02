@@ -73,6 +73,10 @@ command types that can be created.
   set later using the :obj:`lightbulb.commands.base.CommandLike.set_error_handler` method. The error handler function should
   take a single argument ``event``, which will be an instance of the :obj:`lightbulb.events.CommandErrorEvent` event.
 
+- ``auto_defer`` (optional) - Whether or not the response to the command should be automatically deferred on command invocation.
+  If ``True``, then a response of type ``DEFERRED_MESSAGE_CREATE`` will be sent if the command was triggered by an interaction.
+  For prefix commands, a typing indicator will be triggered in the channel the command was invoked in instead. Defaults to ``False``.
+
 **For example:**
 
 .. code-block:: python

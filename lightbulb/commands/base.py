@@ -170,6 +170,8 @@ class CommandLike:
     """The argument parser to use for prefix commands."""
     help_getter: t.Optional[t.Callable[[Command, context_.base.Context], str]] = None
     """The function to call to get the command's long help text."""
+    auto_defer: bool = False
+    """Whether or not to automatically defer the response when the command is invoked."""
 
     def set_error_handler(
         self,
@@ -249,6 +251,7 @@ class Command(abc.ABC):
         "plugin",
         "aliases",
         "parser",
+        "auto_defer",
     )
 
     def __init__(self, app: app_.BotApp, initialiser: CommandLike) -> None:
@@ -276,6 +279,8 @@ class Command(abc.ABC):
         """The aliases for the command. This value means nothing for application commands."""
         self.parser = initialiser.parser
         """The argument parser to use for prefix commands."""
+        self.auto_defer = initialiser.auto_defer
+        """Whether or not to automatically defer the response when the command is invoked."""
 
     async def __call__(self, context: context_.base.Context) -> None:
         return await self.callback(context)

@@ -75,6 +75,9 @@ def command(
             application commands. Defaults to an empty list.
         parser (:obj:`~.utils.parser.BaseParser`): The argument parser to use for prefix commands. Defaults
             to :obj:`~.utils.parser.Parser`.
+        auto_defer (:obj:`bool`): Whether or not to automatically defer the response when the command is invoked. If
+            ``True``, the bot will send an initial response of type ``DEFERRED_MESSAGE_CREATE`` for interactions, and
+            for prefix commands, typing will be triggered in the invocation channel.
     """
 
     def decorate(

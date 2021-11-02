@@ -85,10 +85,21 @@ class Context(abc.ABC):
         app (:obj:`~.app.BotApp`): The ``BotApp`` instance that the context is linked to.
     """
 
-    __slots__ = ("_app",)
+    __slots__ = ("_app", "_responses")
 
     def __init__(self, app: app_.BotApp):
         self._app = app
+        self._responses: t.List[ResponseProxy] = []
+
+    @property
+    def responses(self) -> t.List[ResponseProxy]:
+        """List of all previous responses sent for this context."""
+        return self._responses
+
+    @property
+    def previous_response(self) -> t.Optional[ResponseProxy]:
+        """The last response sent for this context."""
+        return self._responses[-1] if self._responses else None
 
     @property
     def interaction(self) -> t.Optional[hikari.CommandInteraction]:
@@ -203,7 +214,7 @@ class Context(abc.ABC):
 
 
 class ApplicationContext(Context, abc.ABC):
-    __slots__ = ("_event", "_interaction", "_command", "initial_response_sent")
+    __slots__ = ("_event", "_interaction", "_command")
 
     def __init__(
         self, app: app_.BotApp, event: hikari.InteractionCreateEvent, command: commands.base.ApplicationCommand
@@ -213,9 +224,6 @@ class ApplicationContext(Context, abc.ABC):
         assert isinstance(event.interaction, hikari.CommandInteraction)
         self._interaction: hikari.CommandInteraction = event.interaction
         self._command = command
-
-        self.initial_response_sent: bool = False
-        """Whether or not the initial response has been sent for this interaction."""
 
     @property
     @abc.abstractmethod
@@ -287,13 +295,14 @@ class ApplicationContext(Context, abc.ABC):
         Returns:
             :obj:`~ResponseProxy`: Proxy wrapping the response of the ``respond`` call.
         """
-        if self.initial_response_sent:
-            msg = await self._interaction.execute(*args, **kwargs)
-            return ResponseProxy(msg)
+        if self._responses:
+            self._responses.append(ResponseProxy(await self._interaction.execute(*args, **kwargs)))
+            return self._responses[-1]
 
         if args and not isinstance(args[0], hikari.ResponseType):
             kwargs["content"] = args[0]
             kwargs.setdefault("response_type", hikari.ResponseType.MESSAGE_CREATE)
+
         await self._interaction.create_initial_response(**kwargs)
-        self.initial_response_sent = True
-        return ResponseProxy(fetcher=self._interaction.fetch_initial_response)
+        self._responses.append(ResponseProxy(fetcher=self._interaction.fetch_initial_response))
+        return self._responses[-1]

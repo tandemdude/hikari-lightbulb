@@ -118,5 +118,5 @@ class PrefixContext(base.Context):
         Returns:
             :obj:`~hikari.messages.Message`: The created message object.
         """
-        msg = await self.event.message.respond(*args, **kwargs)
-        return base.ResponseProxy(msg)
+        self._responses.append(base.ResponseProxy(await self.event.message.respond(*args, **kwargs)))
+        return self._responses[-1]

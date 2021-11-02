@@ -172,6 +172,8 @@ class CommandLike:
     """The function to call to get the command's long help text."""
     auto_defer: bool = False
     """Whether or not to automatically defer the response when the command is invoked."""
+    ephemeral: bool = False
+    """Whether or not to send responses from this command as ephemeral messages by default."""
 
     def set_error_handler(
         self,
@@ -252,6 +254,7 @@ class Command(abc.ABC):
         "aliases",
         "parser",
         "auto_defer",
+        "default_ephemeral",
     )
 
     def __init__(self, app: app_.BotApp, initialiser: CommandLike) -> None:
@@ -281,6 +284,8 @@ class Command(abc.ABC):
         """The argument parser to use for prefix commands."""
         self.auto_defer = initialiser.auto_defer
         """Whether or not to automatically defer the response when the command is invoked."""
+        self.default_ephemeral = initialiser.ephemeral
+        """Whether or not to send responses from this command as ephemeral messages by default."""
 
     async def __call__(self, context: context_.base.Context) -> None:
         return await self.callback(context)

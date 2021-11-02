@@ -78,6 +78,9 @@ def command(
         auto_defer (:obj:`bool`): Whether or not to automatically defer the response when the command is invoked. If
             ``True``, the bot will send an initial response of type ``DEFERRED_MESSAGE_CREATE`` for interactions, and
             for prefix commands, typing will be triggered in the invocation channel.
+        ephemeral (:obj:`bool`): Whether or not to send responses from the invocation of this command as ephemeral by
+            default. If ``True`` then all responses from the command will use the flag :obj:`hikari.MessageFlags.EPHEMERAL`.
+            This will not affect prefix commands as responses from prefix commands **cannot** be ephemeral.
     """
 
     def decorate(

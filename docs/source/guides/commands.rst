@@ -77,6 +77,11 @@ command types that can be created.
   If ``True``, then a response of type ``DEFERRED_MESSAGE_CREATE`` will be sent if the command was triggered by an interaction.
   For prefix commands, a typing indicator will be triggered in the channel the command was invoked in instead. Defaults to ``False``.
 
+- ``ephemeral`` (optional) - Whether or not to send responses from the invocation of this command as ephemeral by
+  default. If ``True`` then all responses from the command will use the flag :obj:`hikari.MessageFlags.EPHEMERAL`.
+  This will not affect prefix commands as responses from prefix commands **cannot** be ephemeral. This can be overriden
+  by supplying the kwarg ``flags=hikari.MessageFlags.NONE`` to your call to the ``respond`` method.
+
 **For example:**
 
 .. code-block:: python

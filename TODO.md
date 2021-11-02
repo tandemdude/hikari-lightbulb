@@ -118,9 +118,9 @@
 
 - [x] Paginated/Navigated Help Command
 - [ ] Embed Help Command
-- [ ] Default Ephemeral Flags
+- [x] Default Ephemeral Flags
 - [ ] Reinvoke on edits
 - [ ] Default allowed mentions
-- [ ] Broadcast typing on command invocation
+- [x] Broadcast typing on command invocation
 - [x] Default enabled guilds
 - [x] Automatically defer responses

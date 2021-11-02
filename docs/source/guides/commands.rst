@@ -4,7 +4,7 @@ Creating Commands
 
 You're using a command handler library so naturally you'll probably be wanting to make some commands for your bot.
 
-If you haven't made your first command yet, it is recommended that you read the ``Getting Started`` page before continuing.
+If you haven't made your first command yet, it is recommended that you read the :ref:`getting-started` page before continuing.
 
 ----
 
@@ -52,24 +52,24 @@ command types that can be created.
 
 **Positional Arguments:**
 
-- ``name`` (required): The name of the command. This will be the string used to invoke the command for prefix commands,
+- ``name`` (required) - The name of the command. This will be the string used to invoke the command for prefix commands,
   for application commands it will be sent to discord when the command is created.
 
-- ``description`` (required): The command's description. This will show up beside the command name in the help command, and for slash
+- ``description`` (required) - The command's description. This will show up beside the command name in the help command, and for slash
   commands it will be sent to discord when the command is created.
 
 **Keyword Arguments:**
 
-- ``aliases`` (optional): A sequence of aliases to use for the command's name. These will also be able to invoke the command,
+- ``aliases`` (optional) - A sequence of aliases to use for the command's name. These will also be able to invoke the command,
   but will only affect prefix commands. Application commands will not be aliased.
 
-- ``guilds`` (optional): A sequence of integer guild IDs that the command will be created in. This only affects application
+- ``guilds`` (optional) - A sequence of integer guild IDs that the command will be created in. This only affects application
   commands. If a value is not set then the value passed in to ``default_enabled_guilds`` when the bot was initialised will
   be used instead.
 
-- ``parser`` (optional): The argument parser to use for the prefix command implementation of this command.
+- ``parser`` (optional) - The argument parser to use for the prefix command implementation of this command.
 
-- ``error_handler`` (optional): The error handler function to use for all errors thrown by this command. This can also be
+- ``error_handler`` (optional) - The error handler function to use for all errors thrown by this command. This can also be
   set later using the :obj:`lightbulb.commands.base.CommandLike.set_error_handler` method. The error handler function should
   take a single argument ``event``, which will be an instance of the :obj:`lightbulb.events.CommandErrorEvent` event.
 
@@ -156,81 +156,129 @@ Converters and Slash Command Option Types
 
 Acceptable primitives: ``str``, ``int``, ``float``
 
-- ``bool``: :obj:`lightbulb.converters.special.BooleanConverter`
+- ``bool`` - :obj:`lightbulb.converters.special.BooleanConverter`
 
-- ``hikari.User``: :obj:`lightbulb.converters.special.UserConverter`
+- ``hikari.User`` - :obj:`lightbulb.converters.special.UserConverter`
 
-- ``hikari.Member``: :obj:`lightbulb.converters.special.MemberConverter`
+- ``hikari.Member`` - :obj:`lightbulb.converters.special.MemberConverter`
 
-- ``hikari.GuildChannel``: :obj:`lightbulb.converters.special.GuildChannelConverter`
+- ``hikari.GuildChannel`` - :obj:`lightbulb.converters.special.GuildChannelConverter`
 
-- ``hikari.TextableGuildChannel``: :obj:`lightbulb.converters.special.TextableGuildChannelConverter`
+- ``hikari.TextableGuildChannel`` - :obj:`lightbulb.converters.special.TextableGuildChannelConverter`
 
-- ``hikari.TextableChannel``: :obj:`lightbulb.converters.special.TextableGuildChannelConverter`
+- ``hikari.TextableChannel`` - :obj:`lightbulb.converters.special.TextableGuildChannelConverter`
 
-- ``hikari.GuildCategory``: :obj:`lightbulb.converters.special.GuildCategoryConverter`
+- ``hikari.GuildCategory`` - :obj:`lightbulb.converters.special.GuildCategoryConverter`
 
-- ``hikari.GuildVoiceChannel``: :obj:`lightbulb.converters.special.GuildVoiceChannelConverter`
+- ``hikari.GuildVoiceChannel`` - :obj:`lightbulb.converters.special.GuildVoiceChannelConverter`
 
-- ``hikari.Role``: :obj:`lightbulb.converters.special.RoleConverter`
+- ``hikari.Role`` - :obj:`lightbulb.converters.special.RoleConverter`
 
-- ``hikari.Emoji``: :obj:`lightbulb.converters.special.EmojiConverter`
+- ``hikari.Emoji`` - :obj:`lightbulb.converters.special.EmojiConverter`
 
-- ``hikari.Guild``: :obj:`lightbulb.converters.special.GuildConverter`
+- ``hikari.Guild`` - :obj:`lightbulb.converters.special.GuildConverter`
 
-- ``hikari.Message``: :obj:`lightbulb.converters.special.MessageConverter`
+- ``hikari.Message`` - :obj:`lightbulb.converters.special.MessageConverter`
 
-- ``hikari.Invite``: :obj:`lightbulb.converters.special.InviteConverter`
+- ``hikari.Invite`` - :obj:`lightbulb.converters.special.InviteConverter`
 
-- ``hikari.Colour``: :obj:`lightbulb.converters.special.ColourConverter`
+- ``hikari.Colour`` - :obj:`lightbulb.converters.special.ColourConverter`
 
-- ``hikari.Color``: :obj:`lightbulb.converters.special.ColourConverter`
+- ``hikari.Color`` - :obj:`lightbulb.converters.special.ColourConverter`
 
-- ``hikari.Snowflake``: :obj:`lightbulb.converters.special.SnowflakeConverter`
+- ``hikari.Snowflake`` - :obj:`lightbulb.converters.special.SnowflakeConverter`
 
-- ``datetime.datetime``: :obj:`lightbulb.converters.special.TimestampConverter`
+- ``datetime.datetime`` - :obj:`lightbulb.converters.special.TimestampConverter`
 
 **Slash command option type mapping:**
 
-- ``str``: ``hikari.OptionType.STRING``
+- ``str`` - ``hikari.OptionType.STRING``
 
-- ``int``: ``hikari.OptionType.INTEGER``
+- ``int`` - ``hikari.OptionType.INTEGER``
 
-- ``float``: ``hikari.OptionType.FLOAT``
+- ``float`` - ``hikari.OptionType.FLOAT``
 
-- ``bool``: ``hikari.OptionType.BOOLEAN``
+- ``bool`` - ``hikari.OptionType.BOOLEAN``
 
-- ``hikari.User``: ``hikari.OptionType.USER``
+- ``hikari.User`` - ``hikari.OptionType.USER``
 
-- ``hikari.Member``: ``hikari.OptionType.USER``
+- ``hikari.Member`` - ``hikari.OptionType.USER``
 
-- ``hikari.GuildChannel``: ``hikari.OptionType.CHANNEL``
+- ``hikari.GuildChannel`` - ``hikari.OptionType.CHANNEL``
 
-- ``hikari.TextableGuildChannel``: ``hikari.OptionType.CHANNEL``
+- ``hikari.TextableGuildChannel`` - ``hikari.OptionType.CHANNEL``
 
-- ``hikari.TextableChannel``: ``hikari.OptionType.CHANNEL``
+- ``hikari.TextableChannel`` - ``hikari.OptionType.CHANNEL``
 
-- ``hikari.GuildCategory``: ``hikari.OptionType.CHANNEL``
+- ``hikari.GuildCategory`` - ``hikari.OptionType.CHANNEL``
 
-- ``hikari.GuildVoiceChannel``: ``hikari.OptionType.CHANNEL``
+- ``hikari.GuildVoiceChannel`` - ``hikari.OptionType.CHANNEL``
 
-- ``hikari.Role``: ``hikari.OptionType.ROLE``
+- ``hikari.Role`` - ``hikari.OptionType.ROLE``
 
-- ``hikari.Emoji``: ``hikari.OptionType.STRING``
+- ``hikari.Emoji`` - ``hikari.OptionType.STRING``
 
-- ``hikari.Guild``: ``hikari.OptionType.MENTIONABLE``
+- ``hikari.Guild`` - ``hikari.OptionType.MENTIONABLE``
 
-- ``hikari.Message``: ``hikari.OptionType.MENTIONABLE``
+- ``hikari.Message`` - ``hikari.OptionType.MENTIONABLE``
 
-- ``hikari.Invite``: ``hikari.OptionType.STRING``
+- ``hikari.Invite`` - ``hikari.OptionType.STRING``
 
-- ``hikari.Colour``: ``hikari.OptionType.STRING``
+- ``hikari.Colour`` - ``hikari.OptionType.STRING``
 
-- ``hikari.Color``: ``hikari.OptionType.STRING``
+- ``hikari.Color`` - ``hikari.OptionType.STRING``
 
-- ``hikari.Snowflake``: ``hikari.OptionType.MENTIONABLE``
+- ``hikari.Snowflake`` - ``hikari.OptionType.MENTIONABLE``
 
-- ``datetime.datetime``: ``hikari.OptionType.STRING``
+- ``datetime.datetime`` - ``hikari.OptionType.STRING``
+
+----
+
+Adding Checks to Commands
+=========================
+
+Checks prevent commands from being invoked if the user invoking the command does not meet the specified criteria. For
+example, you can prevent commands from being used in DMs, restrict them to only the owner of the bot, or restrict commands
+to only users that have specific permissions.
+
+See :ref:`checks` for all of the checks that are provided by Lightbulb.
+
+To add checks to a command, you need to use the :obj:`lightbulb.decorators.add_checks` decorator. The decorator takes
+an arbitrary number of :obj:`lightbulb.checks.Check` objects and will add all of them to the command.
+
+For example:
+
+.. code-block:: python
+
+    import lightbulb
+    from lightbulb import commands
+
+    @lightbulb.add_checks(lightbulb.owner_only)
+    @lightbulb.command("foo", "test command")
+    @lightbulb.implements(commands.PrefixCommand)
+    async def foo(ctx):
+        await ctx.respond("You are the owner of this bot.")
+
+
+You can also create custom checks by creating your own instance of the :obj:`lightbulb.checks.Check` class and passing
+in your custom check function to the constructor. A check function should take a single argument, which will be the ``Context``
+instance for the command that is attempting to be invoked. Your check should either raise an error or return ``False``
+on failure and **must** return ``True`` if it passes. Your check may be a syncronous or asyncronous function.
+
+For example:
+
+.. code-block:: python
+
+    import lightbulb
+
+    # Defining the custom check function
+    def check_author_is_me(context):
+        # Returns True if the author's ID is the same as the given one
+        return context.author.id == 1455657467
+
+    # Adding the check to a command
+    @lightbulb.add_checks(lightbulb.Check(check_author_is_me))
+
 
 ----
 

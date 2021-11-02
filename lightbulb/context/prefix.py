@@ -109,7 +109,9 @@ class PrefixContext(base.Context):
 
     async def respond(self, *args: t.Any, **kwargs: t.Any) -> base.ResponseProxy:
         """
-        Create a response for this context. This method directly calls :obj:`~hikari.messages.Message.respond`.
+        Create a response for this context. This method directly calls :obj:`~hikari.messages.Message.respond`. You
+        should note that it is not possible to send ephemeral messages as responses to prefix commands. All message flags
+        will be removed before the call to :obj:`~hikari.messages.Message.respond`.
 
         Args:
             *args (Any): Positional arguments passed to :obj:`~hikari.messages.Message.respond`.
@@ -118,5 +120,11 @@ class PrefixContext(base.Context):
         Returns:
             :obj:`~hikari.messages.Message`: The created message object.
         """
+        kwargs.pop("flags", None)
+        kwargs.pop("response_type", None)
+
+        if args and isinstance(args[0], hikari.ResponseType):
+            args = args[1:]
+
         self._responses.append(base.ResponseProxy(await self.event.message.respond(*args, **kwargs)))
         return self._responses[-1]

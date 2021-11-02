@@ -295,13 +295,24 @@ class ApplicationContext(Context, abc.ABC):
         Returns:
             :obj:`~ResponseProxy`: Proxy wrapping the response of the ``respond`` call.
         """
+        kwargs.pop("reply", None)
+        kwargs.pop("mentions_reply", None)
+        kwargs.pop("nonce", None)
+
         if self._responses:
+            kwargs.pop("response_type", None)
+            if args and isinstance(args[0], hikari.ResponseType):
+                args = args[1:]
+
             self._responses.append(ResponseProxy(await self._interaction.execute(*args, **kwargs)))
             return self._responses[-1]
 
         if args and not isinstance(args[0], hikari.ResponseType):
             kwargs["content"] = args[0]
             kwargs.setdefault("response_type", hikari.ResponseType.MESSAGE_CREATE)
+
+        kwargs.pop("attachment", None)
+        kwargs.pop("attachments", None)
 
         await self._interaction.create_initial_response(**kwargs)
         self._responses.append(ResponseProxy(fetcher=self._interaction.fetch_initial_response))

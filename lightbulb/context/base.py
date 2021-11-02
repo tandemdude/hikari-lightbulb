@@ -103,11 +103,13 @@ class Context(abc.ABC):
 
     @property
     def interaction(self) -> t.Optional[hikari.CommandInteraction]:
+        """The interaction that triggered this context. Will be ``None`` for prefix commands."""
         # Just to keep the interfaces the same for prefix commands and application commands
         return None
 
     @property
     def resolved(self) -> t.Optional[hikari.ResolvedOptionData]:
+        """The resolved option data for this context. Will be ``None`` for prefix commands"""
         # Just to keep the interfaces the same for prefix commands and application commands
         return None
 

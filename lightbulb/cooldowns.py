@@ -40,6 +40,7 @@ class CooldownStatus(enum.Enum):
 class Bucket(abc.ABC):
     """
     Base class for representing a cooldown bucket. All buckets should inherit from this class.
+
     Args:
         length (:obj:`float`): Length of the cooldown timer.
         max_usages (:obj:`int`): Number of command usages before the cooldown is activated.

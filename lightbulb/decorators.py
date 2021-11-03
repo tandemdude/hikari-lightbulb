@@ -17,7 +17,7 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__ = ["implements", "command", "option", "add_checks", "set_help"]
+__all__ = ["implements", "command", "option", "add_checks", "add_cooldown", "set_help"]
 
 import inspect
 import typing as t
@@ -25,6 +25,7 @@ import typing as t
 import hikari
 
 from lightbulb import commands
+from lightbulb import cooldowns
 
 if t.TYPE_CHECKING:
     from lightbulb import checks as checks_
@@ -137,6 +138,63 @@ def add_checks(*cmd_checks: checks_.Check) -> t.Callable[[commands.base.CommandL
     def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
         new_checks = [*c_like.checks, *cmd_checks]
         c_like.checks = new_checks
+        return c_like
+
+    return decorate
+
+
+@t.overload
+def add_cooldown(
+    length: float, uses: int, bucket: t.Type[cooldowns.Bucket]
+) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
+    ...
+
+
+@t.overload
+def add_cooldown(
+    *,
+    callback: t.Callable[
+        [context.base.Context], t.Union[cooldowns.Bucket, t.Coroutine[t.Any, t.Any, cooldowns.Bucket]]
+    ],
+) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
+    ...
+
+
+def add_cooldown(
+    length: t.Optional[float] = None,
+    uses: t.Optional[int] = None,
+    bucket: t.Optional[t.Type[cooldowns.Bucket]] = None,
+    *,
+    callback: t.Optional[
+        t.Callable[[context.base.Context], t.Union[cooldowns.Bucket, t.Coroutine[t.Any, t.Any, cooldowns.Bucket]]]
+    ] = None,
+    cls: t.Type[cooldowns.CooldownManager] = cooldowns.CooldownManager,
+) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
+    """
+    Second order decorator that sets the cooldown manager for a command.
+
+    Args:
+        length (:obj:`float`): The length in seconds of the cooldown timer.
+        uses (:obj:`int`): The number of command invocations before the cooldown will be triggered.
+        bucket (Type[:obj:`~.cooldowns.Bucket`]): The bucket to use for cooldowns.
+
+    Keyword Args:
+        callback (Callable[[:obj:`~.context.base.Context], Union[:obj:`~.cooldowns.Bucket`, Coroutine[Any, Any, :obj:`~.cooldowns.Bucket`): Callable
+            that takes the context the command was invoked under and returns the appropriate bucket object to use for
+            cooldowns in the context.
+        cls (Type[:obj:`~.cooldowns.CooldownManager`]): The cooldown manager class to use. Defaults to
+            :obj:`~.cooldowns.CooldownManager`.
+    """
+    getter: t.Callable[[context.base.Context], t.Union[cooldowns.Bucket, t.Coroutine[t.Any, t.Any, cooldowns.Bucket]]]
+    if length is not None and uses is not None and bucket is not None:
+        getter = lambda _: bucket(length, uses)  # type: ignore
+    elif callback is not None:
+        getter = callback
+    else:
+        raise TypeError("Invalid arguments - either provided all of the args length,uses,bucket or the kwarg callback")
+
+    def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
+        c_like.cooldown_manager = cls(getter)
         return c_like
 
     return decorate

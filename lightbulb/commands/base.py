@@ -35,10 +35,10 @@ if t.TYPE_CHECKING:
     from lightbulb import app as app_
     from lightbulb import checks
     from lightbulb import context as context_
+    from lightbulb import cooldowns
     from lightbulb import events
     from lightbulb import plugins
     from lightbulb.utils import parser as parser_
-    from lightbulb import cooldowns
 
 OPTION_TYPE_MAPPING = {
     str: hikari.OptionType.STRING,

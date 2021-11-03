@@ -57,7 +57,12 @@ def _serialise_option(option: hikari.CommandOption) -> t.Dict[str, t.Any]:
         "name": option.name,
         "description": option.description,
         "is_required": option.is_required,
-        "choices": list(option.choices) if option.choices is not None else [],
+        "choices": list(
+            sorted(
+                [{"n": c.name, "v": c.value} for c in option.choices] if option.choices is not None else [],
+                key=lambda d: d["n"],  # type: ignore
+            )
+        ),
         "options": [_serialise_option(o) for o in option.options] if option.options is not None else [],
         "channel_types": option.channel_types if option.channel_types is not None else [],
     }
@@ -74,12 +79,12 @@ def _serialise_hikari_command(command: hikari.Command) -> t.Dict[str, t.Any]:
 
 
 def _serialise_lightbulb_command(command: base.ApplicationCommand) -> t.Dict[str, t.Any]:
-    options = sorted([o.as_application_command_option() for o in command.options.values()], key=lambda o: o.name)
+    create_kwargs = command.as_create_kwargs()
     return {
-        "name": command.name,
-        "description": command.description,
-        "options": [_serialise_option(o) for o in options],
-        "guild_id": _GuildIDCollection(command.guilds),
+        "name": create_kwargs["name"],
+        "description": create_kwargs["description"],
+        "options": [_serialise_option(o) for o in sorted(create_kwargs["options"], key=lambda o: o.name)],  # type: ignore
+        "guild_id": _GuildIDCollection(command.guilds) if command.guilds else None,
     }
 
 

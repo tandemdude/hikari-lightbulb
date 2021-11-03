@@ -43,6 +43,9 @@
     - [x] ~~Message commands~~ (blocked)
     - [x] ~~User commands~~ (blocked)
   - [ ] Auto-managing of Application Commands
+    - [x] Slash Commands
+    - [ ] ~~Message commands~~ (blocked)
+    - [ ] ~~User commands~~ (blocked)
 
 - [ ] Checks (Reuse?)
   - [x] DM Only

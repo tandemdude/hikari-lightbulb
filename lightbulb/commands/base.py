@@ -38,6 +38,7 @@ if t.TYPE_CHECKING:
     from lightbulb import events
     from lightbulb import plugins
     from lightbulb.utils import parser as parser_
+    from lightbulb import cooldowns
 
 OPTION_TYPE_MAPPING = {
     str: hikari.OptionType.STRING,
@@ -168,6 +169,7 @@ class CommandLike:
     """Subcommands for the command."""
     parser: t.Optional[t.Type[parser_.BaseParser]] = None
     """The argument parser to use for prefix commands."""
+    cooldown_manager: t.Optional[cooldowns.CooldownManager] = None
     help_getter: t.Optional[t.Callable[[Command, context_.base.Context], str]] = None
     """The function to call to get the command's long help text."""
     auto_defer: bool = False
@@ -253,6 +255,7 @@ class Command(abc.ABC):
         "plugin",
         "aliases",
         "parser",
+        "cooldown_manager",
         "auto_defer",
         "default_ephemeral",
     )
@@ -282,6 +285,8 @@ class Command(abc.ABC):
         """The aliases for the command. This value means nothing for application commands."""
         self.parser = initialiser.parser
         """The argument parser to use for prefix commands."""
+        self.cooldown_manager = initialiser.cooldown_manager
+        """The cooldown manager instance to use for the command."""
         self.auto_defer = initialiser.auto_defer
         """Whether or not to automatically defer the response when the command is invoked."""
         self.default_ephemeral = initialiser.ephemeral
@@ -363,7 +368,8 @@ class Command(abc.ABC):
         Evaluate the command's cooldown under the given context. This method will either return
         ``None`` if the command is not on cooldown or raise :obj:`.errors.CommandIsOnCooldown`.
         """
-        return  # TODO
+        if self.cooldown_manager is not None:
+            await self.cooldown_manager.add_cooldown(context)
 
 
 class ApplicationCommand(Command, abc.ABC):

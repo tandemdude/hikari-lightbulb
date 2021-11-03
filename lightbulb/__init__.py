@@ -20,6 +20,7 @@ from lightbulb import checks
 from lightbulb import commands
 from lightbulb import context
 from lightbulb import converters
+from lightbulb import cooldowns
 from lightbulb import decorators
 from lightbulb import errors
 from lightbulb import events
@@ -28,12 +29,21 @@ from lightbulb import plugins
 from lightbulb import utils
 from lightbulb.app import *
 from lightbulb.checks import *
+from lightbulb.cooldowns import *
 from lightbulb.decorators import *
 from lightbulb.errors import *
 from lightbulb.events import *
 from lightbulb.help_command import *
 from lightbulb.plugins import *
 
-__all__ = [*app.__all__, *checks.__all__, *decorators.__all__, *errors.__all__, *events.__all__, *plugins.__all__]
+__all__ = [
+    *app.__all__,
+    *checks.__all__,
+    *cooldowns.__all__,
+    *decorators.__all__,
+    *errors.__all__,
+    *events.__all__,
+    *plugins.__all__,
+]
 
 __version__ = "2.0.0.dev0"

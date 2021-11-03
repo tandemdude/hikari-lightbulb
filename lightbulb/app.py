@@ -336,7 +336,7 @@ class BotApp(hikari.GatewayBot):
         if len(extensions) > 1 or not extensions:
             for extension in extensions:
                 self.load_extensions(extension)
-                return
+            return
         extension = extensions[0]
 
         if extension in self.extensions:
@@ -378,7 +378,7 @@ class BotApp(hikari.GatewayBot):
         if len(extensions) > 1 or not extensions:
             for extension in extensions:
                 self.unload_extensions(extension)
-                return
+            return
         extension = extensions[0]
 
         if extension not in self.extensions:
@@ -416,7 +416,7 @@ class BotApp(hikari.GatewayBot):
         if len(extensions) > 1 or not extensions:
             for extension in extensions:
                 self.reload_extensions(extension)
-                return
+            return
         extension = extensions[0]
 
         _LOGGER.debug("Reloading extension %r", extension)

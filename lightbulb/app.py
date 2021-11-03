@@ -36,6 +36,7 @@ from lightbulb import decorators
 from lightbulb import errors
 from lightbulb import events
 from lightbulb import help_command as help_command_
+from lightbulb import internal
 from lightbulb import plugins
 from lightbulb.utils import data_store
 from lightbulb.utils import parser
@@ -172,6 +173,7 @@ class BotApp(hikari.GatewayBot):
         "_current_extension",
         "default_enabled_guilds",
         "_help_command",
+        "_delete_unbound_commands",
     )
 
     def __init__(
@@ -183,6 +185,7 @@ class BotApp(hikari.GatewayBot):
         default_enabled_guilds: t.Union[int, t.Sequence[int]] = (),
         help_class: t.Optional[t.Type[help_command_.BaseHelpCommand]] = help_command_.DefaultHelpCommand,
         help_slash_command: bool = False,
+        delete_unbound_commands: bool = True,
         **kwargs: t.Any,
     ) -> None:
         super().__init__(token, **kwargs)
@@ -197,6 +200,9 @@ class BotApp(hikari.GatewayBot):
             self.get_prefix: t.Callable[
                 [BotApp, hikari.Message], t.Union[t.Sequence[str], t.Coroutine[t.Any, t.Any, t.Sequence[str]]]
             ] = prefix
+
+        self._delete_unbound_commands = delete_unbound_commands
+
         self.ignore_bots = ignore_bots
         """Whether or not other bots will be ignored when invoking prefix commands."""
         self.owner_ids = owner_ids
@@ -291,9 +297,7 @@ class BotApp(hikari.GatewayBot):
         if self.application is None:
             self.application = await self.rest.fetch_application()
 
-        for command in self._slash_commands.values():
-            _LOGGER.info("Creating slash command %s", command.name)
-            await command._auto_create()
+        await internal.manage_application_commands(self)
 
     @staticmethod
     def _get_events_for_application_command(

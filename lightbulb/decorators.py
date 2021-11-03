@@ -21,6 +21,7 @@ __all__ = ["implements", "command", "option", "add_checks", "add_cooldown", "set
 
 import inspect
 import typing as t
+import functools
 
 import hikari
 
@@ -187,7 +188,7 @@ def add_cooldown(
     """
     getter: t.Callable[[context.base.Context], t.Union[cooldowns.Bucket, t.Coroutine[t.Any, t.Any, cooldowns.Bucket]]]
     if length is not None and uses is not None and bucket is not None:
-        getter = lambda _: bucket(length, uses)  # type: ignore
+        getter = functools.partial(bucket, length, uses)
     elif callback is not None:
         getter = callback
     else:

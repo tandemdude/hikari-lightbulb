@@ -17,7 +17,7 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__ = ["SlashCommand", "SlashCommandGroup", "SlashGroupMixin", "SlashSubGroup", "SlashSubcommand"]
+__all__ = ["SlashCommand", "SlashCommandGroup", "SlashGroupMixin", "SlashSubGroup", "SlashSubCommand"]
 
 import abc
 import typing as t
@@ -34,20 +34,20 @@ if t.TYPE_CHECKING:
 
 class SlashGroupMixin(abc.ABC):
     name: str
-    _subcommands: t.Dict[str, t.Union[SlashSubGroup, SlashSubcommand]]
+    _subcommands: t.Dict[str, t.Union[SlashSubGroup, SlashSubCommand]]
 
     def create_subcommands(
         self,
         raw_cmds: t.Sequence[base.CommandLike],
         app: app_.BotApp,
-        allowed_types: t.Union[t.Tuple[t.Type[SlashSubcommand], t.Type[SlashSubGroup]], t.Type[SlashSubcommand]],
+        allowed_types: t.Union[t.Tuple[t.Type[SlashSubCommand], t.Type[SlashSubGroup]], t.Type[SlashSubCommand]],
     ) -> None:
         for raw_cmd in raw_cmds:
             impls: t.List[t.Type[base.Command]] = getattr(raw_cmd.callback, "__cmd_types__", [])
             for impl in impls:
                 if issubclass(impl, allowed_types):
                     cmd = impl(app, raw_cmd)
-                    assert isinstance(cmd, (SlashSubcommand, SlashSubGroup))
+                    assert isinstance(cmd, (SlashSubCommand, SlashSubGroup))
                     cmd.parent = self  # type: ignore
                     if cmd.name in self._subcommands:
                         raise errors.CommandAlreadyExists(
@@ -62,7 +62,7 @@ class SlashGroupMixin(abc.ABC):
         context._parse_options(cmd_option.options)
         await self._subcommands[cmd_option.name].invoke(context)
 
-    def get_subcommand(self, name: str) -> t.Optional[t.Union[SlashSubGroup, SlashSubcommand]]:
+    def get_subcommand(self, name: str) -> t.Optional[t.Union[SlashSubGroup, SlashSubCommand]]:
         return self._subcommands.get(name)
 
 
@@ -84,7 +84,7 @@ class SlashCommand(base.ApplicationCommand):
         }
 
 
-class SlashSubcommand(SlashCommand, base.SubcommandTrait):
+class SlashSubCommand(SlashCommand, base.SubCommandTrait):
     """
     Class representing a slash subcommand.
     """
@@ -107,7 +107,7 @@ class SlashSubcommand(SlashCommand, base.SubcommandTrait):
         )
 
 
-class SlashSubGroup(SlashCommand, SlashGroupMixin, base.SubcommandTrait):
+class SlashSubGroup(SlashCommand, SlashGroupMixin, base.SubCommandTrait):
     """
     Class representing a slash subgroup of commands.
     """
@@ -119,8 +119,8 @@ class SlashSubGroup(SlashCommand, SlashGroupMixin, base.SubcommandTrait):
         self._raw_subcommands = initialiser.subcommands
         initialiser.subcommands = base._SubcommandListProxy(initialiser.subcommands, parent=self)  # type: ignore
         # Just to keep mypy happy we leave SlashSubGroup here
-        self._subcommands: t.Dict[str, t.Union[SlashSubGroup, SlashSubcommand]] = {}
-        self.create_subcommands(self._raw_subcommands, app, SlashSubcommand)
+        self._subcommands: t.Dict[str, t.Union[SlashSubGroup, SlashSubCommand]] = {}
+        self.create_subcommands(self._raw_subcommands, app, SlashSubCommand)
 
     @property
     def qualname(self) -> str:
@@ -151,8 +151,8 @@ class SlashCommandGroup(SlashCommand, SlashGroupMixin):
         super().__init__(app, initialiser)
         self._raw_subcommands = initialiser.subcommands
         initialiser.subcommands = base._SubcommandListProxy(initialiser.subcommands, parent=self)  # type: ignore
-        self._subcommands: t.Dict[str, t.Union[SlashSubGroup, SlashSubcommand]] = {}
-        self.create_subcommands(self._raw_subcommands, app, (SlashSubcommand, SlashSubGroup))
+        self._subcommands: t.Dict[str, t.Union[SlashSubGroup, SlashSubCommand]] = {}
+        self.create_subcommands(self._raw_subcommands, app, (SlashSubCommand, SlashSubGroup))
 
     async def invoke(self, context: context_.base.Context) -> None:
         await self._invoke_subcommand(context)

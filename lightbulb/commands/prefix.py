@@ -92,7 +92,7 @@ class PrefixCommand(base.Command):
         await self(context)
 
 
-class PrefixSubCommand(PrefixCommand, base.SubcommandTrait):
+class PrefixSubCommand(PrefixCommand, base.SubCommandTrait):
     """
     Class representing a prefix subcommand.
     """
@@ -111,7 +111,7 @@ class PrefixSubCommand(PrefixCommand, base.SubcommandTrait):
         await super().invoke(context)
 
 
-class PrefixSubGroup(PrefixCommand, PrefixGroupMixin, base.SubcommandTrait):
+class PrefixSubGroup(PrefixCommand, PrefixGroupMixin, base.SubCommandTrait):
     """
     Class representing a prefix subgroup of commands.
     """

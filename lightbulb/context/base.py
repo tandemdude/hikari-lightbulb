@@ -324,6 +324,8 @@ class ApplicationContext(Context, abc.ABC):
                 kwargs["response_type"] = args[0]
                 if len(args) > 1:
                     kwargs.setdefault("content", args[1])
+        else:
+            kwargs.setdefault("response_type", hikari.ResponseType.MESSAGE_CREATE)
 
         kwargs.pop("attachment", None)
         kwargs.pop("attachments", None)

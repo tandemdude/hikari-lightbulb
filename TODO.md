@@ -91,7 +91,7 @@
   - [x] Greedy
   - [x] Consume Rest
 
-- [ ] Cooldowns (Reuse?)
+- [x] Cooldowns (Reuse?)
 
 - [x] Events
   - [x] *Command Completion Event

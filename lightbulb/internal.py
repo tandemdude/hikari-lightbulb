@@ -106,7 +106,7 @@ async def manage_application_commands(app: app_.BotApp) -> None:
     global_commands: t.Sequence[hikari.Command] = await app.rest.fetch_application_commands(app.application)
     for command in global_commands:
         registered_command = app.get_slash_command(command.name)
-        if registered_command is None:
+        if registered_command is None or registered_command.guilds:
             if app._delete_unbound_commands:
                 _LOGGER.info("Deleting global command %r as no implementation could be found", command.name)
                 await command.delete()
@@ -130,7 +130,7 @@ async def manage_application_commands(app: app_.BotApp) -> None:
         for command in guild_commands:
             registered_command = app.get_slash_command(command.name)
 
-            if registered_command is None:
+            if registered_command is None or not registered_command.guilds:
                 if app._delete_unbound_commands:
                     _LOGGER.info(
                         "Deleting command %r from guild %r as no implementation could be found",

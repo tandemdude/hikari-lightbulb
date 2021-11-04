@@ -79,7 +79,7 @@ class ResponseProxy:
 
     async def edit(self, *args: t.Any, **kwargs: t.Any) -> hikari.Message:
         """
-        Shortcut for :obj:`hikari.messages.Message.edit`.
+        Edits the message that this object is proxying. Shortcut for :obj:`hikari.messages.Message.edit`.
 
         Args:
             *args: Args passed in to :obj:`hikari.messages.Message.edit`
@@ -91,6 +91,16 @@ class ResponseProxy:
         msg = await self.message()
         self._message = await msg.edit(*args, **kwargs)
         return self._message
+
+    async def delete(self) -> None:
+        """
+        Deletes the message that this object is proxying.
+
+        Returns:
+            ``None``
+        """
+        msg = await self.message()
+        await msg.delete()
 
 
 class Context(abc.ABC):
@@ -251,6 +261,18 @@ class Context(abc.ABC):
             return None
 
         return await self._responses[-1].edit(*args, **kwargs)
+
+    async def delete_last_response(self) -> None:
+        """
+        Delete the most recently send response. Shortcut for :obj:`hikari.messages.Message.delete`.
+
+        Returns:
+            ``None``
+        """
+        if not self._responses:
+            return
+
+        await self._responses.pop().delete()
 
 
 class ApplicationContext(Context, abc.ABC):

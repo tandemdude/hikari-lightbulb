@@ -111,11 +111,12 @@ class Context(abc.ABC):
         app (:obj:`~.app.BotApp`): The ``BotApp`` instance that the context is linked to.
     """
 
-    __slots__ = ("_app", "_responses")
+    __slots__ = ("_app", "_responses", "_responded")
 
     def __init__(self, app: app_.BotApp):
         self._app = app
         self._responses: t.List[ResponseProxy] = []
+        self._responded: bool = False
 
     @property
     def responses(self) -> t.List[ResponseProxy]:
@@ -367,7 +368,7 @@ class ApplicationContext(Context, abc.ABC):
         if self._command.default_ephemeral:
             kwargs.setdefault("flags", hikari.MessageFlag.EPHEMERAL)
 
-        if self._responses:
+        if self._responded:
             kwargs.pop("response_type", None)
             if args and isinstance(args[0], hikari.ResponseType):
                 args = args[1:]
@@ -391,4 +392,5 @@ class ApplicationContext(Context, abc.ABC):
 
         await self._interaction.create_initial_response(**kwargs)
         self._responses.append(ResponseProxy(fetcher=self._interaction.fetch_initial_response))
+        self._responded = True
         return self._responses[-1]

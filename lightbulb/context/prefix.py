@@ -135,4 +135,5 @@ class PrefixContext(base.Context):
             args = args[1:]
 
         self._responses.append(base.ResponseProxy(await self.event.message.respond(*args, **kwargs)))
+        self._responded = True
         return self._responses[-1]

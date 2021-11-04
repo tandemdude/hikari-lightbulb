@@ -46,4 +46,4 @@ __all__ = [
     *plugins.__all__,
 ]
 
-__version__ = "2.0.0.a1"
+__version__ = "2.0.0.a2"

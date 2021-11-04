@@ -104,26 +104,29 @@ async def manage_application_commands(app: app_.BotApp) -> None:
     all_commands = {c.name: c for c in app._slash_commands.values()}
 
     global_commands: t.Sequence[hikari.Command] = await app.rest.fetch_application_commands(app.application)
+    _LOGGER.info("Processing global commands")
     for command in global_commands:
         registered_command = app.get_slash_command(command.name)
         if registered_command is None or registered_command.guilds:
             if app._delete_unbound_commands:
-                _LOGGER.info("Deleting global command %r as no implementation could be found", command.name)
+                _LOGGER.debug("Deleting global command %r as no implementation could be found", command.name)
                 await command.delete()
             continue
 
         if not _compare_commands(registered_command, command):
-            _LOGGER.info("Recreating global command %r as it appears to have changed", command.name)
+            _LOGGER.debug("Recreating global command %r as it appears to have changed", command.name)
             await registered_command._auto_create()
         else:
-            _LOGGER.info("Not recreating global command %r as it does not appear to have changed", command.name)
+            _LOGGER.debug("Not recreating global command %r as it does not appear to have changed", command.name)
         all_commands.pop(registered_command.name, None)
 
     all_guild_ids: t.Set[int] = set()
+    all_guild_ids.update(app.default_enabled_guilds)
     for app_command in app._slash_commands.values():
         all_guild_ids.update(app_command.guilds)
 
     for guild_id in all_guild_ids:
+        _LOGGER.info("Processing commands for guild %r", str(guild_id))
         guild_commands: t.Sequence[hikari.Command] = await app.rest.fetch_application_commands(
             app.application, guild_id
         )
@@ -132,7 +135,7 @@ async def manage_application_commands(app: app_.BotApp) -> None:
 
             if registered_command is None or not registered_command.guilds:
                 if app._delete_unbound_commands:
-                    _LOGGER.info(
+                    _LOGGER.debug(
                         "Deleting command %r from guild %r as no implementation could be found",
                         command.name,
                         str(guild_id),
@@ -141,12 +144,21 @@ async def manage_application_commands(app: app_.BotApp) -> None:
                 continue
 
             if not _compare_commands(registered_command, command):
-                _LOGGER.info("Recreating guild command %r as it appears to have changed", command.name)
-                await registered_command._auto_create()
+                _LOGGER.debug(
+                    "Recreating guild command %r in guild %r as it appears to have changed",
+                    command.name,
+                    str(guild_id),
+                )
+                await registered_command.create(guild_id)
             else:
-                _LOGGER.info("Not recreating guild command %r as it does not appear to have changed", command.name)
+                _LOGGER.debug(
+                    "Not recreating guild command %r in guild %r as it does not appear to have changed",
+                    command.name,
+                    str(guild_id),
+                )
             all_commands.pop(registered_command.name, None)
 
     for app_command in all_commands.values():
-        _LOGGER.info("Creating command %r as it does not seem to exist yet", app_command.name)
+        _LOGGER.debug("Creating command %r as it does not seem to exist yet", app_command.name)
         await app_command._auto_create()
+    _LOGGER.info("Command processing completed")

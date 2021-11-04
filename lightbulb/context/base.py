@@ -77,6 +77,21 @@ class ResponseProxy:
         msg = await self._fetcher()
         return msg
 
+    async def edit(self, *args: t.Any, **kwargs: t.Any) -> hikari.Message:
+        """
+        Shortcut for :obj:`hikari.messages.Message.edit`.
+
+        Args:
+            *args: Args passed in to :obj:`hikari.messages.Message.edit`
+            **kwargs: Kwargs passed in to :obj:`hikari.messages.Message.edit`
+
+        Returns:
+            :obj:`~hikari.messages.Message`: New message after edit.
+        """
+        msg = await self.message()
+        self._message = await msg.edit(*args, **kwargs)
+        return self._message
+
 
 class Context(abc.ABC):
     """
@@ -219,6 +234,23 @@ class Context(abc.ABC):
         Create a response to this context.
         """
         ...
+
+    async def edit_last_response(self, *args: t.Any, **kwargs: t.Any) -> t.Optional[hikari.Message]:
+        """
+        Edit the most recently sent response. Shortcut for :obj:`hikari.messages.Message.edit`.
+
+        Args:
+            *args: Args passed to :obj:`hikari.messages.Message.edit`.
+            **kwargs: Kwargs passed to :obj:`hikari.messages.Message.edit`.
+
+        Returns:
+            Optional[:obj:`~hikari.messages.Message`]: New message after edit, or ``None`` if no responses have
+                been sent for the context yet.
+        """
+        if not self._responses:
+            return None
+
+        return await self._responses[-1].edit(*args, **kwargs)
 
 
 class ApplicationContext(Context, abc.ABC):

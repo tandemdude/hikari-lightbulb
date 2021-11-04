@@ -295,6 +295,11 @@ class Command(abc.ABC):
     async def __call__(self, context: context_.base.Context) -> None:
         return await self.callback(context)
 
+    @property
+    def bot(self) -> app_.BotApp:
+        """Alias for :obj:`~Context.app`"""
+        return self.app
+
     def get_help(self, context: context_.base.Context) -> str:
         """
         Get the help text for the command under the given context. This method calls the help getter

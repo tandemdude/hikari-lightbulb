@@ -69,6 +69,12 @@ class BaseHelpCommand(abc.ABC):
 
     def __init__(self, app: app_.BotApp) -> None:
         self.app = app
+        """The ``BotApp`` instance the help command is registered to."""
+
+    @property
+    def bot(self) -> t.Optional[app_.BotApp]:
+        """Alias for :obj:`~BaseHelpCommand.app`"""
+        return self.app
 
     async def send_help(self, context: context_.base.Context, obj: t.Optional[str]) -> None:
         """

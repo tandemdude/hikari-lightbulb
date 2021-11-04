@@ -98,6 +98,11 @@ class Plugin:
         # so we wait until the instance is injected in order to create the Command instanced
         self.create_commands()
 
+    @property
+    def bot(self) -> t.Optional[app_.BotApp]:
+        """Alias for :obj:`~Plugin.app`"""
+        return self._app
+
     def create_commands(self) -> None:
         """
         Creates the command objects implemented by the :obj:`~.commands.base.CommandLike` objects registered

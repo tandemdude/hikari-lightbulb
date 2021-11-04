@@ -120,6 +120,11 @@ class Context(abc.ABC):
         return self._app
 
     @property
+    def bot(self) -> app_.BotApp:
+        """Alias for :obj:`~Context.app`"""
+        return self.app
+
+    @property
     @abc.abstractmethod
     def event(self) -> t.Union[hikari.MessageCreateEvent, hikari.InteractionCreateEvent]:
         """The event for the context."""

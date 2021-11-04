@@ -176,6 +176,8 @@ class CommandLike:
     """Whether or not to automatically defer the response when the command is invoked."""
     ephemeral: bool = False
     """Whether or not to send responses from this command as ephemeral messages by default."""
+    check_exempt: t.Optional[t.Callable[[context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]]] = None
+    """Check exempt predicate to use for the command."""
 
     def set_error_handler(
         self,
@@ -258,6 +260,7 @@ class Command(abc.ABC):
         "cooldown_manager",
         "auto_defer",
         "default_ephemeral",
+        "check_exempt",
     )
 
     def __init__(self, app: app_.BotApp, initialiser: CommandLike) -> None:
@@ -291,6 +294,8 @@ class Command(abc.ABC):
         """Whether or not to automatically defer the response when the command is invoked."""
         self.default_ephemeral = initialiser.ephemeral
         """Whether or not to send responses from this command as ephemeral messages by default."""
+        self.check_exempt = initialiser.check_exempt or (lambda _: False)
+        """Check exempt predicate to use for the command."""
 
     async def __call__(self, context: context_.base.Context) -> None:
         return await self.callback(context)
@@ -346,6 +351,13 @@ class Command(abc.ABC):
         Evaluate the command's checks under the given context. This method will either return
         ``True`` if all the checks passed or it will raise :obj:`~.errors.CheckFailure`.
         """
+        exempt = self.check_exempt(context)
+        if inspect.iscoroutine(exempt):
+            assert not isinstance(exempt, bool)
+            exempt = await exempt
+        if exempt:
+            return True
+
         failed_checks: t.List[errors.CheckFailure] = []
         for check in [*self.app._checks, *getattr(self.plugin, "_checks", []), *self.checks]:
             try:

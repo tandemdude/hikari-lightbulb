@@ -47,7 +47,7 @@
     - [ ] ~~Message commands~~ (blocked)
     - [ ] ~~User commands~~ (blocked)
 
-- [ ] Checks (Reuse?)
+- [x] Checks (Reuse?)
   - [x] DM Only
   - [x] Guild Only
   - [x] Human Only
@@ -60,7 +60,7 @@
   - [x] (Bot) Has Channel Permissions
   - [x] Has Attachment
   - [x] Custom Checks
-  - [ ] Check Exempt?
+  - [x] Check Exempt?
 
 - [ ] Context
   - [x] Base Class

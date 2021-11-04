@@ -17,7 +17,7 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__ = ["implements", "command", "option", "add_checks", "add_cooldown", "set_help"]
+__all__ = ["implements", "command", "option", "add_checks", "check_exempt", "add_cooldown", "set_help"]
 
 import functools
 import inspect
@@ -139,6 +139,26 @@ def add_checks(*cmd_checks: checks_.Check) -> t.Callable[[commands.base.CommandL
     def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
         new_checks = [*c_like.checks, *cmd_checks]
         c_like.checks = new_checks
+        return c_like
+
+    return decorate
+
+
+def check_exempt(
+    predicate: t.Callable[[context.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]]
+) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
+    """
+    Second order decorator which allows all checks to be bypassed if the ``predicate`` conditions are met.
+    Predicate can be a synchronous or asynchronous function but must take a single argument - ``context`` - and
+    must return  a boolean - ``True`` if checks should be bypassed or ``False`` if not.
+
+    Args:
+        predicate (Callable[[:obj:`~.context.base.Context`], Union[:obj:`bool`, Coroutine[Any, Any, :obj:`bool`]]): The
+            function to call to check if the checks should be bypassed for the given context.
+    """
+
+    def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
+        c_like.check_exempt = predicate
         return c_like
 
     return decorate

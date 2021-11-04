@@ -188,7 +188,11 @@ def add_cooldown(
     """
     getter: t.Callable[[context.base.Context], t.Union[cooldowns.Bucket, t.Coroutine[t.Any, t.Any, cooldowns.Bucket]]]
     if length is not None and uses is not None and bucket is not None:
-        getter = functools.partial(bucket, length, uses)
+
+        def _get_bucket(_: context.base.Context, b: t.Type[cooldowns.Bucket], l: float, u: int) -> cooldowns.Bucket:
+            return b(l, u)
+
+        getter = functools.partial(_get_bucket, b=bucket, l=length, u=uses)
     elif callback is not None:
         getter = callback
     else:

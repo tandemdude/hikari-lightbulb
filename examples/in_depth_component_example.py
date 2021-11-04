@@ -15,10 +15,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-import typing
+import typing as t
 
 import hikari
 import lightbulb
+from lightbulb import commands
 
 from hikari.impl import ActionRowBuilder
 
@@ -28,7 +29,7 @@ from hikari.impl import ActionRowBuilder
 ########################################################################
 
 # Mapping of color names to hex literal and a fact about the color.
-COLORS: typing.Mapping[str, typing.Tuple[int, str]]  = {
+COLORS: t.Mapping[str, t.Tuple[int, str]] = {
     "Red": (
         0xFF0000,
         "Due to it's long wavelength, red is the first color a baby sees!",
@@ -41,10 +42,7 @@ COLORS: typing.Mapping[str, typing.Tuple[int, str]]  = {
         0x0000FF,
         "Globally, blue is the most common favorite color!",
     ),
-    "Orange": (
-        0xFFA500,
-        "The color orange is named after its fruity counterpart, the orange!"
-    ),
+    "Orange": (0xFFA500, "The color orange is named after its fruity counterpart, the orange!"),
     "Purple": (
         0xA020F0,
         "Purple is the hardest color for human eyes to distinguish!",
@@ -53,24 +51,18 @@ COLORS: typing.Mapping[str, typing.Tuple[int, str]]  = {
         0xFFFF00,
         "Taxi's and school buses are yellow because it's so easy to see!",
     ),
-    "Black": (
-        0x000000,
-        "Black is a color which results from the absence of visible light!"
-    ),
-    "White": (
-        0xFFFFFF,
-        "White objects fully reflect and scatter all visible light!"
-    ),
+    "Black": (0x000000, "Black is a color which results from the absence of visible light!"),
+    "White": (0xFFFFFF, "White objects fully reflect and scatter all visible light!"),
 }
 
 
-async def generate_rows(bot: lightbulb.BotApp) -> typing.Iterable[ActionRowBuilder]:
+async def generate_rows(bot: lightbulb.BotApp) -> t.Iterable[ActionRowBuilder]:
     """Generate 2 action rows with 4 buttons each."""
 
     # This will hold our action rows of buttons. The limit
     # imposed by Discord is 5 rows with 5 buttons each. We
     # will not use that many here, however.
-    rows: typing.Iterable[ActionRowBuilder] = []
+    rows: t.List[ActionRowBuilder] = []
 
     # Here we iterate len(COLORS) times.
     for i in range(len(COLORS)):
@@ -196,12 +188,12 @@ bot = lightbulb.BotApp(token="YOUR_TOKEN", prefix="!")
 # Create the message command.
 @bot.command()
 @lightbulb.command("rgb", "Get facts on different colors!", guilds=[1234])
-@lightbulb.implements(lightbulb.commands.PrefixCommand, lightbulb.commands.SlashCommand)
+@lightbulb.implements(commands.PrefixCommand, commands.SlashCommand)
 async def rgb_command(ctx: lightbulb.context.Context) -> None:
     """Get facts on different colors!"""
 
     # Generate the action rows.
-    rows: typing.Iterable[ActionRowBuilder] = await generate_rows(ctx.bot)
+    rows: t.Iterable[ActionRowBuilder] = await generate_rows(ctx.bot)
 
     # Send the initial response with our action rows, and save the
     # message for handling interaction responses.
@@ -210,7 +202,6 @@ async def rgb_command(ctx: lightbulb.context.Context) -> None:
         components=rows,
     )
     message = await response.message()
-
 
     # Handle interaction responses to the initial message.
     await handle_responses(ctx.bot, ctx.author, message)

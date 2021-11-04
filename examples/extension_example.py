@@ -16,17 +16,17 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 import lightbulb
-
+from lightbulb import commands
 
 example_plugin = lightbulb.Plugin("ExamplePlugin")
 
+
 @example_plugin.command()
 @lightbulb.command("ping", "Checks that the bot is alive")
-@lightbulb.implements(lightbulb.commands.PrefixCommand, lightbulb.commands.SlashCommand)
-async def ping(self, ctx):
+@lightbulb.implements(commands.PrefixCommand, commands.SlashCommand)
+async def ping(ctx):
     """Checks that the bot is alive"""
     await ctx.respond("Pong!")
-
 
 
 def load(bot):
@@ -35,4 +35,3 @@ def load(bot):
 
 def unload(bot):
     bot.remove_plugin(example_plugin)
-

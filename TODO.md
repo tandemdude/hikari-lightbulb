@@ -123,7 +123,6 @@
 - [ ] Embed Help Command
 - [x] Default Ephemeral Flags
 - [ ] Reinvoke on edits
-- [ ] Default allowed mentions
 - [x] Broadcast typing on command invocation
 - [x] Default enabled guilds
 - [x] Automatically defer responses

@@ -210,7 +210,7 @@ class Context(abc.ABC):
             ``None``
         """
         if self.command is None:
-            raise TypeError("This context cannot be invoked - no command was resolved.")  # TODO?
+            raise TypeError("This context cannot be invoked - no command was resolved.")
         await self.command.invoke(self)
 
     @abc.abstractmethod

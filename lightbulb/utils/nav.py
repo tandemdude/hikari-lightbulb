@@ -300,8 +300,12 @@ class ReactionNavigator(t.Generic[T]):
                 break
 
     async def _remove_listener(self) -> None:
-        assert self._context is not None and self._msg is not None
+        assert self._context is not None
         self._context.app.unsubscribe(hikari.ReactionAddEvent, self._process_reaction_add)
+
+        if self._msg is None:
+            return
+
         try:
             await self._msg.remove_all_reactions()
         except (hikari.ForbiddenError, hikari.NotFoundError):
@@ -479,9 +483,11 @@ class ButtonNavigator(t.Generic[T]):
                 break
 
     async def _remove_listener(self) -> None:
-        assert self._msg is not None and self._context is not None
+        assert self._context is not None
         self._context.app.unsubscribe(hikari.InteractionCreateEvent, self._process_interaction_create)
-        await self._msg.edit(component=await self.build_buttons(True))
+
+        if self._msg is not None:
+            await self._msg.edit(component=await self.build_buttons(True))
 
     async def _timeout_coro(self) -> None:
         try:

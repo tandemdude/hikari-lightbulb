@@ -771,19 +771,11 @@ class BotApp(hikari.GatewayBot):
             ``None``
         """
         assert self.application is not None
-        commands_to_remove: t.List[hikari.Command] = []
         if global_commands:
-            commands_to_remove.extend(await self.rest.fetch_application_commands(self.application))
+            await self.rest.set_application_commands(self.application, ())
         if guild_ids:
             for guild_id in guild_ids:
-                commands_to_remove.extend(await self.rest.fetch_application_commands(self.application, guild_id))
-
-        for command in commands_to_remove:
-            if command.guild_id is None:
-                _LOGGER.debug("deleting global application command %r", command.name)
-            else:
-                _LOGGER.debug("deleting application command %r from guild %r", command.name, str(command.guild_id))
-            await command.delete()
+                await self.rest.set_application_commands(self.application, (), guild_id)
 
     async def get_prefix_context(
         self,

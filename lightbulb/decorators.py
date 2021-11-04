@@ -19,9 +19,9 @@ from __future__ import annotations
 
 __all__ = ["implements", "command", "option", "add_checks", "add_cooldown", "set_help"]
 
+import functools
 import inspect
 import typing as t
-import functools
 
 import hikari
 

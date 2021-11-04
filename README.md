@@ -1,4 +1,4 @@
-![PyPI](https://img.shields.io/pypi/v/hikari-lightbulb)
+[![PyPI](https://img.shields.io/pypi/v/hikari-lightbulb)](https://pypi.org/project/hikari-lightbulb)
 
 # Lightbulb
 Lightbulb is designed to be an easy to use command handler library that integrates with the 

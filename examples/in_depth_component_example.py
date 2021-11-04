@@ -15,21 +15,20 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-raise NotImplementedError
-
 import typing
 
 import hikari
+import lightbulb
+
 from hikari.impl import ActionRowBuilder
 
-import lightbulb
 
 ########################################################################
 # Helper functions and data.
 ########################################################################
 
 # Mapping of color names to hex literal and a fact about the color.
-COLORS: typing.Mapping[str, typing.Tuple[int, str]] = {
+COLORS: typing.Mapping[str, typing.Tuple[int, str]]  = {
     "Red": (
         0xFF0000,
         "Due to it's long wavelength, red is the first color a baby sees!",
@@ -42,7 +41,10 @@ COLORS: typing.Mapping[str, typing.Tuple[int, str]] = {
         0x0000FF,
         "Globally, blue is the most common favorite color!",
     ),
-    "Orange": (0xFFA500, "The color orange is named after its fruity counterpart, the orange!"),
+    "Orange": (
+        0xFFA500,
+        "The color orange is named after its fruity counterpart, the orange!"
+    ),
     "Purple": (
         0xA020F0,
         "Purple is the hardest color for human eyes to distinguish!",
@@ -51,12 +53,18 @@ COLORS: typing.Mapping[str, typing.Tuple[int, str]] = {
         0xFFFF00,
         "Taxi's and school buses are yellow because it's so easy to see!",
     ),
-    "Black": (0x000000, "Black is a color which results from the absence of visible light!"),
-    "White": (0xFFFFFF, "White objects fully reflect and scatter all visible light!"),
+    "Black": (
+        0x000000,
+        "Black is a color which results from the absence of visible light!"
+    ),
+    "White": (
+        0xFFFFFF,
+        "White objects fully reflect and scatter all visible light!"
+    ),
 }
 
 
-async def generate_rows(bot: lightbulb.Bot) -> typing.Iterable[ActionRowBuilder]:
+async def generate_rows(bot: lightbulb.BotApp) -> typing.Iterable[ActionRowBuilder]:
     """Generate 2 action rows with 4 buttons each."""
 
     # This will hold our action rows of buttons. The limit
@@ -105,7 +113,7 @@ async def generate_rows(bot: lightbulb.Bot) -> typing.Iterable[ActionRowBuilder]
 
 
 async def handle_responses(
-    bot: lightbulb.Bot,
+    bot: lightbulb.BotApp,
     author: hikari.User,
     message: hikari.Message,
 ) -> None:
@@ -182,12 +190,14 @@ async def handle_responses(
 
 
 # Instantiate the bot.
-bot = lightbulb.Bot(token="YOUR_TOKEN", prefix="!")
+bot = lightbulb.BotApp(token="YOUR_TOKEN", prefix="!")
 
 
 # Create the message command.
-@bot.command(name="rgb")
-async def rgb_command(ctx: lightbulb.Context) -> None:
+@bot.command()
+@lightbulb.command("rgb", "Get facts on different colors!", guilds=[1234])
+@lightbulb.implements(lightbulb.commands.PrefixCommand, lightbulb.commands.SlashCommand)
+async def rgb_command(ctx: lightbulb.context.Context) -> None:
     """Get facts on different colors!"""
 
     # Generate the action rows.
@@ -195,49 +205,15 @@ async def rgb_command(ctx: lightbulb.Context) -> None:
 
     # Send the initial response with our action rows, and save the
     # message for handling interaction responses.
-    message = await ctx.respond(
+    response = await ctx.respond(
         hikari.Embed(title="Pick a color"),
         components=rows,
-        reply=True,
     )
+    message = await response.message()
+
 
     # Handle interaction responses to the initial message.
     await handle_responses(ctx.bot, ctx.author, message)
-
-
-# Create the slash command.
-class Rgb(lightbulb.slash_commands.SlashCommand):
-    # The command description.
-    description: str = "Get facts on different colors!"
-    # Pass a sequence of guild id's here for testing, but remove them to
-    # make the command global. Takes 1 hr to propagate global commands.
-    # This is a discord limitation.
-    enabled_guilds: typing.Iterable[int] = [1234]
-
-    async def callback(self, ctx: lightbulb.slash_commands.SlashCommandContext) -> None:
-        # Generate the action rows.
-        rows: typing.Iterable[ActionRowBuilder] = await generate_rows(ctx.bot)
-
-        # Send the initial response with our action rows. This does
-        # not return a message however. This is due to using a slash
-        # command context, and not a regular message context.
-        await ctx.respond(
-            hikari.Embed(title="Pick a color"),
-            components=rows,
-        )
-
-        # Handle interaction responses to the initial message.
-        await handle_responses(
-            ctx.bot,
-            ctx.author,
-            # Because we dont have the initial response message yet,
-            # we fetch it here in order to pass it to the function.
-            await ctx.interaction.fetch_initial_response(),
-        )
-
-
-# Add the slash command to the bot.
-bot.add_slash_command(Rgb)
 
 
 # Run the bot.

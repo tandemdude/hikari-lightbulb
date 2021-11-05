@@ -32,6 +32,12 @@ You should at least have a basic understanding of:
 
 For an example slash command, see the `examples directory <https://github.com/tandemdude/hikari-lightbulb/tree/v2/examples>`_
 
+.. warning::
+    Note that by default, application commands will be **global** unless you specify a set of guilds that they should
+    be created in using ``BotApp.default_enabled_guilds`` or by passing a set of guilds into the ``@lightbulb.command``
+    decorator. Global commands **will** take up to one hour to sync to discord, so it is reccommended that you use
+    guild-specific commands during development and testing.
+
 ----
 
 Creating a Basic Slash Command

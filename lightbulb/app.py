@@ -30,6 +30,7 @@ import typing as t
 
 import hikari
 from hikari.internal import ux
+from multidict import CIMultiDict
 
 from lightbulb import checks
 from lightbulb import commands
@@ -158,6 +159,10 @@ class BotApp(hikari.GatewayBot):
             to the bot by default.
         help_slash_command (:obj:`bool`): Whether or not the help command should be implemented as a slash command
             as well as a prefix command. Defaults to ``False``.
+        delete_unbound_commands (:obj:`bool`): Whether or not the bot should delete application commands that it cannot
+            find an implementation for when the bot starts. Defaults to ``True``.
+        case_insensitive_prefix_commands (:obj:`bool`): Whether or not prefix command names should be case-insensitive.
+            Defaults to ``False``.
         **kwargs (Any): Additional keyword arguments passed to the constructor of the :obj:`~hikari.impl.bot.GatewayBot`
             class.
     """
@@ -179,6 +184,7 @@ class BotApp(hikari.GatewayBot):
         "default_enabled_guilds",
         "_help_command",
         "_delete_unbound_commands",
+        "_case_insensitive_prefix_commands",
     )
 
     def __init__(
@@ -191,6 +197,7 @@ class BotApp(hikari.GatewayBot):
         help_class: t.Optional[t.Type[help_command_.BaseHelpCommand]] = help_command_.DefaultHelpCommand,
         help_slash_command: bool = False,
         delete_unbound_commands: bool = True,
+        case_insensitive_prefix_commands: bool = False,
         **kwargs: t.Any,
     ) -> None:
         super().__init__(token, **kwargs)
@@ -207,6 +214,7 @@ class BotApp(hikari.GatewayBot):
             ] = prefix
 
         self._delete_unbound_commands = delete_unbound_commands
+        self._case_insensitive_prefix_commands = case_insensitive_prefix_commands
 
         self.ignore_bots = ignore_bots
         """Whether or not other bots will be ignored when invoking prefix commands."""
@@ -227,7 +235,9 @@ class BotApp(hikari.GatewayBot):
         """A list of the currently loaded extensions."""
         self._current_extension: t.Optional[_ExtensionT] = None
 
-        self._prefix_commands: t.MutableMapping[str, commands.prefix.PrefixCommand] = {}
+        self._prefix_commands: t.MutableMapping[str, commands.prefix.PrefixCommand] = (
+            {} if not case_insensitive_prefix_commands else CIMultiDict()  # type: ignore
+        )
         self._slash_commands: t.MutableMapping[str, commands.slash.SlashCommand] = {}
         self._message_commands: t.MutableMapping[str, commands.message.MessageCommand] = {}
         self._user_commands: t.MutableMapping[str, commands.user.UserCommand] = {}

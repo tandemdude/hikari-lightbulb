@@ -22,6 +22,8 @@ __all__ = ["PrefixCommand", "PrefixSubCommand", "PrefixSubGroup", "PrefixCommand
 import abc
 import typing as t
 
+from multidict import CIMultiDict
+
 from lightbulb import context as context_
 from lightbulb import errors
 from lightbulb.commands import base
@@ -33,7 +35,7 @@ if t.TYPE_CHECKING:
 class PrefixGroupMixin(abc.ABC):
     __slots__ = ()
     name: str
-    _subcommands: t.Dict[str, t.Union[PrefixSubGroup, PrefixSubCommand]]
+    _subcommands: t.MutableMapping[str, t.Union[PrefixSubGroup, PrefixSubCommand]]
 
     def maybe_resolve_subcommand(
         self, arg_string: str
@@ -122,7 +124,7 @@ class PrefixSubGroup(PrefixCommand, PrefixGroupMixin, base.SubCommandTrait):
         super().__init__(app, initialiser)
         self._raw_subcommands = initialiser.subcommands
         initialiser.subcommands = base._SubcommandListProxy(initialiser.subcommands, parent=self)  # type: ignore
-        self._subcommands = {}
+        self._subcommands = {} if not app._case_insensitive_prefix_commands else CIMultiDict()  # type: ignore
         self.create_subcommands(self._raw_subcommands, app)
 
     @property
@@ -153,7 +155,7 @@ class PrefixCommandGroup(PrefixCommand, PrefixGroupMixin):
         super().__init__(app, initialiser)
         self._raw_subcommands = initialiser.subcommands
         initialiser.subcommands = base._SubcommandListProxy(initialiser.subcommands, parent=self)  # type: ignore
-        self._subcommands = {}
+        self._subcommands = {} if not app._case_insensitive_prefix_commands else CIMultiDict()  # type: ignore
         self.create_subcommands(self._raw_subcommands, app)
 
     async def invoke(self, context: context_.base.Context) -> None:

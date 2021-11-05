@@ -161,6 +161,10 @@ Lightbulb provides the :obj:`lightbulb.decorators.option` decorator for this pur
 Converters and Slash Command Option Types
 =========================================
 
+Below is a list of all the acceptable types that you can pass into the ``type`` argument of the ``option`` decorator. On
+the left is the type to pass in, the right side is the converter that the type is mapped to, or for slash commands,
+the hikari ``OptionType`` that the type is mapped to.
+
 **Prefix command converter mapping:**
 
 Acceptable primitives: ``str``, ``int``, ``float``

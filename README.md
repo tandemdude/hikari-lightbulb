@@ -17,11 +17,14 @@ pip install hikari-lightbulb
 ## Usage
 ```python
 import lightbulb
+from lightbulb import commands
 
-bot = lightbulb.Bot(token="your_token_here", prefix="!")
+bot = lightbulb.BotApp(token="your_token_here", prefix="!")
 
 
-@bot.command()
+@bot.command
+@lightbulb.command("ping", "checks that the bot is alive")
+@lightbulb.implements(commands.PrefixCommand)
 async def ping(ctx):
     await ctx.respond("Pong!")
 

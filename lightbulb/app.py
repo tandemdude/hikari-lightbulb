@@ -39,7 +39,7 @@ from lightbulb import errors
 from lightbulb import events
 from lightbulb import help_command as help_command_
 from lightbulb import internal
-from lightbulb import plugins
+from lightbulb import plugins as plugins_
 from lightbulb.utils import data_store
 from lightbulb.utils import parser
 
@@ -232,7 +232,7 @@ class BotApp(hikari.GatewayBot):
         self._message_commands: t.MutableMapping[str, commands.message.MessageCommand] = {}
         self._user_commands: t.MutableMapping[str, commands.user.UserCommand] = {}
 
-        self._plugins: t.MutableMapping[str, plugins.Plugin] = {}
+        self._plugins: t.MutableMapping[str, plugins_.Plugin] = {}
 
         self._checks: t.List[checks.Check] = []
 
@@ -268,6 +268,31 @@ class BotApp(hikari.GatewayBot):
     @help_command.setter
     def help_command(self, val: help_command_.BaseHelpCommand) -> None:
         self._help_command = val
+
+    @property
+    def prefix_commands(self) -> t.MutableMapping[str, commands.prefix.PrefixCommand]:
+        """Mapping of command name to command object containing all prefix commands registered to the bot."""
+        return self._prefix_commands
+
+    @property
+    def slash_commands(self) -> t.MutableMapping[str, commands.slash.SlashCommand]:
+        """Mapping of command name to command object containing all slash commands registered to the bot."""
+        return self._slash_commands
+
+    @property
+    def message_commands(self) -> t.MutableMapping[str, commands.message.MessageCommand]:
+        """Mapping of command name to command object containing all message commands registered to the bot."""
+        return self._message_commands
+
+    @property
+    def user_commands(self) -> t.MutableMapping[str, commands.user.UserCommand]:
+        """Mapping of command name to command object containing all user commands registered to the bot."""
+        return self._user_commands
+
+    @property
+    def plugins(self) -> t.MutableMapping[str, plugins_.Plugin]:
+        """Mapping of plugin name to plugin object containing all plugins registered to the bot."""
+        return self._plugins
 
     def _add_command_to_correct_attr(self, command: commands.base.Command) -> None:
         if isinstance(command, commands.prefix.PrefixCommand):
@@ -710,7 +735,7 @@ class BotApp(hikari.GatewayBot):
         for command in filter(None, commands_to_remove):
             self.remove_command(command)
 
-    def get_plugin(self, name: str) -> t.Optional[plugins.Plugin]:
+    def get_plugin(self, name: str) -> t.Optional[plugins_.Plugin]:
         """
         Gets the plugin with the given name, or ``None`` if no plugin with that name was found.
 
@@ -722,7 +747,7 @@ class BotApp(hikari.GatewayBot):
         """
         return self._plugins.get(name)
 
-    def add_plugin(self, plugin: plugins.Plugin) -> None:
+    def add_plugin(self, plugin: plugins_.Plugin) -> None:
         """
         Registers a plugin to the bot, adding all commands and listeners present
         in the plugin.
@@ -741,7 +766,7 @@ class BotApp(hikari.GatewayBot):
                 self.subscribe(event, listener)
         self._plugins[plugin.name] = plugin
 
-    def remove_plugin(self, plugin_or_name: t.Union[plugins.Plugin, str]) -> None:
+    def remove_plugin(self, plugin_or_name: t.Union[plugins_.Plugin, str]) -> None:
         """
         Unregisters a plugin from the bot, removing all commands and listeners
         present in the plugin.
@@ -753,7 +778,7 @@ class BotApp(hikari.GatewayBot):
         Returns:
             ``None``
         """
-        plugin: t.Optional[t.Union[plugins.Plugin, str]] = plugin_or_name
+        plugin: t.Optional[t.Union[plugins_.Plugin, str]] = plugin_or_name
         if isinstance(plugin, str):
             plugin = self.get_plugin(plugin)
 

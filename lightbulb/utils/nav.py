@@ -195,7 +195,8 @@ async def stop(nav: t.Union[ReactionNavigator[T], ButtonNavigator[T]], _: hikari
     assert nav._msg is not None
     await nav._remove_listener()
     await nav._msg.delete()
-    nav._msg = None
+    if nav._timeout_task is not None:
+        nav._timeout_task.cancel()
 
 
 class ReactionNavigator(t.Generic[T]):

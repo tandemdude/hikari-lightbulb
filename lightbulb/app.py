@@ -24,6 +24,7 @@ import importlib
 import inspect
 import logging
 import pathlib
+import re
 import sys
 import typing as t
 
@@ -43,6 +44,9 @@ from lightbulb.utils import data_store
 from lightbulb.utils import parser
 
 _LOGGER = logging.getLogger("lightbulb.app")
+_APPLICATION_CMD_ERROR_REGEX: re.Pattern[str] = re.compile(
+    r"https?://discord.com/api/v\d+/applications/\d+/guilds/(\d+)/commands"
+)
 
 _PrefixT = t.Union[
     t.Sequence[str],
@@ -298,7 +302,15 @@ class BotApp(hikari.GatewayBot):
         if self.application is None:
             self.application = await self.rest.fetch_application()
 
-        await internal.manage_application_commands(self)
+        try:
+            await internal.manage_application_commands(self)
+        except hikari.ForbiddenError as exc:
+            error_msg = str(exc)
+            match = _APPLICATION_CMD_ERROR_REGEX.search(error_msg)
+            guild_id = "unknown" if match is None else match.group(1)
+            raise errors.ApplicationCommandCreationFailed(
+                f"Application command creation failed for guild {guild_id!r}. Is your bot in the guild and was it invited with the 'application.commands' scope?"
+            ) from exc
 
     @staticmethod
     def _get_events_for_application_command(

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 __all__ = [
     "LightbulbError",
+    "ApplicationCommandCreationFailed",
     "CommandNotFound",
     "CommandInvocationError",
     "CommandIsOnCooldown",
@@ -57,6 +58,10 @@ class LightbulbError(Exception):
     Base lightbulb exception class. All errors raised by lightbulb will be a subclass
     of this exception.
     """
+
+
+class ApplicationCommandCreationFailed(LightbulbError):
+    """Exception raised when initialisation of application commands fails."""
 
 
 class ExtensionNotFound(LightbulbError):

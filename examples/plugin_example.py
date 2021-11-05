@@ -25,7 +25,7 @@ plugin = lightbulb.Plugin("Example Plugin")
 
 
 @plugin.command()
-@lightbulb.option("text", "Text to repeat")
+@lightbulb.option("text", "Text to repeat", modifier=commands.OptionModifier.CONSUME_REST)
 @lightbulb.command("echo", "Repeats the user's input")
 @lightbulb.implements(commands.PrefixCommand)
 async def echo(ctx):

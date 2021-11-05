@@ -45,7 +45,7 @@ class PrefixContext(base.Context):
         prefix (:obj:`str`): The prefix that was used in this context.
     """
 
-    __slots__ = ("_parser", "_event", "_command", "_invoked_with", "_prefix", "_options")
+    __slots__ = ("_parser", "_event", "_command", "_invoked_with", "_prefix", "_options", "_defer_task")
 
     def __init__(
         self,
@@ -63,12 +63,13 @@ class PrefixContext(base.Context):
         self._options: t.Dict[str, t.Any] = {}
         self._parser: parser.BaseParser
 
+        self._defer_task: t.Optional[asyncio.Task[None]] = None
         if self._command is not None and self._command.auto_defer:
 
             async def _defer() -> None:
                 await self.app.rest.trigger_typing(self.channel_id)
 
-            asyncio.create_task(_defer())
+            self._defer_task = asyncio.create_task(_defer())
 
     @property
     def event(self) -> hikari.MessageCreateEvent:
@@ -128,6 +129,10 @@ class PrefixContext(base.Context):
         Returns:
             :obj:`~hikari.messages.Message`: The created message object.
         """
+        if self._defer_task is not None:
+            await self._defer_task
+            self._defer_task = None
+
         kwargs.pop("flags", None)
         kwargs.pop("response_type", None)
 

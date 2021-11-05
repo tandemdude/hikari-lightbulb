@@ -277,7 +277,7 @@ class Context(abc.ABC):
 
 
 class ApplicationContext(Context, abc.ABC):
-    __slots__ = ("_event", "_interaction", "_command")
+    __slots__ = ("_event", "_interaction", "_command", "_defer_task")
 
     def __init__(
         self, app: app_.BotApp, event: hikari.InteractionCreateEvent, command: commands.base.ApplicationCommand
@@ -288,8 +288,11 @@ class ApplicationContext(Context, abc.ABC):
         self._interaction: hikari.CommandInteraction = event.interaction
         self._command = command
 
+        self._defer_task: t.Optional[asyncio.Task[ResponseProxy]] = None
         if self._command.auto_defer:
-            asyncio.create_task(self.respond(hikari.ResponseType.DEFERRED_MESSAGE_CREATE))
+            self._defer_task = asyncio.create_task(
+                self.respond(hikari.ResponseType.DEFERRED_MESSAGE_CREATE, wait_for_task=False)
+            )
 
     @property
     @abc.abstractmethod
@@ -361,6 +364,10 @@ class ApplicationContext(Context, abc.ABC):
         Returns:
             :obj:`~ResponseProxy`: Proxy wrapping the response of the ``respond`` call.
         """
+        if self._defer_task is not None and kwargs.pop("wait_for_task", True):
+            await self._defer_task
+            self._defer_task = None
+
         kwargs.pop("reply", None)
         kwargs.pop("mentions_reply", None)
         kwargs.pop("nonce", None)

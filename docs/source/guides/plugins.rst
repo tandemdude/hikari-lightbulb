@@ -23,7 +23,7 @@ To use plugins, you must first create a ``Plugin`` object and give it a name of 
 
 When you instantiate a plugin object, you can also include an option keyword argument ``include_datastore``. When ``True``
 this will create an instance of the :obj:`lightbulb.utils.data_store.DataStore` object inside the plugin, accessible through
-`Plugin.d` that you can use to store any state that you may want. If ``False``, ``Plugin.d`` will be ``None``.
+:obj:`lightbulb.plugins.Plugin.d` that you can use to store any state that you may want. If ``False``, ``Plugin.d`` will be ``None``.
 
 ----
 

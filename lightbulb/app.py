@@ -32,6 +32,7 @@ import hikari
 from hikari.internal import ux
 from multidict import CIMultiDict
 
+import lightbulb
 from lightbulb import checks
 from lightbulb import commands
 from lightbulb import context as context_
@@ -572,6 +573,9 @@ class BotApp(hikari.GatewayBot):
 
         if not handled:
             if self.get_listeners(type(event), polymorphic=True):
+                await self.dispatch(event)
+                handled = True
+            elif self.get_listeners(lightbulb.CommandErrorEvent, polymorphic=True):
                 await self.dispatch(event)
                 handled = True
 

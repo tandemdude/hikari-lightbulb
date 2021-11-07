@@ -110,7 +110,7 @@ def when_mentioned_or(
                 # Do something to get the prefixes
                 return prefixes
 
-            app = lightbulb.Bot(prefix=lightbulb.when_mentioned_or(get_prefix), ...)
+            app = lightbulb.BotApp(prefix=lightbulb.when_mentioned_or(get_prefix), ...)
     """
 
     async def get_prefixes(app: BotApp, message: hikari.Message) -> t.Sequence[str]:

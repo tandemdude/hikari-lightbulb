@@ -45,9 +45,10 @@ Your first bot can be written in just a few lines of code:
 When this code is run, you will get some logging information and a Hikari banner printed across your
 terminal. The bot will be online and you can test out the command!
 
-You should note that the order that the decorators are applied is rather important. The ``lightbulb.implements``
-decorator should **always** be on the bottom of the stack, followed by the ``lightbulb.command`` decorator on top
-of it. The ``bot.command`` decorator **must** always be on the top of the stack if you are using it.
+.. note::
+    You should note that the order that the decorators are applied is rather important. The ``lightbulb.implements``
+    decorator should **always** be on the bottom of the stack, followed by the ``lightbulb.command`` decorator on top
+    of it. The ``bot.command`` decorator **must** always be on the top of the stack if you are using it.
 
 Optional: Setting up logging
 ============================

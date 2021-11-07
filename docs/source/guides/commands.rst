@@ -6,6 +6,11 @@ You're using a command handler library so naturally you'll probably be wanting t
 
 If you haven't made your first command yet, it is recommended that you read the :ref:`getting-started` page before continuing.
 
+.. note::
+    You should note that the order that the decorators are applied is rather important. The ``lightbulb.implements``
+    decorator should **always** be on the bottom of the stack, followed by the ``lightbulb.command`` decorator on top
+    of it. The ``bot.command`` decorator **must** always be on the top of the stack if you are using it.
+
 ----
 
 The Implements Decorator

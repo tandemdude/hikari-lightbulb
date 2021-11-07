@@ -24,7 +24,7 @@ When handling errors, lightbulb will try to find and then call error handlers in
 
 - Command-specific error handler (see :obj:`lightbulb.commands.base.Command.set_error_handler`)
 
-- Plugin-specific error handler (see :obj:`lightbulb.plugins.Plugin.error_handler`)
+- Plugin-specific error handler (see :obj:`lightbulb.plugins.Plugin.set_error_handler`)
 
 - Global error handler
 

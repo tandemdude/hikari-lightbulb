@@ -14,6 +14,9 @@
 .. |b9| image:: https://img.shields.io/pypi/status/hikari-lightbulb
 .. |b10| image:: https://img.shields.io/badge/mypy-checked-black
 
+Lightbulb
+=========
+
 |b1| |b10|
 
 |b2| |b3| |b7| |b8|
@@ -21,9 +24,6 @@
 |b4| |b5| |b6| |b9|
 
 ----
-
-Lightbulb
-=========
 
 Lightbulb is a command handler library designed for use with `Hikari <https://github.com/hikari-py/hikari>`_
 

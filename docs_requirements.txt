@@ -1,3 +1,2 @@
-sphinx_rtd_theme==0.5.2
+furo~=2021.9.8
 sphinx==4.2.0
-sphinx_rtd_dark_mode==1.2.4

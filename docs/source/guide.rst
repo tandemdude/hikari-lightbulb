@@ -15,5 +15,6 @@ If you feel like any feature is unclear then either make a pull request to add a
    guides/command-groups
    guides/commands
    guides/custom-help
+   guides/error-handling
    guides/extensions
    guides/plugins

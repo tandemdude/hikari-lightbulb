@@ -179,7 +179,7 @@ class Plugin:
 
         return decorate
 
-    def error_handler(
+    def set_error_handler(
         self,
         func: t.Optional[t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]] = None,
         bind: bool = False,

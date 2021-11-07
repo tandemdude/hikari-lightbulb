@@ -103,7 +103,7 @@ Plugin Error Handling
 =====================
 
 You can register a separate error handler function for all the commands within a given plugin using the supplied
-:obj:`lightbulb.plugins.Plugin.error_handler` method. This method can be used as a second order decorator or called
+:obj:`lightbulb.plugins.Plugin.set_error_handler` method. This method can be used as a second order decorator or called
 as a normal function with the function to set the plugin's error handler to. As with the ``listener`` and ``remove_hook``
 methods, you can provide a ``bind`` kwarg to define whether or not the function should be bound to the plugin.
 
@@ -114,12 +114,12 @@ methods, you can provide a ``bind`` kwarg to define whether or not the function 
     plugin = lightbulb.Plugin("ExamplePlugin")
 
     # valid
-    @plugin.error_handler()
+    @plugin.set_error_handler()
     async def foo(...):
         ...
 
     # also valid
-    plugin.error_handler(foo)
+    plugin.set_error_handler(foo)
 
 ----
 

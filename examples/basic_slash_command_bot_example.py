@@ -54,4 +54,6 @@ class Echo(lightbulb.slash_commands.SlashCommand):
 
 
 bot.add_slash_command(Ping)
+bot.add_slash_command(Echo)
 bot.run()
+

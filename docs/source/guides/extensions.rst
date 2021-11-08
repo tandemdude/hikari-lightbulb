@@ -45,7 +45,7 @@ that the extension is being loaded into.
 
 
 .. seealso::
-    The `example extension <https://github.com/tandemdude/hikari-lightbulb/blob/v2/examples/extension_example.py>`_
+    The `example extension <https://github.com/tandemdude/hikari-lightbulb/blob/development/examples/extension_example.py>`_
 
 ----
 

@@ -404,7 +404,7 @@ class BotApp(hikari.GatewayBot):
         else:
             ext.load(self)
             self.extensions.append(extension)
-            _LOGGER.debug("Extension loaded %r", extension)
+            _LOGGER.info("Extension loaded %r", extension)
         self._current_extension = None
 
     def unload_extensions(self, *extensions: str) -> None:
@@ -447,7 +447,7 @@ class BotApp(hikari.GatewayBot):
             ext.unload(self)
             self.extensions.remove(extension)
             del sys.modules[extension]
-            _LOGGER.debug("Extension unloaded %r", extension)
+            _LOGGER.info("Extension unloaded %r", extension)
         self._current_extension = None
 
     def reload_extensions(self, *extensions: str) -> None:
@@ -468,7 +468,6 @@ class BotApp(hikari.GatewayBot):
             return
         extension = extensions[0]
 
-        _LOGGER.debug("Reloading extension %r", extension)
         old = sys.modules[extension]
         try:
             self.unload_extensions(extension)
@@ -693,6 +692,7 @@ class BotApp(hikari.GatewayBot):
             commands_to_impl: t.Sequence[t.Type[commands.base.Command]] = getattr(
                 cmd_like.callback, "__cmd_types__", []
             )
+            _LOGGER.debug("Registering command. Requested types are: %s", ",".join(c.__name__ for c in commands_to_impl))
             for command_cls in commands_to_impl:
                 cmd = command_cls(self, cmd_like)
 
@@ -719,6 +719,7 @@ class BotApp(hikari.GatewayBot):
         Returns:
             ``None``
         """
+        _LOGGER.debug("Removing command %r (%s)", command.name, command.__class__.__name__)
         if isinstance(command, commands.base.CommandLike):
             self._remove_commandlike(command)
             return
@@ -778,6 +779,7 @@ class BotApp(hikari.GatewayBot):
         for event, listeners in plugin._listeners.items():
             for listener in listeners:
                 self.subscribe(event, listener)
+        _LOGGER.debug("Plugin registered %r", plugin.name)
         self._plugins[plugin.name] = plugin
 
     def remove_plugin(self, plugin_or_name: t.Union[plugins_.Plugin, str]) -> None:
@@ -804,6 +806,7 @@ class BotApp(hikari.GatewayBot):
         for event, listeners in plugin._listeners.items():
             for listener in listeners:
                 self.unsubscribe(event, listener)
+        _LOGGER.debug("Plugin removed %r", plugin.name)
 
     async def purge_application_commands(self, *guild_ids: hikari.Snowflakeish, global_commands: bool = False) -> None:
         """

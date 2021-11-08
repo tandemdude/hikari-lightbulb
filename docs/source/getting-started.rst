@@ -34,7 +34,7 @@ Your first bot can be written in just a few lines of code:
     @lightbulb.implements(commands.PrefixCommand)
     # Define the command's callback. The callback should take a single argument which will be
     # an instance of a subclass of lightbulb.Context when passed in
-    async def ping(ctx: lightbulb.Context) -> None:
+    async def ping(ctx: lightbulb.context.Context) -> None:
         # Send a message to the channel the command was used in
         await ctx.respond("Pong!")
 

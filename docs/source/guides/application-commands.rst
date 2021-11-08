@@ -72,7 +72,7 @@ Adding options to slash commands is also identical to how you add options to pre
     bot = lightbulb.BotApp(...)
 
     @bot.command
-    @lightbulb.option("text", "text to repeat
+    @lightbulb.option("text", "text to repeat")
     @lightbulb.command("echo", "repeats the given text")
     @lightbulb.implements(commands.SlashCommand)
     async def echo(ctx):

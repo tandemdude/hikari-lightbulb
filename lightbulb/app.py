@@ -575,7 +575,7 @@ class BotApp(hikari.GatewayBot):
             if self.get_listeners(type(event), polymorphic=True):
                 await self.dispatch(event)
                 handled = True
-            elif self.get_listeners(lightbulb.CommandErrorEvent, polymorphic=True):
+            elif self.get_listeners(events.CommandErrorEvent, polymorphic=True):
                 await self.dispatch(event)
                 handled = True
 

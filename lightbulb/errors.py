@@ -227,6 +227,11 @@ class MissingRequiredRole(CheckFailure):
 
 
 class MissingRequiredPermission(CheckFailure):
+    """
+    Error raised when the member invoking a command is missing one or more of the required permissions
+    in order to be able to run the command.
+    """
+
     def __init__(self, *args: t.Any, perms: hikari.Permissions) -> None:
         super().__init__(*args)
         self.missing_perms = perms
@@ -234,6 +239,11 @@ class MissingRequiredPermission(CheckFailure):
 
 
 class BotMissingRequiredPermission(CheckFailure):
+    """
+    Error raised when the bot is missing one or more of the required permissions
+    in order to be able to run the command.
+    """
+
     def __init__(self, *args: t.Any, perms: hikari.Permissions) -> None:
         super().__init__(*args)
         self.missing_perms = perms
@@ -241,4 +251,6 @@ class BotMissingRequiredPermission(CheckFailure):
 
 
 class MissingRequiredAttachment(CheckFailure):
-    pass
+    """
+    Error raised when an attachment is required for the command but none were supplied with the invocation.
+    """

@@ -692,7 +692,9 @@ class BotApp(hikari.GatewayBot):
             commands_to_impl: t.Sequence[t.Type[commands.base.Command]] = getattr(
                 cmd_like.callback, "__cmd_types__", []
             )
-            _LOGGER.debug("Registering command. Requested types are: %s", ",".join(c.__name__ for c in commands_to_impl))
+            _LOGGER.debug(
+                "Registering command. Requested types are: %s", ",".join(c.__name__ for c in commands_to_impl)
+            )
             for command_cls in commands_to_impl:
                 cmd = command_cls(self, cmd_like)
 

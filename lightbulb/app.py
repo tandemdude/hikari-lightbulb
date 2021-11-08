@@ -155,6 +155,8 @@ class BotApp(hikari.GatewayBot):
             to ``True``.
         owner_ids (Sequence[int]): The IDs of the users that own the bot. If not provided then it will be fetched
             by :obj:`~BotApp.fetch_owner_ids`.
+        default_enabled_guilds (Union[:obj:`int`, Sequence[:obj:`int`]]): The guild(s) to create application commands
+            in by default if no guilds are specified per-command. Defaults to an empty tuple.
         help_class (Optional[Type[:obj:`~.help_command.BaseHelpCommand`]]): Class to use for the bot's help command.
             Defaults to :obj:`~.help_command.DefaultHelpCommand`. If ``None``, no help command will be added
             to the bot by default.

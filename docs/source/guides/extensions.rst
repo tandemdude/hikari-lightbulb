@@ -46,3 +46,46 @@ that the extension is being loaded into.
 
 .. seealso::
     The `example extension <https://github.com/tandemdude/hikari-lightbulb/blob/v2/examples/extension_example.py>`_
+
+----
+
+Loading Extensions
+==================
+
+After you have created an extension, you need to load it into the bot so that all the commands and/or plugins get
+registered. The :obj:`lightbulb.app.BotApp` class provides three relevant methods to help with this:
+
+- :obj:`lightbulb.app.BotApp.load_extensions`
+
+- :obj:`lightbulb.app.BotApp.load_extensions_from`
+
+- :obj:`lightbulb.app.BotApp.unload_extensions`
+
+- :obj:`lightbulb.app.BotApp.reload_extensions`
+
+In the example below we will be making use of :obj:`lightbulb.app.BotApp.load_extensions`.
+
+Example file structure:
+
+.. code-block::
+
+    example_project/
+    ├─ extensions/
+    │  ├─ __init__.py
+    │  ├─ extension.py
+    ├─ bot.py
+
+To load the extension ``extension.py`` from the main ``bot.py`` file, you would call ``BotApp.load_extensions`` with the
+argument ``"extensions.extension"`` (the import path for that module).
+
+An example ``bot.py`` file can be seen below:
+
+.. code-block:: python
+
+    import lightbulb
+
+    bot = lightbulb.BotApp(...)
+
+    bot.load_extensions("extensions.extension")
+
+    bot.run()

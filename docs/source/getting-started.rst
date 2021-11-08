@@ -21,6 +21,7 @@ Your first bot can be written in just a few lines of code:
 
     # Import the command handler
     import lightbulb
+    from lightbulb import commands
 
     # Instantiate a Bot instance
     bot = lightbulb.BotApp(token="your_token_here", prefix="your_prefix_here")
@@ -30,7 +31,7 @@ Your first bot can be written in just a few lines of code:
     # Use the command decorator to convert the function into a command
     @lightbulb.command("ping", "checks the bot is alive")
     # Define the command type(s) that this command implements
-    @lightbulb.implements(lightbulb.PrefixCommand)
+    @lightbulb.implements(commands.PrefixCommand)
     # Define the command's callback. The callback should take a single argument which will be
     # an instance of a subclass of lightbulb.Context when passed in
     async def ping(ctx: lightbulb.Context) -> None:

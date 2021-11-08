@@ -87,6 +87,8 @@ command types that can be created.
   This will not affect prefix commands as responses from prefix commands **cannot** be ephemeral. This can be overriden
   by supplying the kwarg ``flags=hikari.MessageFlags.NONE`` to your call to the ``respond`` method.
 
+- ``hidden`` (optional) - Whether or not to hide the command from the help command. Defaults to ``False``.
+
 **For example:**
 
 .. code-block:: python

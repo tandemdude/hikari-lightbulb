@@ -178,6 +178,8 @@ class CommandLike:
     """Whether or not to send responses from this command as ephemeral messages by default."""
     check_exempt: t.Optional[t.Callable[[context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]]] = None
     """Check exempt predicate to use for the command."""
+    hidden: bool = False
+    """Whether or not the command should be hidden from the help command."""
 
     def set_error_handler(
         self,
@@ -261,6 +263,7 @@ class Command(abc.ABC):
         "auto_defer",
         "default_ephemeral",
         "check_exempt",
+        "hidden",
     )
 
     def __init__(self, app: app_.BotApp, initialiser: CommandLike) -> None:
@@ -296,6 +299,8 @@ class Command(abc.ABC):
         """Whether or not to send responses from this command as ephemeral messages by default."""
         self.check_exempt = initialiser.check_exempt or (lambda _: False)
         """Check exempt predicate to use for the command."""
+        self.hidden = initialiser.hidden
+        """Whether or not the command should be hidden from the help command."""
 
     async def __call__(self, context: context_.base.Context) -> None:
         return await self.callback(context)

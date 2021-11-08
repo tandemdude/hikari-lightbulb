@@ -38,7 +38,8 @@ async def filter_commands(
 ) -> t.Sequence[commands.base.Command]:
     """
     Evaluates the checks for each command provided, removing any that the checks fail for. This effectively
-    removes any commands from the given collection that could not be invoked under the given context.
+    removes any commands from the given collection that could not be invoked under the given context. This will
+    also remove any commands with the ``hidden`` attribute set to ``True``.
 
     Args:
         cmds (Sequence[:obj:`~.commands.base.Command`]): Commands to filter.
@@ -49,6 +50,8 @@ async def filter_commands(
     """
     new_cmds = []
     for cmd in cmds:
+        if cmd.hidden:
+            continue
         try:
             await cmd.evaluate_checks(context)
         except errors.CheckFailure:
@@ -100,25 +103,25 @@ class BaseHelpCommand(abc.ABC):
             return
 
         p_cmd = self.app.get_prefix_command(obj)
-        if p_cmd is not None:
+        if p_cmd is not None and not p_cmd.hidden:
             if isinstance(p_cmd, (commands.prefix.PrefixCommandGroup, commands.prefix.PrefixSubGroup)):
                 await self.send_group_help(context, p_cmd)
                 return
             await self.send_command_help(context, p_cmd)
             return
         s_cmd = self.app.get_slash_command(obj)
-        if s_cmd is not None:
+        if s_cmd is not None and not s_cmd.hidden:
             if isinstance(s_cmd, (commands.slash.SlashCommandGroup, commands.slash.SlashSubGroup)):
                 await self.send_group_help(context, s_cmd)
                 return
             await self.send_command_help(context, s_cmd)
             return
         m_cmd = self.app.get_message_command(obj)
-        if m_cmd is not None:
+        if m_cmd is not None and not m_cmd.hidden:
             await self.send_command_help(context, m_cmd)
             return
         u_cmd = self.app.get_user_command(obj)
-        if u_cmd is not None:
+        if u_cmd is not None and not u_cmd.hidden:
             await self.send_command_help(context, u_cmd)
             return
 
@@ -318,8 +321,9 @@ class DefaultHelpCommand(BaseHelpCommand):
             "",
         ]
         if group._subcommands:
+            subcommands = await filter_commands(group._subcommands.values(), context)  # type: ignore
             lines.append("== Subcommands")
-            for cmd in group._subcommands.values():
+            for cmd in subcommands:
                 lines.append(f"- {cmd.name} - {cmd.description}")
         lines.append("```")
         await context.respond("\n".join(lines))
@@ -332,7 +336,8 @@ class DefaultHelpCommand(BaseHelpCommand):
             "",
         ]
         p_cmds, s_cmds, m_cmds, u_cmds = [], [], [], []
-        for cmd in plugin._all_commands:
+        all_commands = await filter_commands(plugin._all_commands, context)
+        for cmd in all_commands:
             if isinstance(cmd, commands.prefix.PrefixCommand):
                 p_cmds.append(cmd)
             elif isinstance(cmd, commands.slash.SlashCommand):

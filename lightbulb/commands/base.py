@@ -130,6 +130,13 @@ class OptionLike:
         Returns:
             :obj:`~hikari.commands.CommandOption`: Created ``CommandOption`` object.
         """
+        if len(self.name) < 1 or len(self.name) > 32:
+            raise ValueError(f"Application command option {self.name!r}: name must be from 1-32 characters long")
+        if len(self.description) < 1 or len(self.description) > 100:
+            raise ValueError(
+                f"Application command option {self.name!r}: description must be from 1-100 characters long"
+            )
+
         kwargs: t.MutableMapping[str, t.Any] = {
             "type": OPTION_TYPE_MAPPING.get(self.arg_type, self.arg_type),
             "name": self.name,

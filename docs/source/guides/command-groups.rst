@@ -24,7 +24,13 @@ Command Group Support
 
 Both prefix and slash commands support command groups, subgroups, and subcommands. However, for prefix commands, a given
 command group can have an arbitrary number of levels subgroups and subcommands, whereas for slash commands you can only go
-a maximum of three levels deep - ``group -> subgroup -> subcommand``.
+a maximum of three levels deep:
+
+``group -> subgroup -> subcommand`` for slash commands
+
+or
+
+``group -> subgroup -> subgroup -> ... -> subcommand`` for prefix commands.
 
 **Relevant API References:**
 

@@ -189,6 +189,8 @@ class CommandLike:
     """Check exempt predicate to use for the command."""
     hidden: bool = False
     """Whether or not the command should be hidden from the help command."""
+    inherit_checks: bool = False
+    """Whether or not the command should inherit checks from the parent group."""
 
     def set_error_handler(
         self,
@@ -273,6 +275,7 @@ class Command(abc.ABC):
         "default_ephemeral",
         "check_exempt",
         "hidden",
+        "inherit_checks",
     )
 
     def __init__(self, app: app_.BotApp, initialiser: CommandLike) -> None:
@@ -310,6 +313,8 @@ class Command(abc.ABC):
         """Check exempt predicate to use for the command."""
         self.hidden = initialiser.hidden
         """Whether or not the command should be hidden from the help command."""
+        self.inherit_checks = initialiser.inherit_checks
+        """Whether or not the command should inherit checks from the parent group."""
 
     async def __call__(self, context: context_.base.Context) -> None:
         return await self.callback(context)
@@ -375,8 +380,10 @@ class Command(abc.ABC):
         if exempt:
             return True
 
+        parent_checks = self.parent.checks if self.inherit_checks and self.parent is not None else []
+
         failed_checks: t.List[errors.CheckFailure] = []
-        for check in [*self.app._checks, *getattr(self.plugin, "_checks", []), *self.checks]:
+        for check in [*self.app._checks, *getattr(self.plugin, "_checks", []), *self.checks, *parent_checks]:
             try:
                 result = check(context)
                 if inspect.iscoroutine(result):

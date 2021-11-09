@@ -84,6 +84,8 @@ def command(
             default. If ``True`` then all responses from the command will use the flag :obj:`hikari.MessageFlags.EPHEMERAL`.
             This will not affect prefix commands as responses from prefix commands **cannot** be ephemeral.
         hidden (:obj:`bool`): Whether or not to hide the command from the help command. Defaults to ``False``.
+        inherit_checks (:obj:`bool`): Whether or not the command should inherit checks from the parent group. Only
+            affects subcommands. Defaults to ``False``.
     """
 
     def decorate(

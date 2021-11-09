@@ -89,6 +89,9 @@ command types that can be created.
 
 - ``hidden`` (optional) - Whether or not to hide the command from the help command. Defaults to ``False``.
 
+- ``inherit_checks`` (optional) - Whether or not the command should inherit checks from the parent group. Naturally, this will
+  only affect subgroups and subcommands. Defaults to ``False``.
+
 **For example:**
 
 .. code-block:: python

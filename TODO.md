@@ -117,6 +117,12 @@
   - [x] permissions_in
   - [x] permissions_for
 
+- [ ] Command validation
+  - [x] Prefix commands
+  - [x] Slash commands
+  - [ ] Message commands
+  - [ ] User commands
+
 ## Other
 
 - [x] Paginated/Navigated Help Command

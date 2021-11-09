@@ -118,6 +118,12 @@ class Plugin:
             )
             for cmd_type in commands_to_impl:
                 cmd = cmd_type(self._app, command_like)
+
+                if cmd.is_subcommand:
+                    continue
+
+                cmd._validate_attributes()
+
                 cmd.plugin = self
                 self._all_commands.append(cmd)
 

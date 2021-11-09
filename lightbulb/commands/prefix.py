@@ -93,6 +93,10 @@ class PrefixCommand(base.Command):
         await context._parser.inject_args_to_context()
         await self(context)
 
+    def _validate_attributes(self) -> None:
+        if " " in self.name:
+            raise ValueError(f"Prefix command {self.name!r}: name cannot contain spaces") from None
+
 
 class PrefixSubCommand(PrefixCommand, base.SubCommandTrait):
     """
@@ -143,6 +147,11 @@ class PrefixSubGroup(PrefixCommand, PrefixGroupMixin, base.SubCommandTrait):
         context._parser.options = list(self.options.values())
         await super().invoke(context)
 
+    def _validate_attributes(self) -> None:
+        super()._validate_attributes()
+        for command in self._subcommands.values():
+            command._validate_attributes()
+
 
 class PrefixCommandGroup(PrefixCommand, PrefixGroupMixin):
     """
@@ -169,3 +178,8 @@ class PrefixCommandGroup(PrefixCommand, PrefixGroupMixin):
             return
 
         await super().invoke(context)
+
+    def _validate_attributes(self) -> None:
+        super()._validate_attributes()
+        for command in self._subcommands.values():
+            command._validate_attributes()

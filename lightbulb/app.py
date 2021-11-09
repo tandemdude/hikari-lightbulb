@@ -695,13 +695,17 @@ class BotApp(hikari.GatewayBot):
                 cmd_like.callback, "__cmd_types__", []
             )
             _LOGGER.debug(
-                "Registering command. Requested types are: %s", ",".join(c.__name__ for c in commands_to_impl)
+                "Registering command %r. Requested types are: %s",
+                cmd_like.name,
+                ",".join(c.__name__ for c in commands_to_impl),
             )
             for command_cls in commands_to_impl:
                 cmd = command_cls(self, cmd_like)
 
                 if cmd.is_subcommand:
                     continue
+
+                cmd._validate_attributes()
 
                 self._add_command_to_correct_attr(cmd)
             return cmd_like

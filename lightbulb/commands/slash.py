@@ -20,6 +20,7 @@ from __future__ import annotations
 __all__ = ["SlashCommand", "SlashCommandGroup", "SlashGroupMixin", "SlashSubGroup", "SlashSubCommand"]
 
 import abc
+import re
 import typing as t
 
 import hikari
@@ -30,6 +31,8 @@ from lightbulb.commands import base
 
 if t.TYPE_CHECKING:
     from lightbulb import app as app_
+
+COMMAND_NAME_REGEX: re.Pattern[str] = re.compile(r"^[\w-]{1,32}$", re.U)
 
 
 class SlashGroupMixin(abc.ABC):
@@ -82,6 +85,16 @@ class SlashCommand(base.ApplicationCommand):
             "description": self.description,
             "options": [o.as_application_command_option() for o in sorted_opts],
         }
+
+    def _validate_attributes(self) -> None:
+        if not COMMAND_NAME_REGEX.fullmatch(self.name) or self.name != self.name.lower():
+            raise ValueError(
+                f"Slash command {self.name!r}: name must match regex '^[\\w-]{1,32}$' and be all lowercase"
+            ) from None
+        if len(self.description) < 1 or len(self.description) > 100:
+            raise ValueError(f"Slash command {self.name!r}: description must be from 1-100 characters long") from None
+        if len(self.options) > 25:
+            raise ValueError(f"Slash command {self.name!r}: can at most have 25 options") from None
 
 
 class SlashSubCommand(SlashCommand, base.SubCommandTrait):
@@ -139,6 +152,11 @@ class SlashSubGroup(SlashCommand, SlashGroupMixin, base.SubCommandTrait):
     async def invoke(self, context: context_.base.Context) -> None:
         await self._invoke_subcommand(context)
 
+    def _validate_attributes(self) -> None:
+        super()._validate_attributes()
+        if len(self._subcommands) > 25:
+            raise ValueError(f"Slash command {self.name!r}: group can have at most 25 subcommands") from None
+
 
 class SlashCommandGroup(SlashCommand, SlashGroupMixin):
     """
@@ -163,3 +181,8 @@ class SlashCommandGroup(SlashCommand, SlashGroupMixin):
             "description": self.description,
             "options": [c.as_option() for c in self._subcommands.values()],
         }
+
+    def _validate_attributes(self) -> None:
+        super()._validate_attributes()
+        if len(self._subcommands) > 25:
+            raise ValueError(f"Slash command {self.name!r}: group can have at most 25 subcommands") from None

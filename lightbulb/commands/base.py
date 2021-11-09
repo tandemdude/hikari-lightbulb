@@ -137,6 +137,8 @@ class OptionLike:
             "is_required": self.required,
         }
         if self.choices:
+            if len(self.choices) > 25:
+                raise ValueError("Application command options can have at most 25 choices")
             kwargs["choices"] = _get_choice_objects_from_choices(self.choices)
         if self.channel_types:
             kwargs["channel_types"] = self.channel_types
@@ -304,6 +306,9 @@ class Command(abc.ABC):
 
     async def __call__(self, context: context_.base.Context) -> None:
         return await self.callback(context)
+
+    def _validate_attributes(self) -> None:
+        pass
 
     @property
     def bot(self) -> app_.BotApp:

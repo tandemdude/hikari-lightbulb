@@ -4,7 +4,8 @@ Guides
 
 Here you will find an index of all the guide pages to help with using Lightbulb.
 
-If you feel like any feature is unclear then either make a pull request to add a guide for it, or contact thomm.o#8637 on discord.
+If you feel like any feature is unclear or hard to use then either make a pull request to add a guide for it yourself, or
+contact thomm.o#8637 on discord.
 
 **Index:**
 

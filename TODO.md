@@ -6,7 +6,6 @@
   - [x] Bot Checks
   - [x] Multiple Owners
   - [x] Get prefix function (sync or async)
-  - [ ] Regex prefix?
 
 - [x] Plugins
   - [x] Support Prefix Commands

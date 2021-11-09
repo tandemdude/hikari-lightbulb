@@ -2,7 +2,7 @@
 Version 1 Changelog
 ===================
 
-Below are all the changelogs for the stable versions of hikari-lightbulb (version 1.0.0 to present).
+Below are all the changelogs for the stable versions of hikari-lightbulb (version 1.0.0 to 1.5.2).
 
 ----
 

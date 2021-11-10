@@ -45,6 +45,13 @@ syntax. I recommend taking a look at both Lightbulb and Tanjun before choosing w
 
 `View Tanjun on GitHub <https://github.com/FasterSpeeding/Tanjun>`_
 
+**Helful Resources:**
+
+- `Hikari Documentation <https://www.hikari-py.dev/>`_
+
+- `Lightbulb Tutorial <https://neonjonn.readthedocs.io/en/latest/hikari-get-started/lightbulb.html>`_ (Thanks to NeonJohn)
+
+- :ref:`guides`
 
 **Contributors:**
 

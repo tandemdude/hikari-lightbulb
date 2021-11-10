@@ -375,10 +375,16 @@ class DefaultHelpCommand(BaseHelpCommand):
             elif isinstance(cmd, commands.user.UserCommand):
                 u_cmds.append(cmd)
 
-        for cmd_list, header in [(p_cmds, "Prefix"), (s_cmds, "Slash"), (m_cmds, "Message"), (u_cmds, "User")]:
+        cmds: t.List[t.Tuple[t.Sequence[commands.base.Command], str]] = [
+            (p_cmds, "Prefix"),
+            (s_cmds, "Slash"),
+            (m_cmds, "Message"),
+            (u_cmds, "User"),
+        ]
+        for cmd_list, header in cmds:
             if cmd_list:
                 lines.append(f"== {header} Commands")
-                for cmd in set(cmd_list):  # type: ignore
-                    lines.append(f"- {cmd.name} - {cmd.description}")  # type: ignore
+                for cmd in set(cmd_list):
+                    lines.append(f"- {cmd.name} - {cmd.description}")
         lines.append("```")
         await context.respond("\n".join(lines))

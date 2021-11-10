@@ -235,7 +235,7 @@ class DefaultHelpCommand(BaseHelpCommand):
     ) -> None:
         for plugin, cmds in cmds.items():
             pages[plugin].append(f"== {header} Commands")
-            for cmd in cmds:
+            for cmd in set(cmds):
                 pages[plugin].append(f"- {cmd.name} - {cmd.description}")
 
     async def send_bot_help(self, context: context_.base.Context) -> None:
@@ -286,12 +286,20 @@ class DefaultHelpCommand(BaseHelpCommand):
 
     async def send_command_help(self, context: context_.base.Context, command: commands.base.Command) -> None:
         long_help = command.get_help(context)
+        prefix = (
+            context.prefix
+            if isinstance(command, commands.prefix.PrefixCommand)
+            else "/"
+            if isinstance(command, commands.slash.SlashCommand)
+            else "\N{THREE BUTTON MOUSE}"
+        )
+
         lines = [
             ">>> ```adoc",
             "==== Command Help ====",
             f"{command.name} - {command.description}",
             "",
-            f"Usage: {context.prefix}{command.signature}",
+            f"Usage: {prefix}{command.signature}",
             "",
             long_help if long_help else "No additional details provided.",
             "```",
@@ -309,13 +317,33 @@ class DefaultHelpCommand(BaseHelpCommand):
         ],
     ) -> None:
         long_help = group.get_help(context)
+        prefix = (
+            context.prefix
+            if isinstance(group, commands.prefix.PrefixCommand)
+            else "/"
+            if isinstance(group, commands.slash.SlashCommand)
+            else "\N{THREE BUTTON MOUSE}"
+        )
+
+        usages = list(
+            filter(
+                None,
+                [
+                    f"{prefix}{group.signature}" if isinstance(group, commands.prefix.PrefixCommand) else None,
+                    f"{prefix}{group.qualname} [subcommand]",
+                ],
+            )
+        )
+        usages[0] = f"Usage: {usages[0]}"
+        if len(usages) > 1:
+            usages[1] = f"Or: {usages[1]}"
+
         lines = [
             ">>> ```adoc",
             "==== Group Help ====",
             f"{group.name} - {group.description}",
             "",
-            f"Usage: {context.prefix}{group.signature}",
-            f"Or: {context.prefix}{group.qualname} [subcommand]",
+            "\n".join(usages),
             "",
             long_help if long_help else "No additional details provided.",
             "",
@@ -323,7 +351,7 @@ class DefaultHelpCommand(BaseHelpCommand):
         if group._subcommands:
             subcommands = await filter_commands(group._subcommands.values(), context)  # type: ignore
             lines.append("== Subcommands")
-            for cmd in subcommands:
+            for cmd in set(subcommands):
                 lines.append(f"- {cmd.name} - {cmd.description}")
         lines.append("```")
         await context.respond("\n".join(lines))
@@ -350,7 +378,7 @@ class DefaultHelpCommand(BaseHelpCommand):
         for cmd_list, header in [(p_cmds, "Prefix"), (s_cmds, "Slash"), (m_cmds, "Message"), (u_cmds, "User")]:
             if cmd_list:
                 lines.append(f"== {header} Commands")
-                for cmd in p_cmds:
-                    lines.append(f"- {cmd.name} - {cmd.description}")
+                for cmd in set(cmd_list):  # type: ignore
+                    lines.append(f"- {cmd.name} - {cmd.description}")  # type: ignore
         lines.append("```")
         await context.respond("\n".join(lines))

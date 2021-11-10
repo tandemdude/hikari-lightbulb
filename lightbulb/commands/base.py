@@ -316,6 +316,9 @@ class Command(abc.ABC):
         self.inherit_checks = initialiser.inherit_checks
         """Whether or not the command should inherit checks from the parent group."""
 
+    def __hash__(self) -> int:
+        return hash(self.name)
+
     async def __call__(self, context: context_.base.Context) -> None:
         return await self.callback(context)
 

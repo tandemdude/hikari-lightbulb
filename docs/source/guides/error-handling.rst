@@ -78,7 +78,7 @@ Example Error Handler
     @bot.listen(lightbulb.CommandErrorEvent)
     async def on_error(event: lightbulb.CommandErrorEvent) -> None:
         if isinstance(event.exception, lightbulb.CommandInvocationError):
-            await event.context.respond(f"Something went wrong during invocation of command `{event.context.command.name}`."})
+            await event.context.respond(f"Something went wrong during invocation of command `{event.context.command.name}`.")
             raise event.exception
 
         # Unwrap the exception to get the original cause

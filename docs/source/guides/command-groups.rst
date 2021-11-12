@@ -55,7 +55,7 @@ Creating a Command Group
 For this section we will be using prefix commands as an example, slash commands work in exactly the same way.
 
 You define a command group exactly the same way that you would a normal command, however instead of providing ``commands.PrefixCommand``
-to the :obj:`lightbulb.decorators.implements` decorator, we will instead be providing ``commands.PrefixCommandGroup`.
+to the :obj:`lightbulb.decorators.implements` decorator, we will instead be providing ``commands.PrefixCommandGroup``.
 
 A basic example can be seen below:
 

@@ -49,7 +49,7 @@ class DataStore(t.Dict[str, t.Any]):
     def __repr__(self) -> str:
         return "DataStore(" + ", ".join(f"{k}={v!r}" for k, v in self.items()) + ")"
 
-    def __getattr__(self, item: str) -> t.Optional[t.Any]:
+    def __getattr__(self, item: str) -> t.Any:
         return self.get(item)
 
     def __setattr__(self, key: str, value: t.Any) -> None:

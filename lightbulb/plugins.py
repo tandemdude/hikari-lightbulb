@@ -82,7 +82,7 @@ class Plugin:
         self._error_handler: t.Optional[
             t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]
         ] = None
-        self._remove_hook: t.Optional[t.Callable[[], t.Coroutine[t.Any, t.Any, None]]] = None
+        self._remove_hook: t.Optional[t.Callable[[], t.Union[t.Coroutine[t.Any, t.Any, None], None]]] = None
 
         self._app: t.Optional[app_.BotApp] = None
 
@@ -223,10 +223,15 @@ class Plugin:
         return decorate
 
     def remove_hook(
-        self, func: t.Optional[t.Callable[[], t.Coroutine[t.Any, t.Any, None]]] = None, bind: bool = False
+        self,
+        func: t.Optional[t.Callable[[], t.Union[t.Coroutine[t.Any, t.Any, None], None]]] = None,
+        bind: bool = False,
     ) -> t.Union[
-        t.Callable[[], t.Coroutine[t.Any, t.Any, None]],
-        t.Callable[[t.Callable[[], t.Coroutine[t.Any, t.Any, None]]], t.Callable[[], t.Coroutine[t.Any, t.Any, None]]],
+        t.Callable[[], t.Union[t.Coroutine[t.Any, t.Any, None], None]],
+        t.Callable[
+            [t.Callable[[], t.Union[t.Coroutine[t.Any, t.Any, None], None]]],
+            t.Callable[[], t.Union[t.Coroutine[t.Any, t.Any, None], None]],
+        ],
     ]:
         """
         Sets the remove hook function for the plugin. This method can be used as a second order decorator,
@@ -246,8 +251,8 @@ class Plugin:
             return func
 
         def decorate(
-            func_: t.Callable[[], t.Coroutine[t.Any, t.Any, None]]
-        ) -> t.Callable[[], t.Coroutine[t.Any, t.Any, None]]:
+            func_: t.Callable[[], t.Union[t.Coroutine[t.Any, t.Any, None], None]]
+        ) -> t.Callable[[], t.Union[t.Coroutine[t.Any, t.Any, None], None]]:
             if bind:
                 func_ = func_.__get__(self)  # type: ignore
             self._remove_hook = func_

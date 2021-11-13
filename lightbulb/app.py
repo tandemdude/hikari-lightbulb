@@ -19,6 +19,7 @@ from __future__ import annotations
 
 __all__ = ["BotApp", "when_mentioned_or"]
 
+import asyncio
 import functools
 import importlib
 import inspect
@@ -814,6 +815,13 @@ class BotApp(hikari.GatewayBot):
         for event, listeners in plugin._listeners.items():
             for listener in listeners:
                 self.unsubscribe(event, listener)
+
+        if plugin._remove_hook is not None:
+            maybe_coro = plugin._remove_hook()
+            if inspect.iscoroutine(maybe_coro):
+                assert maybe_coro is not None
+                asyncio.create_task(maybe_coro)
+
         _LOGGER.debug("Plugin removed %r", plugin.name)
 
     async def purge_application_commands(self, *guild_ids: hikari.Snowflakeish, global_commands: bool = False) -> None:

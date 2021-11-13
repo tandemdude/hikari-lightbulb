@@ -238,6 +238,9 @@ class Plugin:
         or called manually with the function to set the plugin's remove hook to. The registered function will
         be called when the plugin is removed from the bot so may be useful for teardown.
 
+        This function will be called **after** all the members of the plugin (listeners and commands) have already
+        been removed from the bot.
+
         Args:
             bind (:obj:`bool`): Whether or not to bind the remove hook function to the plugin. If ``True``, the
                 function will be converted into a bound method and so will be called with the plugin as an

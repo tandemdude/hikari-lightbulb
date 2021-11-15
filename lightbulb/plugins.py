@@ -103,6 +103,16 @@ class Plugin:
         """Alias for :obj:`~Plugin.app`"""
         return self._app
 
+    @property
+    def raw_commands(self) -> t.List[commands.base.CommandLike]:
+        """List of all the CommandLike objects registered to the plugin."""
+        return self._raw_commands
+
+    @property
+    def all_commands(self) -> t.List[commands.base.Command]:
+        """List of all created command objects registered to the plugin."""
+        return self._all_commands
+
     def create_commands(self) -> None:
         """
         Creates the command objects implemented by the :obj:`~.commands.base.CommandLike` objects registered

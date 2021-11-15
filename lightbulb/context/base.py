@@ -217,6 +217,12 @@ class Context(abc.ABC):
         """The command object that the context is for."""
         ...
 
+    @property
+    def deferred(self) -> t.Optional[bool]:
+        """Whether the command is deferred for this context. Will be ``None`` for prefix commands"""
+        # Just to keep the interfaces the same for prefix commands and application commands
+        return None
+
     @abc.abstractmethod
     def get_channel(self) -> t.Optional[t.Union[hikari.GuildChannel, hikari.Snowflake]]:
         """The channel object for the context's channel ID."""
@@ -277,7 +283,7 @@ class Context(abc.ABC):
 
 
 class ApplicationContext(Context, abc.ABC):
-    __slots__ = ("_event", "_interaction", "_command", "_defer_task")
+    __slots__ = ("_event", "_interaction", "_command", "_defer_task", "_deferred")
 
     def __init__(
         self, app: app_.BotApp, event: hikari.InteractionCreateEvent, command: commands.base.ApplicationCommand
@@ -288,6 +294,7 @@ class ApplicationContext(Context, abc.ABC):
         self._interaction: hikari.CommandInteraction = event.interaction
         self._command = command
 
+        self._deferred: bool = False
         self._defer_task: t.Optional[asyncio.Task[ResponseProxy]] = None
         if self._command.auto_defer:
             self._defer_task = asyncio.create_task(
@@ -339,6 +346,10 @@ class ApplicationContext(Context, abc.ABC):
     def resolved(self) -> t.Optional[hikari.ResolvedOptionData]:
         return self._interaction.resolved
 
+    @property
+    def deferred(self) -> t.Optional[bool]:
+        return self._deferred
+
     def get_channel(self) -> t.Optional[t.Union[hikari.GuildChannel, hikari.Snowflake]]:
         if self.guild_id is not None:
             return self.app.cache.get_guild_channel(self.channel_id)
@@ -366,6 +377,7 @@ class ApplicationContext(Context, abc.ABC):
         """
         if self._defer_task is not None and kwargs.pop("wait_for_task", True):
             await self._defer_task
+            self._deferred = False
             self._defer_task = None
 
         kwargs.pop("reply", None)
@@ -380,6 +392,7 @@ class ApplicationContext(Context, abc.ABC):
             if args and isinstance(args[0], hikari.ResponseType):
                 args = args[1:]
 
+            self._deferred = True
             self._responses.append(ResponseProxy(await self._interaction.execute(*args, **kwargs)))
             return self._responses[-1]
 

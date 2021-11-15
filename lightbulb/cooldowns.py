@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © Thomm.o 2021
+# Copyright © tandemdude 2020-present
 #
 # This file is part of Lightbulb.
 #
@@ -17,43 +17,24 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__: typing.Final[typing.List[str]] = [
-    "CooldownStatus",
-    "Bucket",
-    "GlobalBucket",
-    "UserBucket",
-    "ChannelBucket",
-    "GuildBucket",
-    "CooldownManager",
-    "cooldown",
-    "dynamic_cooldown",
-]
+__all__ = ["CooldownStatus", "Bucket", "UserBucket", "GuildBucket", "GlobalBucket", "ChannelBucket", "CooldownManager"]
 
 import abc
+import enum
+import inspect
 import time
-import typing
-
-from hikari.internal import enums
+import typing as t
 
 from lightbulb import errors
-from lightbulb import utils
 
-if typing.TYPE_CHECKING:
-    from lightbulb import commands
-    from lightbulb import context as context_
+if t.TYPE_CHECKING:
+    from lightbulb.context import base as ctx_base
 
 
-class CooldownStatus(int, enums.Enum):
-    """The status of a cooldown bucket"""
-
-    EXPIRED = 0
-    """The cooldown bucket has expired"""
-
-    INACTIVE = 1
-    """The cooldown bucket timer has not been activated yet"""
-
-    ACTIVE = 2
-    """The cooldown bucket timer is currently active"""
+class CooldownStatus(enum.Enum):
+    INACTIVE = enum.auto()
+    ACTIVE = enum.auto()
+    EXPIRED = enum.auto()
 
 
 class Bucket(abc.ABC):
@@ -73,20 +54,20 @@ class Bucket(abc.ABC):
         self.commands_run: int = 0
         """Commands run for this bucket since it was created."""
         self.activated = False
-        self.start_time: typing.Optional[float] = None
+        self.start_time: t.Optional[float] = None
         """The start time of the bucket cooldown. This is relative to :meth:`time.perf_counter`."""
 
     @classmethod
     @abc.abstractmethod
-    def extract_hash(cls, context: context_.Context) -> typing.Hashable:
+    def extract_hash(cls, context: ctx_base.Context) -> t.Hashable:
         """
         Extracts the hash from the context which links a command usage to a single cooldown bucket.
 
         Args:
-            context (:obj:`~.context.Context`): The context the command was invoked under.
+            context (:obj:`~.context.base.Context`): The context the command was invoked under.
 
         Returns:
-            :obj:`typing.Hashable`: Hashable object linking the context to a cooldown bucket.
+            Hashable: Hashable object linking the context to a cooldown bucket.
         """
         ...
 
@@ -134,7 +115,7 @@ class GlobalBucket(Bucket):
     __slots__ = ()
 
     @classmethod
-    def extract_hash(cls, context: context_.Context) -> typing.Hashable:
+    def extract_hash(cls, context: ctx_base.Context) -> t.Hashable:
         return 0
 
 
@@ -146,7 +127,7 @@ class UserBucket(Bucket):
     __slots__ = ()
 
     @classmethod
-    def extract_hash(cls, context: context_.Context) -> typing.Hashable:
+    def extract_hash(cls, context: ctx_base.Context) -> t.Hashable:
         return context.author.id
 
 
@@ -158,7 +139,7 @@ class ChannelBucket(Bucket):
     __slots__ = ()
 
     @classmethod
-    def extract_hash(cls, context: context_.Context) -> typing.Hashable:
+    def extract_hash(cls, context: ctx_base.Context) -> t.Hashable:
         return context.channel_id
 
 
@@ -172,165 +153,74 @@ class GuildBucket(Bucket):
     __slots__ = ()
 
     @classmethod
-    def extract_hash(cls, context: context_.Context) -> typing.Hashable:
+    def extract_hash(cls, context: ctx_base.Context) -> t.Hashable:
         return context.guild_id if context.guild_id is not None else context.channel_id
 
 
 class CooldownManager:
     """
     The cooldown manager for a command.
-
-    Args:
-        length (:obj:`float`): Length of the cooldown timer.
-        usages (:obj:`int`): Number of command usages before the cooldown is activated.
-        bucket (:obj:`Bucket`): The bucket that the cooldown should be evaluated under.
     """
 
-    @typing.overload
-    def __init__(self, length: float, usages: int, bucket: typing.Type[Bucket]) -> None:
-        ...
-
-    @typing.overload
-    def __init__(self, *, callback: typing.Callable[[context_.Context], Bucket]) -> None:
-        ...
+    __slots__ = ("callback", "cooldowns")
 
     def __init__(
         self,
-        length: typing.Optional[float] = None,
-        usages: typing.Optional[int] = None,
-        bucket: typing.Optional[typing.Type[Bucket]] = None,
-        *,
-        callback: typing.Optional[typing.Callable[[context_.Context], Bucket]] = None,
+        callback: t.Callable[[ctx_base.Context], t.Union[Bucket, t.Coroutine[t.Any, t.Any, Bucket]]],
     ) -> None:
-        if callback is not None:
-            self.callback = callback
-        elif length is not None and usages is not None and bucket is not None:
-            self.length = length
-            self.usages = usages
-            self.bucket = bucket
-        else:
-            raise TypeError("Bad arguments...")
-        self.cooldowns: typing.MutableMapping[typing.Hashable, Bucket] = {}
+        self.callback = callback
+        self.cooldowns: t.MutableMapping[t.Hashable, Bucket] = {}
         """Mapping of a hashable to a :obj:`~Bucket` representing the currently stored cooldowns."""
 
-    async def _get_bucket(self, context: context_.Context) -> Bucket:
-        if not hasattr(self, "callback"):
-            return self.bucket(self.length, self.usages)
-
-        bucket = await utils.maybe_await(self.callback, context)
-
-        if not isinstance(bucket, Bucket):
-            raise TypeError("Bucket should derive the Bucket class")
-
+    async def _get_bucket(self, context: ctx_base.Context) -> Bucket:
+        bucket = self.callback(context)
+        if inspect.iscoroutine(bucket):
+            assert not isinstance(bucket, Bucket)
+            bucket = await bucket
+        assert isinstance(bucket, Bucket)
         return bucket
 
-    async def add_cooldown(self, context: context_.Context) -> None:
+    async def add_cooldown(self, context: ctx_base.Context) -> None:
         """
         Add a cooldown under the given context. If an expired bucket already exists then it
         will be overwritten.
 
         Args:
-            context (:obj:`~.context.Context`): The context to add a cooldown under.
+            context (:obj:`~.context.base.Context`): The context to add a cooldown under.
 
         Returns:
             ``None``
         """
         bucket = await self._get_bucket(context)
+
         cooldown_hash = bucket.extract_hash(context)
         cooldown_bucket = self.cooldowns.get(cooldown_hash)
+
         if cooldown_bucket is not None:
             cooldown_status = cooldown_bucket.acquire()
-            if cooldown_status == CooldownStatus.ACTIVE:
+            if cooldown_status is CooldownStatus.ACTIVE:
                 # Cooldown has been activated
+                assert cooldown_bucket.start_time is not None
                 raise errors.CommandIsOnCooldown(
                     "This command is on cooldown",
-                    context.command,
-                    (cooldown_bucket.start_time + cooldown_bucket.length) - time.perf_counter(),
+                    retry_after=(cooldown_bucket.start_time + cooldown_bucket.length) - time.perf_counter(),
                 )
-            elif cooldown_status == CooldownStatus.INACTIVE:
+            elif cooldown_status is CooldownStatus.INACTIVE:
                 # Cooldown has not yet been activated.
                 return
+
         self.cooldowns[cooldown_hash] = bucket
         self.cooldowns[cooldown_hash].acquire()
 
-    def reset_cooldown(self, context: context_.Context) -> None:
+    async def reset_cooldown(self, context: ctx_base.Context) -> None:
         """
         Reset the cooldown under the given context.
 
         Args:
-            context (:obj:`~.context.Context`): The context to reset the cooldown under.
+            context (:obj:`~.context.base.Context`): The context to reset the cooldown under.
 
         Returns:
             ``None``
         """
-        del self.cooldowns[self.bucket.extract_hash(context)]
-
-
-def cooldown(
-    length: float,
-    usages: int,
-    bucket: typing.Type[Bucket],
-    *,
-    manager_cls: typing.Type[CooldownManager] = CooldownManager,
-):
-    """
-    Decorator which adds a cooldown to a command.
-    Args:
-        length (:obj:`float`): The amount of time before the cooldown expires.
-        usages (:obj:`int`): The amount of usages of the command allowed before the cooldown activates.
-        bucket (Type[ :obj:`~Bucket` ]): The bucket that the cooldown should be evaluated under.
-    Keyword Args:
-        manager_cls (Type[ :obj:`~CooldownManager` ]): The **uninstantiated** class to use as the command's
-            cooldown manager. Defaults to :obj:`~CooldownManager`.
-    Example:
-        .. code-block:: python
-
-            @lightbulb.cooldown(10, 1, lightbulb.UserBucket)
-            @bot.command()
-            async def ping(ctx):
-                await ctx.respond("Pong!")
-
-        This would make it so that each user can only use the ``ping`` command once every ten seconds.
-    """
-
-    def decorate(command: commands.Command) -> commands.Command:
-        command.cooldown_manager = manager_cls(length, usages, bucket)
-        return command
-
-    return decorate
-
-
-def dynamic_cooldown(
-    callback: typing.Callable[[context_.Context], Bucket],
-    *,
-    manager_cls: typing.Type[CooldownManager] = CooldownManager,
-):
-    """
-    Decorator which adds a more customized cooldown to a command.
-    Args:
-        callback (Callable[[ :obj:`~Context` ], :obj:`~Bucket`]): The callback that takes a Context object and returns a Bucket object.
-    Keyword Args:
-        manager_cls (Type[ :obj:`~CooldownManager` ]): The **uninstantiated** class to use as the command's
-            cooldown manager. Defaults to :obj:`~CooldownManager`.
-    Example:
-        .. code-block:: python
-
-            def callback(ctx):
-                if ctx.author.id in ctx.bot.owner_ids:
-                    return lightbulb.UserBucket(0, 1)
-
-                return lightbulb.UserBucket(10, 1)
-
-            @lightbulb.dynamic_cooldown(callback)
-            @bot.command()
-            async def ping(ctx):
-                await ctx.respond("Pong!")
-
-        This would make it so that owners bypass the cooldown and general users can only use the ``ping`` command once every ten seconds.
-    """
-
-    def decorate(command: commands.Command) -> commands.Command:
-        command.cooldown_manager = manager_cls(callback=callback)
-        return command
-
-    return decorate
+        bucket = await self._get_bucket(context)
+        del self.cooldowns[bucket.extract_hash(context)]

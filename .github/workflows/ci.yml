@@ -4,21 +4,28 @@ on: [push, pull_request]
 
 jobs:
   test:
-    runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: [3.8, 3.9]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.8", "3.9", "3.10"]
+
+    name: Test
+    runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Setup python
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Python
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Run tests
+      - name: Run black
         run: |
           pip install nox
-          nox -s test
-      - name: Run black
-        run: nox -s format
+          nox -s format
+
+      - name: Run mypy
+        run: nox -s mypy

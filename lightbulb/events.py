@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © Thomm.o 2021
+# Copyright © tandemdude 2020-present
 #
 # This file is part of Lightbulb.
 #
@@ -17,106 +17,155 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__: typing.Final[typing.List[str]] = ["CommandErrorEvent", "CommandInvocationEvent", "CommandCompletionEvent"]
+__all__ = [
+    "LightbulbEvent",
+    "CommandErrorEvent",
+    "PrefixCommandErrorEvent",
+    "PrefixCommandInvocationEvent",
+    "PrefixCommandCompletionEvent",
+    "SlashCommandErrorEvent",
+    "SlashCommandInvocationEvent",
+    "SlashCommandCompletionEvent",
+    "MessageCommandErrorEvent",
+    "MessageCommandCompletionEvent",
+    "MessageCommandInvocationEvent",
+    "UserCommandErrorEvent",
+    "UserCommandCompletionEvent",
+    "UserCommandInvocationEvent",
+]
 
 import abc
-import typing
+import types
+import typing as t
 
 import attr
 import hikari
-from hikari.events import base_events as hikari_base_events
+from hikari.events import base_events
 
-if typing.TYPE_CHECKING:
-    import types
-
-    from lightbulb import command_handler
+if t.TYPE_CHECKING:
+    from lightbulb import app as app_
     from lightbulb import commands
     from lightbulb import context as context_
     from lightbulb import errors
 
 
 @attr.s(slots=True, weakref_slot=False)
-@hikari_base_events.requires_intents(hikari.Intents.DM_MESSAGES, hikari.Intents.GUILD_MESSAGES)
 class LightbulbEvent(hikari.Event, abc.ABC):
     """
     The base class for all lightbulb events. Every event dispatched by lightbulb
     will be an instance of a subclass of this.
     """
 
-    app: command_handler.Bot = attr.ib()
-    """Bot instance for this event."""
+    app: app_.BotApp = attr.ib()
+    """BotApp instance for this event."""
 
     @property
-    def bot(self) -> command_handler.Bot:
-        """Bot instance for this event. Alias for :obj:`~LightbulbEvent.app`."""
+    def bot(self) -> app_.BotApp:
+        """BotApp instance for this event. Alias for :obj:`~LightbulbEvent.app`."""
         return self.app
 
 
-@attr.s(kw_only=True, slots=True, weakref_slot=False)
-@hikari_base_events.requires_intents(hikari.Intents.DM_MESSAGES, hikari.Intents.GUILD_MESSAGES)
-class CommandErrorEvent(LightbulbEvent):
+@attr.s(slots=True, weakref_slot=False)
+class CommandErrorEvent(LightbulbEvent, abc.ABC):
     """
-    Event type to subscribe to for the processing of all command errors raised by the handler.
-
-    Example:
-
-        .. code-block:: python
-
-            from lightbulb.events import CommandErrorEvent
-
-            bot = lightbulb.Bot(token="token_here", prefix="!")
-
-            @bot.listen(CommandErrorEvent)
-            async def handle_command_error(event):
-                ...
-
+    The base class for all command error events. A subclass of this event will be dispatched whenever
+    an error is encountered before or during the invocation of a command.
     """
 
     exception: errors.LightbulbError = attr.ib()
-    """The exception that triggered this event."""
-    context: typing.Optional[context_.Context] = attr.ib(default=None)
-    """The context that this event was triggered for. Will be ``None`` for :obj:`~CommandNotFound` errors."""
-    message: hikari.Message = attr.ib()
-    """The message that this event was triggered for."""
-    command: typing.Optional[commands.Command] = attr.ib(default=None)
-    """The command that this event was triggered for."""
+    """The exception that this event was triggered for."""
+    context: context_.base.Context = attr.ib()
+    """The context that this event was triggered for."""
 
     @property
     def exc_info(
         self,
-    ) -> typing.Tuple[typing.Type[errors.LightbulbError], errors.LightbulbError, typing.Optional[types.TracebackType]]:
+    ) -> t.Tuple[t.Type[errors.LightbulbError], errors.LightbulbError, t.Optional[types.TracebackType]]:
         """The exception triplet compatible with context managers and :mod:`traceback` helpers."""
         return type(self.exception), self.exception, self.exception.__traceback__
 
-    @property
-    def traceback(self) -> types.TracebackType:
-        """The traceback for this event's exception."""
-        return self.exception.__traceback__
 
-
-@attr.s(kw_only=True, slots=True, weakref_slot=False)
-@hikari_base_events.requires_intents(hikari.Intents.DM_MESSAGES, hikari.Intents.GUILD_MESSAGES)
-class CommandInvocationEvent(LightbulbEvent):
+@attr.s(slots=True, weakref_slot=False)
+class CommandInvocationEvent(LightbulbEvent, abc.ABC):
     """
-    Event dispatched when a command is invoked, regardless of whether or not the checks
-    passed or failed, or an error was raised during command invocation.
+    The base class for all command invocation events. A subclass of this event will be dispatched before
+    any command is invoked.
     """
 
-    command: commands.Command = attr.ib()
+    command: commands.base.Command = attr.ib()
     """The command that this event was triggered for."""
-    context: context_.Context = attr.ib()
+    context: context_.base.Context = attr.ib()
     """The context that this event was triggered for."""
 
 
-@attr.s(kw_only=True, slots=True, weakref_slot=False)
-@hikari_base_events.requires_intents(hikari.Intents.DM_MESSAGES, hikari.Intents.GUILD_MESSAGES)
-class CommandCompletionEvent(LightbulbEvent):
+@attr.s(slots=True, weakref_slot=False)
+class CommandCompletionEvent(LightbulbEvent, abc.ABC):
     """
-    Event type dispatched when a command invocation occurred and was completed successfully. This means
-    that all checks must have passed and that no errors can have been raised during the command invocation.
+    The base class for all command completion events. A subclass of this event will be dispatched after
+    command invocation completes. This will not be dispatched if any exceptions occur during invocation.
     """
 
-    command: commands.Command = attr.ib()
+    command: commands.base.Command = attr.ib()
     """The command that this event was triggered for."""
-    context: context_.Context = attr.ib()
+    context: context_.base.Context = attr.ib()
     """The context that this event was triggered for."""
+
+
+@attr.s(slots=True, weakref_slot=False)
+class PrefixCommandErrorEvent(CommandErrorEvent):
+    """Event dispatched when an error is encountered before or during the invocation of a prefix command."""
+
+
+@attr.s(slots=True, weakref_slot=False)
+class SlashCommandErrorEvent(CommandErrorEvent):
+    """Event dispatched when an error is encountered before or during the invocation of a slash command."""
+
+
+@attr.s(slots=True, weakref_slot=False)
+class MessageCommandErrorEvent(CommandErrorEvent):
+    """Event dispatched when an error is encountered before or during the invocation of a message command."""
+
+
+@attr.s(slots=True, weakref_slot=False)
+class UserCommandErrorEvent(CommandErrorEvent):
+    """Event dispatched when an error is encountered before or during the invocation of a user command."""
+
+
+@attr.s(slots=True, weakref_slot=False)
+class PrefixCommandInvocationEvent(CommandInvocationEvent):
+    """Event dispatched before the invocation of a prefix command."""
+
+
+@attr.s(slots=True, weakref_slot=False)
+class SlashCommandInvocationEvent(CommandInvocationEvent):
+    """Event dispatched before the invocation of a slash command."""
+
+
+@attr.s(slots=True, weakref_slot=False)
+class MessageCommandInvocationEvent(CommandInvocationEvent):
+    """Event dispatched before the invocation of a message command."""
+
+
+@attr.s(slots=True, weakref_slot=False)
+class UserCommandInvocationEvent(CommandInvocationEvent):
+    """Event dispatched before the invocation of a user command."""
+
+
+@attr.s(slots=True, weakref_slot=False)
+class PrefixCommandCompletionEvent(CommandCompletionEvent):
+    """Event dispatched after the invocation of a prefix command is completed."""
+
+
+@attr.s(slots=True, weakref_slot=False)
+class SlashCommandCompletionEvent(CommandCompletionEvent):
+    """Event dispatched after the invocation of a slash command is completed."""
+
+
+@attr.s(slots=True, weakref_slot=False)
+class MessageCommandCompletionEvent(CommandCompletionEvent):
+    """Event dispatched after the invocation of a message command is completed."""
+
+
+@attr.s(slots=True, weakref_slot=False)
+class UserCommandCompletionEvent(CommandCompletionEvent):
+    """Event dispatched after the invocation of a user command is completed."""

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © Thomm.o 2021
+# Copyright © tandemdude 2020-present
 #
 # This file is part of Lightbulb.
 #
@@ -17,228 +17,261 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__: typing.Final[typing.Tuple[str]] = [
-    "EventListenerDescriptor",
-    "listener",
-    "Plugin",
-]
+__all__ = ["Plugin"]
 
-import inspect
-import types
-import typing
+import typing as t
+from collections import defaultdict
 
 import hikari
 
-from lightbulb import commands
-from lightbulb import context as context_
+from lightbulb.utils import data_store
 
-T = typing.TypeVar("T")
-EventT_co = typing.TypeVar("EventT_co", bound=hikari.Event, covariant=True)
-
-
-class EventListenerDescriptor:
-    """
-    Descriptor for a listener.
-
-    This provides the same introspective logic as :meth:`hikari.BotApp.listen`, but
-    does so using a descriptor instead of directly subscribing the function. This
-    is detected when loading plugins as a way of defining event listeners within
-    plugins lazily.
-
-    It may either consume an explicit event type, or introspect the given callback
-    to get the type hint on the given callback for the event parameter after self.
-
-    This will only work with instance-method style classes.
-    """
-
-    def __init__(
-        self,
-        event_type: typing.Optional[typing.Type[EventT_co]],
-        callback: typing.Callable[[typing.Any, EventT_co], typing.Coroutine[typing.Any, typing.Any, None]],
-    ) -> None:
-        self.name: typing.Optional[str] = None
-        self.callback = callback
-        self.owner: typing.Optional[typing.Type[typing.Any]] = None
-
-        signature = inspect.signature(callback)
-        resolved_typehints = typing.get_type_hints(callback)
-        params = []
-
-        none_type = type(None)
-        for name, param in signature.parameters.items():
-            if isinstance(param.annotation, str):
-                param = param.replace(
-                    annotation=resolved_typehints[name] if name in resolved_typehints else inspect.Parameter.empty
-                )
-            if param.annotation is none_type:
-                param = param.replace(annotation=None)
-            params.append(param)
-
-        return_annotation = resolved_typehints.get("return", inspect.Signature.empty)
-        if return_annotation is none_type:
-            return_annotation = None
-
-        self.__signature__ = signature.replace(parameters=params, return_annotation=return_annotation)
-
-        if event_type is None:
-            if len(self.__signature__.parameters) != 2:
-                raise TypeError(
-                    f"Expected two positional parameters on event listener (self, event), "
-                    f"got {len(self.__signature__.parameters)}"
-                )
-
-            param_iterator = iter(self.__signature__.parameters.values())
-            next(param_iterator)  # discard "self"
-            event_param = next(param_iterator)
-
-            if event_param.kind not in (
-                inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                inspect.Parameter.POSITIONAL_ONLY,
-            ):
-                raise TypeError("Expected two positional parameters on event listener (self, event)")
-
-            if not issubclass(event_param.annotation, hikari.Event):
-                raise TypeError(
-                    "Event parameter annotation type must be a subclass of hikari.Event, or an explicit "
-                    "type must be given instead."
-                )
-
-            event_type = typing.cast("typing.Type[hikari.Event]", event_param.annotation)
-
-        self.event_type = event_type
-
-    def __set_name__(self, owner: typing.Type[typing.Any], name: str) -> None:
-        self.name = name
-        self.owner = owner
-
-    @typing.no_type_check
-    def __get__(self, instance: typing.Any, owner: typing.Type[typing.Any]) -> typing.Any:
-        if instance is None:
-            return owner
-        return types.MethodType(self.callback, instance)
-
-
-def listener(
-    event_type: typing.Optional[typing.Type[EventT_co]] = None,
-) -> typing.Callable[[T], EventListenerDescriptor]:
-    """
-    A decorator that registers a plugin method as an event listener.
-
-    Args:
-        event_type (Optional[ :obj:`hikari.Event` ]): The event to listen to. If
-            unspecified then it will be inferred from the method's typehint.
-
-    Example:
-
-        .. code-block:: python
-
-            import lightbulb
-            import hikari
-
-            class TestPlugin(lightbulb.Plugin):
-                @plugins.listener(hikari.MessageCreateEvent)
-                async def print_message(self, event):
-                    print(event.message.content)
-    """
-
-    def decorator(listener: T) -> EventListenerDescriptor:
-        return EventListenerDescriptor(event_type, listener)
-
-    return decorator
+if t.TYPE_CHECKING:
+    from lightbulb import app as app_
+    from lightbulb import checks as checks_
+    from lightbulb import commands
+    from lightbulb import events
 
 
 class Plugin:
     """
-    Independent class that can be loaded and unloaded from the bot
+    Container class for commands and listeners that can be loaded and unloaded from the bot
     to allow for hot-swapping of commands.
 
-    To use in your own bot you should subclass this for each plugin
-    you wish to create. Don't forget to cal ``super().__init__()`` if you
-    override the ``__init__`` method.
-
     Args:
-        name (Optional[ :obj:`str` ]): The name to register the plugin under. If unspecified will be the class name.
-
-    Example:
-
-        .. code-block:: python
-
-            import lightbulb
-
-            bot = lightbulb.Bot(...)
-
-            class MyPlugin(lightbulb.Plugin):
-
-                @lightbulb.command()
-                async def ping(self, ctx):
-                    await ctx.send("Pong!")
-
-            bot.add_plugin(MyPlugin())
+        name (:obj:`str`): The name of the plugin.
+        description (Optional[:obj:`str`]): Description of the plugin. Defaults to ``None``.
+        include_datastore (:obj:`bool`): Whether or not to create a :obj:`~.utils.data_store.DataStore` instance
+            internally for this plugin.
     """
 
-    def __init__(self, *, name: str = None) -> None:
-        self.name = self.__class__.__name__ if name is None else name
-        """The plugin's registered name."""
-        self.commands = set()
-        """A set containing all commands and groups registered to the plugin."""
-        self._commands: typing.MutableMapping[str, typing.Union[commands.Command, commands.Group]] = {}
-        self.listeners: typing.MutableMapping[
-            typing.Type[hikari.Event],
-            typing.MutableSequence[EventListenerDescriptor],
-        ] = {}
-        """Mapping of event to a listener method containing all listeners registered to the plugin."""
+    __slots__ = (
+        "name",
+        "description",
+        "d",
+        "_raw_commands",
+        "_all_commands",
+        "_listeners",
+        "_app",
+        "_checks",
+        "_error_handler",
+        "_remove_hook",
+    )
 
-        # we use type(self) since it will prevent the descriptor __get__ being
-        # invoked to convert the command to a bound instance.
-        for name, member in type(self).__dict__.items():
-            if isinstance(member, commands.Command):
-                if not member.is_subcommand:
-                    # using self here to now get the bound command.
-                    self._commands[member.name] = getattr(self, name)
-                    self._commands[member.name].plugin = self
-                    self.commands.add(self._commands[member.name])
-
-            elif isinstance(member, EventListenerDescriptor):
-                if member.event_type not in self.listeners:
-                    self.listeners[member.event_type] = []
-                self.listeners[member.event_type].append(member)
-
-    def __repr__(self) -> str:
-        return f"<lightbulb.Plugin {self.name} at {hex(id(self))}>"
-
-    def plugin_remove(self) -> None:
+    def __init__(self, name: str, description: t.Optional[str] = None, include_datastore: bool = False) -> None:
+        self.name = name
+        """The plugin's name."""
+        self.description = description or ""
+        """The plugin's description."""
+        self.d: t.Optional[data_store.DataStore] = None
+        """A :obj:`~.utils.data_store.DataStore` instance enabling storage of custom data without subclassing.
+        This will be ``None`` unless you explicitly specify you want the data storage instance included by passing
+        in the kwarg ``include_datastore=True`` to the constructor.
         """
-        A method that will be called just before the plugin is removed from
-        the bot. This method **cannot** be a coroutine, it must be a regular
-        function.
+        if include_datastore:
+            self.d = data_store.DataStore()
 
-        You may with use this for any cleanup that the plugin may require.
+        self._raw_commands: t.List[commands.base.CommandLike] = []
+        self._all_commands: t.List[commands.base.Command] = []
+
+        self._listeners: t.MutableMapping[
+            t.Type[hikari.Event], t.List[t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]]]
+        ] = defaultdict(list)
+
+        self._checks: t.List[checks_.Check] = []
+        self._error_handler: t.Optional[
+            t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]
+        ] = None
+        self._remove_hook: t.Optional[t.Callable[[], t.Union[t.Coroutine[t.Any, t.Any, None], None]]] = None
+
+        self._app: t.Optional[app_.BotApp] = None
+
+    @property
+    def app(self) -> t.Optional[app_.BotApp]:
+        """The :obj:`~.app.BotApp` instance that the plugin is registered to."""
+        return self._app
+
+    @app.setter
+    def app(self, val: app_.BotApp) -> None:
+        self._app = val
+        # Commands need the BotApp instance in order to be instantiated
+        # so we wait until the instance is injected in order to create the Command instanced
+        self.create_commands()
+
+    @property
+    def bot(self) -> t.Optional[app_.BotApp]:
+        """Alias for :obj:`~Plugin.app`"""
+        return self._app
+
+    def create_commands(self) -> None:
         """
-        pass
-
-    async def plugin_check(self, context: context_.Context) -> bool:
-        """
-        A check method called for only the commands inside the plugin.
-
-        This method **must** be a coroutine and return a boolean-like value
-        or raise an error when called.
-
-        Args:
-            context (:obj:`~.context.Context`): The command invocation context.
+        Creates the command objects implemented by the :obj:`~.commands.base.CommandLike` objects registered
+        to the plugin.
 
         Returns:
-            :obj:`bool`: Whether the check passed or failed.
+            ``None``
         """
-        return True
+        assert self._app is not None
+        for command_like in self._raw_commands:
+            commands_to_impl: t.Sequence[t.Type[commands.base.Command]] = getattr(
+                command_like.callback, "__cmd_types__", []
+            )
+            for cmd_type in commands_to_impl:
+                cmd = cmd_type(self._app, command_like)
 
-    def walk_commands(self) -> typing.Generator[commands.Command, None, None]:
-        """
-        A generator that walks through all commands, groups and subcommands registered to this plugin.
+                if cmd.is_subcommand:
+                    continue
 
-        Yields:
-            :obj:`~.commands.Command`: All commands, groups and subcommands registered to this plugin.
+                cmd._validate_attributes()
+
+                cmd.plugin = self
+                self._all_commands.append(cmd)
+
+    def command(
+        self, cmd_like: t.Optional[commands.base.CommandLike] = None
+    ) -> t.Union[commands.base.CommandLike, t.Callable[[commands.base.CommandLike], commands.base.CommandLike]]:
         """
-        for command in self.commands:
-            yield command
-            if isinstance(command, commands.Group):
-                yield from command.walk_commands()
+        Adds a :obj:`~.commands.base.CommandLike` object as a command to the plugin. This method can be used as a
+        first or second order decorator, or called manually with the :obj:`~.commands.CommandLike` instance to
+        add as a command.
+        """
+        if cmd_like is not None:
+            self._raw_commands.append(cmd_like)
+            return cmd_like
+
+        def decorate(cmd_like_: commands.base.CommandLike) -> commands.base.CommandLike:
+            self.command(cmd_like_)
+            return cmd_like_
+
+        return decorate
+
+    def listener(
+        self,
+        event: t.Type[hikari.Event],
+        listener_func: t.Optional[t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]]] = None,
+        bind: bool = False,
+    ) -> t.Union[
+        t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]],
+        t.Callable[
+            [t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]]],
+            t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]],
+        ],
+    ]:
+        """
+        Adds a listener function to the plugin. This method can be used as a second order decorator, or called
+        manually with the event type and function to add to the plugin as a listener.
+
+        Args:
+            event (Type[:obj:`~hikari.events.base_events.Event`): Event that the listener is for.
+            bind (:obj:`bool`): Whether or not to bind the listener function to the plugin. If ``True``, the
+                function will be converted into a bound method and so will be called with the plugin as the
+                first argument, and the error event as the second argument. Defaults to ``False``.
+        """
+        if listener_func is not None:
+            if bind:
+                listener_func = listener_func.__get__(self)  # type: ignore
+            assert listener_func is not None
+            self._listeners[event].append(listener_func)
+            return listener_func
+
+        def decorate(
+            func: t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]]
+        ) -> t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]]:
+            # TODO - allow getting event type from type hint
+            if bind:
+                func = func.__get__(self)  # type: ignore
+            self.listener(event, func)
+            return func
+
+        return decorate
+
+    def set_error_handler(
+        self,
+        func: t.Optional[t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]] = None,
+        bind: bool = False,
+    ) -> t.Union[
+        t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, t.Optional[bool]]],
+        t.Callable[
+            [t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]],
+            t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, t.Optional[bool]]],
+        ],
+    ]:
+        """
+        Sets the error handler function for the plugin. This method can be used as a second order decorator,
+        or called manually with the event type and function to set the plugin's error handler to.
+
+        Args:
+            bind (:obj:`bool`): Whether or not to bind the error handler function to the plugin. If ``True``, the
+                function will be converted into a bound method and so will be called with the plugin as the
+                first argument, and the error event as the second argument. Defaults to ``False``.
+        """
+        if func is not None:
+            if bind:
+                func = func.__get__(self)  # type: ignore
+            assert func is not None
+            self._error_handler = func
+            return func
+
+        def decorate(
+            func_: t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]
+        ) -> t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]:
+            if bind:
+                func_ = func_.__get__(self)  # type: ignore
+            self._error_handler = func_
+            return func_
+
+        return decorate
+
+    def remove_hook(
+        self,
+        func: t.Optional[t.Callable[[], t.Union[t.Coroutine[t.Any, t.Any, None], None]]] = None,
+        bind: bool = False,
+    ) -> t.Union[
+        t.Callable[[], t.Union[t.Coroutine[t.Any, t.Any, None], None]],
+        t.Callable[
+            [t.Callable[[], t.Union[t.Coroutine[t.Any, t.Any, None], None]]],
+            t.Callable[[], t.Union[t.Coroutine[t.Any, t.Any, None], None]],
+        ],
+    ]:
+        """
+        Sets the remove hook function for the plugin. This method can be used as a second order decorator,
+        or called manually with the function to set the plugin's remove hook to. The registered function will
+        be called when the plugin is removed from the bot so may be useful for teardown.
+
+        This function will be called **after** all the members of the plugin (listeners and commands) have already
+        been removed from the bot.
+
+        Args:
+            bind (:obj:`bool`): Whether or not to bind the remove hook function to the plugin. If ``True``, the
+                function will be converted into a bound method and so will be called with the plugin as an
+                argument. Defaults to ``False``.
+        """
+        if func is not None:
+            if bind:
+                func = func.__get__(self)  # type: ignore
+            assert func is not None
+            self._remove_hook = func
+            return func
+
+        def decorate(
+            func_: t.Callable[[], t.Union[t.Coroutine[t.Any, t.Any, None], None]]
+        ) -> t.Callable[[], t.Union[t.Coroutine[t.Any, t.Any, None], None]]:
+            if bind:
+                func_ = func_.__get__(self)  # type: ignore
+            self._remove_hook = func_
+            return func_
+
+        return decorate
+
+    def add_checks(self, *checks: checks_.Check) -> None:
+        """
+        Adds one or more checks to the plugin object. These checks will be run for
+        all commands in the plugin.
+
+        Args:
+            *checks (:obj:`~.checks.Check`): Check object(s) to add to the command.
+
+        Returns:
+            ``None``
+        """
+        self._checks.extend(checks)

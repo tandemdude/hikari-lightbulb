@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © Thomm.o 2021
+# Copyright © tandemdude 2020-present
 #
 # This file is part of Hikari Command Handler.
 #
@@ -28,14 +28,7 @@ SCRIPT_PATHS = [
     "docs/source/conf.py",
 ]
 
-options.sessions = ["format_fix", "test", "sphinx"]
-
-
-@nox.session()
-def test(session):
-    session.install("-r", "test_requirements.txt")
-    session.install("-r", "requirements.txt")
-    session.run("python", "-m", "pytest", "tests", "--testdox")
+options.sessions = ["format_fix", "mypy", "sphinx"]
 
 
 @nox.session()
@@ -49,12 +42,19 @@ def format_fix(session):
 # noinspection PyShadowingBuiltins
 @nox.session()
 def format(session):
-    session.run("pip", "install", "-U", "black")
+    session.install("-U", "black")
     session.run("python", "-m", "black", *SCRIPT_PATHS, "--check")
+
+
+@nox.session()
+def mypy(session):
+    session.install("-Ur", "requirements.txt")
+    session.install("-U", "mypy")
+    session.run("python", "-m", "mypy", "lightbulb")
 
 
 @nox.session(reuse_venv=True)
 def sphinx(session):
-    session.install("-U", "sphinx", "sphinx_rtd_theme")
+    session.install("-Ur", "docs_requirements.txt")
     session.install("-Ur", "requirements.txt")
     session.run("python", "-m", "sphinx.cmd.build", "docs/source", "docs/build", "-b", "html")

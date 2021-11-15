@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © Thomm.o 2021
+# Copyright © tandemdude 2020-present
 #
 # This file is part of Lightbulb.
 #
@@ -19,9 +19,10 @@ import os
 import re
 import types
 
-from setuptools import setup, find_namespace_packages, dist
+from setuptools import dist
+from setuptools import find_namespace_packages
+from setuptools import setup
 from setuptools.command import install
-
 
 name = "lightbulb"
 
@@ -54,7 +55,6 @@ def parse_requirements_file(path):
 
 meta = parse_meta()
 
-
 setup(
     name="hikari-lightbulb",
     version=meta.version,
@@ -69,7 +69,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=parse_requirements_file("requirements.txt"),
-    python_requires=">=3.8.0,<3.10",
+    python_requires=">=3.8.0,<3.11",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Framework :: AsyncIO",
@@ -78,6 +78,7 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: 3 :: Only",
         "Topic :: Software Development :: Libraries",

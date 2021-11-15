@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © Thomm.o 2021
+# Copyright © tandemdude 2020-present
 #
 # This file is part of Lightbulb.
 #
@@ -15,19 +15,22 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-import hikari
-
 import lightbulb
+from lightbulb import commands
 
-bot = lightbulb.Bot(prefix="!", token="YOUR_TOKEN", intents=hikari.Intents.ALL_UNPRIVILEGED)
-
-
-class ExamplePlugin(lightbulb.Plugin):
-    @lightbulb.command()
-    async def ping(self, ctx):
-        """Checks that the bot is alive"""
-        await ctx.respond("Pong!")
+bot = lightbulb.BotApp(prefix="!", token="YOUR_TOKEN")
 
 
-bot.add_plugin(ExamplePlugin())
+plugin = lightbulb.Plugin("Example Plugin")
+
+
+@plugin.command()
+@lightbulb.option("text", "Text to repeat", modifier=commands.OptionModifier.CONSUME_REST)
+@lightbulb.command("echo", "Repeats the user's input")
+@lightbulb.implements(commands.PrefixCommand)
+async def echo(ctx):
+    await ctx.respond(ctx.options.text)
+
+
+bot.add_plugin(plugin)
 bot.run()

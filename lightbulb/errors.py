@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © Thomm.o 2021
+# Copyright © tandemdude 2020-present
 #
 # This file is part of Lightbulb.
 #
@@ -17,330 +17,240 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__: typing.Final[typing.List[str]] = [
+__all__ = [
     "LightbulbError",
-    "ExtensionError",
-    "ExtensionAlreadyLoaded",
-    "ExtensionNotLoaded",
-    "ExtensionMissingLoad",
-    "ExtensionMissingUnload",
-    "CommandError",
+    "ApplicationCommandCreationFailed",
     "CommandNotFound",
-    "NotEnoughArguments",
-    "TooManyArguments",
-    "ConverterFailure",
+    "CommandInvocationError",
     "CommandIsOnCooldown",
-    "CommandSyntaxError",
-    "PrematureEOF",
-    "UnclosedQuotes",
+    "ConverterFailure",
+    "NotEnoughArguments",
     "CheckFailure",
+    "InsufficientCache",
+    "NotOwner",
     "OnlyInGuild",
     "OnlyInDM",
-    "NotOwner",
     "BotOnly",
+    "WebhookOnly",
     "HumanOnly",
     "NSFWChannelOnly",
+    "ExtensionMissingUnload",
+    "ExtensionNotFound",
+    "ExtensionNotLoaded",
+    "ExtensionMissingLoad",
+    "ExtensionAlreadyLoaded",
+    "CommandAlreadyExists",
     "MissingRequiredRole",
     "MissingRequiredPermission",
     "BotMissingRequiredPermission",
-    "MissingRequiredAttachment",
-    "CommandInvocationError",
 ]
 
-import abc
-import typing
+import typing as t
 
 import hikari
 
-from lightbulb import commands
+if t.TYPE_CHECKING:
+    from lightbulb import commands
 
 
 class LightbulbError(Exception):
-    """Base for any exception raised by lightbulb."""
+    """
+    Base lightbulb exception class. All errors raised by lightbulb will be a subclass
+    of this exception.
+    """
 
 
-class ExtensionError(LightbulbError):
-    """Base exception for errors incurred during the loading and unloading of extensions."""
-
-    def __init__(self, text: str) -> None:
-        self.text: str = text
-        """The error text."""
+class ApplicationCommandCreationFailed(LightbulbError):
+    """Exception raised when initialisation of application commands fails."""
 
 
-class ExtensionAlreadyLoaded(ExtensionError):
+class ExtensionNotFound(LightbulbError):
+    """Exception raised when an attempt is made to load an extension that does not exist."""
+
+
+class ExtensionAlreadyLoaded(LightbulbError):
     """Exception raised when an extension already loaded is attempted to be loaded."""
 
 
-class ExtensionNotLoaded(ExtensionError):
-    """Exception raised when an extension not already loaded is attempted to be unloaded."""
-
-
-class ExtensionMissingLoad(ExtensionError):
+class ExtensionMissingLoad(LightbulbError):
     """Exception raised when an extension is attempted to be loaded but does not contain a load function"""
 
 
-class ExtensionMissingUnload(ExtensionError):
+class ExtensionMissingUnload(LightbulbError):
     """Exception raised when an extension is attempted to be unloaded but does not contain an unload function"""
 
 
-class CommandError(LightbulbError):
-    """Base exception for errors incurred during handling of commands."""
+class ExtensionNotLoaded(LightbulbError):
+    """Exception raised when an extension not already loaded is attempted to be unloaded."""
 
 
-class CommandNotFound(CommandError):
+class CommandAlreadyExists(LightbulbError):
     """
-    Exception raised when a command when attempted to be invoked but one with that name could not be found.
+    Error raised when attempting to add a command to the bot but a name or alias
+    for the command conflicts with a command that already exists.
     """
 
-    def __init__(self, invoked_with: str) -> None:
+
+class CommandNotFound(LightbulbError):
+    """
+    Error raised when a command is attempted to be invoked but an implementation
+    is not found. This will only be raised for prefix commands.
+    """
+
+    __slots__ = ("invoked_with",)
+
+    def __init__(self, *args: t.Any, invoked_with: str) -> None:
+        super().__init__(*args)
         self.invoked_with: str = invoked_with
-        """The command string that was attempted to be invoked."""
+        """The name or alias of the command that was used."""
 
 
-class NotEnoughArguments(CommandError):
+class CommandInvocationError(LightbulbError):
     """
-    Exception raised when a command is run without a sufficient number of arguments.
-    """
-
-    def __init__(self, command: commands.Command, missing_args: typing.List[str]) -> None:
-        self.command: commands.Command = command
-        """The command string that was attempted to be invoked."""
-        self.missing_args: typing.List[str] = missing_args
-        """The required arguments that are missing."""
-
-
-class TooManyArguments(CommandError):
-    """
-    Exception raised when a command is run with too many arguments, and the command has been
-    defined to not accept any extra arguments when invoked.
+    Error raised when an error is encountered during command invocation. This
+    wraps the original exception that caused it, which is accessible through
+    ``CommandInvocationError.__cause__`` or ``CommandInvocationError.original``.
     """
 
-    def __init__(self, command: commands.Command) -> None:
-        self.command: commands.Command = command
-        """The command string that was attempted to be invoked."""
+    __slots__ = ("original",)
+
+    def __init__(self, *args: t.Any, original: Exception) -> None:
+        super().__init__(*args)
+        self.original = original
+        """The exception that caused this to be raised. Also accessible through ``CommandInvocationError.__cause__``"""
+        self.__cause__ = original
 
 
-class ConverterFailure(CommandError):
+class CommandIsOnCooldown(LightbulbError):
     """
-    Exception raised when a converter for a command argument fails.
-    """
-
-    def __init__(self, text: typing.Optional[str] = None) -> None:
-        self.text: typing.Optional[str] = text
-        """The error text."""
-
-
-class CommandIsOnCooldown(CommandError):
-    """
-    Exception raised when a command is attempted to be run but is currently on cooldown.
+    Error raised when a command was on cooldown when it was attempted to be invoked.
     """
 
-    def __init__(self, text: str, command: commands.Command, retry_in: float) -> None:
-        self.text: str = text
-        """The error text."""
+    __slots__ = ("retry_after",)
 
-        self.command: commands.Command = command
-        """The command that is on cooldown."""
-
-        self.retry_in: float = retry_in
-        """Number of seconds remaining for the cooldown."""
+    def __init__(self, *args: t.Any, retry_after: float) -> None:
+        super().__init__(*args)
+        self.retry_after: float = retry_after
+        """The amount of time in seconds remaining until the cooldown expires."""
 
 
-class CommandSyntaxError(CommandError, abc.ABC):
+class ConverterFailure(LightbulbError):
     """
-    Base error raised if a syntax issue occurs parsing invocation arguments.
+    Error raised when option type conversion fails while prefix command arguments are being parsed.
     """
 
-    # Forces the class to be abstract.
-    @abc.abstractmethod
-    def __init__(self) -> None:
-        ...
+    __slots__ = ("option",)
+
+    def __init__(self, *args: t.Any, opt: commands.base.OptionLike) -> None:
+        super().__init__(*args)
+        self.option: commands.base.OptionLike = opt
+        """The option that could not be converted."""
 
 
-class PrematureEOF(CommandSyntaxError):
+class NotEnoughArguments(LightbulbError):
     """
-    Error raised if EOF (end of input) was reached, but more content was
-    expected.
-    """
-
-    def __init__(self) -> None:
-        # Required to override the abstract super init.
-        super().__init__()
-
-
-class UnclosedQuotes(CommandSyntaxError):
-    """
-    Error raised when no closing quote is found for a quoted argument.
+    Error raised when a prefix command expects more options than could be parsed from the user's input.
     """
 
-    def __init__(self, text: str) -> None:
-        # Required to override the abstract super init.
-        super().__init__()
-        self.text = text
-        """The text that caused the error to be raised."""
+    __slots__ = ("missing_options",)
+
+    def __init__(self, *args: t.Any, missing: t.Sequence[commands.base.OptionLike]) -> None:
+        super().__init__(*args)
+        self.missing_options: t.Sequence[commands.base.OptionLike] = missing
+        """The missing options from the command invocation."""
 
 
-class UnexpectedQuotes(CommandSyntaxError):
+class CheckFailure(LightbulbError):
     """
-    Error raised when a quote mark is found in non-quoted string.
-    """
-
-    def __init__(self, quote: str) -> None:
-        super().__init__()
-        self.quote = quote
-        """The quote mark that caused the error to be raised."""
-
-
-class ExpectedSpaces(CommandSyntaxError):
-    """
-    Error raised when no spaces found in the end of a quoted string
+    Error raised when a check fails before command invocation. If another error caused this
+    to be raised then you can access it using ``CheckFailure.__cause__``.
     """
 
-    def __init__(self, char: str) -> None:
-        super().__init__()
-        self.char = char
-        """The character that's expected to be a space character"""
 
-
-class CheckFailure(CommandError):
-    """
-    Base error that is raised when a check fails for a command. Anything raised by a check
-    should inherit from this class.
-    """
-
-    def __init__(self, text: typing.Optional[str] = None) -> None:
-        self.text: typing.Optional[str] = text
-        """The error text."""
-
-
-class OnlyInGuild(CheckFailure):
-    """
-    Error raised when a command marked as guild only is attempted to be invoked in DMs.
-    """
-
-    def __init__(self, text: str) -> None:
-        self.text: str = text
-        """The error text."""
-
-
-class OnlyInDM(CheckFailure):
-    """
-    Error raised when a command marked as DM only is attempted to be invoked in a guild.
-    """
-
-    def __init__(self, text: str) -> None:
-        self.text: str = text
-        """The error text."""
+class InsufficientCache(CheckFailure):
+    pass
 
 
 class NotOwner(CheckFailure):
     """
-    Error raised when a command marked as owner only is attempted to be invoked by another user.
+    Error raised when a user who is not the owner of the bot attempts to use a command
+    that is restricted to owners only.
     """
 
-    def __init__(self, text: str) -> None:
-        self.text: str = text
-        """The error text."""
+
+class OnlyInGuild(CheckFailure):
+    """
+    Error raised when a user attempts to use a command in DMs that has been restricted
+    to being used only in guilds.
+    """
+
+
+class OnlyInDM(CheckFailure):
+    """
+    Error raised when a user attempts to use a command in a guild that has been restricted
+    to being used only in DMs.
+    """
 
 
 class BotOnly(CheckFailure):
     """
-    Error raised when the command invoker is not a bot.
+    Error raised when any entity other than a bot attempts to use a command that has been
+    restricted to being used only by bots.
     """
-
-    def __init__(self, text: str) -> None:
-        self.text: str = text
-        """The error text."""
 
 
 class WebhookOnly(CheckFailure):
     """
-    Error raised when the command invoker is not a webhook.
+    Error raised when any entity other than a webhook attempts to use a command that has been
+    restricted to being used only by webhooks.
     """
-
-    def __init__(self, text: str) -> None:
-        self.text: str = text
-        """The error text."""
 
 
 class HumanOnly(CheckFailure):
     """
-    Error raised when the command invoker is not an human.
+    Error raised when any entity other than a human attempts to use a command that has been
+    restricted to being used only by humans.
     """
-
-    def __init__(self, text: str) -> None:
-        self.text: str = text
-        """The error text."""
 
 
 class NSFWChannelOnly(CheckFailure):
     """
-    Error raised when a command that must be invoked in an NSFW channel is attempted to be invoked outside of one.
+    Error raised when a user attempts to use a command in a non-NSFW channel that has
+    been restricted to only being used in NSFW channels.
     """
-
-    def __init__(self, text: str) -> None:
-        self.text: str = text
-        """The error text."""
 
 
 class MissingRequiredRole(CheckFailure):
     """
-    Error raised when the member invoking a command is missing one or more role required.
+    Error raised when the member invoking a command is missing one or more of the required roles.
     """
-
-    def __init__(self, text: str) -> None:
-        self.text: str = text
-        """The error text."""
 
 
 class MissingRequiredPermission(CheckFailure):
     """
-    Error raised when the member invoking a command is missing one or more permission required.
+    Error raised when the member invoking a command is missing one or more of the required permissions
+    in order to be able to run the command.
     """
 
-    def __init__(self, text: str, permissions: hikari.Permissions) -> None:
-        self.text: str = text
-        """The error text."""
-        self.permissions: hikari.Permissions = permissions
-        """Permission(s) the bot is missing."""
+    def __init__(self, *args: t.Any, perms: hikari.Permissions) -> None:
+        super().__init__(*args)
+        self.missing_perms = perms
+        """The permissions that the member is missing."""
 
 
 class BotMissingRequiredPermission(CheckFailure):
     """
-    Error raised when the bot is missing one or more permission required for the command to be run.
+    Error raised when the bot is missing one or more of the required permissions
+    in order to be able to run the command.
     """
 
-    def __init__(self, text: str, permissions: hikari.Permissions) -> None:
-        self.text: str = text
-        """The error text."""
-        self.permissions: hikari.Permissions = permissions
-        """Permission(s) the bot is missing."""
+    def __init__(self, *args: t.Any, perms: hikari.Permissions) -> None:
+        super().__init__(*args)
+        self.missing_perms = perms
+        """The permissions that the bot is missing."""
 
 
 class MissingRequiredAttachment(CheckFailure):
     """
-    Error raised when the command invocation message is missing an attachment, or an
-    attachment with the correct file extension.
+    Error raised when an attachment is required for the command but none were supplied with the invocation.
     """
-
-    def __init__(self, text) -> None:
-        self.text: str = text
-        """The error text."""
-
-
-class CommandInvocationError(CommandError):
-    """
-    Error raised if an error is encountered during command invocation. This will only be raised
-    if all the checks passed and an error was raised somewhere inside the command.
-    This effectively acts as a wrapper for the original exception for easier handling in an error handler.
-    """
-
-    def __init__(self, text: str, original: Exception) -> None:
-        self.text: str = text
-        """The error text."""
-        self.original: Exception = original
-        """The original exception that caused this to be raised."""
-
-    @property
-    def __cause__(self) -> Exception:
-        return self.original

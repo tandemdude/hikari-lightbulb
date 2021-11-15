@@ -3,13 +3,27 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
-.. image:: https://img.shields.io/pypi/v/hikari-lightbulb.svg
-
-----
+.. |b1| image:: https://img.shields.io/badge/code%20style-black-000000.svg
+.. |b2| image:: https://img.shields.io/pypi/v/hikari-lightbulb.svg
+.. |b3| image:: https://img.shields.io/pypi/pyversions/hikari-lightbulb
+.. |b4| image:: https://github.com/tandemdude/hikari-lightbulb/actions/workflows/ci.yml/badge.svg?branch=master&event=push
+.. |b5| image:: https://img.shields.io/readthedocs/hikari-lightbulb
+.. |b6| image:: https://img.shields.io/badge/license-LGPL--3.0-brightgreen
+.. |b7| image:: https://img.shields.io/github/stars/tandemdude/hikari-lightbulb
+.. |b8| image:: https://img.shields.io/github/forks/tandemdude/hikari-lightbulb
+.. |b9| image:: https://img.shields.io/pypi/status/hikari-lightbulb
+.. |b10| image:: https://img.shields.io/badge/mypy-checked-black
 
 Lightbulb
 =========
+
+|b1| |b10|
+
+|b2| |b3| |b7| |b8|
+
+|b4| |b5| |b6| |b9|
+
+----
 
 Lightbulb is a command handler library designed for use with `Hikari <https://github.com/hikari-py/hikari>`_
 
@@ -27,12 +41,17 @@ Before doing so you should make sure you are on the latest version of the librar
 already exists for your bug or feature.
 
 Also see `Tanjun <https://fasterspeeding.github.io/Tanjun/master/>`_ if you would prefer different command handler
-syntax. Tanjun could be considered more powerful than Lightbulb for advanced applications, however it has a far
-steeper learning curve for new programmers, and programmers transitioning from discord.py. I reccommend taking a
-look at both Lightbulb and Tanjun before choosing which one you wish to use for your bot.
+syntax. I recommend taking a look at both Lightbulb and Tanjun before choosing which one you wish to use for your bot.
 
 `View Tanjun on GitHub <https://github.com/FasterSpeeding/Tanjun>`_
 
+**Helful Resources:**
+
+- `Hikari Documentation <https://www.hikari-py.dev/>`_
+
+- `Lightbulb Tutorial <https://neonjonn.readthedocs.io/en/latest/hikari-get-started/lightbulb.html>`_ (Thanks to NeonJonn)
+
+- :ref:`guides`
 
 **Contributors:**
 
@@ -52,16 +71,18 @@ look at both Lightbulb and Tanjun before choosing which one you wish to use for 
 
 - `norizon#2612 <https://github.com/norinorin>`_
 
+- `benn#1953 <https://github.com/ben2224>`_
+
+- `Parafoxia#1911 <https://github.com/parafoxia>`_
+
 **Index:**
 
 .. toctree::
    :maxdepth: 2
 
    getting-started
+   guide
    api-reference
-   utils-api-reference
-   slash-commands
-   custom-help
    changelog
 
 * :ref:`genindex`

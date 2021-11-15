@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © Thomm.o 2021
+# Copyright © tandemdude 2020-present
 #
 # This file is part of Lightbulb.
 #
@@ -17,11 +17,11 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__: typing.List[str] = [
-    "StringNavigator",
-    "EmbedNavigator",
-    "Navigator",
-    "NavButton",
+__all__ = [
+    "ReactionNavigator",
+    "ButtonNavigator",
+    "ReactionButton",
+    "ComponentButton",
     "next_page",
     "prev_page",
     "first_page",
@@ -29,22 +29,23 @@ __all__: typing.List[str] = [
     "stop",
 ]
 
-import abc
 import asyncio
-import typing
+import typing as t
 
 import hikari
+from hikari.api.special_endpoints import ActionRowBuilder
+from hikari.messages import ButtonStyle
 
-from lightbulb.context import Context
+from lightbulb import context as context_
 
 
-class NavButton:
+class ReactionButton:
     """
-    A navigator button. Contains the emoji linked to the button as well as
+    A reaction-based navigator button. Contains the emoji linked to the button as well as
     the coroutine to be called when the button is pressed.
 
     Args:
-        emoji (Union[ :obj:`str`, :obj:`~hikari.emojis.Emoji` ]): The emoji linked to the button.
+        emoji (Union[:obj:`str`, :obj:`~hikari.emojis.Emoji`]): The emoji linked to the button.
         callback: The coroutine function to be called on button press.
     """
 
@@ -52,8 +53,8 @@ class NavButton:
 
     def __init__(
         self,
-        emoji: typing.Union[str, hikari.Emoji],
-        callback: typing.Callable[[Navigator, hikari.ReactionAddEvent], typing.Coroutine[typing.Any, typing.Any, None]],
+        emoji: t.Union[str, hikari.Emoji],
+        callback: t.Callable[[ReactionNavigator[T], hikari.ReactionAddEvent], t.Coroutine[t.Any, t.Any, None]],
     ) -> None:
         if isinstance(emoji, str):
             emoji = hikari.Emoji.parse(emoji)
@@ -74,7 +75,7 @@ class NavButton:
             return event.emoji_id == self.emoji.id
         return event.emoji_name == self.emoji.name
 
-    def press(self, nav: Navigator, event: hikari.ReactionAddEvent) -> typing.Coroutine[typing.Any, typing.Any, None]:
+    def press(self, nav: ReactionNavigator[T], event: hikari.ReactionAddEvent) -> t.Coroutine[t.Any, t.Any, None]:
         """
         Call the button's callback coroutine and return the awaitable.
 
@@ -84,18 +85,87 @@ class NavButton:
         return self.callback(nav, event)
 
 
-T = typing.TypeVar("T")
-
-
-async def next_page(nav: Navigator, _) -> None:
+class ComponentButton:
     """
-    :obj:`NavButton` callback to make the navigator go to the next page.
+    A component-based navigator button. Contains the custom_id linked to the button as well as
+    the coroutine to be called when the button is pressed.
+
+    Args:
+        label (:obj:`str`): The label of the button.
+        label_is_emoji (:obj:`bool`): Whether the label is an emoji or not. This affects whether ``set_label`` or
+            ``set_emoji`` is called when building the button.
+        style (:obj:`hikari.ButtonStyle`): The style of the button.
+        custom_id (:obj:`str`): The custom ID of the button.
+        callback: The coroutine function to be called on button press.
+    """
+
+    __slots__ = ("custom_id", "callback", "label", "style", "label_is_emoji")
+
+    def __init__(
+        self,
+        label: str,
+        label_is_emoji: bool,
+        style: ButtonStyle,
+        custom_id: str,
+        callback: t.Callable[[ButtonNavigator[T], hikari.InteractionCreateEvent], t.Coroutine[t.Any, t.Any, None]],
+    ) -> None:
+        self.label = label
+        self.label_is_emoji = label_is_emoji
+        self.style = style
+        self.custom_id = custom_id
+        self.callback = callback
+
+    def build(self, container: ActionRowBuilder, disabled: bool = False) -> None:
+        """
+        Build and add the button to the given container.
+
+        Args:
+            container (:obj:`hikari.api.special_endpoints.ActionRowBuilder`): The container to add the button to.
+            disabled (:obj:`bool`): Whether or not to display the button as disabled.
+
+        Returns:
+            ``None``
+        """
+        btn = container.add_button(self.style, self.custom_id)  # type: ignore
+        btn.set_is_disabled(disabled)
+        getattr(btn, f"set_{'emoji' if self.label_is_emoji else 'label'}")(self.label)
+        btn.add_to_container()
+
+    def is_pressed(self, event: hikari.InteractionCreateEvent) -> bool:
+        """
+        Check if the button is pressed in a given event.
+
+        Args:
+            event (:obj:`~hikari.InteractionCreateEvent`): The event to check the button is pressed in.
+
+        Returns:
+            :obj:`bool`: Whether or not the button is pressed in the given event.
+        """
+        assert isinstance(event.interaction, hikari.ComponentInteraction)
+        return event.interaction.custom_id == self.custom_id
+
+    def press(self, nav: ButtonNavigator[T], event: hikari.InteractionCreateEvent) -> t.Coroutine[t.Any, t.Any, None]:
+        """
+        Call the button's callback coroutine and return the awaitable.
+
+        Returns:
+            Coroutine[Any, Any, ``None``]: Returned awaitable from the coroutine call.
+        """
+        return self.callback(nav, event)
+
+
+T = t.TypeVar("T")
+
+
+async def next_page(nav: t.Union[ReactionNavigator[T], ButtonNavigator[T]], _: hikari.Event) -> None:
+    """
+    :obj:`NavButton` callback to make the ReactionNavigator go to the next page.
     """
     nav.current_page_index += 1
     nav.current_page_index %= len(nav.pages)
 
 
-async def prev_page(nav: Navigator, _) -> None:
+async def prev_page(nav: t.Union[ReactionNavigator[T], ButtonNavigator[T]], _: hikari.Event) -> None:
     """
     :obj:`NavButton` callback to make the navigator go to the previous page.
     """
@@ -104,80 +174,120 @@ async def prev_page(nav: Navigator, _) -> None:
         nav.current_page_index = len(nav.pages) - 1
 
 
-async def first_page(nav: Navigator, _) -> None:
+async def first_page(nav: t.Union[ReactionNavigator[T], ButtonNavigator[T]], _: hikari.Event) -> None:
     """
     :obj:`NavButton` callback to make the navigator go to the first page.
     """
     nav.current_page_index = 0
 
 
-async def last_page(nav: Navigator, _) -> None:
+async def last_page(nav: t.Union[ReactionNavigator[T], ButtonNavigator[T]], _: hikari.Event) -> None:
     """
     :obj:`NavButton` callback to make the navigator go to the last page.
     """
     nav.current_page_index = len(nav.pages) - 1
 
 
-async def stop(nav: Navigator, _) -> None:
+async def stop(nav: t.Union[ReactionNavigator[T], ButtonNavigator[T]], _: hikari.Event) -> None:
     """
     :obj:`NavButton` callback to make the navigator stop navigation.
     """
-    nav._msg.app.unsubscribe(hikari.ReactionAddEvent, nav._process_reaction_add)
+    assert nav._msg is not None
+    await nav._remove_listener()
     await nav._msg.delete()
     nav._msg = None
+    if nav._timeout_task is not None:
+        nav._timeout_task.cancel()
 
 
-class Navigator(abc.ABC, typing.Generic[T]):
+class ReactionNavigator(t.Generic[T]):
+    """
+    A reaction navigator system for navigating through a list of items that can be sent through the
+    ``content`` argument of :obj:`hikari.Message.respond`.
+
+    Default buttons:
+
+    - ``\\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\\N{VARIATION SELECTOR-16}`` (Go to first page)
+    - ``\\N{BLACK LEFT-POINTING TRIANGLE}\\N{VARIATION SELECTOR-16}`` (Go to previous page)
+    - ``\\N{BLACK SQUARE FOR STOP}\\N{VARIATION SELECTOR-16}`` (Stop navigation)
+    - ``\\N{BLACK RIGHT-POINTING TRIANGLE}\\N{VARIATION SELECTOR-16}`` (Go to next page)
+    - ``\\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\\N{VARIATION SELECTOR-16}`` (Go to last page)
+
+    Args:
+        pages (Sequence[T]): Pages to navigate through.
+
+    Keyword Args:
+        buttons (Optional[Sequence[:obj:`~.utils.nav.NavButton`]]): Buttons to
+            use the navigator with. Uses the default buttons if not specified.
+        timeout (:obj:`float`): The navigator timeout in seconds. After the timeout has expired, navigator reactions
+            will no longer work. Defaults to 120 (2 minutes).
+
+    Example:
+        .. code-block:: python
+
+            from lightbulb.utils import pag, nav
+
+            @bot.command()
+            async def foo(ctx):
+                paginated_help = pag.StringPaginator()
+                for l in thing_that_creates_a_lot_of_text.split("\\n"):
+                    paginated_help.add_line(l)
+                navigator = nav.ReactionNavigator(paginated_help.build_pages())
+                await navigator.run(ctx)
+    """
+
     def __init__(
         self,
-        pages: typing.Union[typing.Iterable[T], typing.Iterator[T]],
+        pages: t.Union[t.Iterable[T], t.Iterator[T]],
         *,
-        buttons: typing.Optional[typing.Sequence[NavButton]] = None,
+        buttons: t.Optional[t.Sequence[ReactionButton]] = None,
         timeout: float = 120,
     ) -> None:
         if not pages:
             raise ValueError("You cannot pass fewer than 1 page to the navigator.")
-        self.pages: typing.Sequence[T] = tuple(pages)
+        self.pages: t.Sequence[T] = tuple(pages)
 
         if buttons is not None:
-            if any(not isinstance(btn, NavButton) for btn in buttons):
-                raise TypeError("Buttons must be an instance of NavButton")
+            if any(not isinstance(btn, ReactionButton) for btn in buttons):
+                raise TypeError("Buttons must be an instance of ReactionButton")
 
+        self.buttons: t.Sequence[ReactionButton]
         if len(self.pages) == 1 and not buttons:
-            self.buttons = [NavButton("\N{BLACK SQUARE FOR STOP}\N{VARIATION SELECTOR-16}", stop)]
+            self.buttons = [ReactionButton("\N{BLACK SQUARE FOR STOP}\N{VARIATION SELECTOR-16}", stop)]
         else:
-            self.buttons: typing.Sequence[NavButton] = buttons if buttons is not None else self.create_default_buttons()
+            self.buttons = buttons if buttons is not None else self.create_default_buttons()
 
         self._timeout: float = timeout
         self.current_page_index: int = 0
-        self._context: typing.Optional[Context] = None
-        self._msg: typing.Optional[hikari.Message] = None
-        self._timeout_task = None
+        self._context: t.Optional[context_.base.Context] = None
+        self._msg: t.Optional[hikari.Message] = None
+        self._timeout_task: t.Optional[asyncio.Task[None]] = None
 
-    @abc.abstractmethod
     async def _edit_msg(self, message: hikari.Message, page: T) -> hikari.Message:
-        ...
+        return await message.edit(page)
 
-    @abc.abstractmethod
     async def _send_initial_msg(self, page: T) -> hikari.Message:
-        ...
+        assert self._context is not None
+        resp = await self._context.respond(page)
+        return await resp.message()
 
-    def create_default_buttons(self) -> typing.Sequence[NavButton]:
-        buttons = (
-            NavButton("\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}", first_page),
-            NavButton("\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", prev_page),
-            NavButton("\N{BLACK SQUARE FOR STOP}\N{VARIATION SELECTOR-16}", stop),
-            NavButton("\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", next_page),
-            NavButton("\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}", last_page),
-        )
+    def create_default_buttons(self) -> t.List[ReactionButton]:
+        buttons = [
+            ReactionButton(
+                "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}", first_page
+            ),
+            ReactionButton("\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", prev_page),
+            ReactionButton("\N{BLACK SQUARE FOR STOP}\N{VARIATION SELECTOR-16}", stop),
+            ReactionButton("\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", next_page),
+            ReactionButton(
+                "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}", last_page
+            ),
+        ]
         return buttons
 
     async def _process_reaction_add(self, event: hikari.ReactionAddEvent) -> None:
-        if (
-            event.user_id != self._context.message.author.id
-            or event.channel_id != self._context.channel_id
-            or event.message_id != self._msg.id
-        ):
+        assert self._context is not None and self._msg is not None
+        if event.user_id != self._context.author.id or event.message_id != self._msg.id:
             return
 
         for button in self.buttons:
@@ -191,26 +301,32 @@ class Navigator(abc.ABC, typing.Generic[T]):
                         pass
                 break
 
-    async def _remove_reaction_listener(self):
-        self._context.bot.unsubscribe(hikari.ReactionAddEvent, self._process_reaction_add)
+    async def _remove_listener(self) -> None:
+        assert self._context is not None
+        self._context.app.unsubscribe(hikari.ReactionAddEvent, self._process_reaction_add)
+
+        if self._msg is None:
+            return
+
         try:
             await self._msg.remove_all_reactions()
         except (hikari.ForbiddenError, hikari.NotFoundError):
             pass
 
-    async def _timeout_coro(self):
+    async def _timeout_coro(self) -> None:
         try:
             await asyncio.sleep(self._timeout)
-            await self._remove_reaction_listener()
+            await self._remove_listener()
         except asyncio.CancelledError:
             pass
 
-    async def run(self, context: Context) -> None:
+    async def run(self, context: context_.base.Context) -> None:
         """
         Run the navigator under the given context.
 
         Args:
-            context (:obj:`~.context.Context`): Context to run the navigator under
+            context (:obj:`~.context.base.Context`): Context
+                to run the navigator under.
 
         Returns:
             ``None``
@@ -224,11 +340,11 @@ class Navigator(abc.ABC, typing.Generic[T]):
             if context.guild_id is not None
             else hikari.Intents.DM_MESSAGE_REACTIONS
         )
-        if not (context.bot.intents & intent_to_check_for) == intent_to_check_for:
+        if not (context.app.intents & intent_to_check_for) == intent_to_check_for:
             raise hikari.MissingIntentError(intent_to_check_for)
 
         self._context = context
-        context.bot.subscribe(hikari.ReactionAddEvent, self._process_reaction_add)
+        context.app.subscribe(hikari.ReactionAddEvent, self._process_reaction_add)
         self._msg = await self._send_initial_msg(self.pages[self.current_page_index])
         for emoji in [button.emoji for button in self.buttons]:
             await self._msg.add_reaction(emoji)
@@ -238,33 +354,21 @@ class Navigator(abc.ABC, typing.Generic[T]):
         self._timeout_task = asyncio.create_task(self._timeout_coro())
 
 
-class StringNavigator(Navigator[str]):
+class ButtonNavigator(t.Generic[T]):
     """
-    A reaction navigator system for navigating through a list of string messages.
-
-    Default buttons:
-
-    - ``\\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\\N{VARIATION SELECTOR-16}`` (Go to first page)
-
-    - ``\\N{BLACK LEFT-POINTING TRIANGLE}\\N{VARIATION SELECTOR-16}`` (Go to previous page)
-
-    - ``\\N{BLACK SQUARE FOR STOP}\\N{VARIATION SELECTOR-16}`` (Stop navigation)
-
-    - ``\\N{BLACK RIGHT-POINTING TRIANGLE}\\N{VARIATION SELECTOR-16}`` (Go to next page)
-
-    - ``\\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\\N{VARIATION SELECTOR-16}`` (Go to last page)
+    A button navigator system for navigating through a list of items that can be sent through the
+    ``content`` argument of :obj:`hikari.Message.respond`.
 
     Args:
-        pages (Sequence[ :obj:`str` ]): Pages to navigate through.
+        pages (Sequence[T]): Pages to navigate through.
 
     Keyword Args:
-        buttons (Optional[ Sequence[ :obj:`~.utils.nav.NavButton` ] ]): Buttons to
+        buttons (Sequence[:obj:`~ComponentButton`]): Buttons to
             use the navigator with. Uses the default buttons if not specified.
-        timeout (:obj:`float`): The navigator timeout in seconds. After the timeout has expired, navigator reactions
-            will no longer work. Defaults to 120 (2 minutes).
+        timeout (:obj:`float`): The navigator timeout in seconds. After the timeout has expired, navigator buttons
+            are disabled and will no longer work. Defaults to 120 (2 minutes).
 
     Example:
-
         .. code-block:: python
 
             from lightbulb.utils import pag, nav
@@ -274,37 +378,141 @@ class StringNavigator(Navigator[str]):
                 paginated_help = pag.StringPaginator()
                 for l in thing_that_creates_a_lot_of_text.split("\\n"):
                     paginated_help.add_line(l)
-                navigator = nav.StringNavigator(paginated_help.build_pages())
+                navigator = nav.ButtonNavigator(paginated_help.build_pages())
                 await navigator.run(ctx)
-
     """
 
-    async def _edit_msg(self, message: hikari.Message, page: str) -> hikari.Message:
-        return await message.edit(page)
+    def __init__(
+        self,
+        pages: t.Union[t.Iterable[T], t.Iterator[T]],
+        *,
+        buttons: t.Optional[t.Sequence[ComponentButton]] = None,
+        timeout: float = 120,
+    ) -> None:
+        if not pages:
+            raise ValueError("You cannot pass fewer than 1 page to the navigator.")
+        self.pages: t.Sequence[T] = tuple(pages)
 
-    async def _send_initial_msg(self, page: str) -> hikari.Message:
-        return await self._context.respond(page)
+        self.buttons: t.Sequence[ComponentButton]
+        if len(self.pages) == 1 and not buttons:
+            self.buttons = [
+                ComponentButton(
+                    "\N{BLACK SQUARE FOR STOP}\N{VARIATION SELECTOR-16}", True, ButtonStyle.DANGER, "stop", stop
+                )
+            ]
+        else:
+            self.buttons = buttons if buttons is not None else self.create_default_buttons()
 
+        self._timeout: float = timeout
+        self.current_page_index: int = 0
+        self._context: t.Optional[context_.base.Context] = None
+        self._msg: t.Optional[hikari.Message] = None
+        self._timeout_task: t.Optional[asyncio.Task[None]] = None
 
-class EmbedNavigator(Navigator[hikari.Embed]):
-    """
-    A reaction navigator system for navigating through a list of embeds.
+    async def _send_initial_msg(self, page: T) -> hikari.Message:
+        assert self._context is not None
+        buttons = await self.build_buttons()
+        resp = await self._context.respond(page, component=buttons)
+        return await resp.message()
 
-    Args:
-        pages (Iterable[ :obj:`~hikari.embeds.Embed` ]): Pages to navigate through.
+    async def _edit_msg(self, inter: hikari.ComponentInteraction, page: T) -> None:
+        buttons = await self.build_buttons(disabled=True if self._msg is None else False)
+        try:
+            await inter.create_initial_response(hikari.ResponseType.MESSAGE_UPDATE, page, component=buttons)
+        except hikari.NotFoundError:
+            await inter.edit_initial_response(page, component=buttons)
 
-    Keyword Args:
-        buttons (Optional[ Iterable[ :obj:`~.utils.nav.NavButton` ] ]): Buttons to
-            use the navigator with. Uses the default buttons if not specified.
-        timeout (:obj:`float`): The navigator timeout in seconds. After the timeout has expired, navigator reactions
-            will no longer work. Defaults to 120 (2 minutes).
+    def create_default_buttons(self) -> t.Sequence[ComponentButton]:
+        buttons = [
+            ComponentButton(
+                "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
+                True,
+                ButtonStyle.PRIMARY,
+                "first_page",
+                first_page,
+            ),
+            ComponentButton(
+                "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
+                True,
+                ButtonStyle.PRIMARY,
+                "prev_page",
+                prev_page,
+            ),
+            ComponentButton(
+                "\N{BLACK SQUARE FOR STOP}\N{VARIATION SELECTOR-16}", True, ButtonStyle.DANGER, "stop", stop
+            ),
+            ComponentButton(
+                "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
+                True,
+                ButtonStyle.PRIMARY,
+                "next_page",
+                next_page,
+            ),
+            ComponentButton(
+                "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}",
+                True,
+                ButtonStyle.PRIMARY,
+                "last_page",
+                last_page,
+            ),
+        ]
+        return buttons
 
-    Note:
-        See :obj:`~.utils.nav.StringNavigator` for the default buttons supplied by the navigator.
-    """
+    async def build_buttons(self, disabled: bool = False) -> t.Union[ActionRowBuilder, hikari.UndefinedType]:
+        assert self._context is not None
+        buttons = self._context.app.rest.build_action_row()
+        for button in self.buttons:
+            button.build(buttons, disabled)
+        return buttons
 
-    async def _edit_msg(self, message: hikari.Message, page: hikari.Embed) -> hikari.Message:
-        return await message.edit(embed=page)
+    async def _process_interaction_create(self, event: hikari.InteractionCreateEvent) -> None:
+        if not isinstance(event.interaction, hikari.ComponentInteraction):
+            return
 
-    async def _send_initial_msg(self, page: hikari.Embed) -> hikari.Message:
-        return await self._context.respond(embed=page)
+        if self._msg is None:
+            return
+
+        assert self._context is not None
+
+        if event.interaction.message.id != self._msg.id or event.interaction.user.id != self._context.author.id:
+            return
+
+        for button in self.buttons:
+            if button.is_pressed(event):
+                await button.press(self, event)
+                if self._msg is not None:
+                    await self._edit_msg(event.interaction, self.pages[self.current_page_index])
+                break
+
+    async def _remove_listener(self) -> None:
+        assert self._context is not None
+        self._context.app.unsubscribe(hikari.InteractionCreateEvent, self._process_interaction_create)
+
+        if self._msg is not None:
+            await self._msg.edit(component=await self.build_buttons(True))
+
+    async def _timeout_coro(self) -> None:
+        try:
+            await asyncio.sleep(self._timeout)
+            await self._remove_listener()
+        except asyncio.CancelledError:
+            pass
+
+    async def run(self, context: context_.base.Context) -> None:
+        """
+        Run the navigator under the given context.
+
+        Args:
+            context (:obj:`~.context.base.Context`): Context
+                to run the navigator under.
+
+        Returns:
+            ``None``
+        """
+        self._context = context
+        context.app.subscribe(hikari.InteractionCreateEvent, self._process_interaction_create)
+        self._msg = await self._send_initial_msg(self.pages[self.current_page_index])
+
+        if self._timeout_task is not None:
+            self._timeout_task.cancel()
+        self._timeout_task = asyncio.create_task(self._timeout_coro())

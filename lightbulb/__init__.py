@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © Thomm.o 2021
+# Copyright © tandemdude 2020-present
 #
 # This file is part of Lightbulb.
 #
@@ -15,43 +15,35 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-import typing
-
+from lightbulb import app
 from lightbulb import checks
-from lightbulb import command_handler
 from lightbulb import commands
 from lightbulb import context
 from lightbulb import converters
 from lightbulb import cooldowns
+from lightbulb import decorators
 from lightbulb import errors
 from lightbulb import events
-from lightbulb import help
+from lightbulb import help_command
 from lightbulb import plugins
-from lightbulb import slash_commands
-from lightbulb import stringview
 from lightbulb import utils
+from lightbulb.app import *
 from lightbulb.checks import *
-from lightbulb.command_handler import *
-from lightbulb.commands import *
-from lightbulb.context import *
-from lightbulb.converters import *
 from lightbulb.cooldowns import *
+from lightbulb.decorators import *
+from lightbulb.errors import *
 from lightbulb.events import *
-from lightbulb.help import *
+from lightbulb.help_command import *
 from lightbulb.plugins import *
-from lightbulb.stringview import *
 
-__all__: typing.Final[typing.List[str]] = [
-    *plugins.__all__,
-    *commands.__all__,
-    *converters.__all__,
-    *cooldowns.__all__,
-    *command_handler.__all__,
+__all__ = [
+    *app.__all__,
     *checks.__all__,
-    *context.__all__,
-    *stringview.__all__,
-    *help.__all__,
+    *cooldowns.__all__,
+    *decorators.__all__,
+    *errors.__all__,
     *events.__all__,
+    *plugins.__all__,
 ]
 
-__version__ = "1.2.5"
+__version__ = "2.0.0.a7"

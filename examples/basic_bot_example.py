@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © Thomm.o 2021
+# Copyright © tandemdude 2020-present
 #
 # This file is part of Lightbulb.
 #
@@ -18,30 +18,40 @@
 import hikari
 
 import lightbulb
+from lightbulb import commands
 
-bot = lightbulb.Bot(prefix="!", token="YOUR_TOKEN", intents=hikari.Intents.ALL_UNPRIVILEGED)
+bot = lightbulb.BotApp(prefix="!", token="YOUR_TOKEN", intents=hikari.Intents.ALL_UNPRIVILEGED)
 
 
 @bot.listen(hikari.ShardReadyEvent)
-async def ready_listener(event):
+async def ready_listener(_):
     print("The bot is ready!")
 
 
 @bot.command()
+@lightbulb.command("ping", "Checks that the bot is alive")
+@lightbulb.implements(commands.PrefixCommand)
 async def ping(ctx):
     """Checks that the bot is alive"""
     await ctx.respond("Pong!")
 
 
 @bot.command()
-async def add(ctx, num1: int, num2: int):
+@lightbulb.option("num2", "Second number", int)
+@lightbulb.option("num1", "First number", int)
+@lightbulb.command("add", "Adds the two given numbers together")
+@lightbulb.implements(commands.PrefixCommand)
+async def add(ctx):
     """Adds the two given numbers together"""
+    num1, num2 = ctx.options.num1, ctx.options.num2
     await ctx.respond(f"{num1} + {num2} = {num1 + num2}")
 
 
 @bot.command()
+@lightbulb.option("user", "User to greet", hikari.User)
+@lightbulb.command("greet", "Greets the specified user")
+@lightbulb.implements(commands.PrefixCommand)
 async def greet(ctx, user: hikari.User):
-    """Greets the specified user"""
     await ctx.respond(f"Hello {user.mention}!")
 
 

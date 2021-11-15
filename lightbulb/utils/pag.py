@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © Thomm.o 2021
+# Copyright © tandemdude 2020-present
 #
 # This file is part of Lightbulb.
 #
@@ -17,29 +17,29 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__: typing.Final[typing.List[str]] = ["StringPaginator", "EmbedPaginator", "Paginator"]
+__all__ = ["StringPaginator", "EmbedPaginator", "Paginator"]
 
 import abc
 import io
 import textwrap
-import typing
+import typing as t
 
 import hikari
 
-T = typing.TypeVar("T")
+T = t.TypeVar("T")
 
 
-class Paginator(abc.ABC, typing.Generic[T]):
+class Paginator(abc.ABC, t.Generic[T]):
     @abc.abstractmethod
     def __init__(
         self,
         *,
-        max_lines: typing.Optional[int] = None,
+        max_lines: t.Optional[int] = None,
         max_chars: int = 2000,
         prefix: str = "",
         suffix: str = "",
         line_separator: str = "\n",
-        page_factory: typing.Callable[[int, str], T] = lambda i, s: s,
+        page_factory: t.Callable[[int, str], T] = lambda i, s: s,  # type: ignore
     ) -> None:
         self._page_prefix: str = prefix
         self._page_suffix: str = suffix
@@ -67,14 +67,14 @@ class Paginator(abc.ABC, typing.Generic[T]):
         self._max_content_lines = max_lines - extra_lines if max_lines is not None else float("inf")
         self._line_separator = line_separator
         self._next_page: io.StringIO = io.StringIO()
-        self._pages: typing.List[str] = []
+        self._pages: t.List[str] = []
         self._page_factory = page_factory
         self.current_page: int = 0
 
     def __len__(self) -> int:
         return len(self._pages)
 
-    def build_pages(self, page_number_start: int = 1) -> typing.Iterator[T]:
+    def build_pages(self, page_number_start: int = 1) -> t.Iterator[T]:
         """
         The current pages that have been created.
 
@@ -94,12 +94,12 @@ class Paginator(abc.ABC, typing.Generic[T]):
         for i, page in enumerate(self._pages, start=page_number_start):
             yield self._page_factory(i, page)
 
-    def add_line(self, line: typing.Any) -> None:
+    def add_line(self, line: t.Any) -> None:
         """
         Add a line to the paginator.
 
         Args:
-            line (:obj:`typing.Any`): The line to add to the paginator.
+            line (Any): The line to add to the paginator.
                 Will be converted to a :obj:`str`.
 
         Returns:
@@ -137,7 +137,7 @@ class Paginator(abc.ABC, typing.Generic[T]):
             width=self._max_content_chars,
             expand_tabs=True,
             tabsize=4,
-            max_lines=self._max_content_lines,
+            max_lines=self._max_content_lines,  # type: ignore
         )
 
         lines = wrapper.wrap(line)
@@ -170,7 +170,7 @@ class Paginator(abc.ABC, typing.Generic[T]):
         self._next_page.seek(0, 0)
         self._next_page.truncate(0)
 
-    def _sizes(self) -> typing.Tuple[int, int]:
+    def _sizes(self) -> t.Tuple[int, int]:
         page = self._next_page.getvalue()[len(self._page_prefix) :]
         current_chars = len(page)
         current_lines = page.count(self._line_separator)
@@ -203,7 +203,6 @@ class StringPaginator(Paginator[str]):
             @bot.command()
             async def guilds(ctx):
                 guilds = await bot.rest.fetch_my_guilds()
-
                 pag = StringPaginator(max_lines=10)
                 for n, guild in enumerate(guilds, start=1):
                     pag.add_line(f"**{n}.** {guild.name}")
@@ -214,7 +213,7 @@ class StringPaginator(Paginator[str]):
     def __init__(
         self,
         *,
-        max_lines: typing.Optional[int] = None,
+        max_lines: t.Optional[int] = None,
         max_chars: int = 2000,
         prefix: str = "",
         suffix: str = "",
@@ -249,7 +248,7 @@ class EmbedPaginator(Paginator[hikari.Embed]):
     def __init__(
         self,
         *,
-        max_lines: typing.Optional[int] = None,
+        max_lines: t.Optional[int] = None,
         max_chars: int = 2048,
         prefix: str = "",
         suffix: str = "",
@@ -264,7 +263,7 @@ class EmbedPaginator(Paginator[hikari.Embed]):
             page_factory=lambda i, s: hikari.Embed(description=s).set_footer(text=f"Page {i}"),
         )
 
-    def embed_factory(self):
+    def embed_factory(self) -> t.Callable[[t.Callable[[int, str], hikari.Embed]], t.Callable[[int, str], hikari.Embed]]:
         """
         A decorator to mark a function as the paginator's embed factory. The page index and page content
         will be passed to the function when a new page is to be created.
@@ -275,7 +274,6 @@ class EmbedPaginator(Paginator[hikari.Embed]):
             .. code-block:: python
 
                 from random import randint
-
                 from lightbulb.utils.pag import EmbedPaginator
                 from hikari import Embed
 
@@ -289,13 +287,13 @@ class EmbedPaginator(Paginator[hikari.Embed]):
             :meth:`set_embed_factory`
         """
 
-        def decorate(func):
+        def decorate(func: t.Callable[[int, str], hikari.Embed]) -> t.Callable[[int, str], hikari.Embed]:
             self.set_embed_factory(func)
             return func
 
         return decorate
 
-    def set_embed_factory(self, func: typing.Callable[[int, str], hikari.Embed]) -> None:
+    def set_embed_factory(self, func: t.Callable[[int, str], hikari.Embed]) -> None:
         """
         Method to set a callable as the paginator's embed factory. Alternative to :meth:`embed_factory`.
 

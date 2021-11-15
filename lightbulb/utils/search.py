@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © Thomm.o 2021
+# Copyright © tandemdude 2020-present
 #
 # This file is part of Lightbulb.
 #
@@ -17,15 +17,15 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__: typing.Final[typing.List[str]] = ["get", "find"]
+__all__ = ["get", "find"]
 
-import typing
+import typing as t
 from operator import attrgetter
 
-T = typing.TypeVar("T")
+T = t.TypeVar("T")
 
 
-def get(sequence: typing.Iterable[T], **attrs) -> typing.Optional[T]:
+def get(sequence: t.Iterable[T], **attrs: t.Any) -> t.Optional[T]:
     """
     Get the first item from an iterable that matches all the parameters
     specified, or return ``None`` if no matching item was found.
@@ -55,7 +55,7 @@ def get(sequence: typing.Iterable[T], **attrs) -> typing.Optional[T]:
     return None
 
 
-def find(sequence: typing.Iterable[T], predicate: typing.Callable[[T], bool]) -> typing.Optional[T]:
+def find(sequence: t.Iterable[T], predicate: t.Callable[[T], bool]) -> t.Optional[T]:
     """
     Find the first item from an iterable that passes for the predicate specified,
     or return ``None`` if no matching item was found.

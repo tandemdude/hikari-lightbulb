@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © Thomm.o 2021
+# Copyright © tandemdude 2020-present
 #
 # This file is part of Lightbulb.
 #
@@ -16,30 +16,22 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 import lightbulb
+from lightbulb import commands
+
+example_plugin = lightbulb.Plugin("ExamplePlugin")
 
 
-class ExamplePlugin(lightbulb.Plugin):
-    @lightbulb.command()
-    async def ping(self, ctx):
-        """Checks that the bot is alive"""
-        await ctx.respond("Pong!")
-
-
-class ExampleSlashCommand(lightbulb.slash_commands.SlashCommand):
-    name = "ping"
-    description = "Checks that the bot is alive"
-
-    async def callback(self, context):
-        await context.respond("Pong!")
+@example_plugin.command()
+@lightbulb.command("ping", "Checks that the bot is alive")
+@lightbulb.implements(commands.PrefixCommand, commands.SlashCommand)
+async def ping(ctx):
+    """Checks that the bot is alive"""
+    await ctx.respond("Pong!")
 
 
 def load(bot):
-    bot.add_plugin(ExamplePlugin())
-    bot.add_slash_command(ExampleSlashCommand)
+    bot.add_plugin(example_plugin)
 
 
 def unload(bot):
-    bot.remove_plugin("ExamplePlugin")
-    # Name passed in here must be the name of the slash command
-    # as discord sees it. So "ping" in the above example, not "exampleslashcommand"
-    bot.remove_slash_command("ping")
+    bot.remove_plugin(example_plugin)

@@ -980,7 +980,7 @@ class BotApp(hikari.GatewayBot):
 
         Args:
             event (:obj:`~hikari.events.interaction_events.InteractionCreateEvent`): Event to get the slash context for.
-            command (:obj:`~.commands.slash.SlashCommand`); Command that the context is for.
+            command (:obj:`~.commands.slash.SlashCommand`): Command that the context is for.
             cls (Type[:obj:`~.context.slash.SlashContext`]): Context class to instantiate. Defaults to
                 :obj:`~.context.slash.SlashContext`.
 
@@ -1001,7 +1001,7 @@ class BotApp(hikari.GatewayBot):
         Args:
             event (:obj:`~hikari.events.interaction_events.InteractionCreateEvent`): Event to get the message context
                 for.
-            command (:obj:`~.commands.message.MessageCommand`); Command that the context is for.
+            command (:obj:`~.commands.message.MessageCommand`): Command that the context is for.
             cls (Type[:obj:`~.context.message.MessageContext`]): Context class to instantiate. Defaults to
                 :obj:`~.context.message.MessageContext`.
 
@@ -1021,7 +1021,7 @@ class BotApp(hikari.GatewayBot):
 
         Args:
             event (:obj:`~hikari.events.interaction_events.InteractionCreateEvent`): Event to get the user context for.
-            command (:obj:`~.commands.slash.SlashCommand`); Command that the context is for.
+            command (:obj:`~.commands.slash.SlashCommand`): Command that the context is for.
             cls (Type[:obj:`~.context.user.UserContext`]): Context class to instantiate. Defaults to
                 :obj:`~.context.user.UserContext`.
 

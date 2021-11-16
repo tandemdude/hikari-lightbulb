@@ -35,7 +35,7 @@ if t.TYPE_CHECKING:
 class PrefixGroupMixin(abc.ABC):
     __slots__ = ()
     name: str
-    _subcommands: t.MutableMapping[str, t.Union[PrefixSubGroup, PrefixSubCommand]]
+    _subcommands: t.Dict[str, t.Union[PrefixSubGroup, PrefixSubCommand]]
 
     def maybe_resolve_subcommand(
         self, arg_string: str
@@ -70,6 +70,11 @@ class PrefixGroupMixin(abc.ABC):
 
     def get_subcommand(self, name: str) -> t.Optional[t.Union[PrefixSubGroup, PrefixSubCommand]]:
         return self._subcommands.get(name)
+
+    @property
+    def subcommands(self) -> t.Dict[str, t.Union[PrefixSubGroup, PrefixSubCommand]]:
+        """Mapping of command name to command object containing the group's subcommands."""
+        return self._subcommands
 
 
 class PrefixCommand(base.Command):

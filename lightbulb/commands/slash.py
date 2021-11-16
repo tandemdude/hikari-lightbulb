@@ -68,6 +68,11 @@ class SlashGroupMixin(abc.ABC):
     def get_subcommand(self, name: str) -> t.Optional[t.Union[SlashSubGroup, SlashSubCommand]]:
         return self._subcommands.get(name)
 
+    @property
+    def subcommands(self) -> t.Dict[str, t.Union[SlashSubGroup, SlashSubCommand]]:
+        """Mapping of command name to command object containing the group's subcommands."""
+        return self._subcommands
+
 
 class SlashCommand(base.ApplicationCommand):
     """

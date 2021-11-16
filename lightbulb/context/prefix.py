@@ -45,7 +45,7 @@ class PrefixContext(base.Context):
         prefix (:obj:`str`): The prefix that was used in this context.
     """
 
-    __slots__ = ("_parser", "_event", "_command", "_invoked_with", "_prefix", "_options", "_defer_task")
+    __slots__ = ("_parser", "_event", "_command", "_invoked_with", "_prefix", "_options")
 
     def __init__(
         self,
@@ -63,11 +63,11 @@ class PrefixContext(base.Context):
         self._options: t.Dict[str, t.Any] = {}
         self._parser: parser.BaseParser
 
-        self._defer_task: t.Optional[asyncio.Task[None]] = None
         if self._command is not None and self._command.auto_defer:
 
             async def _defer() -> None:
                 await self.app.rest.trigger_typing(self.channel_id)
+                self._deferred = True
 
             self._defer_task = asyncio.create_task(_defer())
 
@@ -132,6 +132,7 @@ class PrefixContext(base.Context):
         if self._defer_task is not None:
             await self._defer_task
             self._defer_task = None
+            self._deferred = False
 
         kwargs.pop("flags", None)
         kwargs.pop("response_type", None)

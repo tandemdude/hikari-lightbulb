@@ -111,12 +111,19 @@ class Context(abc.ABC):
         app (:obj:`~.app.BotApp`): The ``BotApp`` instance that the context is linked to.
     """
 
-    __slots__ = ("_app", "_responses", "_responded")
+    __slots__ = ("_app", "_responses", "_responded", "_deferred", "_defer_task")
 
     def __init__(self, app: app_.BotApp):
         self._app = app
         self._responses: t.List[ResponseProxy] = []
         self._responded: bool = False
+        self._deferred: bool = False
+        self._defer_task: t.Optional[asyncio.Task[None]] = None
+
+    @property
+    def deferred(self) -> bool:
+        """Whether or not the response from this context is currently deferred."""
+        return self._deferred
 
     @property
     def responses(self) -> t.List[ResponseProxy]:
@@ -277,7 +284,7 @@ class Context(abc.ABC):
 
 
 class ApplicationContext(Context, abc.ABC):
-    __slots__ = ("_event", "_interaction", "_command", "_defer_task")
+    __slots__ = ("_event", "_interaction", "_command")
 
     def __init__(
         self, app: app_.BotApp, event: hikari.InteractionCreateEvent, command: commands.base.ApplicationCommand
@@ -288,11 +295,13 @@ class ApplicationContext(Context, abc.ABC):
         self._interaction: hikari.CommandInteraction = event.interaction
         self._command = command
 
-        self._defer_task: t.Optional[asyncio.Task[ResponseProxy]] = None
         if self._command.auto_defer:
-            self._defer_task = asyncio.create_task(
-                self.respond(hikari.ResponseType.DEFERRED_MESSAGE_CREATE, wait_for_task=False)
-            )
+
+            async def _defer() -> None:
+                await self.respond(hikari.ResponseType.DEFERRED_MESSAGE_CREATE, wait_for_task=False)
+                self._deferred = True
+
+            self._defer_task = asyncio.create_task(_defer())
 
     @property
     @abc.abstractmethod
@@ -367,6 +376,7 @@ class ApplicationContext(Context, abc.ABC):
         if self._defer_task is not None and kwargs.pop("wait_for_task", True):
             await self._defer_task
             self._defer_task = None
+            self._deferred = False
 
         kwargs.pop("reply", None)
         kwargs.pop("mentions_reply", None)
@@ -400,4 +410,13 @@ class ApplicationContext(Context, abc.ABC):
         await self._interaction.create_initial_response(**kwargs)
         self._responses.append(ResponseProxy(fetcher=self._interaction.fetch_initial_response))
         self._responded = True
+
+        if kwargs["response_type"] in (
+            hikari.ResponseType.DEFERRED_MESSAGE_CREATE,
+            hikari.ResponseType.DEFERRED_MESSAGE_UPDATE,
+        ):
+            self._deferred = True
+        else:
+            self._deferred = False
+
         return self._responses[-1]

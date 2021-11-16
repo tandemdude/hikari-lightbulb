@@ -299,8 +299,8 @@ class ApplicationContext(Context, abc.ABC):
 
             async def _defer() -> None:
                 await self.respond(hikari.ResponseType.DEFERRED_MESSAGE_CREATE, wait_for_task=False)
-                self._deferred = True
 
+            self._deferred = True
             self._defer_task = asyncio.create_task(_defer())
 
     @property
@@ -391,6 +391,7 @@ class ApplicationContext(Context, abc.ABC):
                 args = args[1:]
 
             self._responses.append(ResponseProxy(await self._interaction.execute(*args, **kwargs)))
+            self._deferred = False
             return self._responses[-1]
 
         if args:

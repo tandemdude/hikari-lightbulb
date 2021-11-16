@@ -67,8 +67,8 @@ class PrefixContext(base.Context):
 
             async def _defer() -> None:
                 await self.app.rest.trigger_typing(self.channel_id)
-                self._deferred = True
 
+            self._deferred = True
             self._defer_task = asyncio.create_task(_defer())
 
     @property

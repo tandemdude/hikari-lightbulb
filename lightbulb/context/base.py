@@ -20,7 +20,6 @@ from __future__ import annotations
 __all__ = ["Context", "ApplicationContext", "OptionsProxy", "ResponseProxy"]
 
 import abc
-import asyncio
 import typing as t
 
 import hikari

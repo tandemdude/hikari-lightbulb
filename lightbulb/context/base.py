@@ -299,7 +299,7 @@ class ApplicationContext(Context, abc.ABC):
         self._interaction: hikari.CommandInteraction = event.interaction
         self._command = command
 
-    async def _auto_defer(self) -> None:
+    async def _maybe_defer(self) -> None:
         if self._command.auto_defer:
             await self.respond(hikari.ResponseType.DEFERRED_MESSAGE_CREATE)
 

@@ -63,13 +63,10 @@ class PrefixContext(base.Context):
         self._options: t.Dict[str, t.Any] = {}
         self._parser: parser.BaseParser
 
+    async def _maybe_defer(self) -> None:
         if self._command is not None and self._command.auto_defer:
-
-            async def _defer() -> None:
-                await self.app.rest.trigger_typing(self.channel_id)
-
+            await self.app.rest.trigger_typing(self.channel_id)
             self._deferred = True
-            self._defer_task = asyncio.create_task(_defer())
 
     @property
     def event(self) -> hikari.MessageCreateEvent:
@@ -129,10 +126,7 @@ class PrefixContext(base.Context):
         Returns:
             :obj:`~hikari.messages.Message`: The created message object.
         """
-        if self._defer_task is not None:
-            await self._defer_task
-            self._defer_task = None
-            self._deferred = False
+        self._deferred = False
 
         kwargs.pop("flags", None)
         kwargs.pop("response_type", None)

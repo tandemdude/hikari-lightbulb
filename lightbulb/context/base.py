@@ -111,14 +111,17 @@ class Context(abc.ABC):
         app (:obj:`~.app.BotApp`): The ``BotApp`` instance that the context is linked to.
     """
 
-    __slots__ = ("_app", "_responses", "_responded", "_deferred", "_defer_task")
+    __slots__ = ("_app", "_responses", "_responded", "_deferred")
 
     def __init__(self, app: app_.BotApp):
         self._app = app
         self._responses: t.List[ResponseProxy] = []
         self._responded: bool = False
         self._deferred: bool = False
-        self._defer_task: t.Optional[asyncio.Task[None]] = None
+
+    @abc.abstractmethod
+    async def _maybe_defer(self) -> None:
+        ...
 
     @property
     def deferred(self) -> bool:
@@ -244,6 +247,7 @@ class Context(abc.ABC):
         """
         if self.command is None:
             raise TypeError("This context cannot be invoked - no command was resolved.")
+        await self._maybe_defer()
         await self.command.invoke(self)
 
     @abc.abstractmethod
@@ -295,13 +299,9 @@ class ApplicationContext(Context, abc.ABC):
         self._interaction: hikari.CommandInteraction = event.interaction
         self._command = command
 
+    async def _auto_defer(self) -> None:
         if self._command.auto_defer:
-
-            async def _defer() -> None:
-                await self.respond(hikari.ResponseType.DEFERRED_MESSAGE_CREATE, wait_for_task=False)
-
-            self._deferred = True
-            self._defer_task = asyncio.create_task(_defer())
+            await self.respond(hikari.ResponseType.DEFERRED_MESSAGE_CREATE)
 
     @property
     @abc.abstractmethod
@@ -373,11 +373,6 @@ class ApplicationContext(Context, abc.ABC):
         Returns:
             :obj:`~ResponseProxy`: Proxy wrapping the response of the ``respond`` call.
         """
-        if self._defer_task is not None and kwargs.pop("wait_for_task", True):
-            await self._defer_task
-            self._defer_task = None
-            self._deferred = False
-
         kwargs.pop("reply", None)
         kwargs.pop("mentions_reply", None)
         kwargs.pop("nonce", None)
@@ -417,7 +412,5 @@ class ApplicationContext(Context, abc.ABC):
             hikari.ResponseType.DEFERRED_MESSAGE_UPDATE,
         ):
             self._deferred = True
-        else:
-            self._deferred = False
 
         return self._responses[-1]

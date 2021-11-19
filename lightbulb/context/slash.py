@@ -66,6 +66,9 @@ class SlashContext(base.ApplicationContext):
             else:
                 self._options[opt.name] = opt.value
 
+        for opt in self.command.options.values():
+            self._options.setdefault(opt.name, opt.default or None)
+
     @property
     def raw_options(self) -> t.Dict[str, t.Any]:
         return self._options

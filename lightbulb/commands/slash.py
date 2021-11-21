@@ -58,6 +58,12 @@ class SlashGroupMixin(abc.ABC):
                         )
                     self._subcommands[cmd.name] = cmd
 
+    def recreate_subcommands(self, raw_cmds: t.Sequence[base.CommandLike], app: app_.BotApp) -> None:
+        self._subcommands.clear()
+        self.create_subcommands(
+            raw_cmds, app, SlashSubCommand if isinstance(self, SlashSubGroup) else (SlashSubCommand, SlashSubGroup)
+        )
+
     async def _invoke_subcommand(self, context: context_.base.Context) -> None:
         assert isinstance(context, context_.slash.SlashContext)
         cmd_option = context._raw_options[0]

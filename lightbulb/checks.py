@@ -34,6 +34,7 @@ __all__ = [
 ]
 
 import functools
+import inspect
 import operator
 import typing as t
 
@@ -47,6 +48,46 @@ T = t.TypeVar("T")
 _CallbackT = t.Union[
     t.Callable[[context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]], functools.partial
 ]
+
+
+class _ExclusiveCheck:
+    def __init__(self, *checks: "Check") -> None:
+        self._checks = list(checks)
+
+    def __or__(self, other: t.Union["_ExclusiveCheck", "Check"]) -> "_ExclusiveCheck":
+        if isinstance(other, _ExclusiveCheck):
+            self._checks.extend(other._checks)
+        else:
+            self._checks.append(other)
+        return self
+
+    async def _evaluate(self, context: context_.base.Context) -> bool:
+        failed = []
+
+        for check in self._checks:
+            try:
+                res = check(context)
+                if inspect.iscoroutine(res):
+                    assert not isinstance(res, bool)
+                    res = await res
+
+                if not res:
+                    raise errors.CheckFailure(f"Check {check.__name__!r} failed")
+                return True
+            except Exception as ex:
+                if isinstance(ex, errors.CheckFailure) and not ex.__cause__:
+                    ex = errors.CheckFailure(str(ex))
+                    ex.__cause__ = ex
+                failed.append(ex)
+
+        if failed:
+            if len(failed) == 1:
+                raise failed[0]
+            raise errors.CheckFailure("None of the exclusive checks passed: " + ", ".join(str(ex) for ex in failed))
+        return True
+
+    def __call__(self, context: context_.base.Context) -> t.Coroutine[t.Any, t.Any, bool]:
+        return self._evaluate(context)
 
 
 class Check:
@@ -81,6 +122,9 @@ class Check:
 
     def __repr__(self) -> str:
         return f"Check({self.__name__.strip('_')})"
+
+    def __or__(self, other: t.Union["Check", _ExclusiveCheck]) -> _ExclusiveCheck:
+        return _ExclusiveCheck(self) | other
 
     @property
     def __name__(self) -> str:

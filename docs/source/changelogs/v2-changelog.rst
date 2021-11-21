@@ -6,6 +6,14 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 2.0.1
+=============
+
+- Fix slash command groups erroring on creation if using the ``@BotApp.command`` decorator
+
+- Add exclusive checks feature. Only one of the exclusive checks will be required to pass in order for the command to be run.
+  See the checks API reference page for more information.
+
 Version 2.0.0
 =============
 

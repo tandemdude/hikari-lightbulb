@@ -4,7 +4,6 @@
 ### Checklist
 <!-- Make sure to tick all the following boxes by putting an `x` in between (like this `[x]`) -->
 - [ ] I have run `nox` and all the pipelines have passed.
-- [ ] I have made unittests according to the code I have added/modified/deleted.
 
 ### Related issues
 <!--

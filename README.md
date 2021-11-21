@@ -30,7 +30,7 @@ bot = lightbulb.BotApp(token="your_token_here", prefix="your_prefix_here")
 # Define the command type(s) that this command implements
 @lightbulb.implements(commands.PrefixCommand)
 # Define the command's callback. The callback should take a single argument which will be
-# an instance of a subclass of lightbulb.Context when passed in
+# an instance of a subclass of lightbulb.context.Context when passed in
 async def ping(ctx: lightbulb.context.Context) -> None:
     # Send a message to the channel the command was used in
     await ctx.respond("Pong!")

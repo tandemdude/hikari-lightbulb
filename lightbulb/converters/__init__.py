@@ -19,5 +19,3 @@ from lightbulb.converters import base
 from lightbulb.converters import special
 from lightbulb.converters.base import *
 from lightbulb.converters.special import *
-
-__all__ = [*base.__all__, *special.__all__]

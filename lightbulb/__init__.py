@@ -36,14 +36,4 @@ from lightbulb.events import *
 from lightbulb.help_command import *
 from lightbulb.plugins import *
 
-__all__ = [
-    *app.__all__,
-    *checks.__all__,
-    *cooldowns.__all__,
-    *decorators.__all__,
-    *errors.__all__,
-    *events.__all__,
-    *plugins.__all__,
-]
-
 __version__ = "2.0.0"

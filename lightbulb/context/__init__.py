@@ -25,5 +25,3 @@ from lightbulb.context.message import *
 from lightbulb.context.prefix import *
 from lightbulb.context.slash import *
 from lightbulb.context.user import *
-
-__all__ = [*base.__all__, *message.__all__, *prefix.__all__, *slash.__all__, *user.__all__]

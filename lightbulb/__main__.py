@@ -15,10 +15,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
+import importlib
 import sys
 
 import lightbulb
 
 sys.stderr.write(f"hikari-lightbulb ({lightbulb.__version__})\n")
-sys.stderr.write("https://hikari-lightbulb.readthedocs.io/en/\n")
-sys.stderr.write("Copyright © tandemdude 2020-present\n")
+importlib.import_module("hikari.__main__")

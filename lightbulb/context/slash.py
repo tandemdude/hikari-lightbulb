@@ -67,7 +67,7 @@ class SlashContext(base.ApplicationContext):
                 self._options[opt.name] = opt.value
 
         for opt in self.command.options.values():
-            self._options.setdefault(opt.name, opt.default or None)
+            self._options.setdefault(opt.name, opt.default if opt.default is not hikari.UNDEFINED else None)
 
     @property
     def raw_options(self) -> t.Dict[str, t.Any]:

@@ -48,7 +48,7 @@ class Plugin:
     __slots__ = (
         "name",
         "description",
-        "d",
+        "_d",
         "_raw_commands",
         "_all_commands",
         "_listeners",
@@ -63,13 +63,10 @@ class Plugin:
         """The plugin's name."""
         self.description = description or ""
         """The plugin's description."""
-        self.d: t.Optional[data_store.DataStore] = None
-        """A :obj:`~.utils.data_store.DataStore` instance enabling storage of custom data without subclassing.
-        This will be ``None`` unless you explicitly specify you want the data storage instance included by passing
-        in the kwarg ``include_datastore=True`` to the constructor.
-        """
+
+        self._d: t.Optional[data_store.DataStore] = None
         if include_datastore:
-            self.d = data_store.DataStore()
+            self._d = data_store.DataStore()
 
         self._raw_commands: t.List[commands.base.CommandLike] = []
         self._all_commands: t.List[commands.base.Command] = []
@@ -87,8 +84,27 @@ class Plugin:
         self._app: t.Optional[app_.BotApp] = None
 
     @property
-    def app(self) -> t.Optional[app_.BotApp]:
+    def d(self) -> data_store.DataStore:
+        """
+        A :obj:`~.utils.data_store.DataStore` instance enabling storage of custom data without subclassing.
+        This will raise a :obj:`RuntimeError` unless you explicitly specify you want the data
+        storage instance included by passing the kwarg ``include_datastore=True`` to the constructor.
+        """
+        if self._d is None:
+            raise RuntimeError(
+                "'Plugin.d' cannot be accessed unless 'include_datastore=True' was provided during instantiation"
+            )
+
+        return self._d
+
+    @property
+    def app(self) -> app_.BotApp:
         """The :obj:`~.app.BotApp` instance that the plugin is registered to."""
+        if self._app is None:
+            raise RuntimeError(
+                "'Plugin.app' cannot be accessed before the plugin has been added to a 'BotApp' instance"
+            )
+
         return self._app
 
     @app.setter
@@ -99,9 +115,9 @@ class Plugin:
         self.create_commands()
 
     @property
-    def bot(self) -> t.Optional[app_.BotApp]:
+    def bot(self) -> app_.BotApp:
         """Alias for :obj:`~Plugin.app`"""
-        return self._app
+        return self.app
 
     @property
     def raw_commands(self) -> t.List[commands.base.CommandLike]:

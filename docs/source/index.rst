@@ -53,6 +53,8 @@ syntax. I recommend taking a look at both Lightbulb and Tanjun before choosing w
 
 - :ref:`guides`
 
+- `Filament (hikari-lightbulb extension library) <https://filament.readthedocs.io/en/latest/>`_
+
 **Contributors:**
 
 - `thomm.o#8637 (creator) <https://github.com/tandemdude>`_

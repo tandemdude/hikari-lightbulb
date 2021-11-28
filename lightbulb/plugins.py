@@ -32,6 +32,12 @@ if t.TYPE_CHECKING:
     from lightbulb import commands
     from lightbulb import events
 
+ListenerT = t.TypeVar("ListenerT", bound=t.Callable[..., t.Coroutine[t.Any, t.Any, None]])
+ErrorHandlerT = t.TypeVar(
+    "ErrorHandlerT", bound=t.Callable[..., t.Coroutine[t.Any, t.Any, t.Optional[bool]]],
+)
+RemoveHookT = t.TypeVar("RemoveHookT", bound=t.Callable[..., t.Union[t.Coroutine[t.Any, t.Any, None], None]])
+
 
 class Plugin:
     """
@@ -153,6 +159,14 @@ class Plugin:
                 cmd.plugin = self
                 self._all_commands.append(cmd)
 
+    @t.overload
+    def command(self, cmd_like: commands.base.CommandLike) -> commands.base.CommandLike:
+        ...
+
+    @t.overload
+    def command(self) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
+        ...
+
     def command(
         self, cmd_like: t.Optional[commands.base.CommandLike] = None
     ) -> t.Union[commands.base.CommandLike, t.Callable[[commands.base.CommandLike], commands.base.CommandLike]]:
@@ -171,24 +185,29 @@ class Plugin:
 
         return decorate
 
+    @t.overload
+    def listener(self, event: t.Type[hikari.Event], listener_func: ListenerT, *, bind: bool = False) -> ListenerT:
+        ...
+
+    @t.overload
+    def listener(self, event: t.Type[hikari.Event], *, bind: bool = False) -> t.Callable[[ListenerT], ListenerT]:
+        ...
+
     def listener(
         self,
         event: t.Type[hikari.Event],
-        listener_func: t.Optional[t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]]] = None,
+        listener_func: t.Optional[ListenerT] = None,
+        *,
         bind: bool = False,
-    ) -> t.Union[
-        t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]],
-        t.Callable[
-            [t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]]],
-            t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]],
-        ],
-    ]:
+    ) -> t.Union[ListenerT, t.Callable[[ListenerT], ListenerT]]:
         """
         Adds a listener function to the plugin. This method can be used as a second order decorator, or called
         manually with the event type and function to add to the plugin as a listener.
 
         Args:
             event (Type[:obj:`~hikari.events.base_events.Event`): Event that the listener is for.
+
+        Keyword Args:
             bind (:obj:`bool`): Whether or not to bind the listener function to the plugin. If ``True``, the
                 function will be converted into a bound method and so will be called with the plugin as the
                 first argument, and the error event as the second argument. Defaults to ``False``.
@@ -200,9 +219,7 @@ class Plugin:
             self._listeners[event].append(listener_func)
             return listener_func
 
-        def decorate(
-            func: t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]]
-        ) -> t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]]:
+        def decorate(func: ListenerT) -> ListenerT:
             # TODO - allow getting event type from type hint
             if bind:
                 func = func.__get__(self)  # type: ignore
@@ -211,22 +228,25 @@ class Plugin:
 
         return decorate
 
+    @t.overload
+    def set_error_handler(self, func: ErrorHandlerT, *, bind: bool = False) -> ErrorHandlerT:
+        ...
+
+    @t.overload
+    def set_error_handler(self, *, bind: bool = False) -> t.Callable[[ErrorHandlerT], ErrorHandlerT]:
+        ...
+
     def set_error_handler(
         self,
-        func: t.Optional[t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]] = None,
+        func: t.Optional[ErrorHandlerT] = None,
+        *,
         bind: bool = False,
-    ) -> t.Union[
-        t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, t.Optional[bool]]],
-        t.Callable[
-            [t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]],
-            t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, t.Optional[bool]]],
-        ],
-    ]:
+    ) -> t.Union[ErrorHandlerT, t.Callable[[ErrorHandlerT], ErrorHandlerT]]:
         """
         Sets the error handler function for the plugin. This method can be used as a second order decorator,
         or called manually with the event type and function to set the plugin's error handler to.
 
-        Args:
+        Keyword Args:
             bind (:obj:`bool`): Whether or not to bind the error handler function to the plugin. If ``True``, the
                 function will be converted into a bound method and so will be called with the plugin as the
                 first argument, and the error event as the second argument. Defaults to ``False``.
@@ -238,9 +258,7 @@ class Plugin:
             self._error_handler = func
             return func
 
-        def decorate(
-            func_: t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]
-        ) -> t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]:
+        def decorate(func_: ErrorHandlerT) -> ErrorHandlerT:
             if bind:
                 func_ = func_.__get__(self)  # type: ignore
             self._error_handler = func_
@@ -248,17 +266,20 @@ class Plugin:
 
         return decorate
 
+    @t.overload
+    def remove_hook(self, func: RemoveHookT, *, bind: bool = False) -> RemoveHookT:
+        ...
+
+    @t.overload
+    def remove_hook(self, *, bind: bool = False) -> t.Callable[[RemoveHookT], RemoveHookT]:
+        ...
+
     def remove_hook(
         self,
-        func: t.Optional[t.Callable[[], t.Union[t.Coroutine[t.Any, t.Any, None], None]]] = None,
+        func: t.Optional[RemoveHookT] = None,
+        *,
         bind: bool = False,
-    ) -> t.Union[
-        t.Callable[[], t.Union[t.Coroutine[t.Any, t.Any, None], None]],
-        t.Callable[
-            [t.Callable[[], t.Union[t.Coroutine[t.Any, t.Any, None], None]]],
-            t.Callable[[], t.Union[t.Coroutine[t.Any, t.Any, None], None]],
-        ],
-    ]:
+    ) -> t.Union[RemoveHookT, t.Callable[[RemoveHookT], RemoveHookT]]:
         """
         Sets the remove hook function for the plugin. This method can be used as a second order decorator,
         or called manually with the function to set the plugin's remove hook to. The registered function will
@@ -267,7 +288,7 @@ class Plugin:
         This function will be called **after** all the members of the plugin (listeners and commands) have already
         been removed from the bot.
 
-        Args:
+        Keyword Args:
             bind (:obj:`bool`): Whether or not to bind the remove hook function to the plugin. If ``True``, the
                 function will be converted into a bound method and so will be called with the plugin as an
                 argument. Defaults to ``False``.
@@ -279,9 +300,7 @@ class Plugin:
             self._remove_hook = func
             return func
 
-        def decorate(
-            func_: t.Callable[[], t.Union[t.Coroutine[t.Any, t.Any, None], None]]
-        ) -> t.Callable[[], t.Union[t.Coroutine[t.Any, t.Any, None], None]]:
+        def decorate(func_: RemoveHookT) -> RemoveHookT:
             if bind:
                 func_ = func_.__get__(self)  # type: ignore
             self._remove_hook = func_

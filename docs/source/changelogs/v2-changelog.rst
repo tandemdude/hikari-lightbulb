@@ -6,10 +6,22 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 2.0.2
+=============
+
+- Allow absolute paths to be passed to :obj:`lightbulb.app.BotApp.load_extensions_from`.
+
+- Change :obj:`lightbulb.plugins.Plugin.d` and :obj:`lightbulb.plugins.Plugin.app` (and ``.bot``) to no longer be optional. A
+  :obj:`RuntimeError` will **always** be raised if the attributes would've returned None.
+
+- Fix various type hints for the ``Plugin`` and ``BotApp`` class.
+
+- Fix options with a default value of ``0`` actually defaulting to ``None`` instead.
+
 Version 2.0.1
 =============
 
-- Fix slash command groups erroring on creation if using the ``@BotApp.command`` decorator
+- Fix slash command groups erroring on creation if using the ``@BotApp.command`` decorator.
 
 - Add exclusive checks feature. Only one of the exclusive checks will be required to pass in order for the command to be run.
   See the checks API reference page for more information.

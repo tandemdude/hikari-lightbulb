@@ -34,7 +34,8 @@ if t.TYPE_CHECKING:
 
 ListenerT = t.TypeVar("ListenerT", bound=t.Callable[..., t.Coroutine[t.Any, t.Any, None]])
 ErrorHandlerT = t.TypeVar(
-    "ErrorHandlerT", bound=t.Callable[..., t.Coroutine[t.Any, t.Any, t.Optional[bool]]],
+    "ErrorHandlerT",
+    bound=t.Callable[..., t.Coroutine[t.Any, t.Any, t.Optional[bool]]],
 )
 RemoveHookT = t.TypeVar("RemoveHookT", bound=t.Callable[..., t.Union[t.Coroutine[t.Any, t.Any, None], None]])
 

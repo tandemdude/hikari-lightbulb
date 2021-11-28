@@ -33,7 +33,6 @@ import hikari
 from hikari.internal import ux
 from multidict import CIMultiDict
 
-import lightbulb
 from lightbulb import checks
 from lightbulb import commands
 from lightbulb import context as context_
@@ -51,10 +50,11 @@ _APPLICATION_CMD_ERROR_REGEX: re.Pattern[str] = re.compile(
     r"https?://discord.com/api/v\d+/applications/\d+/guilds/(\d+)/commands"
 )
 
-_PrefixT = t.Union[
+PrefixT = t.Union[
     t.Sequence[str],
     t.Callable[["BotApp", hikari.Message], t.Union[t.Sequence[str], t.Coroutine[t.Any, t.Any, t.Sequence[str]]]],
 ]
+CheckCoroT = t.TypeVar("CheckCoroT", bound=t.Callable[..., t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]])
 
 
 class _ExtensionT(t.Protocol):
@@ -85,7 +85,7 @@ APPLICATION_COMMANDS_EVENTS_MAPPING = {
 
 
 def when_mentioned_or(
-    prefix_provider: _PrefixT,
+    prefix_provider: PrefixT,
 ) -> t.Callable[[BotApp, hikari.Message], t.Coroutine[t.Any, t.Any, t.Sequence[str]]]:
     """
     Helper function which allows the bot's mentions to be used as the command prefix, as well
@@ -194,7 +194,7 @@ class BotApp(hikari.GatewayBot):
     def __init__(
         self,
         token: str,
-        prefix: t.Optional[_PrefixT] = None,
+        prefix: t.Optional[PrefixT] = None,
         ignore_bots: bool = True,
         owner_ids: t.Sequence[int] = (),
         default_enabled_guilds: t.Union[int, t.Sequence[int]] = (),
@@ -589,14 +589,22 @@ class BotApp(hikari.GatewayBot):
 
         return handled
 
+    @t.overload
+    def check(self, check: t.Union[checks.Check, CheckCoroT]) -> checks.Check:
+        ...
+
+    @t.overload
+    def check(self) -> t.Callable[[CheckCoroT], checks.Check]:
+        ...
+
     def check(
         self,
         check: t.Optional[
-            t.Union[checks.Check, t.Callable[[context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]]]
+            t.Union[checks.Check, CheckCoroT]
         ] = None,
     ) -> t.Union[
         checks.Check,
-        t.Callable[[t.Callable[[context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]]], checks.Check],
+        t.Callable[[CheckCoroT], checks.Check],
     ]:
         """
         Adds a :obj:`~.checks.Check` object or check function the bot's checks. This method can be used as a
@@ -688,6 +696,14 @@ class BotApp(hikari.GatewayBot):
                 if not found.
         """
         return self._user_commands.get(name)
+
+    @t.overload
+    def command(self, cmd_like: commands.base.CommandLike) -> commands.base.CommandLike:
+        ...
+
+    @t.overload
+    def command(self) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
+        ...
 
     def command(
         self, cmd_like: t.Optional[commands.base.CommandLike] = None

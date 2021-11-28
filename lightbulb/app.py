@@ -599,13 +599,8 @@ class BotApp(hikari.GatewayBot):
 
     def check(
         self,
-        check: t.Optional[
-            t.Union[checks.Check, CheckCoroT]
-        ] = None,
-    ) -> t.Union[
-        checks.Check,
-        t.Callable[[CheckCoroT], checks.Check],
-    ]:
+        check: t.Optional[t.Union[checks.Check, CheckCoroT]] = None,
+    ) -> t.Union[checks.Check, t.Callable[[CheckCoroT], checks.Check]]:
         """
         Adds a :obj:`~.checks.Check` object or check function the bot's checks. This method can be used as a
         first or second order decorator, or called manually with the :obj:`~.checks.Check` instance or function to

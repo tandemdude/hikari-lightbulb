@@ -24,6 +24,7 @@ import functools
 import importlib
 import inspect
 import logging
+import os
 import pathlib
 import re
 import sys
@@ -532,7 +533,7 @@ class BotApp(hikari.GatewayBot):
 
         cwd_len = len(f"{pathlib.Path.cwd()}/")
         for ext in path.glob(("**/" if recursive else "") + "[!_]*.py"):
-            self.load_extensions(f"{ext}"[cwd_len:-3].replace("/", "."))
+            self.load_extensions(f"{ext}"[cwd_len:-3].replace(os.sep, "."))
 
     async def fetch_owner_ids(self) -> t.Sequence[hikari.SnowflakeishOr[int]]:
         """

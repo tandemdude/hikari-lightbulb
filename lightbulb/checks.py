@@ -31,6 +31,7 @@ __all__ = [
     "bot_has_guild_permissions",
     "bot_has_role_permissions",
     "bot_has_channel_permissions",
+    "has_attachments",
 ]
 
 import functools

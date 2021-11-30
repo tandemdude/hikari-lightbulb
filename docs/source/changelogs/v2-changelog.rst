@@ -6,6 +6,13 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 2.0.3
+=============
+
+- Fix :obj:`lightbulb.app.BotApp.load_extensions_from` not working on windows computers.
+
+- Fix :obj:`lightbulb.checks.has_attachments` not being exported.
+
 Version 2.0.2
 =============
 

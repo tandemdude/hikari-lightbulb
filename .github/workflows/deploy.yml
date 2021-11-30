@@ -29,3 +29,12 @@ jobs:
           python setup.py sdist bdist_wheel
           twine upload --skip-existing dist/*
           python release_webhook.py
+          output=$(python -c "import lightbulb, sys; sys.stdout.write(lightbulb.__version__)")
+          echo "::set-output name=version::$output"
+        id: deploy
+
+      - name: Push Tag
+        uses: actions-ecosystem/action-push-tag@v1
+        with:
+          tag: ${{ steps.deploy.outputs.version }}
+          message: "Release version ${{ steps.deploy.outputs.version}}"

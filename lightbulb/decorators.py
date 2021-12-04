@@ -33,14 +33,12 @@ if t.TYPE_CHECKING:
     from lightbulb import context
 
 T = t.TypeVar("T")
+CommandCallbackT = t.TypeVar("CommandCallbackT", bound=t.Callable[..., t.Coroutine[t.Any, t.Any, None]])
 
 
 def implements(
     *command_types: t.Type[commands.base.Command],
-) -> t.Callable[
-    [t.Callable[[context.base.Context], t.Coroutine[t.Any, t.Any, None]]],
-    t.Callable[[context.base.Context], t.Coroutine[t.Any, t.Any, None]],
-]:
+) -> t.Callable[[CommandCallbackT], CommandCallbackT]:
     """
     Second order decorator that defines the command types that a given callback function will implement.
 
@@ -48,18 +46,14 @@ def implements(
         *command_types (Type[:obj:`~.commands.base.Command`]): Command types that the function will implement.
     """
 
-    def decorate(
-        func: t.Callable[[context.base.Context], t.Coroutine[t.Any, t.Any, None]]
-    ) -> t.Callable[[context.base.Context], t.Coroutine[t.Any, t.Any, None]]:
+    def decorate(func: CommandCallbackT) -> CommandCallbackT:
         setattr(func, "__cmd_types__", command_types)
         return func
 
     return decorate
 
 
-def command(
-    name: str, description: str, **kwargs: t.Any
-) -> t.Callable[[t.Callable[[context.base.Context], t.Coroutine[t.Any, t.Any, None]]], commands.base.CommandLike]:
+def command(name: str, description: str, **kwargs: t.Any) -> t.Callable[[CommandCallbackT], commands.base.CommandLike]:
     """
     Second order decorator that converts the decorated function into a :obj:`~.commands.base.CommandLike` object.
 
@@ -88,9 +82,7 @@ def command(
             affects subcommands. Defaults to ``False``.
     """
 
-    def decorate(
-        func: t.Callable[[context.base.Context], t.Coroutine[t.Any, t.Any, None]]
-    ) -> commands.base.CommandLike:
+    def decorate(func: CommandCallbackT) -> commands.base.CommandLike:
         return commands.base.CommandLike(func, name, description, **kwargs)
 
     return decorate

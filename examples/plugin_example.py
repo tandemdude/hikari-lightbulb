@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 import lightbulb
-from lightbulb import commands
 
 bot = lightbulb.BotApp(prefix="!", token="YOUR_TOKEN")
 
@@ -25,10 +24,10 @@ plugin = lightbulb.Plugin("Example Plugin")
 
 
 @plugin.command()
-@lightbulb.option("text", "Text to repeat", modifier=commands.OptionModifier.CONSUME_REST)
+@lightbulb.option("text", "Text to repeat", modifier=lightbulb.OptionModifier.CONSUME_REST)
 @lightbulb.command("echo", "Repeats the user's input")
-@lightbulb.implements(commands.PrefixCommand)
-async def echo(ctx):
+@lightbulb.implements(lightbulb.PrefixCommand)
+async def echo(ctx: lightbulb.Context) -> None:
     await ctx.respond(ctx.options.text)
 
 

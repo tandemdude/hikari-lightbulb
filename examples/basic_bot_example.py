@@ -18,7 +18,6 @@
 import hikari
 
 import lightbulb
-from lightbulb import commands
 
 bot = lightbulb.BotApp(prefix="!", token="YOUR_TOKEN", intents=hikari.Intents.ALL_UNPRIVILEGED)
 
@@ -30,8 +29,8 @@ async def ready_listener(_):
 
 @bot.command()
 @lightbulb.command("ping", "Checks that the bot is alive")
-@lightbulb.implements(commands.PrefixCommand)
-async def ping(ctx):
+@lightbulb.implements(lightbulb.PrefixCommand)
+async def ping(ctx: lightbulb.Context) -> None:
     """Checks that the bot is alive"""
     await ctx.respond("Pong!")
 
@@ -40,8 +39,8 @@ async def ping(ctx):
 @lightbulb.option("num2", "Second number", int)
 @lightbulb.option("num1", "First number", int)
 @lightbulb.command("add", "Adds the two given numbers together")
-@lightbulb.implements(commands.PrefixCommand)
-async def add(ctx):
+@lightbulb.implements(lightbulb.PrefixCommand)
+async def add(ctx: lightbulb.Context) -> None:
     """Adds the two given numbers together"""
     num1, num2 = ctx.options.num1, ctx.options.num2
     await ctx.respond(f"{num1} + {num2} = {num1 + num2}")
@@ -50,9 +49,9 @@ async def add(ctx):
 @bot.command()
 @lightbulb.option("user", "User to greet", hikari.User)
 @lightbulb.command("greet", "Greets the specified user")
-@lightbulb.implements(commands.PrefixCommand)
-async def greet(ctx, user: hikari.User):
-    await ctx.respond(f"Hello {user.mention}!")
+@lightbulb.implements(lightbulb.PrefixCommand)
+async def greet(ctx: lightbulb.Context) -> None:
+    await ctx.respond(f"Hello {ctx.options.user.mention}!")
 
 
 bot.run()

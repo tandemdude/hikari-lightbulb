@@ -16,15 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 import lightbulb
-from lightbulb import commands
 
 bot = lightbulb.BotApp(prefix="!", token="YOUR_TOKEN")
 
 
 @bot.command()
 @lightbulb.command("ping", "Checks that the bot is alive")
-@lightbulb.implements(commands.SlashCommand)
-async def ping(ctx):
+@lightbulb.implements(lightbulb.SlashCommand)
+async def ping(ctx: lightbulb.Context) -> None:
     """Checks that the bot is alive"""
     await ctx.respond("Pong!")
 
@@ -32,8 +31,8 @@ async def ping(ctx):
 @bot.command()
 @lightbulb.option("text", "Text to repeat")
 @lightbulb.command("echo", "Repeats the user's input")
-@lightbulb.implements(commands.SlashCommand)
-async def echo(ctx):
+@lightbulb.implements(lightbulb.SlashCommand)
+async def echo(ctx: lightbulb.Context) -> None:
     await ctx.respond(ctx.options.text)
 
 

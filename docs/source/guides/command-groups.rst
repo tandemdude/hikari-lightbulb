@@ -54,22 +54,21 @@ Creating a Command Group
 
 For this section we will be using prefix commands as an example, slash commands work in exactly the same way.
 
-You define a command group exactly the same way that you would a normal command, however instead of providing ``commands.PrefixCommand``
-to the :obj:`lightbulb.decorators.implements` decorator, we will instead be providing ``commands.PrefixCommandGroup``.
+You define a command group exactly the same way that you would a normal command, however instead of providing ``lightbulb.PrefixCommand``
+to the :obj:`lightbulb.decorators.implements` decorator, we will instead be providing ``lightbulb.PrefixCommandGroup``.
 
 A basic example can be seen below:
 
 .. code-block:: python
 
     import lightbulb
-    from lightbulb import commands
 
     bot = lightbulb.BotApp(..., prefix="!")
 
     @bot.command
     @lightbulb.command("foo", "test group")
-    @lightbulb.implements(commands.PrefixCommandGroup)
-    async def foo(ctx: lightbulb.context.Context) -> None:
+    @lightbulb.implements(lightbulb.PrefixCommandGroup)
+    async def foo(ctx: lightbulb.Context) -> None:
         await ctx.respond("invoked foo")
 
 This command would be invoked like a normal prefix command and behaves like a normal prefix command - ``!foo``.
@@ -78,27 +77,26 @@ Adding Subcommands
 ==================
 
 To add a subcommand to a given command group or subgroup you have to provide a subcommand class to the :obj:`lightbulb.decorators.implements`
-decorator. In this case, that would be the class ``commands.PrefixSubCommand``. Note that this only creates the command,
+decorator. In this case, that would be the class ``lightbulb.PrefixSubCommand``. Note that this only creates the command,
 we still need to link it back to the group that it belongs to. To do this we use the :obj:`lightbulb.commands.base.CommandLike.child`
 decorator as seen below.
 
 .. code-block:: python
 
     import lightbulb
-    from lightbulb import commands
 
     bot = lightbulb.BotApp(..., prefix="!")
 
     @bot.command
     @lightbulb.command("foo", "test group")
-    @lightbulb.implements(commands.PrefixCommandGroup)
-    async def foo(ctx: lightbulb.context.Context) -> None:
+    @lightbulb.implements(lightbulb.PrefixCommandGroup)
+    async def foo(ctx: lightbulb.Context) -> None:
         await ctx.respond("invoked foo")
 
     @foo.child
     @lightbulb.command("bar", "test subcommand")
-    @lightbulb.implements(commands.PrefixSubCommand)
-    async def bar(ctx: lightbulb.context.Context) -> None:
+    @lightbulb.implements(lightbulb.PrefixSubCommand)
+    async def bar(ctx: lightbulb.Context) -> None:
         await ctx.respond("invoked foo bar")
 
 The subcommand ``bar`` would be invoked by first invoking its parent ``foo``, and then separating the invocation of
@@ -116,26 +114,25 @@ See below for an example:
 .. code-block:: python
 
     import lightbulb
-    from lightbulb import commands
 
     bot = lightbulb.BotApp(..., prefix="!")
 
     @bot.command
     @lightbulb.command("foo", "test group")
-    @lightbulb.implements(commands.PrefixCommandGroup)
-    async def foo(ctx: lightbulb.context.Context) -> None:
+    @lightbulb.implements(lightbulb.PrefixCommandGroup)
+    async def foo(ctx: lightbulb.Context) -> None:
         await ctx.respond("invoked foo")
 
     @foo.child
     @lightbulb.command("bar", "test subgroup")
-    @lightbulb.implements(commands.PrefixSubGroup)
-    async def bar(ctx: lightbulb.context.Context) -> None:
+    @lightbulb.implements(lightbulb.PrefixSubGroup)
+    async def bar(ctx: lightbulb.Context) -> None:
         await ctx.respond("invoked foo bar")
 
     @bar.child
     @lightbulb.command("baz", "test subcommand")
-    @lightbulb.implements(commands.PrefixSubGroup)
-    async def baz(ctx: lightbulb.context.Context) -> None:
+    @lightbulb.implements(lightbulb.PrefixSubGroup)
+    async def baz(ctx: lightbulb.Context) -> None:
         await ctx.respond("invoked foo bar baz")
 
 In the above example, the command ``foo`` would be invoked using ``!foo``, the command ``bar`` would be invoked using

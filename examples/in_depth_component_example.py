@@ -19,9 +19,8 @@ import typing as t
 
 import hikari
 import lightbulb
-from lightbulb import commands
 
-from hikari.impl import ActionRowBuilder
+from hikari.api import ActionRowBuilder
 
 
 ########################################################################
@@ -64,13 +63,12 @@ async def generate_rows(bot: lightbulb.BotApp) -> t.Iterable[ActionRowBuilder]:
     # will not use that many here, however.
     rows: t.List[ActionRowBuilder] = []
 
+    # Build the first action row
+    row = bot.rest.build_action_row()
+
     # Here we iterate len(COLORS) times.
     for i in range(len(COLORS)):
-        if i == 0:
-            # If i is 0, we need to build our first action row.
-            row: ActionRowBuilder = bot.rest.build_action_row()
-
-        elif i % 4 == 0 and i != 0:
+        if i % 4 == 0 and i != 0:
             # If i is evenly divided by 4, and not 0 we want to
             # append the first row to rows and build the second
             # action row. (Gives a more even button layout)
@@ -79,7 +77,7 @@ async def generate_rows(bot: lightbulb.BotApp) -> t.Iterable[ActionRowBuilder]:
 
         # Extract the current color from the mapping and assign
         # to this label var for later.
-        label = [*COLORS.keys()][i]
+        label = list(COLORS)[i]
 
         # We use an enclosing scope here so that we can easily chain
         # method calls of the action row.
@@ -114,7 +112,7 @@ async def handle_responses(
     # Now we need to check if the user who ran the command interacts
     # with our buttons, we stop watching after 120 seconds (2 mins) of
     # inactivity.
-    async with bot.stream(hikari.InteractionCreateEvent, 120).filter(
+    with bot.stream(hikari.InteractionCreateEvent, 120).filter(
         # Here we filter out events we don't care about.
         lambda e: (
             # A component interaction is a button interaction.
@@ -188,12 +186,12 @@ bot = lightbulb.BotApp(token="YOUR_TOKEN", prefix="!")
 # Create the message command.
 @bot.command()
 @lightbulb.command("rgb", "Get facts on different colors!", guilds=[1234])
-@lightbulb.implements(commands.PrefixCommand, commands.SlashCommand)
-async def rgb_command(ctx: lightbulb.context.Context) -> None:
+@lightbulb.implements(lightbulb.PrefixCommand, lightbulb.SlashCommand)
+async def rgb_command(ctx: lightbulb.Context) -> None:
     """Get facts on different colors!"""
 
     # Generate the action rows.
-    rows: t.Iterable[ActionRowBuilder] = await generate_rows(ctx.bot)
+    rows = await generate_rows(ctx.bot)
 
     # Send the initial response with our action rows, and save the
     # message for handling interaction responses.

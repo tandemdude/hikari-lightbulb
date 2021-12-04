@@ -27,20 +27,19 @@ It defines the type or multiple types of commands that the decorated callback fu
 .. code-block:: python
 
     import lightbulb
-    from lightbulb import commands
 
-    @lightbulb.implements(commands.PrefixCommand)
-    async def foo(ctx):
+    @lightbulb.implements(lightbulb.PrefixCommand)
+    async def foo(ctx: lightbulb.Context) -> None:
         # This command will be invoked using the command prefix(es) that the bot recognises.
         ...
 
-    @lightbulb.implements(commands.SlashCommand)
-    async def bar(ctx):
+    @lightbulb.implements(lightbulb.SlashCommand)
+    async def bar(ctx: lightbulb.Context) -> None:
         # This command will be created as a slash command.
         ...
 
-    @lightbulb.implements(commands.PrefixCommand, commands.SlashCommand)
-    async def baz(ctx):
+    @lightbulb.implements(lightbulb.PrefixCommand, lightbulb.SlashCommand)
+    async def baz(ctx: lightbulb.Context) -> None:
         # This command will be able to be invoked both using the bot's command prefix(es),
         # and as a slash command using interactions.
         ...
@@ -99,16 +98,15 @@ command types that can be created.
 .. code-block:: python
 
     import lightbulb
-    from lightbulb import commands
 
     @lightbulb.command("foo", "test command", aliases=["bar", "baz"])
-    @lightbulb.implements(commands.PrefixCommand)
-    async def foo(ctx):
+    @lightbulb.implements(lightbulb.PrefixCommand)
+    async def foo(ctx: lightbulb.Context) -> None:
         ...
 
     @lightbulb.command("foo", "test slash command", guilds=[123453463456, 34569827369])
-    @lightbulb.implements(commands.SlashCommand)
-    async def _foo(ctx):
+    @lightbulb.implements(lightbulb.SlashCommand)
+    async def _foo(ctx: lightbulb.Context) -> None:
         ...
 
 
@@ -159,12 +157,11 @@ Lightbulb provides the :obj:`lightbulb.decorators.option` decorator for this pur
 .. code-block:: python
 
     import lightbulb
-    from lightbulb import commands
 
     @lightbulb.option("text", "text to repeat", modifier=commands.OptionModifier.CONSUME_REST)
     @lightbulb.command("echo", "repeats the given text")
-    @lightbulb.implements(commands.PrefixCommand)
-    async def echo(ctx):
+    @lightbulb.implements(lightbulb.PrefixCommand)
+    async def echo(ctx: lightbulb.Context) -> None:
         await ctx.respond(ctx.options.text)
 
 
@@ -276,12 +273,11 @@ For example:
 .. code-block:: python
 
     import lightbulb
-    from lightbulb import commands
 
     @lightbulb.add_checks(lightbulb.owner_only)
     @lightbulb.command("foo", "test command")
-    @lightbulb.implements(commands.PrefixCommand)
-    async def foo(ctx):
+    @lightbulb.implements(lightbulb.PrefixCommand)
+    async def foo(ctx: lightbulb.Context) -> None:
         await ctx.respond("You are the owner of this bot.")
 
 
@@ -297,7 +293,7 @@ For example:
     import lightbulb
 
     # Defining the custom check function
-    def check_author_is_me(context):
+    def check_author_is_me(context: lightbulb.Context) -> bool:
         # Returns True if the author's ID is the same as the given one
         return context.author.id == 1455657467
 
@@ -322,25 +318,24 @@ them to the correct bot attribute.
 .. code-block:: python
 
     import lightbulb
-    from lightbulb import commands
 
     bot = lightbulb.BotApp(...)
 
     @bot.command  # valid
     @lightbulb.command("foo", "test command")
-    @lightbulb.implements(commands.PrefixCommand)
-    async def foo(ctx):
+    @lightbulb.implements(lightbulb.PrefixCommand)
+    async def foo(ctx: lightbulb.Context) -> None:
         ...
 
     @bot.command()  # also valid
     @lightbulb.command("bar", "test command")
-    @lightbulb.implements(commands.PrefixCommand)
-    async def bar(ctx):
+    @lightbulb.implements(lightbulb.PrefixCommand)
+    async def bar(ctx: lightbulb.Context) -> None:
         ...
 
     @lightbulb.command("baz", "test command")
-    @lightbulb.implements(commands.PrefixCommand)
-    async def baz(ctx):
+    @lightbulb.implements(lightbulb.PrefixCommand)
+    async def baz(ctx: lightbulb.Context) -> None:
         ...
 
     bot.command(baz)  # also valid

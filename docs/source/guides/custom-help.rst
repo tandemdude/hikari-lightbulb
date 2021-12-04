@@ -17,7 +17,6 @@ Example:
 ::
 
     import lightbulb
-    from lightbulb import commands
 
     bot = lightbulb.BotApp(..., help_class=None)
 
@@ -30,8 +29,8 @@ Example:
 
     @bot.command
     @lightbulb.command("help", "Gets help for bot commands")
-    @lightbulb.implements(commands.PrefixCommand)
-    async def help(ctx):
+    @lightbulb.implements(lightbulb.PrefixCommand)
+    async def help(ctx: lightbulb.Context) -> None:
         await ctx.respond(HELP_MESSAGE)
 
 However, the main flaw of this method is that the command will not be auto generated so you will have to add details
@@ -46,9 +45,9 @@ The other way to create your own help command is through subclassing :obj:`~ligh
 the methods that send the help message.
 ::
 
-    from lightbulb import help_command
+    import lightbulb
 
-    class CustomHelp(help_command.BaseHelpCommand):
+    class CustomHelp(lightbulb.BaseHelpCommand):
         async def send_bot_help(self, context):
             # Override this method to change the message sent when the help command
             # is run without any arguments.

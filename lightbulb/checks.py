@@ -46,9 +46,9 @@ from lightbulb import errors
 from lightbulb.utils import permissions
 
 if t.TYPE_CHECKING:
-    from lightbulb import plugins
     from lightbulb import app
     from lightbulb import commands
+    from lightbulb import plugins
 
 T = t.TypeVar("T")
 _CallbackT = t.Union[

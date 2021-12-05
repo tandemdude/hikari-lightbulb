@@ -130,7 +130,6 @@ class OptionLike:
         Returns:
             :obj:`~hikari.commands.CommandOption`: Created ``CommandOption`` object.
         """
-        print("hello")
         if len(self.name) < 1 or len(self.name) > 32:
             raise ValueError(f"Application command option {self.name!r}: name must be from 1-32 characters long")
         if len(self.description) < 1 or len(self.description) > 100:

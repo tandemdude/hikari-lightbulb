@@ -71,7 +71,7 @@ class BaseHelpCommand(abc.ABC):
     __slots__ = ("app",)
 
     def __init__(self, app: app_.BotApp) -> None:
-        self.app = app
+        self.app: app_.BotApp = app
         """The ``BotApp`` instance the help command is registered to."""
 
     @property

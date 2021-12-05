@@ -134,6 +134,10 @@ def add_checks(*cmd_checks: checks_.Check) -> t.Callable[[commands.base.CommandL
     def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
         new_checks = [*c_like.checks, *cmd_checks]
         c_like.checks = new_checks
+
+        for check in cmd_checks:
+            check.add_to_object_hook(c_like)
+
         return c_like
 
     return decorate

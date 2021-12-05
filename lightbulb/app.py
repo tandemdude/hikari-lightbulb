@@ -221,9 +221,9 @@ class BotApp(hikari.GatewayBot):
         self._delete_unbound_commands = delete_unbound_commands
         self._case_insensitive_prefix_commands = case_insensitive_prefix_commands
 
-        self.ignore_bots = ignore_bots
+        self.ignore_bots: bool = ignore_bots
         """Whether or not other bots will be ignored when invoking prefix commands."""
-        self.owner_ids = owner_ids
+        self.owner_ids: t.Sequence[int] = owner_ids
         """The owner ID(s) for the owner(s) of the bot account."""
         self.default_enabled_guilds: t.Sequence[int] = (
             (default_enabled_guilds,) if isinstance(default_enabled_guilds, int) else default_enabled_guilds
@@ -233,7 +233,7 @@ class BotApp(hikari.GatewayBot):
         self.application: t.Optional[hikari.Application] = None
         """The :obj:`~hikari.applications.Application` for the bot account. This will always be ``None`` before the bot has logged in."""
 
-        self.d = data_store.DataStore()
+        self.d: data_store.DataStore = data_store.DataStore()
         """A :obj:`~.utils.data_store.DataStore` instance enabling storage of custom data without subclassing."""
 
         self.extensions: t.List[str] = []
@@ -612,6 +612,9 @@ class BotApp(hikari.GatewayBot):
             if not isinstance(check, checks.Check):
                 check = checks.Check(check)
             self._checks.append(check)
+
+            check.add_to_object_hook(self)
+
             return check
 
         def decorate(
@@ -619,6 +622,9 @@ class BotApp(hikari.GatewayBot):
         ) -> checks.Check:
             new_check = checks.Check(check_func)
             self._checks.append(new_check)
+
+            new_check.add_to_object_hook(self)
+
             return new_check
 
         return decorate

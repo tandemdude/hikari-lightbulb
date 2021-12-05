@@ -321,3 +321,5 @@ class Plugin:
             ``None``
         """
         self._checks.extend(checks)
+        for check in checks:
+            check.add_to_object_hook(self)

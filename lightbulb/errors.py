@@ -116,7 +116,7 @@ class CommandInvocationError(LightbulbError):
 
     def __init__(self, *args: t.Any, original: Exception) -> None:
         super().__init__(*args)
-        self.original = original
+        self.original: Exception = original
         """The exception that caused this to be raised. Also accessible through ``CommandInvocationError.__cause__``"""
         self.__cause__ = original
 
@@ -168,7 +168,10 @@ class CheckFailure(LightbulbError):
 
 
 class InsufficientCache(CheckFailure):
-    pass
+    """
+    Error raised when the cache is required for an operation but either could not be accessed
+    or did not return the required object.
+    """
 
 
 class NotOwner(CheckFailure):
@@ -234,7 +237,7 @@ class MissingRequiredPermission(CheckFailure):
 
     def __init__(self, *args: t.Any, perms: hikari.Permissions) -> None:
         super().__init__(*args)
-        self.missing_perms = perms
+        self.missing_perms: hikari.Permissions = perms
         """The permissions that the member is missing."""
 
 
@@ -246,7 +249,7 @@ class BotMissingRequiredPermission(CheckFailure):
 
     def __init__(self, *args: t.Any, perms: hikari.Permissions) -> None:
         super().__init__(*args)
-        self.missing_perms = perms
+        self.missing_perms: hikari.Permissions = perms
         """The permissions that the bot is missing."""
 
 

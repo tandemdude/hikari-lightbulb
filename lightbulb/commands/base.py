@@ -192,6 +192,9 @@ class CommandLike:
     inherit_checks: bool = False
     """Whether or not the command should inherit checks from the parent group."""
 
+    async def __call__(self, context: context_.base.Context) -> None:
+        await self.callback(context)
+
     def set_error_handler(
         self,
         func: t.Optional[t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]] = None,
@@ -244,8 +247,6 @@ class SubCommandTrait(abc.ABC):
     on the command's class or ``isinstance`` if you have the object.
     """
 
-    pass
-
 
 class Command(abc.ABC):
     """
@@ -281,19 +282,19 @@ class Command(abc.ABC):
     def __init__(self, app: app_.BotApp, initialiser: CommandLike) -> None:
         self._initialiser = initialiser
         self._help_getter = initialiser.help_getter
-        self.app = app
+        self.app: app_.BotApp = app
         """The ``BotApp`` instance the command is registered to."""
-        self.callback = initialiser.callback
+        self.callback: t.Callable[[context_.base.Context], t.Coroutine[t.Any, t.Any, None]] = initialiser.callback
         """The callback function for the command."""
-        self.name = initialiser.name
+        self.name: str = initialiser.name
         """The name of the command."""
-        self.description = initialiser.description
+        self.description: str = initialiser.description
         """The description of the command."""
-        self.options = initialiser.options
+        self.options: t.MutableMapping[str, OptionLike] = initialiser.options
         """The options for the command."""
-        self.checks = initialiser.checks
+        self.checks: t.Sequence[checks.Check] = initialiser.checks
         """The checks for the command."""
-        self.error_handler = initialiser.error_handler
+        self.error_handler: t.Optional[t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]] = initialiser.error_handler
         """The error handler function for the command."""
         self.parent: t.Optional[Command] = None
         """The parent for the command."""
@@ -301,19 +302,19 @@ class Command(abc.ABC):
         """The plugin that the command belongs to."""
         self.aliases: t.Sequence[str] = initialiser.aliases
         """The aliases for the command. This value means nothing for application commands."""
-        self.parser = initialiser.parser
+        self.parser: t.Optional[t.Type[parser_.BaseParser]] = initialiser.parser
         """The argument parser to use for prefix commands."""
-        self.cooldown_manager = initialiser.cooldown_manager
+        self.cooldown_manager: t.Optional[cooldowns.CooldownManager] = initialiser.cooldown_manager
         """The cooldown manager instance to use for the command."""
-        self.auto_defer = initialiser.auto_defer
+        self.auto_defer: bool = initialiser.auto_defer
         """Whether or not to automatically defer the response when the command is invoked."""
-        self.default_ephemeral = initialiser.ephemeral
+        self.default_ephemeral: bool = initialiser.ephemeral
         """Whether or not to send responses from this command as ephemeral messages by default."""
-        self.check_exempt = initialiser.check_exempt or (lambda _: False)
+        self.check_exempt: t.Callable[[context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]] = initialiser.check_exempt or (lambda _: False)
         """Check exempt predicate to use for the command."""
-        self.hidden = initialiser.hidden
+        self.hidden: bool = initialiser.hidden
         """Whether or not the command should be hidden from the help command."""
-        self.inherit_checks = initialiser.inherit_checks
+        self.inherit_checks: bool = initialiser.inherit_checks
         """Whether or not the command should inherit checks from the parent group."""
 
     def __hash__(self) -> int:
@@ -484,6 +485,7 @@ class ApplicationCommand(Command, abc.ABC):
         """
         cmd = self.instances.pop(guild, None)
         if cmd is None:
+            # TODO - this probably doesn't actually work most of the time
             return
         await cmd.delete()
 

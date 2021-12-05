@@ -294,7 +294,9 @@ class Command(abc.ABC):
         """The options for the command."""
         self.checks: t.Sequence[checks.Check] = initialiser.checks
         """The checks for the command."""
-        self.error_handler: t.Optional[t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]] = initialiser.error_handler
+        self.error_handler: t.Optional[
+            t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]
+        ] = initialiser.error_handler
         """The error handler function for the command."""
         self.parent: t.Optional[Command] = None
         """The parent for the command."""
@@ -310,7 +312,9 @@ class Command(abc.ABC):
         """Whether or not to automatically defer the response when the command is invoked."""
         self.default_ephemeral: bool = initialiser.ephemeral
         """Whether or not to send responses from this command as ephemeral messages by default."""
-        self.check_exempt: t.Callable[[context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]] = initialiser.check_exempt or (lambda _: False)
+        self.check_exempt: t.Callable[
+            [context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]
+        ] = initialiser.check_exempt or (lambda _: False)
         """Check exempt predicate to use for the command."""
         self.hidden: bool = initialiser.hidden
         """Whether or not the command should be hidden from the help command."""

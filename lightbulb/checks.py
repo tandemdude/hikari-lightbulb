@@ -50,11 +50,9 @@ if t.TYPE_CHECKING:
     from lightbulb import commands
     from lightbulb import plugins
 
-T = t.TypeVar("T")
 _CallbackT = t.Union[
     t.Callable[[context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]], functools.partial
 ]
-_CheckableObjs = t.Union[plugins.Plugin, app.BotApp, commands.base.CommandLike]
 
 
 class _ExclusiveCheck:
@@ -119,7 +117,12 @@ class Check:
         s_callback: t.Optional[_CallbackT] = None,
         m_callback: t.Optional[_CallbackT] = None,
         u_callback: t.Optional[_CallbackT] = None,
-        add_hook: t.Optional[t.Callable[[_CheckableObjs], _CheckableObjs]] = None,
+        add_hook: t.Optional[
+            t.Callable[
+                [t.Union[plugins.Plugin, app.BotApp, commands.base.CommandLike]],
+                t.Union[plugins.Plugin, app.BotApp, commands.base.CommandLike],
+            ]
+        ] = None,
     ) -> None:
         self.prefix_callback = p_callback
         self.slash_callback = s_callback or p_callback

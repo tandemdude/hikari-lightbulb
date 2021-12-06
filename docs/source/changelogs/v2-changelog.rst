@@ -6,6 +6,17 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 2.0.4
+=============
+
+- Fix application command instances being populated only if the command was created.
+
+- Fix application commands only being created for the first given guild ID.
+
+- Fix various typing preventing code written using lightbulb from being mypy compliant.
+
+- Add ``__all__`` to all init files in order to be able to export more items to top level.
+
 Version 2.0.3
 =============
 

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 __all__ = ["serialise_command", "manage_application_commands"]
 
+import collections
 import logging
 import typing as t
 
@@ -27,7 +28,6 @@ import hikari
 if t.TYPE_CHECKING:
     from lightbulb import app as app_
     from lightbulb.commands import base
-
 
 _LOGGER = logging.getLogger("lightbulb.internal")
 
@@ -101,7 +101,14 @@ def _compare_commands(cmd1: base.ApplicationCommand, cmd2: hikari.Command) -> bo
 async def manage_application_commands(app: app_.BotApp) -> None:
     assert app.application is not None
 
-    all_commands = {c.name: c for c in app._slash_commands.values()}
+    grouped_commands: t.Dict[t.Union[int, None], t.Dict[str, base.ApplicationCommand]] = collections.defaultdict(dict)
+    for s_command in app._slash_commands.values():
+        guilds = s_command.guilds or app.default_enabled_guilds or None
+        if guilds is not None:
+            for guild in guilds:
+                grouped_commands[guild][s_command.name] = s_command
+        else:
+            grouped_commands[None][s_command.name] = s_command
 
     global_commands: t.Sequence[hikari.Command] = await app.rest.fetch_application_commands(app.application)
     _LOGGER.info("Processing global commands")
@@ -118,7 +125,8 @@ async def manage_application_commands(app: app_.BotApp) -> None:
             await registered_command._auto_create()
         else:
             _LOGGER.debug("Not recreating global command %r as it does not appear to have changed", command.name)
-        all_commands.pop(registered_command.name, None)
+            registered_command.instances[None] = command
+        grouped_commands[None].pop(registered_command.name, None)
 
     all_guild_ids: t.Set[int] = set()
     all_guild_ids.update(app.default_enabled_guilds)
@@ -156,9 +164,16 @@ async def manage_application_commands(app: app_.BotApp) -> None:
                     command.name,
                     str(guild_id),
                 )
-            all_commands.pop(registered_command.name, None)
+                registered_command.instances[guild_id] = command
+            grouped_commands[guild_id].pop(registered_command.name, None)
 
-    for app_command in all_commands.values():
-        _LOGGER.debug("Creating command %r as it does not seem to exist yet", app_command.name)
-        await app_command._auto_create()
+    for g_id, commands in grouped_commands.items():
+        for app_cmd in commands.values():
+            _LOGGER.debug(
+                "Creating command %r %s as it does not seem to exist yet",
+                app_cmd.name,
+                f"in guild {g_id}" if g_id else "globally",
+            )
+
+            await app_cmd.create(g_id)
     _LOGGER.info("Command processing completed")

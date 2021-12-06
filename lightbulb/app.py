@@ -344,6 +344,7 @@ class BotApp(hikari.GatewayBot):
 
         try:
             await internal.manage_application_commands(self)
+            await self.dispatch(events.LightbulbStartedEvent(app=self))
         except hikari.ForbiddenError as exc:
             error_msg = str(exc)
             match = _APPLICATION_CMD_ERROR_REGEX.search(error_msg)

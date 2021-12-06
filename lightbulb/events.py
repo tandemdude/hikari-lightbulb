@@ -19,6 +19,7 @@ from __future__ import annotations
 
 __all__ = [
     "LightbulbEvent",
+    "LightbulbStartedEvent",
     "CommandErrorEvent",
     "PrefixCommandErrorEvent",
     "PrefixCommandInvocationEvent",
@@ -63,6 +64,11 @@ class LightbulbEvent(hikari.Event, abc.ABC):
     def bot(self) -> app_.BotApp:
         """BotApp instance for this event. Alias for :obj:`~LightbulbEvent.app`."""
         return self.app
+
+
+@attr.s(slots=True, weakref_slot=False)
+class LightbulbStartedEvent(LightbulbEvent):
+    """Event dispatched after the application commands have been managed."""
 
 
 @attr.s(slots=True, weakref_slot=False)

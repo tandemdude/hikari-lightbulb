@@ -117,6 +117,7 @@ async def manage_application_commands(app: app_.BotApp) -> None:
             _LOGGER.debug("Recreating global command %r as it appears to have changed", command.name)
             await registered_command._auto_create()
         else:
+            registered_command.instances[None] = command
             _LOGGER.debug("Not recreating global command %r as it does not appear to have changed", command.name)
         all_commands.pop(registered_command.name, None)
 
@@ -151,6 +152,7 @@ async def manage_application_commands(app: app_.BotApp) -> None:
                 )
                 await registered_command.create(guild_id)
             else:
+                registered_command.instances[guild_id] = command
                 _LOGGER.debug(
                     "Not recreating guild command %r in guild %r as it does not appear to have changed",
                     command.name,

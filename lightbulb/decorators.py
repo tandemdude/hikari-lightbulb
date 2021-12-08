@@ -53,7 +53,9 @@ def implements(
     return decorate
 
 
-def command(name: str, description: str, **kwargs: t.Any) -> t.Callable[[CommandCallbackT], commands.base.CommandLike]:
+def command(
+    name: str, description: str, *, cls: t.Type[commands.base.CommandLike] = commands.base.CommandLike, **kwargs: t.Any
+) -> t.Callable[[CommandCallbackT], commands.base.CommandLike]:
     """
     Second order decorator that converts the decorated function into a :obj:`~.commands.base.CommandLike` object.
 
@@ -80,16 +82,23 @@ def command(name: str, description: str, **kwargs: t.Any) -> t.Callable[[Command
         hidden (:obj:`bool`): Whether or not to hide the command from the help command. Defaults to ``False``.
         inherit_checks (:obj:`bool`): Whether or not the command should inherit checks from the parent group. Only
             affects subcommands. Defaults to ``False``.
+        cls (Type[:obj:`~.commands.base.CommandLike`]): ``CommandLike`` class to instantiate from this decorator.
+            Defaults to :obj:`~.commands.base.CommandLike`.
     """
 
     def decorate(func: CommandCallbackT) -> commands.base.CommandLike:
-        return commands.base.CommandLike(func, name, description, **kwargs)
+        return cls(func, name, description, **kwargs)
 
     return decorate
 
 
 def option(
-    name: str, description: str, type: t.Type[t.Any] = str, **kwargs: t.Any
+    name: str,
+    description: str,
+    type: t.Type[t.Any] = str,
+    *,
+    cls: t.Type[commands.base.OptionLike] = commands.base.OptionLike,
+    **kwargs: t.Any,
 ) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
     """
     Second order decorator that adds an option to the decorated :obj:`~.commands.base.CommandLike`
@@ -110,13 +119,15 @@ def option(
         default (UndefinedOr[Any]): The default value for the option. Defaults to :obj:`~hikari.undefined.UNDEFINED`.
         modifier (:obj:`~.commands.base.OptionModifier`): Modifier controlling how the option should be parsed. Defaults
             to ``OptionModifier.NONE``.
+        cls (Type[:obj:`~.commands.base.OptionLike`]): ``OptionLike`` class to instantiate from this decorator. Defaults
+            to :obj:`~.commands.base.OptionLike`.
     """
     kwargs.setdefault("required", kwargs.get("default", hikari.UNDEFINED) is hikari.UNDEFINED)
     if not kwargs["required"]:
         kwargs.setdefault("default", None)
 
     def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
-        c_like.options[name] = commands.base.OptionLike(name, description, type, **kwargs)
+        c_like.options[name] = cls(name, description, type, **kwargs)
         return c_like
 
     return decorate

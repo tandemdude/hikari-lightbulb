@@ -45,7 +45,8 @@ syntax. I recommend taking a look at both Lightbulb and Tanjun before choosing w
 
 `View Tanjun on GitHub <https://github.com/FasterSpeeding/Tanjun>`_
 
-**Helpful Resources:**
+Helpful Resources:
+------------------
 
 - `Hikari Documentation <https://www.hikari-py.dev/>`_
 
@@ -53,9 +54,23 @@ syntax. I recommend taking a look at both Lightbulb and Tanjun before choosing w
 
 - :ref:`guides`
 
-- `Filament (hikari-lightbulb extension library) <https://filament.readthedocs.io/en/latest/>`_
+Extension Libraries:
+--------------------
 
-**Contributors:**
+If you have written an extension library that you would like to have added to this list, please contact thomm.o#8637
+on discord.
+
+- `lightbulb-filament <https://github.com/tandemdude/filament>`_ - a hikari-lightbulb extension library written by thomm.o
+  which provides various utility methods and extensions you can easily integrate into your bots, as well as different command
+  declaration syntax using a similar class-based method to hikari-lightbulb V1s slash commands and a template system
+  allowing you to quickly create a bot project. See the `documentation <https://filament.readthedocs.io/en/latest/>`_ for how to get started.
+
+- `lightbulb-neon <https://github.com/neonjonn/lightbulb-neon>`_ - a hikari-lightbulb extension library written by NeonJonn
+  allowing you to easily create component (button and select) interactions using a class-based menu definition system. See
+  the `documentation <https://lightbulb-neon.readthedocs.io/en/latest/>`_ for how to get started.
+
+Contributors:
+-------------
 
 - `thomm.o#8637 (creator) <https://github.com/tandemdude>`_
 
@@ -77,7 +92,8 @@ syntax. I recommend taking a look at both Lightbulb and Tanjun before choosing w
 
 - `Parafoxia#1911 <https://github.com/parafoxia>`_
 
-**Index:**
+Index:
+------
 
 .. toctree::
    :maxdepth: 2

@@ -110,13 +110,14 @@ class Context(abc.ABC):
         app (:obj:`~.app.BotApp`): The ``BotApp`` instance that the context is linked to.
     """
 
-    __slots__ = ("_app", "_responses", "_responded", "_deferred")
+    __slots__ = ("_app", "_responses", "_responded", "_deferred", "_invoked")
 
     def __init__(self, app: app_.BotApp):
         self._app = app
         self._responses: t.List[ResponseProxy] = []
         self._responded: bool = False
         self._deferred: bool = False
+        self._invoked: t.Optional[commands.base.Command] = None
 
     @abc.abstractmethod
     async def _maybe_defer(self) -> None:
@@ -223,8 +224,13 @@ class Context(abc.ABC):
     @property
     @abc.abstractmethod
     def command(self) -> t.Optional[commands.base.Command]:
-        """The command object that the context is for."""
+        """The root command object that the context is for."""
         ...
+
+    @property
+    def invoked(self) -> t.Optional[commands.base.Command]:
+        """The command or subcommand that was invoked in this context."""
+        return self._invoked
 
     @abc.abstractmethod
     def get_channel(self) -> t.Optional[t.Union[hikari.GuildChannel, hikari.Snowflake]]:

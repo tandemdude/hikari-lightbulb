@@ -92,6 +92,7 @@ class PrefixCommand(base.Command):
         return sig
 
     async def invoke(self, context: context_.base.Context) -> None:
+        context._invoked = self
         await self.evaluate_checks(context)
         await self.evaluate_cooldowns(context)
         assert isinstance(context, context_.prefix.PrefixContext)
@@ -116,6 +117,7 @@ class PrefixSubCommand(PrefixCommand, base.SubCommandTrait):
         return f"{self.parent.qualname} {self.name}"
 
     async def invoke(self, context: context_.base.Context, *, arg_buffer: str = "") -> None:
+        context._invoked = self
         assert isinstance(context, context_.prefix.PrefixContext)
         context._parser = type(context._parser)(context, arg_buffer)
         context._parser.options = list(self.options.values())
@@ -142,6 +144,7 @@ class PrefixSubGroup(PrefixCommand, PrefixGroupMixin, base.SubCommandTrait):
         return f"{self.parent.qualname} {self.name}"
 
     async def invoke(self, context: context_.base.Context, *, arg_buffer: str = "") -> None:
+        context._invoked = self
         subcmd, remainder = self.maybe_resolve_subcommand(arg_buffer)
         if subcmd is not None:
             await subcmd.invoke(context, arg_buffer=remainder)
@@ -173,6 +176,7 @@ class PrefixCommandGroup(PrefixCommand, PrefixGroupMixin):
         self.create_subcommands(self._raw_subcommands, app)
 
     async def invoke(self, context: context_.base.Context) -> None:
+        context._invoked = self
         assert isinstance(context, context_.prefix.PrefixContext) and context.event.message.content is not None
 
         subcmd, remainder = self.maybe_resolve_subcommand(

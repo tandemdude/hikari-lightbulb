@@ -54,20 +54,7 @@ Helpful Resources:
 
 - :ref:`guides`
 
-Extension Libraries:
---------------------
-
-If you have written an extension library that you would like to have added to this list, please contact thomm.o#8637
-on discord.
-
-- `lightbulb-filament <https://github.com/tandemdude/filament>`_ - a hikari-lightbulb extension library written by thomm.o
-  which provides various utility methods and extensions you can easily integrate into your bots, as well as different command
-  declaration syntax using a similar class-based method to hikari-lightbulb V1s slash commands and a template system
-  allowing you to quickly create a bot project. See the `documentation <https://filament.readthedocs.io/en/latest/>`_ for how to get started.
-
-- `lightbulb-neon <https://github.com/neonjonn/lightbulb-neon>`_ - a hikari-lightbulb extension library written by NeonJonn
-  allowing you to easily create component (button and select) interactions using a class-based menu definition system. See
-  the `documentation <https://lightbulb-neon.readthedocs.io/en/latest/>`_ for how to get started.
+- :ref:`extension-libs`
 
 Contributors:
 -------------
@@ -102,5 +89,6 @@ Index:
    guide
    api-reference
    changelog
+   extension-libs
 
 * :ref:`genindex`

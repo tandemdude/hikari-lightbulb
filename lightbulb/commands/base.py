@@ -372,6 +372,7 @@ class Command(abc.ABC):
         Invokes the command under the given context. All checks and cooldowns will be processed
         prior to invocation.
         """
+        context._invoked = self
         await self.evaluate_checks(context)
         await self.evaluate_cooldowns(context)
         await self(context)

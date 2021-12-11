@@ -12,13 +12,13 @@ on discord.
 
 ----
 
-lightbulb-filament
-==================
+lightbulb-ext-filament
+======================
 
 An extension library written by thomm.o which provides various utility methods, extensions, templating, and an alternate
 method of declaring commands.
 
-- Repository: `GitHub <https://github.com/tandemdude/filament>`_
+- Repository: `GitHub <https://github.com/tandemdude/lightbulb-ext-filament>`_
 
 - Documentation: `Readthedocs <https://filament.readthedocs.io/en/latest/>`_
 
@@ -30,7 +30,7 @@ Declaring commands:
 .. code-block:: python
 
     import lightbulb
-    import filament
+    from lightbulb.ext import filament
 
     class EchoCommand(filament.CommandLike):
         implements = [lightbulb.SlashCommand, lightbulb.PrefixCommand]
@@ -92,8 +92,8 @@ Component menu:
 
 ----
 
-lightbulb-wtf
-=============
+lightbulb-ext-wtf
+=================
 
 A library written by thomm.o which provides a completely different method of declaring commands. This library started
 out as a joke to see how badly python's syntax could be abused but turned in to a fully functional method of declaring
@@ -111,8 +111,8 @@ Declaring commands:
 .. code-block:: python
 
     import lightbulb
-    from wtf import Command, Options, Option
-    from wtf import Implements, Name, Description, Executes
+    from lightbulb.ext.wtf import Command, Options, Option
+    from lightbulb.ext.wtf import Implements, Name, Description, Executes
 
     echo = Command[
         Implements[lightbulb.SlashCommand, lightbulb.PrefixCommand],

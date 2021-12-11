@@ -69,9 +69,6 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=parse_requirements_file("requirements.txt"),
-    extras_require={
-        "filament": ["lightbulb-filament==0.*"]
-    },
     python_requires=">=3.8.0,<3.11",
     classifiers=[
         "Development Status :: 5 - Production/Stable",

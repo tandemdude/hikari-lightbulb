@@ -6,6 +6,18 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 2.1.0
+=============
+
+- Add :obj:`lightbulb.events.LightbulbStartedEvent`.
+
+- Add ``cls`` kwarg to :obj:`lightbulb.decorators.command` and :obj:`lightbulb.decorators.option` to allow you to use your
+  own ``CommandLike`` and ``OptionLike`` classes.
+
+- Add :obj:`lightbulb.context.Context.invoked`.
+
+- Implement ability to use namespace packages to extend lightbulb. See :ref:`extension-libs`.
+
 Version 2.0.4
 =============
 

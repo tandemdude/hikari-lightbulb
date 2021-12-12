@@ -96,6 +96,13 @@ class _ExclusiveCheck:
     def __call__(self, context: context_.base.Context) -> t.Coroutine[t.Any, t.Any, bool]:
         return self._evaluate(context)
 
+    def add_to_object_hook(
+        self, obj: t.Union[plugins.Plugin, app.BotApp, commands.base.CommandLike]
+    ) -> t.Union[plugins.Plugin, app.BotApp, commands.base.CommandLike]:
+        for check in self._checks:
+            check.add_to_object_hook(obj)
+        return obj
+
 
 class Check:
     """

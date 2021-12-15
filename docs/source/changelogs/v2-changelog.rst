@@ -6,6 +6,14 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 2.1.1
+=============
+
+- Fix error raised when exclusive checks are added to any object.
+
+- Subclasses of :obj:`lightbulb.errors.CheckFailure` are no longer wrapped in an additional :obj:`lightbulb.errors.CheckFailure`
+  object when a check fails.
+
 Version 2.1.0
 =============
 

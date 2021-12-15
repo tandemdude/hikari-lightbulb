@@ -61,6 +61,9 @@ class _ExclusiveCheck:
     def __init__(self, *checks: "Check") -> None:
         self._checks = list(checks)
 
+    def __repr__(self) -> str:
+        return f"ExclusiveCheck({', '.join(repr(c) for c in self._checks)})"
+
     def __or__(self, other: t.Union["_ExclusiveCheck", "Check"]) -> "_ExclusiveCheck":
         if isinstance(other, _ExclusiveCheck):
             self._checks.extend(other._checks)

@@ -402,8 +402,11 @@ class Command(abc.ABC):
                 if not result:
                     failed_checks.append(errors.CheckFailure(f"Check {check.__name__} failed for command {self.name}"))
             except Exception as ex:
-                error = errors.CheckFailure(str(ex))
-                error.__cause__ = ex
+                if not isinstance(ex, errors.CheckFailure):
+                    error = errors.CheckFailure(str(ex))
+                    error.__cause__ = ex
+                else:
+                    error = ex
                 failed_checks.append(error)
 
         if len(failed_checks) > 1:

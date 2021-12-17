@@ -248,7 +248,7 @@ class BotApp(hikari.GatewayBot):
 
         self._plugins: t.MutableMapping[str, plugins_.Plugin] = {}
 
-        self._checks: t.List[checks.Check] = []
+        self._checks: t.List[t.Union[checks.Check, checks._ExclusiveCheck]] = []
 
         self._help_command: t.Optional[help_command_.BaseHelpCommand] = None
         if help_class is not None:
@@ -601,7 +601,7 @@ class BotApp(hikari.GatewayBot):
 
     def check(
         self,
-        check: t.Optional[t.Union[checks.Check, CheckCoroT]] = None,
+        check: t.Optional[t.Union[checks.Check, CheckCoroT, checks._ExclusiveCheck]] = None,
     ) -> t.Union[checks.Check, t.Callable[[CheckCoroT], checks.Check]]:
         """
         Adds a :obj:`~.checks.Check` object or check function the bot's checks. This method can be used as a

@@ -133,7 +133,9 @@ def option(
     return decorate
 
 
-def add_checks(*cmd_checks: checks_.Check) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
+def add_checks(
+    *cmd_checks: t.Union[checks_.Check, checks_._ExclusiveCheck]
+) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
     """
     Second order decorator that adds one or more checks to the decorated :obj:`~.commands.base.CommandLike`
     object.

@@ -175,8 +175,7 @@ class CooldownManager:
     async def _get_bucket(self, context: ctx_base.Context) -> Bucket:
         bucket = self.callback(context)
         if inspect.iscoroutine(bucket):
-            assert not isinstance(bucket, Bucket)
-            bucket = await bucket
+            bucket = await bucket  # type: ignore
         assert isinstance(bucket, Bucket)
         return bucket
 

@@ -20,6 +20,7 @@ from __future__ import annotations
 __all__ = ["Context", "ApplicationContext", "OptionsProxy", "ResponseProxy"]
 
 import abc
+import functools
 import typing as t
 
 import hikari
@@ -51,17 +52,29 @@ class ResponseProxy:
     lazily instead of a follow-up request being made immediately.
     """
 
-    __slots__ = ("_message", "_fetcher")
+    __slots__ = ("_message", "_fetcher", "_editor", "_editable")
 
     def __init__(
         self,
         message: t.Optional[hikari.Message] = None,
         fetcher: t.Optional[t.Callable[[], t.Coroutine[t.Any, t.Any, hikari.Message]]] = None,
+        editor: t.Optional[t.Callable[[ResponseProxy], t.Coroutine[t.Any, t.Any, hikari.Message]]] = None,
+        editable: bool = True,
     ) -> None:
         if message is None and fetcher is None:
             raise ValueError("One of message or fetcher arguments cannot be None")
+
         self._message = message
         self._fetcher = fetcher
+        self._editor = editor
+        self._editable = editable
+
+        if editor is None:
+
+            async def _default_editor(rp: ResponseProxy, *args: t.Any, **kwargs: t.Any) -> hikari.Message:
+                return await (await rp.message()).edit(*args, **kwargs)
+
+            self._editor = _default_editor
 
     async def message(self) -> hikari.Message:
         """
@@ -86,10 +99,17 @@ class ResponseProxy:
 
         Returns:
             :obj:`~hikari.messages.Message`: New message after edit.
+
+        Raises:
+            :obj:`RuntimeError`: This response cannot be edited (for ephemeral interaction followup responses).
         """
-        msg = await self.message()
-        self._message = await msg.edit(*args, **kwargs)
-        return self._message
+        if not self._editable:
+            raise RuntimeError("This response does not support editing.")
+
+        assert self._editor is not None
+        out = await self._editor(self, *args, **kwargs)
+        assert isinstance(out, hikari.Message)
+        return out
 
     async def delete(self) -> None:
         """
@@ -390,7 +410,7 @@ class ApplicationContext(Context, abc.ABC):
             if args and isinstance(args[0], hikari.ResponseType):
                 args = args[1:]
 
-            self._responses.append(ResponseProxy(await self._interaction.execute(*args, **kwargs)))
+            self._responses.append(ResponseProxy(await self._interaction.execute(*args, **kwargs), editable=False))
             self._deferred = False
             return self._responses[-1]
 
@@ -409,7 +429,21 @@ class ApplicationContext(Context, abc.ABC):
         kwargs.pop("attachments", None)
 
         await self._interaction.create_initial_response(**kwargs)
-        self._responses.append(ResponseProxy(fetcher=self._interaction.fetch_initial_response))
+
+        async def _editor(
+            rp: ResponseProxy, *args_: t.Any, inter: hikari.CommandInteraction, **kwargs_: t.Any
+        ) -> hikari.Message:
+            await inter.edit_initial_response(*args_, **kwargs_)
+            return await rp.message()
+
+        self._responses.append(
+            ResponseProxy(
+                fetcher=self._interaction.fetch_initial_response,
+                editor=functools.partial(_editor, inter=self._interaction)
+                if hikari.MessageFlag.EPHEMERAL in kwargs.get("flags", hikari.MessageFlag.NONE)
+                else None,
+            )
+        )
         self._responded = True
 
         if kwargs["response_type"] in (

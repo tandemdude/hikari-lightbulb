@@ -61,6 +61,9 @@ class _ExclusiveCheck:
     def __init__(self, *checks: "Check") -> None:
         self._checks = list(checks)
 
+    def __name__(self) -> str:
+        return repr(self)
+
     def __repr__(self) -> str:
         return f"ExclusiveCheck({', '.join(repr(c) for c in self._checks)})"
 

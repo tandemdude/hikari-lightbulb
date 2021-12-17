@@ -96,7 +96,7 @@ class Plugin:
             t.Type[hikari.Event], t.List[t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]]]
         ] = defaultdict(list)
 
-        self._checks: t.List[checks_.Check] = []
+        self._checks: t.List[t.Union[checks_.Check, checks_._ExclusiveCheck]] = []
         self._error_handler: t.Optional[
             t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]
         ] = None
@@ -325,7 +325,7 @@ class Plugin:
 
         return decorate
 
-    def add_checks(self, *checks: checks_.Check) -> None:
+    def add_checks(self, *checks: t.Union[checks_.Check, checks_._ExclusiveCheck]) -> None:
         """
         Adds one or more checks to the plugin object. These checks will be run for
         all commands in the plugin.

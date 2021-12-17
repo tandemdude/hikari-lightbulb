@@ -164,7 +164,7 @@ class CommandLike:
     """The description of the command."""
     options: t.MutableMapping[str, OptionLike] = dataclasses.field(default_factory=dict)
     """The options for the command."""
-    checks: t.Sequence[checks.Check] = dataclasses.field(default_factory=list)
+    checks: t.Sequence[t.Union[checks.Check, checks._ExclusiveCheck]] = dataclasses.field(default_factory=list)
     """The checks for the command."""
     error_handler: t.Optional[
         t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]
@@ -292,7 +292,7 @@ class Command(abc.ABC):
         """The description of the command."""
         self.options: t.MutableMapping[str, OptionLike] = initialiser.options
         """The options for the command."""
-        self.checks: t.Sequence[checks.Check] = initialiser.checks
+        self.checks: t.Sequence[t.Union[checks.Check, checks._ExclusiveCheck]] = initialiser.checks
         """The checks for the command."""
         self.error_handler: t.Optional[
             t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]

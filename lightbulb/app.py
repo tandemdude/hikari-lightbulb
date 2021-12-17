@@ -124,8 +124,7 @@ def when_mentioned_or(
         if callable(prefix_provider):
             prefixes = prefix_provider(app, message)
             if inspect.iscoroutine(prefixes):
-                assert not isinstance(prefixes, t.Sequence)
-                prefixes = await prefixes
+                prefixes = await prefixes  # type: ignore
         else:
             prefixes = prefix_provider
 
@@ -845,8 +844,7 @@ class BotApp(hikari.GatewayBot):
         if plugin._remove_hook is not None:
             maybe_coro = plugin._remove_hook()
             if inspect.iscoroutine(maybe_coro):
-                assert maybe_coro is not None
-                asyncio.create_task(maybe_coro)
+                asyncio.create_task(maybe_coro)  # type: ignore
 
         _LOGGER.debug("Plugin removed %r", plugin.name)
 
@@ -894,8 +892,7 @@ class BotApp(hikari.GatewayBot):
 
         prefixes = self.get_prefix(self, event.message)
         if inspect.iscoroutine(prefixes):
-            assert not isinstance(prefixes, t.Sequence)
-            prefixes = await prefixes
+            prefixes = await prefixes  # type: ignore
         prefixes = t.cast(t.Sequence[str], prefixes)
 
         if isinstance(prefixes, str):

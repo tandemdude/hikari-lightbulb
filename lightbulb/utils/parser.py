@@ -246,8 +246,8 @@ class Parser(BaseParser):
         callback_or_type = CONVERTER_TYPE_MAPPING.get(callback_or_type, callback_or_type)  # type: ignore
         _LOGGER.debug("Attempting to convert %s to %s", value, callback_or_type)
         conversion_func = callback_or_type
-        if inspect.isclass(callback_or_type) and issubclass(callback_or_type, BaseConverter):  # type: ignore
-            conversion_func = callback_or_type(self.ctx).convert  # type: ignore
+        if inspect.isclass(callback_or_type) and issubclass(callback_or_type, BaseConverter):
+            conversion_func = callback_or_type(self.ctx).convert
 
         converted = conversion_func(value)  # type: ignore
         if inspect.iscoroutine(converted):

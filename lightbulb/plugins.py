@@ -50,11 +50,15 @@ class Plugin:
         description (Optional[:obj:`str`]): Description of the plugin. Defaults to ``None``.
         include_datastore (:obj:`bool`): Whether or not to create a :obj:`~.utils.data_store.DataStore` instance
             internally for this plugin.
+        default_enabled_guilds (UndefinedOr[Union[:obj:`int`, Sequence[:obj:`int`]]]): The guilds to create application
+            commands registered to this plugin in by default. This overrides :obj:`~.app.BotApp.default_enabled_guilds`
+            but is overridden by :obj:`~.commands.base.CommandLike.guilds`.
     """
 
     __slots__ = (
         "name",
         "description",
+        "default_enabled_guilds",
         "_d",
         "_raw_commands",
         "_all_commands",
@@ -65,11 +69,21 @@ class Plugin:
         "_remove_hook",
     )
 
-    def __init__(self, name: str, description: t.Optional[str] = None, include_datastore: bool = False) -> None:
-        self.name = name
+    def __init__(
+        self,
+        name: str,
+        description: t.Optional[str] = None,
+        include_datastore: bool = False,
+        default_enabled_guilds: hikari.UndefinedOr[t.Union[int, t.Sequence[int]]] = hikari.UNDEFINED,
+    ) -> None:
+        self.name: str = name
         """The plugin's name."""
-        self.description = description or ""
+        self.description: str = description or ""
         """The plugin's description."""
+        self.default_enabled_guilds: hikari.UndefinedOr[t.Sequence[int]] = (
+            (default_enabled_guilds,) if isinstance(default_enabled_guilds, int) else default_enabled_guilds
+        )
+        """The guilds that application commands registered to this plugin will be created in by default."""
 
         self._d: t.Optional[data_store.DataStore] = None
         if include_datastore:
@@ -178,6 +192,8 @@ class Plugin:
         """
         if cmd_like is not None:
             self._raw_commands.append(cmd_like)
+            if cmd_like.guilds is hikari.UNDEFINED:
+                cmd_like.guilds = self.default_enabled_guilds
             return cmd_like
 
         def decorate(cmd_like_: commands.base.CommandLike) -> commands.base.CommandLike:

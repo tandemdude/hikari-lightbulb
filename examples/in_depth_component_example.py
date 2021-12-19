@@ -15,6 +15,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
+
 import typing as t
 
 import hikari
@@ -148,7 +149,7 @@ async def handle_responses(
                 # buttons we would pass a new list of action rows.
                 await event.interaction.create_initial_response(
                     # The response type is required when creating
-                    # the inital response. We use MESSAGE_UPDATE
+                    # the initial response. We use MESSAGE_UPDATE
                     # because we are updating a message we previously
                     # sent. NOTE: even though the message was already
                     # sent, this is still the **INITIAL RESPONSE** to

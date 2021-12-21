@@ -398,8 +398,8 @@ class BotApp(hikari.GatewayBot):
 
         try:
             module = importlib.import_module(extension)
-        except ModuleNotFoundError:
-            raise errors.ExtensionNotFound(f"No extension by the name {extension!r} was found") from None
+        except ModuleNotFoundError as ex:
+            raise errors.ExtensionNotFound(f"No extension by the name {extension!r} was found") from ex
 
         ext = t.cast(_ExtensionT, module)
         self._current_extension = ext

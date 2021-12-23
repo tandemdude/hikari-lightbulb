@@ -15,6 +15,8 @@ Version 2.1.2
 
 - Fix :obj:`lightbulb.errors.ExtensionNotFound` error being raised when an import fails in an extension being loaded.
 
+- Add ``default_enabled_guilds`` argument to the :obj:`lightbulb.plugins.Plugin` class.
+
 Version 2.1.1
 =============
 

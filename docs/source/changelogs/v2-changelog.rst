@@ -6,6 +6,15 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 2.1.2
+=============
+
+- Fix editing ephemeral responses raising a ``NotFound`` error.
+
+- Fix various type hints.
+
+- Fix :obj:`lightbulb.errors.ExtensionNotFound` error being raised when an import fails in an extension being loaded.
+
 Version 2.1.1
 =============
 

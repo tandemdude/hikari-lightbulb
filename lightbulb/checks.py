@@ -81,7 +81,7 @@ class _ExclusiveCheck:
             try:
                 res = check(context)
                 if inspect.iscoroutine(res):
-                    res = await res  # type: ignore
+                    res = await res
 
                 if not res:
                     raise errors.CheckFailure(f"Check {check.__name__!r} failed")

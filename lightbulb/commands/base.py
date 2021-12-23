@@ -384,7 +384,7 @@ class Command(abc.ABC):
         """
         exempt = self.check_exempt(context)
         if inspect.iscoroutine(exempt):
-            exempt = await exempt  # type: ignore
+            exempt = await exempt
         if exempt:
             return True
 
@@ -395,7 +395,7 @@ class Command(abc.ABC):
             try:
                 result = check(context)
                 if inspect.iscoroutine(result):
-                    result = await result  # type: ignore
+                    result = await result
 
                 if not result:
                     failed_checks.append(errors.CheckFailure(f"Check {check.__name__} failed for command {self.name}"))

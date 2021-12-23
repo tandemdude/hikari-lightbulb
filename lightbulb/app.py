@@ -29,6 +29,7 @@ import pathlib
 import re
 import sys
 import typing as t
+from importlib import util
 
 import hikari
 from hikari.internal import ux
@@ -124,7 +125,7 @@ def when_mentioned_or(
         if callable(prefix_provider):
             prefixes = prefix_provider(app, message)
             if inspect.iscoroutine(prefixes):
-                prefixes = await prefixes  # type: ignore
+                prefixes = await prefixes
         else:
             prefixes = prefix_provider
 
@@ -396,10 +397,11 @@ class BotApp(hikari.GatewayBot):
         if extension in self.extensions:
             raise errors.ExtensionAlreadyLoaded(f"Extension {extension!r} is already loaded.")
 
-        try:
-            module = importlib.import_module(extension)
-        except ModuleNotFoundError as ex:
-            raise errors.ExtensionNotFound(f"No extension by the name {extension!r} was found") from ex
+        spec = util.find_spec(extension)
+        if spec is None:
+            raise errors.ExtensionNotFound(f"No extension by the name {extension!r} was found")
+
+        module = importlib.import_module(extension)
 
         ext = t.cast(_ExtensionT, module)
         self._current_extension = ext
@@ -844,7 +846,7 @@ class BotApp(hikari.GatewayBot):
         if plugin._remove_hook is not None:
             maybe_coro = plugin._remove_hook()
             if inspect.iscoroutine(maybe_coro):
-                asyncio.create_task(maybe_coro)  # type: ignore
+                asyncio.create_task(maybe_coro)
 
         _LOGGER.debug("Plugin removed %r", plugin.name)
 
@@ -892,7 +894,7 @@ class BotApp(hikari.GatewayBot):
 
         prefixes = self.get_prefix(self, event.message)
         if inspect.iscoroutine(prefixes):
-            prefixes = await prefixes  # type: ignore
+            prefixes = await prefixes
         prefixes = t.cast(t.Sequence[str], prefixes)
 
         if isinstance(prefixes, str):

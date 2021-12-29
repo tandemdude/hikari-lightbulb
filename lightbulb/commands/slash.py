@@ -31,12 +31,15 @@ from lightbulb.commands import base
 
 if t.TYPE_CHECKING:
     from lightbulb import app as app_
+    from lightbulb import plugins
 
 COMMAND_NAME_REGEX: re.Pattern[str] = re.compile(r"^[\w-]{1,32}$", re.U)
 
 
 class SlashGroupMixin(abc.ABC):
+    __slots__ = ()
     name: str
+    _plugin: t.Optional[plugins.Plugin]
     _subcommands: t.Dict[str, t.Union[SlashSubGroup, SlashSubCommand]]
 
     def create_subcommands(
@@ -52,6 +55,8 @@ class SlashGroupMixin(abc.ABC):
                     cmd = impl(app, raw_cmd)
                     assert isinstance(cmd, (SlashSubCommand, SlashSubGroup))
                     cmd.parent = self  # type: ignore
+                    cmd.plugin = self.plugin  # type: ignore
+
                     if cmd.name in self._subcommands:
                         raise errors.CommandAlreadyExists(
                             f"A prefix subcommand with name or alias {cmd.name!r} already exists for group {self.name!r}"
@@ -78,6 +83,14 @@ class SlashGroupMixin(abc.ABC):
     def subcommands(self) -> t.Dict[str, t.Union[SlashSubGroup, SlashSubCommand]]:
         """Mapping of command name to command object containing the group's subcommands."""
         return self._subcommands
+
+    def _set_plugin(self, pl: plugins.Plugin) -> None:
+        self._plugin = pl
+        for command in self._subcommands.values():
+            if isinstance(command, SlashGroupMixin):
+                command._set_plugin(pl)
+            else:
+                command.plugin = pl
 
 
 class SlashCommand(base.ApplicationCommand):
@@ -168,6 +181,9 @@ class SlashSubGroup(SlashCommand, SlashGroupMixin, base.SubCommandTrait):
         if len(self._subcommands) > 25:
             raise ValueError(f"Slash command {self.name!r}: group can have at most 25 subcommands") from None
 
+    def _set_plugin(self, pl: plugins.Plugin) -> None:
+        SlashGroupMixin._set_plugin(self, pl)
+
 
 class SlashCommandGroup(SlashCommand, SlashGroupMixin):
     """
@@ -197,3 +213,6 @@ class SlashCommandGroup(SlashCommand, SlashGroupMixin):
         super()._validate_attributes()
         if len(self._subcommands) > 25:
             raise ValueError(f"Slash command {self.name!r}: group can have at most 25 subcommands") from None
+
+    def _set_plugin(self, pl: plugins.Plugin) -> None:
+        SlashGroupMixin._set_plugin(self, pl)

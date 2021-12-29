@@ -179,6 +179,7 @@ class CommandLike:
     parser: t.Optional[t.Type[parser_.BaseParser]] = None
     """The argument parser to use for prefix commands."""
     cooldown_manager: t.Optional[cooldowns.CooldownManager] = None
+    """The cooldown manager for the command."""
     help_getter: t.Optional[t.Callable[[Command, context_.base.Context], str]] = None
     """The function to call to get the command's long help text."""
     auto_defer: bool = False
@@ -268,7 +269,7 @@ class Command(abc.ABC):
         "checks",
         "error_handler",
         "parent",
-        "plugin",
+        "_plugin",
         "aliases",
         "parser",
         "cooldown_manager",
@@ -282,6 +283,7 @@ class Command(abc.ABC):
     def __init__(self, app: app_.BotApp, initialiser: CommandLike) -> None:
         self._initialiser = initialiser
         self._help_getter = initialiser.help_getter
+        self._plugin: t.Optional[plugins.Plugin] = None
         self.app: app_.BotApp = app
         """The ``BotApp`` instance the command is registered to."""
         self.callback: t.Callable[[context_.base.Context], t.Coroutine[t.Any, t.Any, None]] = initialiser.callback
@@ -300,8 +302,6 @@ class Command(abc.ABC):
         """The error handler function for the command."""
         self.parent: t.Optional[Command] = None
         """The parent for the command."""
-        self.plugin: t.Optional[plugins.Plugin] = None
-        """The plugin that the command belongs to."""
         self.aliases: t.Sequence[str] = initialiser.aliases
         """The aliases for the command. This value means nothing for application commands."""
         self.parser: t.Optional[t.Type[parser_.BaseParser]] = initialiser.parser
@@ -329,6 +329,18 @@ class Command(abc.ABC):
 
     def _validate_attributes(self) -> None:
         pass
+
+    def _set_plugin(self, pl: plugins.Plugin) -> None:
+        self._plugin = pl
+
+    @property
+    def plugin(self) -> t.Optional[plugins.Plugin]:
+        """The plugin that the command belongs to."""
+        return self._plugin
+
+    @plugin.setter
+    def plugin(self, pl: plugins.Plugin) -> None:
+        self._set_plugin(pl)
 
     @property
     def bot(self) -> app_.BotApp:

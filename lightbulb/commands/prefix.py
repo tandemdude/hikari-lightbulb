@@ -30,11 +30,13 @@ from lightbulb.commands import base
 
 if t.TYPE_CHECKING:
     from lightbulb import app as app_
+    from lightbulb import plugins
 
 
 class PrefixGroupMixin(abc.ABC):
     __slots__ = ()
     name: str
+    _plugin: t.Optional[plugins.Plugin]
     _subcommands: t.Dict[str, t.Union[PrefixSubGroup, PrefixSubCommand]]
 
     def maybe_resolve_subcommand(
@@ -57,6 +59,8 @@ class PrefixGroupMixin(abc.ABC):
                 if issubclass(impl, (PrefixSubCommand, PrefixSubGroup)):
                     cmd = impl(app, raw_cmd)
                     cmd.parent = self  # type: ignore
+                    cmd.plugin = self.plugin  # type: ignore
+
                     for name in [cmd.name, *cmd.aliases]:
                         if name in self._subcommands:
                             raise errors.CommandAlreadyExists(
@@ -75,6 +79,14 @@ class PrefixGroupMixin(abc.ABC):
     def subcommands(self) -> t.Dict[str, t.Union[PrefixSubGroup, PrefixSubCommand]]:
         """Mapping of command name to command object containing the group's subcommands."""
         return self._subcommands
+
+    def _set_plugin(self, pl: plugins.Plugin) -> None:
+        self._plugin = pl
+        for command in self._subcommands.values():
+            if isinstance(command, PrefixGroupMixin):
+                command._set_plugin(pl)
+            else:
+                command.plugin = pl
 
 
 class PrefixCommand(base.Command):
@@ -160,6 +172,9 @@ class PrefixSubGroup(PrefixCommand, PrefixGroupMixin, base.SubCommandTrait):
         for command in self._subcommands.values():
             command._validate_attributes()
 
+    def _set_plugin(self, pl: plugins.Plugin) -> None:
+        PrefixGroupMixin._set_plugin(self, pl)
+
 
 class PrefixCommandGroup(PrefixCommand, PrefixGroupMixin):
     """
@@ -192,3 +207,6 @@ class PrefixCommandGroup(PrefixCommand, PrefixGroupMixin):
         super()._validate_attributes()
         for command in self._subcommands.values():
             command._validate_attributes()
+
+    def _set_plugin(self, pl: plugins.Plugin) -> None:
+        PrefixGroupMixin._set_plugin(self, pl)

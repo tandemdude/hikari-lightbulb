@@ -170,7 +170,6 @@ class Plugin:
                     continue
 
                 cmd._validate_attributes()
-
                 cmd.plugin = self
                 self._all_commands.append(cmd)
 

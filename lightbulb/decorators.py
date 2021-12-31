@@ -127,6 +127,9 @@ def option(
         kwargs.setdefault("default", None)
 
     def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
+        if not isinstance(c_like, commands.base.CommandLike):
+            raise SyntaxError("'option' decorator must be above the 'command' decorator")
+
         c_like.options[name] = cls(name, description, type, **kwargs)
         return c_like
 
@@ -145,6 +148,9 @@ def add_checks(
     """
 
     def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
+        if not isinstance(c_like, commands.base.CommandLike):
+            raise SyntaxError("'add_checks' decorator must be above the 'command' decorator")
+
         new_checks = [*c_like.checks, *cmd_checks]
         c_like.checks = new_checks
 
@@ -170,6 +176,9 @@ def check_exempt(
     """
 
     def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
+        if not isinstance(c_like, commands.base.CommandLike):
+            raise SyntaxError("'check_exempt' decorator must be above the 'command' decorator")
+
         c_like.check_exempt = predicate
         return c_like
 
@@ -231,6 +240,9 @@ def add_cooldown(
         raise TypeError("Invalid arguments - either provided all of the args length,uses,bucket or the kwarg callback")
 
     def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
+        if not isinstance(c_like, commands.base.CommandLike):
+            raise SyntaxError("'add_cooldown' decorator must be above the 'command' decorator")
+
         c_like.cooldown_manager = cls(getter)
         return c_like
 
@@ -260,6 +272,9 @@ def set_help(
         raise ValueError("Either help text/callable or docstring=True must be provided")
 
     def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
+        if not isinstance(c_like, commands.base.CommandLike):
+            raise SyntaxError("'set_help' decorator must be above the 'command' decorator")
+
         if isinstance(text, str):
             getter = lambda _, __: text
         elif docstring:

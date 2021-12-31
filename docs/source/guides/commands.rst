@@ -292,12 +292,16 @@ For example:
 
     import lightbulb
 
+    # OPTIONAL: Converting the check function into a Check object
+    @lightbulb.Check
     # Defining the custom check function
     def check_author_is_me(context: lightbulb.Context) -> bool:
         # Returns True if the author's ID is the same as the given one
         return context.author.id == 1455657467
 
     # Adding the check to a command
+    @lightbulb.add_checks(check_author_is_me)
+    # Or if you do not use the @lightbulb.Check decorator
     @lightbulb.add_checks(lightbulb.Check(check_author_is_me))
 
 

@@ -152,6 +152,12 @@ Lightbulb provides the :obj:`lightbulb.decorators.option` decorator for this pur
   string without parsing it) and ``GREEDY`` (consumes and converts arguments until either the argument string is exhausted
   or argument conversion fails).
 
+- ``min_value`` (optional): The minimum value permitted for this option (inclusive). Only available if the option type
+  is numeric (integer or float).
+
+- ``max_value`` (optional): The maximum value permitted for this option (inclusive). Only available if the option type
+  is numeric (integer or float).
+
 **For example:**
 
 .. code-block:: python

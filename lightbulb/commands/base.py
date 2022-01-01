@@ -110,7 +110,7 @@ class OptionLike:
     """The name of the option."""
     description: str
     """The description of the option"""
-    arg_type: t.Type[t.Any] = str
+    arg_type: t.Any = str
     """The type of the option."""
     required: bool = True
     """Whether or not the option is required. This will be inferred from whether or not a default value was provided if unspecified."""
@@ -122,6 +122,10 @@ class OptionLike:
     """The default value for this option."""
     modifier: OptionModifier = OptionModifier.NONE
     """Additional modifier controlling how the option should be parsed. This only affects prefix commands."""
+    min_value: t.Optional[t.Union[float, int]] = None
+    """The minimum value permitted for this option (inclusive). The option must be ``INTEGER`` or ``FLOAT`` to use this."""
+    max_value: t.Optional[t.Union[float, int]] = None
+    """The maximum value permitted for this option (inclusive). The option must be ``INTEGER`` or ``FLOAT`` to use this."""
 
     def as_application_command_option(self) -> hikari.CommandOption:
         """
@@ -137,18 +141,43 @@ class OptionLike:
                 f"Application command option {self.name!r}: description must be from 1-100 characters long"
             )
 
+        arg_type = OPTION_TYPE_MAPPING.get(self.arg_type, self.arg_type)
+        if not isinstance(arg_type, hikari.OptionType):
+            arg_type = hikari.OptionType.STRING  # type: ignore[unreachable]
+
+        if (self.min_value is not None or self.max_value is not None) and arg_type not in (
+            hikari.OptionType.INTEGER,
+            hikari.OptionType.FLOAT,
+        ):
+            raise ValueError(
+                f"Application command option {self.name!r}: 'min_value' or 'max_value' was provided but the option type is not numeric"
+            )
+
         kwargs: t.MutableMapping[str, t.Any] = {
-            "type": OPTION_TYPE_MAPPING.get(self.arg_type, self.arg_type),
+            "type": arg_type,
             "name": self.name,
             "description": self.description,
             "is_required": self.required,
         }
+
         if self.choices:
             if len(self.choices) > 25:
                 raise ValueError("Application command options can have at most 25 choices")
             kwargs["choices"] = _get_choice_objects_from_choices(self.choices)
+
         if self.channel_types:
             kwargs["channel_types"] = self.channel_types
+
+        if self.min_value is not None:
+            kwargs["min_value"] = (
+                int(self.min_value) if arg_type is hikari.OptionType.INTEGER else float(self.min_value)
+            )
+
+        if self.max_value is not None:
+            kwargs["max_value"] = (
+                int(self.max_value) if arg_type is hikari.OptionType.INTEGER else float(self.max_value)
+            )
+
         return hikari.CommandOption(**kwargs)
 
 

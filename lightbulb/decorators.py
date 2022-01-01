@@ -95,7 +95,7 @@ def command(
 def option(
     name: str,
     description: str,
-    type: t.Type[t.Any] = str,
+    type: t.Any = str,
     *,
     cls: t.Type[commands.base.OptionLike] = commands.base.OptionLike,
     **kwargs: t.Any,
@@ -107,7 +107,7 @@ def option(
     Args:
         name (:obj:`str`): The name of the option.
         description (:obj:`str`): The description of the option.
-        type (Type[Any]): The type of the option. This will be used as the converter for prefix commands.
+        type (Any): The type of the option. This will be used as the converter for prefix commands.
 
     Keyword Args:
         required (:obj:`bool`): Whether or not this option is required. This will be inferred from whether or not
@@ -119,6 +119,10 @@ def option(
         default (UndefinedOr[Any]): The default value for the option. Defaults to :obj:`~hikari.undefined.UNDEFINED`.
         modifier (:obj:`~.commands.base.OptionModifier`): Modifier controlling how the option should be parsed. Defaults
             to ``OptionModifier.NONE``.
+        min_value (Optional[Union[:obj:`float`, :obj:`int`]]): The minimum value permitted for this option (inclusive).
+            Only available if the option type is numeric (integer or float).
+        max_value (Optional[Union[:obj:`float`, :obj:`int`]]): The maximum value permitted for this option (inclusive).
+            Only available if the option type is numeric (integer or float).
         cls (Type[:obj:`~.commands.base.OptionLike`]): ``OptionLike`` class to instantiate from this decorator. Defaults
             to :obj:`~.commands.base.OptionLike`.
     """
@@ -221,7 +225,7 @@ def add_cooldown(
         bucket (Type[:obj:`~.cooldowns.Bucket`]): The bucket to use for cooldowns.
 
     Keyword Args:
-        callback (Callable[[:obj:`~.context.base.Context], Union[:obj:`~.cooldowns.Bucket`, Coroutine[Any, Any, :obj:`~.cooldowns.Bucket`): Callable
+        callback (Callable[[:obj:`~.context.base.Context], Union[:obj:`~.cooldowns.Bucket`, Coroutine[Any, Any, :obj:`~.cooldowns.Bucket`]]]): Callable
             that takes the context the command was invoked under and returns the appropriate bucket object to use for
             cooldowns in the context.
         cls (Type[:obj:`~.cooldowns.CooldownManager`]): The cooldown manager class to use. Defaults to

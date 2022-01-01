@@ -6,6 +6,15 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 2.1.3
+=============
+
+- Fix plugin checks not propagating correctly for subcommands.
+
+- Add additional validation to ensure correct decorator order.
+
+- Add :obj:`lightbulb.commands.base.OptionLike.min_value` and :obj:`lightbulb.commands.base.OptionLike.max_value`.
+
 Version 2.1.2
 =============
 

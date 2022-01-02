@@ -42,7 +42,7 @@ class _GuildIDCollection:
             ids = [ids]
         self.ids: t.List[int] = list(ids)
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: t.Any) -> bool:
         if not isinstance(other, int):
             return NotImplemented
         return other in self.ids
@@ -73,8 +73,9 @@ def _serialise_option(option: hikari.CommandOption) -> t.Dict[str, t.Any]:
 def _serialise_hikari_command(command: hikari.Command) -> t.Dict[str, t.Any]:
     options = sorted(command.options or [], key=lambda o: o.name)
     return {
+        "type": command.type,
         "name": command.name,
-        "description": command.description,
+        "description": command.description or None,
         "options": [_serialise_option(o) for o in options],
         "guild_id": command.guild_id,
     }
@@ -83,9 +84,10 @@ def _serialise_hikari_command(command: hikari.Command) -> t.Dict[str, t.Any]:
 def _serialise_lightbulb_command(command: base.ApplicationCommand) -> t.Dict[str, t.Any]:
     create_kwargs = command.as_create_kwargs()
     return {
+        "type": create_kwargs["type"],
         "name": create_kwargs["name"],
-        "description": create_kwargs["description"],
-        "options": [_serialise_option(o) for o in sorted(create_kwargs["options"], key=lambda o: o.name)],  # type: ignore
+        "description": create_kwargs.get("description"),
+        "options": [_serialise_option(o) for o in sorted(create_kwargs.get("options", []), key=lambda o: o.name)],  # type: ignore
         "guild_id": _GuildIDCollection(command.guilds) if command.guilds else None,
     }
 
@@ -100,82 +102,152 @@ def _compare_commands(cmd1: base.ApplicationCommand, cmd2: hikari.Command) -> bo
     return serialise_command(cmd1) == serialise_command(cmd2)
 
 
+def _create_builder_from_command(
+    app: app_.BotApp, cmd: t.Union[hikari.Command, base.ApplicationCommand]
+) -> hikari.api.CommandBuilder:
+    if isinstance(cmd, hikari.Command):
+        bld = app.rest.command_builder(cmd.name, cmd.description or hikari.UNDEFINED)
+        bld.set_type(cmd.type)
+        for opt in cmd.options or []:
+            bld.add_option(opt)
+        return bld
+    else:
+        create_kwargs = cmd.as_create_kwargs()
+        bld = app.rest.command_builder(create_kwargs["name"], create_kwargs.get("description", hikari.UNDEFINED))
+        bld.set_type(create_kwargs["type"])
+        for opt in create_kwargs.get("options", []):
+            bld.add_option(opt)
+        return bld
+
+
+def _get_lightbulb_command_equivalent(app: app_.BotApp, cmd: hikari.Command) -> t.Optional[base.ApplicationCommand]:
+    if cmd.type is hikari.CommandType.CHAT_INPUT:
+        return app.get_slash_command(cmd.name)
+    elif cmd.type is hikari.CommandType.USER:
+        return app.get_user_command(cmd.name)
+    elif cmd.type is hikari.CommandType.MESSAGE:
+        return app.get_message_command(cmd.name)
+
+
+async def _get_guild_commands_to_set(app: app_.BotApp, guild_id: int) -> t.Sequence[hikari.api.CommandBuilder]:
+    assert app.application is not None
+
+    commands_to_declare = []
+    unchanged, changed, created, deleted, skipped = 0, 0, 0, 0, 0
+    # Get the commands that already exist in the given guild
+    existing_commands = await app.rest.fetch_application_commands(app.application, guild_id)
+
+    # Create a mapping containing all the commands that should be created for this guild
+    app_commands: t.Dict[hikari.CommandType, t.Dict[str, base.ApplicationCommand]] = {
+        hikari.CommandType.CHAT_INPUT: {c.name: c for c in app._slash_commands.values() if guild_id in c.guilds},
+        hikari.CommandType.USER: {c.name: c for c in app._user_commands.values() if guild_id in c.guilds},
+        hikari.CommandType.MESSAGE: {c.name: c for c in app._message_commands.values() if guild_id in c.guilds},
+    }
+    for command in existing_commands:
+        # Get the implementation for the given command
+        equiv = _get_lightbulb_command_equivalent(app, command)
+        if equiv is None and not app._delete_unbound_commands:
+            # Convert the hikari Command back into a builder because we don't want to delete it
+            commands_to_declare.append(_create_builder_from_command(app, command))
+            skipped += 1
+        elif equiv is None and app._delete_unbound_commands:
+            deleted += 1
+        elif equiv is not None:
+            if _compare_commands(equiv, command):
+                # The commands are the same, create a builder from the hikari Command
+                commands_to_declare.append(_create_builder_from_command(app, command))
+                unchanged += 1
+            else:
+                # The commands are different, create a builder from the lightbulb Command
+                commands_to_declare.append(_create_builder_from_command(app, equiv))
+                changed += 1
+        # Remove the command from the mapping, so we don't add a duplicate to the list
+        app_commands[command.type].pop(command.name, None)
+
+    # Add the remaining commands that do not have an equivalent on discord
+    for cmds in app_commands.values():
+        for cmd in cmds.values():
+            commands_to_declare.append(_create_builder_from_command(app, cmd))
+            created += 1
+
+    _LOGGER.info("Processing application commands for guild %s", guild_id)
+    _LOGGER.debug(
+        "%s - Created: %s, Deleted: %s, Updated: %s, Unchanged: %s, Skipped: %s",
+        guild_id,
+        created,
+        deleted,
+        changed,
+        unchanged,
+        skipped,
+    )
+
+    return commands_to_declare
+
+
+async def _process_global_commands(app: app_.BotApp) -> None:
+    unchanged, changed, created, deleted, skipped = 0, 0, 0, 0, 0
+    # Get the commands that already exist globally
+    existing_global_commands = await app.rest.fetch_application_commands(app.application)
+    # Create a mapping containing all the commands that should be created globally
+    registered_global_commands: t.Dict[hikari.CommandType, t.Dict[str, base.ApplicationCommand]] = {
+        hikari.CommandType.CHAT_INPUT: {c.name: c for c in app._slash_commands.values() if not c.guilds},
+        hikari.CommandType.USER: {c.name: c for c in app._user_commands.values() if not c.guilds},
+        hikari.CommandType.MESSAGE: {c.name: c for c in app._message_commands.values() if not c.guilds},
+    }
+    for command in existing_global_commands:
+        # Get the implementation for the given command
+        equiv = registered_global_commands[command.type].get(command.name)
+        if equiv is None:
+            # No implementation for the hikari Command exists as a global command
+            if app._delete_unbound_commands:
+                # Delete the command
+                await command.delete()
+                deleted += 1
+            else:
+                # Ignore the command
+                skipped += 1
+        else:
+            if _compare_commands(equiv, command):
+                # The commands are the same, no need to recreate
+                unchanged += 1
+            else:
+                # The commands are different, recreate in order to update the version on discord
+                await equiv.create()
+                changed += 1
+        # Remove the command from the mapping, so we don't make too many create calls
+        registered_global_commands[command.type].pop(command.name, None)
+
+    # Create the remaining commands that do not have an equivalent on discord
+    for cmd_map in registered_global_commands.values():
+        for app_cmd in cmd_map.values():
+            await app_cmd.create()
+            created += 1
+
+    _LOGGER.debug(
+        "Global - Created: %s, Deleted: %s, Updated: %s, Unchanged: %s, Skipped: %s",
+        created,
+        deleted,
+        changed,
+        unchanged,
+        skipped,
+    )
+
+
 async def manage_application_commands(app: app_.BotApp) -> None:
     assert app.application is not None
 
-    grouped_commands: t.Dict[t.Union[int, None], t.Dict[str, base.ApplicationCommand]] = collections.defaultdict(dict)
-    for s_command in app._slash_commands.values():
-        guilds = s_command.guilds or app.default_enabled_guilds or None
-        if guilds is not None:
-            for guild in guilds:
-                grouped_commands[guild][s_command.name] = s_command
-        else:
-            grouped_commands[None][s_command.name] = s_command
+    # Guild command processing
+    _LOGGER.info("Processing guild application commands")
+    all_guilds = set(app.default_enabled_guilds)
+    for app_cmd in [*app._message_commands.values(), *app._user_commands.values(), *app._slash_commands.values()]:
+        all_guilds.update(app_cmd.guilds or [])
 
-    global_commands: t.Sequence[hikari.Command] = await app.rest.fetch_application_commands(app.application)
-    _LOGGER.info("Processing global commands")
-    for command in global_commands:
-        registered_command = app.get_slash_command(command.name)
-        if registered_command is None or registered_command.guilds:
-            if app._delete_unbound_commands:
-                _LOGGER.debug("Deleting global command %r as no implementation could be found", command.name)
-                await command.delete()
-            continue
+    for guild_id in all_guilds:
+        cmds_to_declare = await _get_guild_commands_to_set(app, guild_id)
+        await app.rest.set_application_commands(app.application, cmds_to_declare, guild_id)
 
-        if not _compare_commands(registered_command, command):
-            _LOGGER.debug("Recreating global command %r as it appears to have changed", command.name)
-            await registered_command._auto_create()
-        else:
-            _LOGGER.debug("Not recreating global command %r as it does not appear to have changed", command.name)
-            registered_command.instances[None] = command
-        grouped_commands[None].pop(registered_command.name, None)
+    # Global command processing
+    _LOGGER.info("Processing global application commands")
+    await _process_global_commands(app)
 
-    all_guild_ids: t.Set[int] = set()
-    all_guild_ids.update(app.default_enabled_guilds)
-    for app_command in app._slash_commands.values():
-        all_guild_ids.update(app_command.guilds)
-
-    for guild_id in all_guild_ids:
-        _LOGGER.info("Processing commands for guild %r", str(guild_id))
-        guild_commands: t.Sequence[hikari.Command] = await app.rest.fetch_application_commands(
-            app.application, guild_id
-        )
-        for command in guild_commands:
-            registered_command = app.get_slash_command(command.name)
-
-            if registered_command is None or not registered_command.guilds:
-                if app._delete_unbound_commands:
-                    _LOGGER.debug(
-                        "Deleting command %r from guild %r as no implementation could be found",
-                        command.name,
-                        str(guild_id),
-                    )
-                    await command.delete()
-                continue
-
-            if not _compare_commands(registered_command, command):
-                _LOGGER.debug(
-                    "Recreating guild command %r in guild %r as it appears to have changed",
-                    command.name,
-                    str(guild_id),
-                )
-                await registered_command.create(guild_id)
-            else:
-                _LOGGER.debug(
-                    "Not recreating guild command %r in guild %r as it does not appear to have changed",
-                    command.name,
-                    str(guild_id),
-                )
-                registered_command.instances[guild_id] = command
-            grouped_commands[guild_id].pop(registered_command.name, None)
-
-    for g_id, commands in grouped_commands.items():
-        for app_cmd in commands.values():
-            _LOGGER.debug(
-                "Creating command %r %s as it does not seem to exist yet",
-                app_cmd.name,
-                f"in guild {g_id}" if g_id else "globally",
-            )
-
-            await app_cmd.create(g_id)
-    _LOGGER.info("Command processing completed")
+    _LOGGER.info("Application command processing completed")

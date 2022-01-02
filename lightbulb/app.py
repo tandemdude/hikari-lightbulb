@@ -336,7 +336,12 @@ class BotApp(hikari.GatewayBot):
     def _get_application_command(
         self, interaction: hikari.CommandInteraction
     ) -> t.Optional[commands.base.ApplicationCommand]:
-        return self.get_slash_command(interaction.command_name)
+        if interaction.command_type is hikari.CommandType.CHAT_INPUT:
+            return self.get_slash_command(interaction.command_name)
+        elif interaction.command_type is hikari.CommandType.USER:
+            return self.get_user_command(interaction.command_name)
+        elif interaction.command_type is hikari.CommandType.MESSAGE:
+            return self.get_message_command(interaction.command_name)
 
     async def _manage_application_commands(self, _: hikari.StartingEvent) -> None:
         if self.application is None:
@@ -1073,9 +1078,14 @@ class BotApp(hikari.GatewayBot):
         cmd = self._get_application_command(event.interaction)
         if cmd is None:
             return None
-        # TODO - make this work for other application command types
-        assert isinstance(cmd, commands.slash.SlashCommand)
-        return await self.get_slash_context(event, cmd)
+
+        if isinstance(cmd, commands.slash.SlashCommand):
+            return await self.get_slash_context(event, cmd)
+        elif isinstance(cmd, commands.user.UserCommand):
+            return await self.get_user_context(event, cmd)
+        elif isinstance(cmd, commands.message.MessageCommand):
+            return await self.get_message_context(event, cmd)
+        return None
 
     async def invoke_application_command(self, context: context_.base.ApplicationContext) -> None:
         """

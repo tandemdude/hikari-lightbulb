@@ -21,6 +21,8 @@ __all__ = ["UserCommand"]
 
 import typing as t
 
+import hikari
+
 from lightbulb.commands import base
 
 
@@ -37,5 +39,11 @@ class UserCommand(base.ApplicationCommand):
         super().__init__(*args, **kwargs)
         self.options: t.Dict[str, t.Any] = {}
 
+    def _validate_attributes(self) -> None:
+        return  # TODO
+
     def as_create_kwargs(self) -> t.Dict[str, t.Any]:
-        raise NotImplementedError
+        return {
+            "type": hikari.CommandType.USER,
+            "name": self.name,
+        }

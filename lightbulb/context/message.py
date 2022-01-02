@@ -15,10 +15,41 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 __all__ = ["MessageContext"]
 
+import typing as t
+
+import hikari
+
+from lightbulb import commands
 from lightbulb.context import base
+
+if t.TYPE_CHECKING:
+    from lightbulb import app as app_
 
 
 class MessageContext(base.ApplicationContext):
-    __slots__ = ()
+    __slots__ = ("_options",)
+
+    def __init__(
+        self, app: app_.BotApp, event: hikari.InteractionCreateEvent, command: commands.message.MessageCommand
+    ) -> None:
+        super().__init__(app, event, command)
+        assert self.resolved is not None
+        assert self.interaction.target_id is not None
+        self._options = {"target": self.resolved.messages.get(self.interaction.target_id)}
+
+    @property
+    def raw_options(self) -> t.Dict[str, t.Any]:
+        return self._options
+
+    @property
+    def command(self) -> commands.message.MessageCommand:
+        assert isinstance(self._command, commands.message.MessageCommand)
+        return self._command
+
+    @property
+    def prefix(self) -> str:
+        return "\N{THREE BUTTON MOUSE}\N{VARIATION SELECTOR-16}"

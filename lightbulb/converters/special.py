@@ -309,7 +309,7 @@ class SnowflakeConverter(base.BaseConverter[hikari.Snowflake]):
 
     async def convert(self, arg: str) -> hikari.Snowflake:
         try:
-            snowflake = hikari.Snowflake(arg)
+            snowflake = hikari.Snowflake(arg.strip("<#!&>"))
         except ValueError:
             raise TypeError("Could not resolve snowflake")
         return snowflake

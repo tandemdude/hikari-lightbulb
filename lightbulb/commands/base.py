@@ -510,6 +510,7 @@ class ApplicationCommand(Command, abc.ABC):
         assert self.app.application is not None
         kwargs = self.as_create_kwargs()
         kwargs.update({"guild": guild} if guild is not None else {})
+
         created_cmd = await self.app.rest.create_application_command(
             self.app.application,
             **kwargs,

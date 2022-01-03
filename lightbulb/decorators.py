@@ -31,9 +31,14 @@ from lightbulb import cooldowns
 if t.TYPE_CHECKING:
     from lightbulb import checks as checks_
     from lightbulb import context
+    from lightbulb import events
 
 T = t.TypeVar("T")
 CommandCallbackT = t.TypeVar("CommandCallbackT", bound=t.Callable[..., t.Coroutine[t.Any, t.Any, None]])
+AutocompleteCallbackT = t.Callable[
+    [hikari.CommandInteractionOption, hikari.AutocompleteInteraction],
+    t.Coroutine[t.Any, t.Any, t.Union[str, hikari.CommandChoice, t.Sequence[t.Union[str, hikari.CommandChoice]]]],
+]
 
 
 def implements(
@@ -97,6 +102,14 @@ def option(
     description: str,
     type: t.Any = str,
     *,
+    required: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
+    choices: t.Optional[t.Sequence[t.Union[str, int, float, hikari.CommandChoice]]] = None,
+    channel_types: t.Optional[t.Sequence[hikari.ChannelType]] = None,
+    default: hikari.UndefinedOr[t.Any] = hikari.UNDEFINED,
+    modifier: commands.base.OptionModifier = commands.base.OptionModifier.NONE,
+    min_value: t.Optional[t.Union[int, float]] = None,
+    max_value: t.Optional[t.Union[int, float]] = None,
+    autocomplete: t.Union[bool, AutocompleteCallbackT] = False,
     cls: t.Type[commands.base.OptionLike] = commands.base.OptionLike,
     **kwargs: t.Any,
 ) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
@@ -110,32 +123,55 @@ def option(
         type (Any): The type of the option. This will be used as the converter for prefix commands.
 
     Keyword Args:
-        required (:obj:`bool`): Whether or not this option is required. This will be inferred from whether or not
-            a default was provided if unspecified.
+        required (UndefinedOr[:obj:`bool`]): Whether this option is required. This will be inferred from whether a
+            default value for the option was specified if not otherwise specified.
         choices (Optional[Sequence[Union[:obj:`str`, :obj:`int`, :obj:`float`, :obj:`~hikari.commands.CommandChoice`]]]): The
             choices for the option. This will only affect slash commands. Defaults to ``None``.
         channel_types (Optional[Sequence[hikari.channels.ChannelType]]): The channel types allowed for the option.
-            This will only affect application (slash) commands. Defaults to ``None``.
+            This will only affect slash commands. Defaults to ``None``.
         default (UndefinedOr[Any]): The default value for the option. Defaults to :obj:`~hikari.undefined.UNDEFINED`.
         modifier (:obj:`~.commands.base.OptionModifier`): Modifier controlling how the option should be parsed. Defaults
             to ``OptionModifier.NONE``.
         min_value (Optional[Union[:obj:`float`, :obj:`int`]]): The minimum value permitted for this option (inclusive).
-            Only available if the option type is numeric (integer or float).
+            Only available if the option type is numeric (integer or float). Defaults to ``None``.
         max_value (Optional[Union[:obj:`float`, :obj:`int`]]): The maximum value permitted for this option (inclusive).
-            Only available if the option type is numeric (integer or float).
-        autocomplete (:obj:`bool`): Whether the option will use autocomplete. This will only affect slash commands.
+            Only available if the option type is numeric (integer or float). Defaults to ``None``.
+        autocomplete (Union[:obj:`bool`, AutocompleteCallbackT]): Boolean representing whether the option will use
+            autocomplete or the callback to use for autocomplete for this option. This will only affect slash commands.
+            Defaults to ``False``.
         cls (Type[:obj:`~.commands.base.OptionLike`]): ``OptionLike`` class to instantiate from this decorator. Defaults
             to :obj:`~.commands.base.OptionLike`.
     """
-    kwargs.setdefault("required", kwargs.get("default", hikari.UNDEFINED) is hikari.UNDEFINED)
-    if not kwargs["required"]:
-        kwargs.setdefault("default", None)
 
     def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
+        nonlocal default, required, autocomplete
+
         if not isinstance(c_like, commands.base.CommandLike):
             raise SyntaxError("'option' decorator must be above the 'command' decorator")
 
-        c_like.options[name] = cls(name, description, type, **kwargs)
+        required = required if required is not hikari.UNDEFINED else (default is hikari.UNDEFINED)
+        assert isinstance(required, bool)
+        if not required:
+            default = None if default is hikari.UNDEFINED else default
+
+        if not isinstance(autocomplete, bool):
+            c_like._autocomplete_callbacks[name] = autocomplete
+            autocomplete = True
+
+        c_like.options[name] = cls(
+            name=name,
+            description=description,
+            arg_type=type,
+            required=required,
+            choices=choices,
+            channel_types=channel_types,
+            default=default,
+            modifier=modifier,
+            min_value=min_value,
+            max_value=max_value,
+            autocomplete=autocomplete,
+            **kwargs,
+        )
         return c_like
 
     return decorate

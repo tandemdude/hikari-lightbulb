@@ -20,6 +20,7 @@ from __future__ import annotations
 __all__ = ["BotApp", "when_mentioned_or"]
 
 import asyncio
+import collections.abc
 import functools
 import importlib
 import inspect
@@ -274,6 +275,7 @@ class BotApp(hikari.GatewayBot):
             self.subscribe(hikari.MessageCreateEvent, self.handle_messsage_create_for_prefix_commands)
         self.subscribe(hikari.StartedEvent, self._manage_application_commands)
         self.subscribe(hikari.InteractionCreateEvent, self.handle_interaction_create_for_application_commands)
+        self.subscribe(hikari.InteractionCreateEvent, self.handle_interaction_create_for_autocomplete)
 
     @property
     def help_command(self) -> t.Optional[help_command_.BaseHelpCommand]:
@@ -1144,3 +1146,72 @@ class BotApp(hikari.GatewayBot):
             return
 
         await self.invoke_application_command(context)
+
+    async def handle_interaction_create_for_autocomplete(self, event: hikari.InteractionCreateEvent) -> None:
+        """
+        Autocomplete :obj:`~hikari.events.interaction_events.InteractionCreateEvent` listener. This handles resolving
+        the function to use for autocompletion, response conversion into :obj:`~hikari.commands.CommandChoice` and
+        responding to the interaction with the provided options
+
+        Args:
+            event (:obj:`~hikari.events.interaction_events.InteractionCreateEvent`): Event that autocomplete
+                will be processed for.
+
+        Returns:
+            ``None``
+        """
+        if not isinstance(event.interaction, hikari.AutocompleteInteraction):
+            return
+
+        assert event.interaction.command_type is hikari.CommandType.CHAT_INPUT
+        assert event.interaction.options is not None and len(event.interaction.options) == 1
+
+        def flatten_command_option(
+            opt: hikari.CommandInteractionOption,
+        ) -> t.Tuple[hikari.CommandInteractionOption, t.Sequence[str]]:
+            current = opt
+            name = [current.name]
+
+            while current.type in (hikari.OptionType.SUB_COMMAND, hikari.OptionType.SUB_COMMAND_GROUP):
+                assert current.options is not None
+                current = current.options[0]
+                name.append(current.name)
+
+            return current, name
+
+        option, full_name = flatten_command_option(event.interaction.options[0])
+
+        cmd = self.get_slash_command(event.interaction.command_name)
+        if cmd is None:
+            return
+
+        for part in full_name[:-1]:
+            if not isinstance(cmd, commands.slash.SlashGroupMixin):
+                return
+
+            cmd = cmd.get_subcommand(part)
+            if cmd is None:
+                return
+
+        callback = cmd._initialiser._autocomplete_callbacks.get(full_name[-1])
+        if callback is None:
+            return
+
+        response = await callback(event.interaction.options[0], event.interaction)
+
+        def convert_response_value(val: t.Union[str, hikari.CommandChoice]) -> hikari.CommandChoice:
+            if isinstance(val, str):
+                return hikari.CommandChoice(name=val, value=val)
+            return val
+
+        resp_to_send: t.List[hikari.CommandChoice] = []
+        if isinstance(response, (str, hikari.CommandChoice)):
+            resp_to_send.append(convert_response_value(response))
+        elif isinstance(response, collections.abc.Sequence):
+            for item in response:
+                resp_to_send.append(convert_response_value(item))
+        else:
+            _LOGGER.error("Invalid response returned from autocomplete handler %r", callback.__name__)
+            return
+
+        await event.interaction.create_response(resp_to_send)

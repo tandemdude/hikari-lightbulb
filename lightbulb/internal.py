@@ -67,6 +67,7 @@ def _serialise_option(option: hikari.CommandOption) -> t.Dict[str, t.Any]:
         "channel_types": option.channel_types if option.channel_types is not None else [],
         "min_value": option.min_value,
         "max_value": option.max_value,
+        "autocomplete": option.autocomplete,
     }
 
 
@@ -185,6 +186,8 @@ async def _get_guild_commands_to_set(app: app_.BotApp, guild_id: int) -> t.Seque
 
 
 async def _process_global_commands(app: app_.BotApp) -> None:
+    assert app.application is not None
+
     unchanged, changed, created, deleted, skipped = 0, 0, 0, 0, 0
     # Get the commands that already exist globally
     existing_global_commands = await app.rest.fetch_application_commands(app.application)
@@ -210,6 +213,7 @@ async def _process_global_commands(app: app_.BotApp) -> None:
             if _compare_commands(equiv, command):
                 # The commands are the same, no need to recreate
                 unchanged += 1
+                equiv.instances[None] = command
             else:
                 # The commands are different, recreate in order to update the version on discord
                 await equiv.create()
@@ -242,9 +246,17 @@ async def manage_application_commands(app: app_.BotApp) -> None:
     for app_cmd in [*app._message_commands.values(), *app._user_commands.values(), *app._slash_commands.values()]:
         all_guilds.update(app_cmd.guilds or [])
 
+    cmd_mapping: t.Dict[hikari.CommandType, t.Dict[str, base.ApplicationCommand]] = {
+        hikari.CommandType.CHAT_INPUT: app._slash_commands,  # type: ignore[dict-item]
+        hikari.CommandType.USER: app._user_commands,  # type: ignore[dict-item]
+        hikari.CommandType.MESSAGE: app._message_commands,  # type: ignore[dict-item]
+    }
     for guild_id in all_guilds:
         cmds_to_declare = await _get_guild_commands_to_set(app, guild_id)
-        await app.rest.set_application_commands(app.application, cmds_to_declare, guild_id)
+        created = await app.rest.set_application_commands(app.application, cmds_to_declare, guild_id)
+        for created_cmd in created:
+            if equiv := cmd_mapping[created_cmd.type].get(created_cmd.name):
+                equiv.instances[guild_id] = created_cmd
 
     # Global command processing
     _LOGGER.info("Processing global application commands")

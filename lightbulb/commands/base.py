@@ -40,6 +40,14 @@ if t.TYPE_CHECKING:
     from lightbulb import plugins
     from lightbulb.utils import parser as parser_
 
+AutocompleteCallbackT = t.TypeVar(
+    "AutocompleteCallbackT",
+    bound=t.Callable[
+        ...,
+        t.Coroutine[t.Any, t.Any, t.Union[str, hikari.CommandChoice, t.Sequence[t.Union[str, hikari.CommandChoice]]]],
+    ],
+)
+
 OPTION_TYPE_MAPPING = {
     str: hikari.OptionType.STRING,
     int: hikari.OptionType.INTEGER,
@@ -120,9 +128,9 @@ class OptionLike:
     required: bool = True
     """Whether or not the option is required. This will be inferred from whether or not a default value was provided if unspecified."""
     choices: t.Optional[t.Sequence[t.Union[str, int, float, hikari.CommandChoice]]] = None
-    """The option's choices. This only affects application (slash) commands."""
+    """The option's choices. This only affects slash commands."""
     channel_types: t.Optional[t.Sequence[hikari.ChannelType]] = None
-    """The channel types for this option. This only affects application (slash) commands."""
+    """The channel types for this option. This only affects slash commands."""
     default: hikari.UndefinedOr[t.Any] = hikari.UNDEFINED
     """The default value for this option."""
     modifier: OptionModifier = OptionModifier.NONE
@@ -131,6 +139,8 @@ class OptionLike:
     """The minimum value permitted for this option (inclusive). The option must be ``INTEGER`` or ``FLOAT`` to use this."""
     max_value: t.Optional[t.Union[float, int]] = None
     """The maximum value permitted for this option (inclusive). The option must be ``INTEGER`` or ``FLOAT`` to use this."""
+    autocomplete: bool = False
+    """Whether the option should be autocompleted or not. This only affects slash commands."""
 
     def as_application_command_option(self) -> hikari.CommandOption:
         """
@@ -163,6 +173,7 @@ class OptionLike:
             "name": self.name,
             "description": self.description,
             "is_required": self.required,
+            "autocomplete": self.autocomplete,
         }
 
         if self.choices:
@@ -226,6 +237,15 @@ class CommandLike:
     """Whether or not the command should be hidden from the help command."""
     inherit_checks: bool = False
     """Whether or not the command should inherit checks from the parent group."""
+    _autocomplete_callbacks: t.Dict[
+        str,
+        t.Callable[
+            [hikari.CommandInteractionOption, hikari.AutocompleteInteraction],
+            t.Coroutine[
+                t.Any, t.Any, t.Union[str, hikari.CommandChoice, t.Sequence[t.Union[str, hikari.CommandChoice]]]
+            ],
+        ],
+    ] = dataclasses.field(default_factory=dict, init=False)
 
     async def __call__(self, context: context_.base.Context) -> None:
         await self.callback(context)
@@ -270,6 +290,18 @@ class CommandLike:
         def decorate(cmd_like_: CommandLike) -> CommandLike:
             self.subcommands.append(cmd_like_)
             return cmd_like_
+
+        return decorate
+
+    def autocomplete(self, opt1: str, *opts: str) -> t.Callable[[AutocompleteCallbackT], AutocompleteCallbackT]:
+        """
+        Registers a function as an autocomplete callback for this command.
+        """
+
+        def decorate(func: AutocompleteCallbackT) -> AutocompleteCallbackT:
+            for opt in [opt1, *opts]:
+                self._autocomplete_callbacks[opt] = func
+            return func
 
         return decorate
 

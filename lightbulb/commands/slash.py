@@ -77,6 +77,7 @@ class SlashGroupMixin(abc.ABC):
         await self._subcommands[cmd_option.name].invoke(context)
 
     def get_subcommand(self, name: str) -> t.Optional[t.Union[SlashSubGroup, SlashSubCommand]]:
+        """Get the group's subcommand with the given name."""
         return self._subcommands.get(name)
 
     @property

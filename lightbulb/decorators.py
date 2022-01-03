@@ -113,7 +113,7 @@ def option(
         required (:obj:`bool`): Whether or not this option is required. This will be inferred from whether or not
             a default was provided if unspecified.
         choices (Optional[Sequence[Union[:obj:`str`, :obj:`int`, :obj:`float`, :obj:`~hikari.commands.CommandChoice`]]]): The
-            choices for the option. This will only affect application (slash) commands. Defaults to ``None``.
+            choices for the option. This will only affect slash commands. Defaults to ``None``.
         channel_types (Optional[Sequence[hikari.channels.ChannelType]]): The channel types allowed for the option.
             This will only affect application (slash) commands. Defaults to ``None``.
         default (UndefinedOr[Any]): The default value for the option. Defaults to :obj:`~hikari.undefined.UNDEFINED`.
@@ -123,6 +123,7 @@ def option(
             Only available if the option type is numeric (integer or float).
         max_value (Optional[Union[:obj:`float`, :obj:`int`]]): The maximum value permitted for this option (inclusive).
             Only available if the option type is numeric (integer or float).
+        autocomplete (:obj:`bool`): Whether the option will use autocomplete. This will only affect slash commands.
         cls (Type[:obj:`~.commands.base.OptionLike`]): ``OptionLike`` class to instantiate from this decorator. Defaults
             to :obj:`~.commands.base.OptionLike`.
     """

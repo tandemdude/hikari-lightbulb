@@ -841,10 +841,12 @@ class BotApp(hikari.GatewayBot):
         """
         plugin: t.Optional[t.Union[plugins_.Plugin, str]] = plugin_or_name
         if isinstance(plugin, str):
-            plugin = self.get_plugin(plugin)
+            plugin = self._plugins.pop(plugin, None)
 
         if plugin is None:
             return
+
+        assert isinstance(plugin, plugins_.Plugin)
 
         for command in plugin._raw_commands:
             self.remove_command(command)

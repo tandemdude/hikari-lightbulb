@@ -209,7 +209,7 @@ class ReactionNavigator(t.Generic[T]):
 
     - ``\\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\\N{VARIATION SELECTOR-16}`` (Go to first page)
     - ``\\N{BLACK LEFT-POINTING TRIANGLE}\\N{VARIATION SELECTOR-16}`` (Go to previous page)
-    - ``\\N{BLACK SQUARE FOR STOP}\\N{VARIATION SELECTOR-16}`` (Stop navigation)
+    - ``\\N{CROSS MARK}`` (Stop navigation)
     - ``\\N{BLACK RIGHT-POINTING TRIANGLE}\\N{VARIATION SELECTOR-16}`` (Go to next page)
     - ``\\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\\N{VARIATION SELECTOR-16}`` (Go to last page)
 
@@ -253,7 +253,7 @@ class ReactionNavigator(t.Generic[T]):
 
         self.buttons: t.Sequence[ReactionButton]
         if len(self.pages) == 1 and not buttons:
-            self.buttons = [ReactionButton("\N{BLACK SQUARE FOR STOP}\N{VARIATION SELECTOR-16}", stop)]
+            self.buttons = [ReactionButton("\N{CROSS MARK}", stop)]
         else:
             self.buttons = buttons if buttons is not None else self.create_default_buttons()
 
@@ -277,7 +277,7 @@ class ReactionNavigator(t.Generic[T]):
                 "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}", first_page
             ),
             ReactionButton("\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", prev_page),
-            ReactionButton("\N{BLACK SQUARE FOR STOP}\N{VARIATION SELECTOR-16}", stop),
+            ReactionButton("\N{CROSS MARK}", stop),
             ReactionButton("\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", next_page),
             ReactionButton(
                 "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}", last_page
@@ -395,11 +395,7 @@ class ButtonNavigator(t.Generic[T]):
 
         self.buttons: t.Sequence[ComponentButton]
         if len(self.pages) == 1 and not buttons:
-            self.buttons = [
-                ComponentButton(
-                    "\N{BLACK SQUARE FOR STOP}\N{VARIATION SELECTOR-16}", True, ButtonStyle.DANGER, "stop", stop
-                )
-            ]
+            self.buttons = [ComponentButton("\N{CROSS MARK}", True, ButtonStyle.DANGER, "stop", stop)]
         else:
             self.buttons = buttons if buttons is not None else self.create_default_buttons()
 
@@ -438,9 +434,7 @@ class ButtonNavigator(t.Generic[T]):
                 "prev_page",
                 prev_page,
             ),
-            ComponentButton(
-                "\N{BLACK SQUARE FOR STOP}\N{VARIATION SELECTOR-16}", True, ButtonStyle.DANGER, "stop", stop
-            ),
+            ComponentButton("\N{CROSS MARK}", True, ButtonStyle.DANGER, "stop", stop),
             ComponentButton(
                 "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
                 True,

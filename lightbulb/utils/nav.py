@@ -126,7 +126,7 @@ class ComponentButton:
         Returns:
             ``None``
         """
-        btn = container.add_button(self.style, self.custom_id)  # type: ignore
+        btn = container.add_button(self.style, self.custom_id)
         btn.set_is_disabled(disabled)
         getattr(btn, f"set_{'emoji' if self.label_is_emoji else 'label'}")(self.label)
         btn.add_to_container()

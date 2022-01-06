@@ -62,12 +62,12 @@ OPTION_TYPE_MAPPING = {
     hikari.GuildVoiceChannel: hikari.OptionType.CHANNEL,
     hikari.Role: hikari.OptionType.ROLE,
     hikari.Emoji: hikari.OptionType.STRING,
-    hikari.Guild: hikari.OptionType.MENTIONABLE,
-    hikari.Message: hikari.OptionType.MENTIONABLE,
+    hikari.Guild: hikari.OptionType.STRING,
+    hikari.Message: hikari.OptionType.STRING,
     hikari.Invite: hikari.OptionType.STRING,
     hikari.Colour: hikari.OptionType.STRING,
     hikari.Color: hikari.OptionType.STRING,
-    hikari.Snowflake: hikari.OptionType.MENTIONABLE,
+    hikari.Snowflake: hikari.OptionType.STRING,
     datetime.datetime: hikari.OptionType.STRING,
 }
 
@@ -509,8 +509,8 @@ class ApplicationCommand(Command, abc.ABC):
     def __init__(self, app: app_.BotApp, initialiser: CommandLike) -> None:
         super().__init__(app, initialiser)
         self._guilds = initialiser.guilds
-        self.instances: t.Dict[t.Union[int, None], hikari.Command] = {}
-        """Mapping of guild ID to created hikari ``Command`` objects for this command."""
+        self.instances: t.Dict[t.Union[int, None], hikari.PartialCommand] = {}
+        """Mapping of guild ID to created hikari ``PartialCommand`` objects for this command."""
 
     @property
     def guilds(self) -> t.Sequence[int]:
@@ -524,7 +524,7 @@ class ApplicationCommand(Command, abc.ABC):
             sig += f" {' '.join(f'<{o.name}>' if o.required else f'[{o.name}={o.default}]' for o in self.options.values())}"
         return sig
 
-    async def create(self, guild: t.Optional[int] = None) -> hikari.Command:
+    async def create(self, guild: t.Optional[int] = None) -> hikari.PartialCommand:
         """
         Creates the command in the guild with the given ID, or globally if no
         guild ID was provided.
@@ -533,7 +533,7 @@ class ApplicationCommand(Command, abc.ABC):
             guild (Optional[:obj:`int`]): ID of the guild to create the command in, or ``None`` if to create globally.
 
         Returns:
-            :obj:`~hikari.commands.Command`: Created hikari ``Command`` object.
+            :obj:`~hikari.commands.PartialCommand`: Created hikari ``Command`` object.
 
         Notes:
             If creating a command globally, it will take up to 1 hour to appear and be usable. As mentioned in the

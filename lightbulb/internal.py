@@ -71,14 +71,14 @@ def _serialise_option(option: hikari.CommandOption) -> t.Dict[str, t.Any]:
     }
 
 
-def _serialise_hikari_command(command: hikari.Command) -> t.Dict[str, t.Any]:
-    options = sorted(command.options or [], key=lambda o: o.name)
+def _serialise_hikari_command(command: hikari.PartialCommand) -> t.Dict[str, t.Any]:
+    options = sorted(getattr(command, "options", []) or [], key=lambda o: o.name)
     return {
         "type": command.type,
         "name": command.name,
-        "description": command.description or None,
+        "description": getattr(command, "description", None) or None,
         "options": [_serialise_option(o) for o in options],
-        "guild_id": command.guild_id,
+        "guild_id": command.guild_id or None,
     }
 
 
@@ -93,36 +93,47 @@ def _serialise_lightbulb_command(command: base.ApplicationCommand) -> t.Dict[str
     }
 
 
-def serialise_command(command: t.Union[hikari.Command, base.ApplicationCommand]) -> t.Dict[str, t.Any]:
-    if isinstance(command, hikari.Command):
+def serialise_command(command: t.Union[hikari.PartialCommand, base.ApplicationCommand]) -> t.Dict[str, t.Any]:
+    if isinstance(command, hikari.PartialCommand):
         return _serialise_hikari_command(command)
     return _serialise_lightbulb_command(command)
 
 
-def _compare_commands(cmd1: base.ApplicationCommand, cmd2: hikari.Command) -> bool:
+def _compare_commands(cmd1: base.ApplicationCommand, cmd2: hikari.PartialCommand) -> bool:
     return serialise_command(cmd1) == serialise_command(cmd2)
 
 
 def _create_builder_from_command(
-    app: app_.BotApp, cmd: t.Union[hikari.Command, base.ApplicationCommand]
-) -> hikari.api.CommandBuilder:
-    if isinstance(cmd, hikari.Command):
-        bld = app.rest.command_builder(cmd.name, cmd.description or hikari.UNDEFINED)
-        bld.set_type(cmd.type)
-        for opt in cmd.options or []:
-            bld.add_option(opt)
-        return bld
+    app: app_.BotApp, cmd: t.Union[hikari.PartialCommand, base.ApplicationCommand]
+) -> t.Union[hikari.api.SlashCommandBuilder, hikari.api.ContextMenuCommandBuilder]:
+    bld: t.Union[hikari.api.SlashCommandBuilder, hikari.api.ContextMenuCommandBuilder]
+    if isinstance(cmd, hikari.PartialCommand):
+        if desc := getattr(cmd, "description", None):
+            bld = app.rest.command_builder(cmd.type, cmd.name, description=desc)  # type: ignore[call-overload]
+            assert isinstance(bld, hikari.api.SlashCommandBuilder)
+            for option in getattr(cmd, "options", []) or []:
+                bld.add_option(option)
+        else:
+            bld = app.rest.command_builder(cmd.type, cmd.name)  # type: ignore[call-overload]
+        bld.set_id(cmd.id)
     else:
         create_kwargs = cmd.as_create_kwargs()
-        bld = app.rest.command_builder(create_kwargs["name"], create_kwargs.get("description", hikari.UNDEFINED))
-        bld.set_type(create_kwargs["type"])
-        for opt in create_kwargs.get("options", []):
-            bld.add_option(opt)
-        return bld
+        if "description" in create_kwargs:
+            bld = app.rest.command_builder(
+                create_kwargs["type"], create_kwargs["name"], description=create_kwargs["description"]
+            )
+            for opt in create_kwargs.get("options", []):
+                bld.add_option(opt)
+        else:
+            bld = app.rest.command_builder(create_kwargs["type"], create_kwargs["name"])
+
+    return bld
 
 
-def _get_lightbulb_command_equivalent(app: app_.BotApp, cmd: hikari.Command) -> t.Optional[base.ApplicationCommand]:
-    if cmd.type is hikari.CommandType.CHAT_INPUT:
+def _get_lightbulb_command_equivalent(
+    app: app_.BotApp, cmd: hikari.PartialCommand
+) -> t.Optional[base.ApplicationCommand]:
+    if cmd.type is hikari.CommandType.SLASH:
         return app.get_slash_command(cmd.name)
     elif cmd.type is hikari.CommandType.USER:
         return app.get_user_command(cmd.name)
@@ -140,7 +151,7 @@ async def _get_guild_commands_to_set(app: app_.BotApp, guild_id: int) -> t.Seque
 
     # Create a mapping containing all the commands that should be created for this guild
     app_commands: t.Dict[hikari.CommandType, t.Dict[str, base.ApplicationCommand]] = {
-        hikari.CommandType.CHAT_INPUT: {c.name: c for c in app._slash_commands.values() if guild_id in c.guilds},
+        hikari.CommandType.SLASH: {c.name: c for c in app._slash_commands.values() if guild_id in c.guilds},
         hikari.CommandType.USER: {c.name: c for c in app._user_commands.values() if guild_id in c.guilds},
         hikari.CommandType.MESSAGE: {c.name: c for c in app._message_commands.values() if guild_id in c.guilds},
     }
@@ -193,7 +204,7 @@ async def _process_global_commands(app: app_.BotApp) -> None:
     existing_global_commands = await app.rest.fetch_application_commands(app.application)
     # Create a mapping containing all the commands that should be created globally
     registered_global_commands: t.Dict[hikari.CommandType, t.Dict[str, base.ApplicationCommand]] = {
-        hikari.CommandType.CHAT_INPUT: {c.name: c for c in app._slash_commands.values() if not c.guilds},
+        hikari.CommandType.SLASH: {c.name: c for c in app._slash_commands.values() if not c.guilds},
         hikari.CommandType.USER: {c.name: c for c in app._user_commands.values() if not c.guilds},
         hikari.CommandType.MESSAGE: {c.name: c for c in app._message_commands.values() if not c.guilds},
     }
@@ -247,7 +258,7 @@ async def manage_application_commands(app: app_.BotApp) -> None:
         all_guilds.update(app_cmd.guilds or [])
 
     cmd_mapping: t.Dict[hikari.CommandType, t.Dict[str, base.ApplicationCommand]] = {
-        hikari.CommandType.CHAT_INPUT: app._slash_commands,  # type: ignore[dict-item]
+        hikari.CommandType.SLASH: app._slash_commands,  # type: ignore[dict-item]
         hikari.CommandType.USER: app._user_commands,  # type: ignore[dict-item]
         hikari.CommandType.MESSAGE: app._message_commands,  # type: ignore[dict-item]
     }

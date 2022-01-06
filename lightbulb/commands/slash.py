@@ -106,7 +106,7 @@ class SlashCommand(base.ApplicationCommand):
     def as_create_kwargs(self) -> t.Dict[str, t.Any]:
         sorted_opts = sorted(self.options.values(), key=lambda o: int(o.required), reverse=True)
         return {
-            "type": hikari.CommandType.CHAT_INPUT,
+            "type": hikari.CommandType.SLASH,
             "name": self.name,
             "description": self.description,
             "options": [o.as_application_command_option() for o in sorted_opts],
@@ -214,7 +214,7 @@ class SlashCommandGroup(SlashCommand, SlashGroupMixin):
 
     def as_create_kwargs(self) -> t.Dict[str, t.Any]:
         return {
-            "type": hikari.CommandType.CHAT_INPUT,
+            "type": hikari.CommandType.SLASH,
             "name": self.name,
             "description": self.description,
             "options": [c.as_option() for c in self._subcommands.values()],

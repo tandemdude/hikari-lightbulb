@@ -338,7 +338,7 @@ class BotApp(hikari.GatewayBot):
     def _get_application_command(
         self, interaction: hikari.CommandInteraction
     ) -> t.Optional[commands.base.ApplicationCommand]:
-        if interaction.command_type is hikari.CommandType.CHAT_INPUT:
+        if interaction.command_type is hikari.CommandType.SLASH:
             return self.get_slash_command(interaction.command_name)
         elif interaction.command_type is hikari.CommandType.USER:
             return self.get_user_command(interaction.command_name)
@@ -1165,7 +1165,7 @@ class BotApp(hikari.GatewayBot):
         if not isinstance(event.interaction, hikari.AutocompleteInteraction):
             return
 
-        assert event.interaction.command_type is hikari.CommandType.CHAT_INPUT
+        assert event.interaction.command_type is hikari.CommandType.SLASH
         assert event.interaction.options is not None and len(event.interaction.options) == 1
 
         def flatten_command_option(

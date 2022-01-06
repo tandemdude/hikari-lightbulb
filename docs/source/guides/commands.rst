@@ -246,9 +246,9 @@ Acceptable primitives: ``str``, ``int``, ``float``
 
 - ``hikari.Emoji`` - ``hikari.OptionType.STRING``
 
-- ``hikari.Guild`` - ``hikari.OptionType.MENTIONABLE``
+- ``hikari.Guild`` - ``hikari.OptionType.STRING``
 
-- ``hikari.Message`` - ``hikari.OptionType.MENTIONABLE``
+- ``hikari.Message`` - ``hikari.OptionType.STRING``
 
 - ``hikari.Invite`` - ``hikari.OptionType.STRING``
 
@@ -256,7 +256,7 @@ Acceptable primitives: ``str``, ``int``, ``float``
 
 - ``hikari.Color`` - ``hikari.OptionType.STRING``
 
-- ``hikari.Snowflake`` - ``hikari.OptionType.MENTIONABLE``
+- ``hikari.Snowflake`` - ``hikari.OptionType.STRING``
 
 - ``datetime.datetime`` - ``hikari.OptionType.STRING``
 

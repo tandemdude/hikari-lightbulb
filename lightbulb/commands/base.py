@@ -168,6 +168,14 @@ class OptionLike:
                 f"Application command option {self.name!r}: 'min_value' or 'max_value' was provided but the option type is not numeric"
             )
 
+        if (
+            arg_type not in (hikari.OptionType.INTEGER, hikari.OptionType.FLOAT, hikari.OptionType.STRING)
+            and self.autocomplete
+        ):
+            raise ValueError(
+                f"Application command option {self.name!r}: 'autocomplete' is True but the option type does not support choices"
+            )
+
         kwargs: t.MutableMapping[str, t.Any] = {
             "type": arg_type,
             "name": self.name,
@@ -548,6 +556,7 @@ class ApplicationCommand(Command, abc.ABC):
             **kwargs,
         )
         self.instances[guild] = created_cmd
+        assert isinstance(created_cmd, hikari.PartialCommand)
         return created_cmd
 
     async def _auto_create(self) -> None:

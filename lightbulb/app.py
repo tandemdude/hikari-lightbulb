@@ -263,7 +263,7 @@ class BotApp(hikari.GatewayBot):
             @decorators.option(
                 "obj", "Object to get help for", required=False, modifier=commands.base.OptionModifier.CONSUME_REST
             )
-            @decorators.command("help", "Get help information for the bot")
+            @decorators.command("help", "Get help information for the bot", auto_defer=True)
             @decorators.implements(*help_cmd_types)
             async def __default_help(ctx: context_.base.Context) -> None:
                 assert self._help_command is not None
@@ -344,6 +344,7 @@ class BotApp(hikari.GatewayBot):
             return self.get_user_command(interaction.command_name)
         elif interaction.command_type is hikari.CommandType.MESSAGE:
             return self.get_message_command(interaction.command_name)
+        return None
 
     async def _manage_application_commands(self, _: hikari.StartingEvent) -> None:
         if self.application is None:

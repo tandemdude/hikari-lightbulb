@@ -57,7 +57,7 @@ See Below
     @lightbulb.command("ping", "checks that the bot is alive")
     @lightbulb.implements(lightbulb.SlashCommand)
     async def ping(ctx: lightbulb.Context) -> None:
-        await ctx.reply("Pong!")
+        await ctx.respond("Pong!")
 
     bot.run()
 
@@ -74,7 +74,7 @@ Adding options to slash commands is also identical to how you add options to pre
     @lightbulb.command("echo", "repeats the given text")
     @lightbulb.implements(lightbulb.SlashCommand)
     async def echo(ctx: lightbulb.Context) -> None:
-        await ctx.reply(ctx.options.text)
+        await ctx.respond(ctx.options.text)
 
     bot.run()
 

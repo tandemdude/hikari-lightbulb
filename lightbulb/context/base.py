@@ -20,6 +20,7 @@ from __future__ import annotations
 __all__ = ["Context", "ApplicationContext", "OptionsProxy", "ResponseProxy"]
 
 import abc
+import asyncio
 import functools
 import typing as t
 
@@ -276,7 +277,9 @@ class Context(abc.ABC):
         await self.command.invoke(self)
 
     @abc.abstractmethod
-    async def respond(self, *args: t.Any, **kwargs: t.Any) -> ResponseProxy:
+    async def respond(
+        self, *args: t.Any, delete_after: t.Union[int, float, None] = None, **kwargs: t.Any
+    ) -> ResponseProxy:
         """
         Create a response to this context.
         """
@@ -378,7 +381,9 @@ class ApplicationContext(Context, abc.ABC):
             return self.app.cache.get_guild_channel(self.channel_id)
         return self.app.cache.get_dm_channel_id(self.user)
 
-    async def respond(self, *args: t.Any, **kwargs: t.Any) -> ResponseProxy:
+    async def respond(
+        self, *args: t.Any, delete_after: t.Union[int, float, None] = None, **kwargs: t.Any
+    ) -> ResponseProxy:
         """
         Create a response for this context. The first time this method is called, the initial
         interaction response will be created by calling
@@ -392,6 +397,7 @@ class ApplicationContext(Context, abc.ABC):
         Args:
             *args (Any): Positional arguments passed to ``CommandInteraction.create_initial_response`` or
                 ``CommandInteraction.execute``.
+            delete_after (Union[int, float, None]): The number of seconds to wait before deleting this response.
             **kwargs: Keyword arguments passed to ``CommandInteraction.create_initial_response`` or
                 ``CommandInteraction.execute``.
 
@@ -445,6 +451,18 @@ class ApplicationContext(Context, abc.ABC):
             )
         )
         self._responded = True
+
+        if delete_after is not None:
+
+            async def _cleanup(timeout: t.Union[int, float]) -> None:
+                await asyncio.sleep(timeout)
+
+                try:
+                    await self._responses[-1].delete()
+                except hikari.NotFoundError:
+                    pass
+
+            asyncio.create_task(_cleanup(delete_after))
 
         if kwargs["response_type"] in (
             hikari.ResponseType.DEFERRED_MESSAGE_CREATE,

@@ -113,7 +113,9 @@ class PrefixContext(base.Context):
             return self.app.cache.get_guild_channel(self.channel_id)
         return self.app.cache.get_dm_channel_id(self.author.id)
 
-    async def respond(self, *args: t.Any, **kwargs: t.Any) -> base.ResponseProxy:
+    async def respond(
+        self, *args: t.Any, delete_after: t.Union[int, float, None] = None, **kwargs: t.Any
+    ) -> base.ResponseProxy:
         """
         Create a response for this context. This method directly calls :obj:`~hikari.messages.Message.respond`. You
         should note that it is not possible to send ephemeral messages as responses to prefix commands. All message flags
@@ -121,6 +123,7 @@ class PrefixContext(base.Context):
 
         Args:
             *args (Any): Positional arguments passed to :obj:`~hikari.messages.Message.respond`.
+            delete_after (Union[int, float, None]): The number of seconds to wait before deleting this response.
             **kwargs (Any): Keyword arguments passed to :obj:`~hikari.messages.Message.respond`.
 
         Returns:
@@ -134,6 +137,19 @@ class PrefixContext(base.Context):
         if args and isinstance(args[0], hikari.ResponseType):
             args = args[1:]
 
-        self._responses.append(base.ResponseProxy(await self.event.message.respond(*args, **kwargs)))
+        msg = await self._event.message.respond(*args, **kwargs)
+        if delete_after is not None:
+
+            async def _cleanup(timeout: int | float) -> None:
+                await asyncio.sleep(timeout)
+
+                try:
+                    await msg.delete()
+                except hikari.NotFoundError:
+                    pass
+
+            asyncio.create_task(_cleanup(delete_after))
+
+        self._responses.append(base.ResponseProxy(msg))
         self._responded = True
         return self._responses[-1]

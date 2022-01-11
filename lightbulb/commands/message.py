@@ -40,7 +40,8 @@ class MessageCommand(base.ApplicationCommand):
         self.options: t.Dict[str, t.Any] = {}
 
     def _validate_attributes(self) -> None:
-        return  # TODO
+        if len(self.name) < 1 or len(self.name) > 32:
+            raise ValueError(f"Message command {self.name!r}: name must be from 1-32 characters long") from None
 
     def as_create_kwargs(self) -> t.Dict[str, t.Any]:
         return {

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 __all__ = [
     "LightbulbError",
+    "UnsupportedResponseOperation",
     "ApplicationCommandCreationFailed",
     "CommandNotFound",
     "CommandInvocationError",
@@ -57,6 +58,13 @@ class LightbulbError(Exception):
     """
     Base lightbulb exception class. All errors raised by lightbulb will be a subclass
     of this exception.
+    """
+
+
+class UnsupportedResponseOperation(LightbulbError):
+    """
+    Exception raised when ``edit`` or ``delete`` is called on a response that cannot be
+    edited and/or deleted (generally occurs for ephemeral responses).
     """
 
 

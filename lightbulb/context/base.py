@@ -26,6 +26,8 @@ import typing as t
 
 import hikari
 
+from lightbulb import errors
+
 if t.TYPE_CHECKING:
     from lightbulb import app as app_
     from lightbulb import commands
@@ -53,7 +55,7 @@ class ResponseProxy:
     lazily instead of a follow-up request being made immediately.
     """
 
-    __slots__ = ("_message", "_fetcher", "_editor", "_editable")
+    __slots__ = ("_message", "_fetcher", "_editor", "_editable", "_deleteable")
 
     def __init__(
         self,
@@ -61,6 +63,7 @@ class ResponseProxy:
         fetcher: t.Optional[t.Callable[[], t.Coroutine[t.Any, t.Any, hikari.Message]]] = None,
         editor: t.Optional[t.Callable[[ResponseProxy], t.Coroutine[t.Any, t.Any, hikari.Message]]] = None,
         editable: bool = True,
+        deleteable: bool = True,
     ) -> None:
         if message is None and fetcher is None:
             raise ValueError("One of message or fetcher arguments cannot be None")
@@ -69,6 +72,7 @@ class ResponseProxy:
         self._fetcher = fetcher
         self._editor = editor
         self._editable = editable
+        self._deleteable = deleteable
 
         if editor is None:
 
@@ -102,10 +106,11 @@ class ResponseProxy:
             :obj:`~hikari.messages.Message`: New message after edit.
 
         Raises:
-            :obj:`RuntimeError`: This response cannot be edited (for ephemeral interaction followup responses).
+            :obj:`~.errors.UnsupportedResponseOperation`: This response cannot be edited (for ephemeral
+                interaction followup responses).
         """
         if not self._editable:
-            raise RuntimeError("This response does not support editing.")
+            raise errors.UnsupportedResponseOperation("This response does not support editing.")
 
         assert self._editor is not None
         out = await self._editor(self, *args, **kwargs)
@@ -118,7 +123,14 @@ class ResponseProxy:
 
         Returns:
             ``None``
+
+        Raises:
+            :obj:`~.errors.UnsupportedResponseOperation`: This response cannot be deleted (for ephemeral
+                interaction responses).
         """
+        if not self._deleteable:
+            raise errors.UnsupportedResponseOperation("This response does not support deleting.")
+
         msg = await self.message()
         await msg.delete()
 
@@ -506,6 +518,8 @@ class ApplicationContext(Context, abc.ABC):
 
         await self._interaction.create_initial_response(**kwargs)
 
+        # Initial responses are special and need their own edit method defined
+        # so that they work as expected for when the responses are ephemeral
         async def _editor(
             rp: ResponseProxy, *args_: t.Any, inter: hikari.CommandInteraction, **kwargs_: t.Any
         ) -> hikari.Message:

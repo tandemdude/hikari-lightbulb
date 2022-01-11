@@ -1200,7 +1200,12 @@ class BotApp(hikari.GatewayBot):
         if callback is None:
             return
 
-        response = await callback(event.interaction.options[0], event.interaction)
+        # Unpack the options to get the deepest option, which is the one being autocompleted
+        opt_to_pass: hikari.CommandInteractionOption = event.interaction.options[0]
+        while opt_to_pass.options:
+            opt_to_pass = opt_to_pass.options[0]
+        # Invoke the autocomplete callback
+        response = await callback(opt_to_pass, event.interaction)
 
         def convert_response_value(val: t.Union[str, hikari.CommandChoice]) -> hikari.CommandChoice:
             if isinstance(val, str):

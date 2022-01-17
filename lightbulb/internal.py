@@ -158,6 +158,9 @@ async def _get_guild_commands_to_set(app: app_.BotApp, guild_id: int) -> t.Seque
     for command in existing_commands:
         # Get the implementation for the given command
         equiv = _get_lightbulb_command_equivalent(app, command)
+        if equiv is not None and guild_id not in equiv.guilds:
+            equiv = None
+
         if equiv is None and not app._delete_unbound_commands:
             # Convert the hikari Command back into a builder because we don't want to delete it
             commands_to_declare.append(_create_builder_from_command(app, command))

@@ -1167,22 +1167,26 @@ class BotApp(hikari.GatewayBot):
             return
 
         assert event.interaction.command_type is hikari.CommandType.SLASH
-        assert event.interaction.options is not None and len(event.interaction.options) == 1
+        assert event.interaction.options is not None and len(event.interaction.options) > 0
+
+        get_focused: t.Callable[
+            [t.Sequence[hikari.AutocompleteInteractionOption]], hikari.AutocompleteInteractionOption
+        ] = lambda opts: next(filter(lambda o: o.is_focused, opts), opts[0])
 
         def flatten_command_option(
-            opt: hikari.CommandInteractionOption,
-        ) -> t.Tuple[hikari.CommandInteractionOption, t.Sequence[str]]:
+            opt: hikari.AutocompleteInteractionOption,
+        ) -> t.Tuple[hikari.AutocompleteInteractionOption, t.Sequence[str]]:
             current = opt
             name = [current.name]
 
             while current.type in (hikari.OptionType.SUB_COMMAND, hikari.OptionType.SUB_COMMAND_GROUP):
                 assert current.options is not None
-                current = current.options[0]
+                current = get_focused(current.options)  # type: ignore[arg-type]
                 name.append(current.name)
 
             return current, name
 
-        option, full_name = flatten_command_option(event.interaction.options[0])
+        option, full_name = flatten_command_option(get_focused(event.interaction.options))
 
         cmd = self.get_slash_command(event.interaction.command_name)
         if cmd is None:
@@ -1200,12 +1204,8 @@ class BotApp(hikari.GatewayBot):
         if callback is None:
             return
 
-        # Unpack the options to get the deepest option, which is the one being autocompleted
-        opt_to_pass: hikari.CommandInteractionOption = event.interaction.options[0]
-        while opt_to_pass.options:
-            opt_to_pass = opt_to_pass.options[0]
         # Invoke the autocomplete callback
-        response = await callback(opt_to_pass, event.interaction)
+        response = await callback(option, event.interaction)
 
         def convert_response_value(val: t.Union[str, hikari.CommandChoice]) -> hikari.CommandChoice:
             if isinstance(val, str):

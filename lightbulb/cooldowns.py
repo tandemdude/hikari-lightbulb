@@ -189,6 +189,9 @@ class CooldownManager:
 
         Returns:
             ``None``
+
+        Raises:
+            :obj:`~.errors.CommandIsOnCooldown`: The command is currently on cooldown for the given context.
         """
         bucket = await self._get_bucket(context)
 

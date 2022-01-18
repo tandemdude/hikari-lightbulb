@@ -25,6 +25,7 @@ import dataclasses
 import datetime
 import enum
 import inspect
+import re
 import typing as t
 
 import hikari
@@ -70,6 +71,7 @@ OPTION_TYPE_MAPPING = {
     hikari.Snowflake: hikari.OptionType.STRING,
     datetime.datetime: hikari.OptionType.STRING,
 }
+OPTION_NAME_REGEX: re.Pattern[str] = re.compile(r"^[\w-]{1,32}$", re.U)
 
 
 class _HasRecreateSubcommands(t.Protocol):
@@ -149,8 +151,10 @@ class OptionLike:
         Returns:
             :obj:`~hikari.commands.CommandOption`: Created ``CommandOption`` object.
         """
-        if len(self.name) < 1 or len(self.name) > 32:
-            raise ValueError(f"Application command option {self.name!r}: name must be from 1-32 characters long")
+        if not OPTION_NAME_REGEX.fullmatch(self.name) or self.name != self.name.lower():
+            raise ValueError(
+                f"Application command option {self.name!r}: name must match regex '^[\\w-]{1,32}$' and be all lowercase"
+            )
         if len(self.description) < 1 or len(self.description) > 100:
             raise ValueError(
                 f"Application command option {self.name!r}: description must be from 1-100 characters long"

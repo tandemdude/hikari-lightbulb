@@ -209,7 +209,7 @@ class ReactionNavigator(t.Generic[T]):
 
     - ``\\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\\N{VARIATION SELECTOR-16}`` (Go to first page)
     - ``\\N{BLACK LEFT-POINTING TRIANGLE}\\N{VARIATION SELECTOR-16}`` (Go to previous page)
-    - ``\\N{CROSS MARK}`` (Stop navigation)
+    - ``\\N{BLACK SQUARE FOR STOP}\\N{VARIATION SELECTOR-16}`` (Stop navigation)
     - ``\\N{BLACK RIGHT-POINTING TRIANGLE}\\N{VARIATION SELECTOR-16}`` (Go to next page)
     - ``\\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\\N{VARIATION SELECTOR-16}`` (Go to last page)
 
@@ -277,7 +277,7 @@ class ReactionNavigator(t.Generic[T]):
                 "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}", first_page
             ),
             ReactionButton("\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", prev_page),
-            ReactionButton("\N{CROSS MARK}", stop),
+            ReactionButton("\N{BLACK SQUARE FOR STOP}\N{VARIATION SELECTOR-16}", stop),
             ReactionButton("\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", next_page),
             ReactionButton(
                 "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}", last_page
@@ -434,7 +434,7 @@ class ButtonNavigator(t.Generic[T]):
                 "prev_page",
                 prev_page,
             ),
-            ComponentButton("\N{CROSS MARK}", True, ButtonStyle.DANGER, "stop", stop),
+            ComponentButton("\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}", True, ButtonStyle.DANGER, "stop", stop),
             ComponentButton(
                 "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
                 True,

@@ -249,6 +249,8 @@ class DefaultHelpCommand(BaseHelpCommand):
             "==== Categories ====",
         ]
         for plugin in self.app._plugins.values():
+            if not plugin._raw_commands or all([c.hidden for c in plugin._raw_commands]):
+                continue
             lines.append(f"- {plugin.name}")
         lines.append("```")
 

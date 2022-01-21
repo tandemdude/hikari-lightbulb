@@ -15,6 +15,47 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
+"""
+An implementation of simple repeating asyncio tasks.
+
+Setup
+-----
+
+In order for tasks to function correctly you must first call :meth:`load` after initialising
+your instance of the :obj:`~lightbulb.app.BotApp` class. See below:
+
+.. code-block:: python
+
+    import lightbulb
+    from lightbulb.ext import tasks
+
+    app = lightbulb.BotApp(...)
+    tasks.load(bot)
+
+Creating Tasks
+--------------
+
+Tasks are created using the :obj:`~task` decorator.
+
+.. code-block:: python
+
+    from lightbulb.ext import tasks
+
+    # s=30 means this will run every 30 seconds
+    # you can also use (m)inutes, (h)ours, and (d)ays
+    @tasks.task(s=30)
+    async def print_every_30_seconds():
+        print("Task called")
+
+    # Instead of having to call .start() manually, you can pass auto_start=True
+    # into the task decorator if you wish
+    print_every_30_seonds.start()
+
+See the :obj:`~task` decorator api reference for valid kwargs you can pass.
+
+API Reference
+-------------
+"""
 from __future__ import annotations
 
 __all__ = ["Task", "wait_until_started", "task", "load"]
@@ -294,26 +335,28 @@ def task(
     d: float = 0,
     auto_start: bool = False,
     max_consecutive_failures: int = 3,
+    cls: t.Type[Task] = Task,
 ) -> t.Callable[[TaskCallbackT], Task]:
     """
     Second order decorator to register a function as a repeating task. The decorated function can
     be a synchronous or asynchronous function, and any return value will be discarded.
 
-    Args:
+    Keyword Args:
         s (:obj:`float`): Number of seconds between task executions.
         m (:obj:`float`): Number of minutes between task executions.
         h (:obj:`float`): Number of hours between task executions.
         d (:obj:`float`): Number of days between task executions.
         auto_start (:obj:`bool`): Whether the task will be started automatically when created. If ``False``,
-            :meth:`~.Task.start` will have to be called manually in order to start the task's execution.
+            :meth:`~Task.start` will have to be called manually in order to start the task's execution.
         max_consecutive_failures (:obj:`int`): The number of consecutive task failures that will be ignored
             before the task's execution is cancelled. Defaults to ``3``, minimum ``1``.
+        cls (Type[:obj:`~Task`]): Task class to use.
     """
 
     def decorate(func: TaskCallbackT) -> Task:
         if not any([s, m, h, d]):
             raise ValueError("Must provide a value to at least one of: 's', 'm', 'h', 'd'")
-        return Task(func, s + (m * 60) + (h * 3600) + (d * 86400), auto_start, max(max_consecutive_failures, 1))
+        return cls(func, s + (m * 60) + (h * 3600) + (d * 86400), auto_start, max(max_consecutive_failures, 1))
 
     return decorate
 
@@ -324,7 +367,7 @@ def load(app: lightbulb.BotApp) -> None:
     once the bot has started.
 
     Args:
-        app (:obj:`~lightbulb.app.BotApp): :obj:`~lightbulb.app.BotApp` instance
+        app (:obj:`~lightbulb.app.BotApp`): :obj:`~lightbulb.app.BotApp` instance
             that tasks will be enabled for.
 
     Returns:

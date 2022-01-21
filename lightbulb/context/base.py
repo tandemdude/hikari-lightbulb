@@ -48,6 +48,9 @@ class OptionsProxy:
     def __getattr__(self, item: str) -> t.Any:
         return self._options.get(item)
 
+    def __getitem__(self, item: str) -> t.Any:
+        return self._options.get(item)
+
 
 class ResponseProxy:
     """

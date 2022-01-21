@@ -38,12 +38,15 @@ TaskErrorHandlerT = t.TypeVar(
 
 
 class _BindableObjectWithCallback:
-    __slots__ = ("_callback",)
+    __slots__ = ("_callback", "_bound")
 
     def __init__(self, callback: t.Callable[..., t.Any]) -> None:
         self._callback = callback
+        self._bound: bool = False
 
     def __get__(self, instance: t.Any, _: t.Type[t.Any]) -> _BindableObjectWithCallback:
+        if self._bound or instance is None:
+            return self
         self._callback = functools.partial(self._callback, instance)
         return self
 
@@ -52,6 +55,17 @@ class _BindableObjectWithCallback:
 
 
 class Task(_BindableObjectWithCallback):
+    """
+    Class representing a repeating task.
+
+    Args:
+        callback: The function that will be executed every time the task is run.
+        repeats (:obj:`float`): How often the task will be executed in seconds.
+        auto_start (:obj:`bool`): Whether the task will be automatically started when instantiated.
+        max_consecutive_failures (:obj:`int`): The number of consecutive task failures that will be ignored
+            before the task is cancelled.
+    """
+
     __slots__ = (
         "_callback",
         "_next_interval",
@@ -60,6 +74,7 @@ class Task(_BindableObjectWithCallback):
         "_error_handler",
         "_consecutive_failures",
         "_max_consecutive_failures",
+        "_n_executions",
     )
     _app: t.Optional[lightbulb.BotApp] = None
     _app_starting: asyncio.Event = asyncio.Event()
@@ -78,11 +93,13 @@ class Task(_BindableObjectWithCallback):
         ] = None
         self._max_consecutive_failures: int = max_consecutive_failures
         self._consecutive_failures: int = 0
+        self._n_executions: int = 0
 
         if auto_start:
             self.start()
 
     def __get__(self, instance: t.Any, owner: t.Type[t.Any]) -> Task:
+        # We override this to keep linters happy
         super().__get__(instance, owner)
         return self
 
@@ -118,6 +135,7 @@ class Task(_BindableObjectWithCallback):
     async def _loop(self) -> None:
         while not self._stopped:
             _LOGGER.debug("Running task %r", self.__name__)
+            self._n_executions += 1
             try:
                 maybe_coro = self._callback()
                 if inspect.iscoroutine(maybe_coro):
@@ -153,13 +171,29 @@ class Task(_BindableObjectWithCallback):
         Task._tasks.remove(self)
         self._task = None
         self._stopped = True
-        _LOGGER.debug("Cancelled task %r", self.__name__)
+        self._n_executions = 0
+        _LOGGER.debug("Stopped task %r", self.__name__)
+
+    @property
+    def n_executions(self) -> int:
+        """The number of times the task has been executed since being started."""
+        return self._n_executions
 
     @property
     def is_running(self) -> bool:
+        """Whether the task represented by this object is currently running or not."""
         return self._task is not None and not self._task.done()
 
     def update_interval(self, new_interval: float) -> None:
+        """
+        Updates the time between the current and all future executions of the task.
+
+        Args:
+            new_interval (:obj:`float`): Number of seconds between all future executions.
+
+        Returns:
+            ``None``
+        """
         self._next_interval = new_interval
 
     @t.overload
@@ -173,27 +207,58 @@ class Task(_BindableObjectWithCallback):
     def set_error_handler(
         self, func: t.Optional[TaskErrorHandlerT] = None
     ) -> t.Union[TaskErrorHandlerT, t.Callable[[TaskErrorHandlerT], TaskErrorHandlerT]]:
+        """
+        Sets the function to use as the error handler for this task. This can be used as a first
+        or second order decorator, or called with the function to set as the error handler.
+
+        The error handler should return a boolean indicating whether the error could be handled.
+        If ``False`` or a falsy value is returned, the related execution of the task will be considered
+        to be a failure.
+        """
         if func is not None:
+            if isinstance(func, _BindableObjectWithCallback):
+                return self._error_handler  # type: ignore[unreachable]
             self._error_handler = _BindableObjectWithCallback(func)
             return self._error_handler
 
         def decorate(func_: TaskErrorHandlerT) -> TaskErrorHandlerT:
+            if isinstance(func_, _BindableObjectWithCallback):
+                return func_  # type: ignore[unreachable]
             self._error_handler = _BindableObjectWithCallback(func_)
             return self._error_handler
 
         return decorate
 
     def start(self) -> None:
+        """
+        Start the task if the event loop has been established, or schedule the task to be started
+        once the event loop has been established.
+
+        Returns:
+            ``None``
+        """
         Task._tasks.append(self)
         if Task._app_starting.is_set():
             _LOGGER.debug("Starting task %r", self.__name__)
             self._task = asyncio.create_task(self._loop())
 
     def stop(self) -> None:
+        """
+        Stop the task after the completion of the current iteration, if it was running.
+
+        Returns:
+            ``None``
+        """
         if self.is_running:
             self._stopped = True
 
     def cancel(self) -> None:
+        """
+        Cancel the task if it was running.
+
+        Returns:
+            ``None``
+        """
         if not self.is_running:
             return
 
@@ -201,9 +266,23 @@ class Task(_BindableObjectWithCallback):
         self._task.cancel()
         self._task = None
         self._stopped = True
+        self._n_executions = 0
 
 
 async def wait_until_started() -> None:
+    """
+    Wait until the bot has started.
+
+    Roughly equivalent to:
+
+    .. code-block:: python
+
+        # Where app is an instance of 'lightbulb.BotApp'
+        await app.wait_for(hikari.StartedEvent, timeout=None)
+
+    Returns:
+        ``None``
+    """
     await Task._app_started.wait()
 
 
@@ -216,6 +295,21 @@ def task(
     auto_start: bool = False,
     max_consecutive_failures: int = 3,
 ) -> t.Callable[[TaskCallbackT], Task]:
+    """
+    Second order decorator to register a function as a repeating task. The decorated function can
+    be a synchronous or asynchronous function, and any return value will be discarded.
+
+    Args:
+        s (:obj:`float`): Number of seconds between task executions.
+        m (:obj:`float`): Number of minutes between task executions.
+        h (:obj:`float`): Number of hours between task executions.
+        d (:obj:`float`): Number of days between task executions.
+        auto_start (:obj:`bool`): Whether the task will be started automatically when created. If ``False``,
+            :meth:`~.Task.start` will have to be called manually in order to start the task's execution.
+        max_consecutive_failures (:obj:`int`): The number of consecutive task failures that will be ignored
+            before the task's execution is cancelled. Defaults to ``3``, minimum ``1``.
+    """
+
     def decorate(func: TaskCallbackT) -> Task:
         if not any([s, m, h, d]):
             raise ValueError("Must provide a value to at least one of: 's', 'm', 'h', 'd'")
@@ -225,6 +319,17 @@ def task(
 
 
 def load(app: lightbulb.BotApp) -> None:
+    """
+    Add the task system to the bot, enabling tasks to be run
+    once the bot has started.
+
+    Args:
+        app (:obj:`~lightbulb.app.BotApp): :obj:`~lightbulb.app.BotApp` instance
+            that tasks will be enabled for.
+
+    Returns:
+        ``None``
+    """
     Task._app = app
     app.subscribe(hikari.StartingEvent, Task._app_starting_listener)
     app.subscribe(hikari.StoppingEvent, Task._app_stopping_listener)

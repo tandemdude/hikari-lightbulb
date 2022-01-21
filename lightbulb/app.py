@@ -474,8 +474,10 @@ class BotApp(hikari.GatewayBot):
                 self.reload_extensions(extension)
             return
         extension = extensions[0]
-
-        old = sys.modules[extension]
+        try:
+            old = sys.modules[extension]
+        except KeyError:
+            raise errors.ExtensionNotLoaded(f"Extension {extension!r} is not loaded.")
         try:
             self.unload_extensions(extension)
             self.load_extensions(extension)

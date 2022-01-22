@@ -434,7 +434,9 @@ class ButtonNavigator(t.Generic[T]):
                 "prev_page",
                 prev_page,
             ),
-            ComponentButton("\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}", True, ButtonStyle.DANGER, "stop", stop),
+            ComponentButton(
+                "\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}", True, ButtonStyle.DANGER, "stop", stop
+            ),
             ComponentButton(
                 "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}",
                 True,

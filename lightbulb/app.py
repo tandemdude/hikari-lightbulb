@@ -362,6 +362,15 @@ class BotApp(hikari.GatewayBot):
         finally:
             await self.dispatch(events.LightbulbStartedEvent(app=self))
 
+    async def sync_application_commands(self) -> None:
+        """
+        Sync all application commands registered to the bot with discord.
+
+        Returns:
+            ``None``
+        """
+        await internal.manage_application_commands(self)
+
     @staticmethod
     def _get_events_for_application_command(
         command: commands.base.ApplicationCommand,
@@ -1206,6 +1215,9 @@ class BotApp(hikari.GatewayBot):
 
         # Invoke the autocomplete callback
         response = await callback(option, event.interaction)
+        if not response:
+            await event.interaction.create_response([])
+            return
 
         def convert_response_value(val: t.Union[str, hikari.CommandChoice]) -> hikari.CommandChoice:
             if isinstance(val, str):

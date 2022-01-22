@@ -30,7 +30,7 @@ your instance of the :obj:`~lightbulb.app.BotApp` class. See below:
     from lightbulb.ext import tasks
 
     app = lightbulb.BotApp(...)
-    tasks.load(bot)
+    tasks.load(app)
 
 Creating Tasks
 --------------

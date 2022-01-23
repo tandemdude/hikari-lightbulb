@@ -408,7 +408,7 @@ class ApplicationContext(Context, abc.ABC):
         kwargs.pop("mentions_reply", None)
         kwargs.pop("nonce", None)
 
-        if self._command.default_ephemeral:
+        if (self._invoked or self._command).default_ephemeral:
             kwargs.setdefault("flags", hikari.MessageFlag.EPHEMERAL)
 
         if self._responded:

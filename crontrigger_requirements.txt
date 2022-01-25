@@ -1,0 +1,2 @@
+croniter~=1.2.0
+types-croniter~=1.0.7

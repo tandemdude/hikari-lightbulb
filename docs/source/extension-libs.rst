@@ -16,6 +16,7 @@ lightbulb.ext.tasks
 
 .. automodule:: lightbulb.ext.tasks
     :members:
+    :member-order: bysource
 
 ----
 

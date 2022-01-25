@@ -58,7 +58,7 @@ API Reference
 """
 from __future__ import annotations
 
-__all__ = ["Task", "wait_until_started", "task", "load"]
+__all__ = ["load", "task", "wait_until_started", "Task", "Trigger", "UniformTrigger", "CronTrigger", "triggers"]
 
 import asyncio
 import functools
@@ -67,6 +67,9 @@ import logging
 import typing as t
 
 import hikari
+
+from . import triggers
+from .triggers import *
 
 if t.TYPE_CHECKING:
     import lightbulb
@@ -109,7 +112,7 @@ class Task(_BindableObjectWithCallback):
 
     __slots__ = (
         "_callback",
-        "_next_interval",
+        "_trigger",
         "_stopped",
         "_task",
         "_error_handler",
@@ -123,10 +126,10 @@ class Task(_BindableObjectWithCallback):
     _tasks: t.List[Task] = []
 
     def __init__(
-        self, callback: TaskCallbackT, repeats: float, auto_start: bool, max_consecutive_failures: int
+        self, callback: TaskCallbackT, trigger: triggers.Trigger, auto_start: bool, max_consecutive_failures: int
     ) -> None:
         super().__init__(callback)
-        self._next_interval: float = repeats
+        self._trigger: triggers.Trigger = trigger
         self._stopped: bool = False
         self._task: t.Optional[asyncio.Task[t.Any]] = None
         self._error_handler: t.Optional[
@@ -205,7 +208,7 @@ class Task(_BindableObjectWithCallback):
                         exc_info=(type(e), e, e.__traceback__),
                     )
 
-            await asyncio.sleep(self._next_interval)
+            await asyncio.sleep(self._trigger.get_interval())
 
         assert self._task is not None
         self._task.cancel()
@@ -224,18 +227,6 @@ class Task(_BindableObjectWithCallback):
     def is_running(self) -> bool:
         """Whether the task represented by this object is currently running or not."""
         return self._task is not None and not self._task.done()
-
-    def update_interval(self, new_interval: float) -> None:
-        """
-        Updates the time between the current and all future executions of the task.
-
-        Args:
-            new_interval (:obj:`float`): Number of seconds between all future executions.
-
-        Returns:
-            ``None``
-        """
-        self._next_interval = new_interval
 
     @t.overload
     def set_error_handler(self, func: TaskErrorHandlerT) -> TaskErrorHandlerT:
@@ -327,7 +318,51 @@ async def wait_until_started() -> None:
     await Task._app_started.wait()
 
 
+@t.overload
 def task(
+    *,
+    s: float = 0,
+    m: float = 0,
+    h: float = 0,
+    d: float = 0,
+    auto_start: bool = False,
+    max_consecutive_failures: int = 3,
+    cls: t.Type[Task] = Task,
+) -> t.Callable[[TaskCallbackT], Task]:
+    ...
+
+
+@t.overload
+def task(
+    trigger: triggers.Trigger,
+    /,
+    *,
+    auto_start: bool = False,
+    max_consecutive_failures: int = 3,
+    cls: t.Type[Task] = Task,
+) -> t.Callable[[TaskCallbackT], Task]:
+    ...
+
+
+@t.overload
+def task(
+    trigger: t.Type[triggers.UniformTrigger],
+    /,
+    *,
+    s: float = 0,
+    m: float = 0,
+    h: float = 0,
+    d: float = 0,
+    auto_start: bool = False,
+    max_consecutive_failures: int = 3,
+    cls: t.Type[Task] = Task,
+) -> t.Callable[[TaskCallbackT], Task]:
+    ...
+
+
+def task(
+    trigger: t.Optional[t.Union[triggers.Trigger, t.Type[triggers.Trigger]]] = None,
+    /,
     *,
     s: float = 0,
     m: float = 0,
@@ -340,6 +375,10 @@ def task(
     """
     Second order decorator to register a function as a repeating task. The decorated function can
     be a synchronous or asynchronous function, and any return value will be discarded.
+
+    Args:
+        trigger (Optional[:obj:`~.triggers.Trigger`]): Trigger to use to set the interval between task executions.
+            If not provided, and interval values were provided then this defaults to :obj:`~.triggers.UniformTrigger`.
 
     Keyword Args:
         s (:obj:`float`): Number of seconds between task executions.
@@ -354,9 +393,23 @@ def task(
     """
 
     def decorate(func: TaskCallbackT) -> Task:
-        if not any([s, m, h, d]):
-            raise ValueError("Must provide a value to at least one of: 's', 'm', 'h', 'd'")
-        return cls(func, s + (m * 60) + (h * 3600) + (d * 86400), auto_start, max(max_consecutive_failures, 1))
+        nonlocal trigger
+
+        if any([s, m, h, d]):
+            trigger = trigger or triggers.UniformTrigger
+            assert inspect.isclass(trigger) and issubclass(trigger, triggers.UniformTrigger)
+            return cls(
+                func,
+                (trigger or triggers.UniformTrigger)(s + (m * 60) + (h * 3600) + (d * 86400)),
+                auto_start,
+                max(max_consecutive_failures, 1),
+            )
+
+        if trigger is None:
+            raise ValueError("Interval values were not provided and no trigger was passed")
+
+        assert isinstance(trigger, triggers.Trigger)
+        return cls(func, trigger, auto_start, max(max_consecutive_failures, 1))
 
     return decorate
 

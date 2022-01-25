@@ -48,7 +48,8 @@ def format(session):
 
 @nox.session()
 def mypy(session):
-    session.install("-Ur", "requirements.txt")
+    session.install("-Ur", "requirements.txt", "-r", "crontrigger_requirements.txt")
+    session.install("-Ur", "crontrigger_requirements.txt")
     session.install("-U", "mypy")
     session.run("python", "-m", "mypy", "lightbulb")
 
@@ -56,5 +57,6 @@ def mypy(session):
 @nox.session(reuse_venv=True)
 def sphinx(session):
     session.install("-Ur", "docs_requirements.txt")
+    session.install("-Ur", "crontrigger_requirements.txt")
     session.install("-Ur", "requirements.txt")
     session.run("python", "-m", "sphinx.cmd.build", "docs/source", "docs/build", "-b", "html")

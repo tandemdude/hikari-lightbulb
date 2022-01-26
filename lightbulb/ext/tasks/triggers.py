@@ -23,6 +23,14 @@ import abc
 import datetime
 import typing as t
 
+try:
+    import croniter
+
+    _CRON_AVAILABLE = True
+
+except ModuleNotFoundError:
+    _CRON_AVAILABLE = False
+
 _CT = t.Union[int, str, None]
 
 
@@ -61,8 +69,7 @@ class UniformTrigger(Trigger):
         return self._interval
 
 
-try:
-    import croniter
+if t.TYPE_CHECKING or _CRON_AVAILABLE:
 
     class CronTrigger(Trigger):
         """
@@ -138,7 +145,7 @@ try:
             )
             return difference.total_seconds()
 
-except ModuleNotFoundError:
+else:
 
     class CronTrigger(Trigger):  # type: ignore[no-redef]
         __slots__ = ()

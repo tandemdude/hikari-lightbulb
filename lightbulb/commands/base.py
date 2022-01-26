@@ -72,15 +72,20 @@ class _HasRecreateSubcommands(t.Protocol):
 
 
 class _SubcommandListProxy(collections.UserList):  # type: ignore
-    __slots__ = ("parent",)
+    __slots__ = ("parents",)
 
     def __init__(self, *args: t.Any, parent: _HasRecreateSubcommands, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
-        self.parent = parent
+        self.parents = [parent]
 
     def append(self, item: t.Any) -> None:
         super().append(item)
-        self.parent.recreate_subcommands(self.data, self.parent.app)
+        for parent in self.parents:
+            parent.recreate_subcommands(self.data, parent.app)
+
+    def add_parent(self, parent: _HasRecreateSubcommands) -> _SubcommandListProxy:
+        self.parents.append(parent)
+        return self
 
 
 def _get_choice_objects_from_choices(

@@ -48,7 +48,7 @@ def format(session):
 
 @nox.session()
 def mypy(session):
-    session.install("-Ur", "requirements.txt", "-r", "crontrigger_requirements.txt")
+    session.install("-Ur", "requirements.txt")
     session.install("-Ur", "crontrigger_requirements.txt")
     session.install("-U", "mypy")
     session.run("python", "-m", "mypy", "lightbulb")

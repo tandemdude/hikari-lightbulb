@@ -146,7 +146,11 @@ class PrefixSubGroup(PrefixCommand, PrefixGroupMixin, base.SubCommandTrait):
     def __init__(self, app: app_.BotApp, initialiser: base.CommandLike) -> None:
         super().__init__(app, initialiser)
         self._raw_subcommands = initialiser.subcommands
-        initialiser.subcommands = base._SubcommandListProxy(initialiser.subcommands, parent=self)  # type: ignore
+        initialiser.subcommands = (
+            initialiser.subcommands.add_parent(self)  # type: ignore
+            if isinstance(initialiser.subcommands, base._SubcommandListProxy)  # type: ignore
+            else base._SubcommandListProxy(initialiser.subcommands, parent=self)
+        )
         self._subcommands = {} if not app._case_insensitive_prefix_commands else CIMultiDict()  # type: ignore
         self.create_subcommands(self._raw_subcommands, app)
 
@@ -186,7 +190,11 @@ class PrefixCommandGroup(PrefixCommand, PrefixGroupMixin):
     def __init__(self, app: app_.BotApp, initialiser: base.CommandLike) -> None:
         super().__init__(app, initialiser)
         self._raw_subcommands = initialiser.subcommands
-        initialiser.subcommands = base._SubcommandListProxy(initialiser.subcommands, parent=self)  # type: ignore
+        initialiser.subcommands = (
+            initialiser.subcommands.add_parent(self)  # type: ignore
+            if isinstance(initialiser.subcommands, base._SubcommandListProxy)  # type: ignore
+            else base._SubcommandListProxy(initialiser.subcommands, parent=self)
+        )
         self._subcommands = {} if not app._case_insensitive_prefix_commands else CIMultiDict()  # type: ignore
         self.create_subcommands(self._raw_subcommands, app)
 

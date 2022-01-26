@@ -154,7 +154,11 @@ class SlashSubGroup(SlashCommand, SlashGroupMixin, base.SubCommandTrait):
     def __init__(self, app: app_.BotApp, initialiser: base.CommandLike) -> None:
         super().__init__(app, initialiser)
         self._raw_subcommands = initialiser.subcommands
-        initialiser.subcommands = base._SubcommandListProxy(initialiser.subcommands, parent=self)  # type: ignore
+        initialiser.subcommands = (
+            initialiser.subcommands.add_parent(self)  # type: ignore
+            if isinstance(initialiser.subcommands, base._SubcommandListProxy)  # type: ignore
+            else base._SubcommandListProxy(initialiser.subcommands, parent=self)
+        )
         # Just to keep mypy happy we leave SlashSubGroup here
         self._subcommands: t.Dict[str, t.Union[SlashSubGroup, SlashSubCommand]] = {}
         self.create_subcommands(self._raw_subcommands, app, SlashSubCommand)
@@ -195,7 +199,11 @@ class SlashCommandGroup(SlashCommand, SlashGroupMixin):
     def __init__(self, app: app_.BotApp, initialiser: base.CommandLike) -> None:
         super().__init__(app, initialiser)
         self._raw_subcommands = initialiser.subcommands
-        initialiser.subcommands = base._SubcommandListProxy(initialiser.subcommands, parent=self)  # type: ignore
+        initialiser.subcommands = (
+            initialiser.subcommands.add_parent(self)  # type: ignore
+            if isinstance(initialiser.subcommands, base._SubcommandListProxy)  # type: ignore
+            else base._SubcommandListProxy(initialiser.subcommands, parent=self)
+        )
         self._subcommands: t.Dict[str, t.Union[SlashSubGroup, SlashSubCommand]] = {}
         self.create_subcommands(self._raw_subcommands, app, (SlashSubCommand, SlashSubGroup))
 

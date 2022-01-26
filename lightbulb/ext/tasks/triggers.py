@@ -68,24 +68,24 @@ try:
         """
         A crontab-based task trigger. Tasks will be run dependent on the given crontab.
 
-        .. note::
+        Note:
             Keyword arguments are only used if no crontab expression is passed.
 
         Args:
-            crontab (:obj:`str` | :obj:`None`): Schedule that task executions will follow.
+            crontab (Optional[:obj:`str`]): Schedule that task executions will follow.
 
         Keyword Args:
-            month (:obj:`int` | :obj:`str` | :obj:`None`):
+            month (Optional[Union[:obj:`int`, :obj:`str`]]):
                 The month(s) that the task will be executed.
-            day (:obj:`int` | :obj:`str` | :obj:`None`):
+            day (Optional[Union[:obj:`int`, :obj:`str`]]):
                 The day(s) that the task will be executed.
-            day_of_week (:obj:`int` | :obj:`str` | :obj:`None`):
+            day_of_week (Optional[Union[:obj:`int`, :obj:`str`]]):
                 The day(s) of the week that the task will be executed.
-            hour (:obj:`int` | :obj:`str` | :obj:`None`):
+            hour (Optional[Union[:obj:`int`, :obj:`str`]]):
                 The hour(s) that the task will be executed.
-            minute (:obj:`int` | :obj:`str` | :obj:`None`):
+            minute (Optional[Union[:obj:`int`, :obj:`str`]]):
                 The minute(s) that the task will be executed.
-            second (:obj:`int` | :obj:`str` | :obj:`None`):
+            second (Optional[Union[:obj:`int`, :obj:`str`]]):
                 The second(s) that the task will be executed.
 
         Note:
@@ -98,7 +98,7 @@ try:
 
         def __init__(
             self,
-            crontab: str | None = None,
+            crontab: t.Union[str, None] = None,
             /,
             *,
             month: _CT = None,

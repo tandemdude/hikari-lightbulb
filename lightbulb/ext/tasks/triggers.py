@@ -21,6 +21,9 @@ __all__ = ["Trigger", "UniformTrigger", "CronTrigger"]
 
 import abc
 import datetime
+import typing as t
+
+_CT = t.Union[int, str, None]
 
 
 class Trigger(abc.ABC):
@@ -65,8 +68,25 @@ try:
         """
         A crontab-based task trigger. Tasks will be run dependent on the given crontab.
 
+        .. note::
+            Keyword arguments are only used if no crontab expression is passed.
+
         Args:
-            crontab (:obj:`str`): Schedule that task executions will follow.
+            crontab (:obj:`str` | :obj:`None`): Schedule that task executions will follow.
+
+        Keyword Args:
+            month (:obj:`int` | :obj:`str` | :obj:`None`):
+                The month(s) that the task will be executed.
+            day (:obj:`int` | :obj:`str` | :obj:`None`):
+                The day(s) that the task will be executed.
+            day_of_week (:obj:`int` | :obj:`str` | :obj:`None`):
+                The day(s) of the week that the task will be executed.
+            hour (:obj:`int` | :obj:`str` | :obj:`None`):
+                The hour(s) that the task will be executed.
+            minute (:obj:`int` | :obj:`str` | :obj:`None`):
+                The minute(s) that the task will be executed.
+            second (:obj:`int` | :obj:`str` | :obj:`None`):
+                The second(s) that the task will be executed.
 
         Note:
             This trigger is only available when installing lightbulb with the ``[crontrigger]`` option.
@@ -76,7 +96,23 @@ try:
 
         __slots__ = ("_croniter",)
 
-        def __init__(self, crontab: str) -> None:
+        def __init__(
+            self,
+            crontab: str | None = None,
+            /,
+            *,
+            month: _CT = None,
+            day: _CT = None,
+            day_of_week: _CT = None,
+            hour: _CT = None,
+            minute: _CT = None,
+            second: _CT = None,
+        ) -> None:
+            if not crontab:
+                crontab = (
+                    f"{minute or '*'} {hour or '*'} {day or '*'} {month or '*'} {day_of_week or '*'} {second or 0}"
+                )
+
             self._croniter = croniter.croniter(crontab, datetime.datetime.now(datetime.timezone.utc))
 
         def get_interval(self) -> float:

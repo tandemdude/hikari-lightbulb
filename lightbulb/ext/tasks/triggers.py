@@ -96,6 +96,23 @@ try:
 
         __slots__ = ("_croniter",)
 
+        @t.overload
+        def __init__(self, crontab: str) -> None:
+            ...
+
+        @t.overload
+        def __init__(
+            self,
+            *,
+            month: _CT = None,
+            day: _CT = None,
+            day_of_week: _CT = None,
+            hour: _CT = None,
+            minute: _CT = None,
+            second: _CT = None,
+        ) -> None:
+            ...
+
         def __init__(
             self,
             crontab: t.Union[str, None] = None,

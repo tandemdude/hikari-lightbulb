@@ -1221,7 +1221,7 @@ class BotApp(hikari.GatewayBot):
 
         def convert_response_value(val: t.Union[str, hikari.CommandChoice]) -> hikari.CommandChoice:
             if isinstance(val, str):
-                return hikari.CommandChoice(name=val, value=val)
+                return hikari.CommandChoice(name=str(val), value=val)
             return val
 
         resp_to_send: t.List[hikari.CommandChoice] = []

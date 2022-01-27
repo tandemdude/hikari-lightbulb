@@ -109,23 +109,20 @@ def _create_builder_from_command(
     bld: t.Union[hikari.api.SlashCommandBuilder, hikari.api.ContextMenuCommandBuilder]
     if isinstance(cmd, hikari.PartialCommand):
         if desc := getattr(cmd, "description", None):
-            bld = app.rest.command_builder(cmd.type, cmd.name, description=desc)  # type: ignore[call-overload]
-            assert isinstance(bld, hikari.api.SlashCommandBuilder)
+            bld = app.rest.slash_command_builder(cmd.name, description=desc)
             for option in getattr(cmd, "options", []) or []:
                 bld.add_option(option)
         else:
-            bld = app.rest.command_builder(cmd.type, cmd.name)  # type: ignore[call-overload]
+            bld = app.rest.context_menu_command_builder(cmd.type, cmd.name)
         bld.set_id(cmd.id)
     else:
         create_kwargs = cmd.as_create_kwargs()
         if "description" in create_kwargs:
-            bld = app.rest.command_builder(
-                create_kwargs["type"], create_kwargs["name"], description=create_kwargs["description"]
-            )
+            bld = app.rest.slash_command_builder(create_kwargs["name"], description=create_kwargs["description"])
             for opt in create_kwargs.get("options", []):
                 bld.add_option(opt)
         else:
-            bld = app.rest.command_builder(create_kwargs["type"], create_kwargs["name"])
+            bld = app.rest.context_menu_command_builder(create_kwargs["type"], create_kwargs["name"])
 
     return bld
 

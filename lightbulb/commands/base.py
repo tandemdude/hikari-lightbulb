@@ -585,6 +585,7 @@ class ApplicationCommand(Command, abc.ABC):
         kwargs.update({"guild": guild} if guild is not None else {})
 
         cmd_type: hikari.CommandType = kwargs.pop("type")
+        created_cmd: hikari.PartialCommand
         if cmd_type is hikari.CommandType.SLASH:
             created_cmd = await self.app.rest.create_slash_command(
                 self.app.application,

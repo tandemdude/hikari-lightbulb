@@ -1219,8 +1219,8 @@ class BotApp(hikari.GatewayBot):
             await event.interaction.create_response([])
             return
 
-        def convert_response_value(val: t.Union[str, hikari.CommandChoice]) -> hikari.CommandChoice:
-            if isinstance(val, str):
+        def convert_response_value(val: t.Union[str, int, float, hikari.CommandChoice]) -> hikari.CommandChoice:
+            if isinstance(val, (str, int, float)):
                 return hikari.CommandChoice(name=str(val), value=val)
             return val
 

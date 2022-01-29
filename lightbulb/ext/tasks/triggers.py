@@ -104,38 +104,16 @@ if t.TYPE_CHECKING or _CRON_AVAILABLE:
         __slots__ = ("_croniter",)
 
         @t.overload
-        def __init__(self, crontab: str) -> None:
+        def __init__(self, crontab: str, /) -> None:
             ...
 
         @t.overload
-        def __init__(
-            self,
-            *,
-            month: _CT = None,
-            day: _CT = None,
-            day_of_week: _CT = None,
-            hour: _CT = None,
-            minute: _CT = None,
-            second: _CT = None,
-        ) -> None:
+        def __init__(self, /, **kwargs: _CT) -> None:
             ...
 
-        def __init__(
-            self,
-            crontab: t.Union[str, None] = None,
-            /,
-            *,
-            month: _CT = None,
-            day: _CT = None,
-            day_of_week: _CT = None,
-            hour: _CT = None,
-            minute: _CT = None,
-            second: _CT = None,
-        ) -> None:
+        def __init__(self, crontab: t.Optional[str] = None, /, **kwargs: _CT) -> None:
             if not crontab:
-                crontab = (
-                    f"{minute or '*'} {hour or '*'} {day or '*'} {month or '*'} {day_of_week or '*'} {second or 0}"
-                )
+                crontab = f"{kwargs.get('minute', '*')} {kwargs.get('hour', '*')} {kwargs.get('day', '*')} {kwargs.get('month', '*')} {kwargs.get('day_of_week', '*')} {kwargs.get('second', 0)}"
 
             self._croniter = croniter.croniter(crontab, datetime.datetime.now(datetime.timezone.utc))
 
@@ -147,7 +125,7 @@ if t.TYPE_CHECKING or _CRON_AVAILABLE:
 
 else:
 
-    class CronTrigger(Trigger):  # type: ignore[no-redef]
+    class CronTrigger(Trigger):
         __slots__ = ()
 
         def __init__(self, _: str) -> None:

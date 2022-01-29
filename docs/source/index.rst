@@ -90,5 +90,6 @@ Index:
    api-reference
    changelog
    extension-libs
+   hikari-basics
 
 * :ref:`genindex`

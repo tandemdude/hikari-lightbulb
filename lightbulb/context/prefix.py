@@ -140,7 +140,7 @@ class PrefixContext(base.Context):
         msg = await self._event.message.respond(*args, **kwargs)
         if delete_after is not None:
 
-            async def _cleanup(timeout: int | float) -> None:
+            async def _cleanup(timeout: t.Union[int, float]) -> None:
                 await asyncio.sleep(timeout)
 
                 try:

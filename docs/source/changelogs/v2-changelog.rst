@@ -6,6 +6,39 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 2.2.0
+=============
+
+- Fix option serialiser not correctly detecting changes for value for ``min|max_value``.
+
+- Add ``delete_after`` kwarg to ``Context.respond``.
+
+- Fix ``KeyError`` being raised instead of a more appropriate error when attempting to reload an extension that is not already loaded.
+
+- Add ``lightbulb.ext.tasks`` extension for repeating tasks.
+
+- Fix ``ephemeral`` and ``auto_defer`` not working as expected for subcommands.
+
+- Fix subcommands not being registered to more than one command group at a time where it would be expected.
+
+- Add context menu (user and message) commands.
+
+- Fix ``BotApp.remove_plugin`` not correctly removing plugins from the bot's plugin list.
+
+- Modify the stop emoji for ``ButtonNavigator``.
+
+- Add additional validation for slash command options.
+
+- Add :obj:`lightbulb.utils.build_invite_url`.
+
+- Rewrite application command management system to reduce the total number of requests made.
+
+- Fix plugins showing in the default help command when there are no commands shown for that plugin.
+
+- Add ``__getitem__`` implementation for ``OptionsProxy``.
+
+- Add :obj:`lightbulb.app.BotApp.sync_application_commands`.
+
 Version 2.1.3
 =============
 

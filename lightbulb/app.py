@@ -272,7 +272,7 @@ class BotApp(hikari.GatewayBot):
             self.command(__default_help)
 
         if prefix is not None:
-            self.subscribe(hikari.MessageCreateEvent, self.handle_messsage_create_for_prefix_commands)
+            self.subscribe(hikari.MessageCreateEvent, self.handle_message_create_for_prefix_commands)
         self.subscribe(hikari.StartedEvent, self._manage_application_commands)
         self.subscribe(hikari.InteractionCreateEvent, self.handle_interaction_create_for_application_commands)
         self.subscribe(hikari.InteractionCreateEvent, self.handle_interaction_create_for_autocomplete)
@@ -965,7 +965,7 @@ class BotApp(hikari.GatewayBot):
 
         await context.invoke()
 
-    async def handle_messsage_create_for_prefix_commands(self, event: hikari.MessageCreateEvent) -> None:
+    async def handle_message_create_for_prefix_commands(self, event: hikari.MessageCreateEvent) -> None:
         """
         Prefix command :obj:`~hikari.events.message_events.MessageCreateEvent` listener. This handles fetching the
         context, dispatching events, and invoking the appropriate command.

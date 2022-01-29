@@ -276,6 +276,61 @@ class Context(abc.ABC):
         await self._maybe_defer()
         await self.command.invoke(self)
 
+    @t.overload
+    async def respond(
+        self,
+        response_type: hikari.ResponseType,
+        content: hikari.UndefinedOr[t.Any] = hikari.UNDEFINED,
+        delete_after: t.Union[int, float, None] = None,
+        *,
+        attachment: hikari.UndefinedOr[hikari.Resourceish] = hikari.UNDEFINED,
+        attachments: hikari.UndefinedOr[t.Sequence[hikari.Resourceish]] = hikari.UNDEFINED,
+        component: hikari.UndefinedOr[hikari.api.ComponentBuilder] = hikari.UNDEFINED,
+        components: hikari.UndefinedOr[t.Sequence[hikari.api.ComponentBuilder]] = hikari.UNDEFINED,
+        embed: hikari.UndefinedOr[hikari.Embed] = hikari.UNDEFINED,
+        embeds: hikari.UndefinedOr[t.Sequence[hikari.Embed]] = hikari.UNDEFINED,
+        flags: hikari.UndefinedOr[t.Union[int, hikari.MessageFlag]] = hikari.UNDEFINED,
+        tts: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
+        nonce: hikari.UndefinedOr[str] = hikari.UNDEFINED,
+        reply: hikari.UndefinedOr[hikari.SnowflakeishOr[hikari.PartialMessage]] = hikari.UNDEFINED,
+        mentions_everyone: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
+        mentions_reply: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
+        user_mentions: hikari.UndefinedOr[
+            t.Union[hikari.SnowflakeishSequence[hikari.PartialUser], bool]
+        ] = hikari.UNDEFINED,
+        role_mentions: hikari.UndefinedOr[
+            t.Union[hikari.SnowflakeishSequence[hikari.PartialRole], bool]
+        ] = hikari.UNDEFINED,
+    ) -> ResponseProxy:
+        ...
+
+    @t.overload
+    async def respond(
+        self,
+        content: hikari.UndefinedOr[t.Any] = hikari.UNDEFINED,
+        delete_after: t.Union[int, float, None] = None,
+        *,
+        attachment: hikari.UndefinedOr[hikari.Resourceish] = hikari.UNDEFINED,
+        attachments: hikari.UndefinedOr[t.Sequence[hikari.Resourceish]] = hikari.UNDEFINED,
+        component: hikari.UndefinedOr[hikari.api.ComponentBuilder] = hikari.UNDEFINED,
+        components: hikari.UndefinedOr[t.Sequence[hikari.api.ComponentBuilder]] = hikari.UNDEFINED,
+        embed: hikari.UndefinedOr[hikari.Embed] = hikari.UNDEFINED,
+        embeds: hikari.UndefinedOr[t.Sequence[hikari.Embed]] = hikari.UNDEFINED,
+        flags: hikari.UndefinedOr[t.Union[int, hikari.MessageFlag]] = hikari.UNDEFINED,
+        tts: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
+        nonce: hikari.UndefinedOr[str] = hikari.UNDEFINED,
+        reply: hikari.UndefinedOr[hikari.SnowflakeishOr[hikari.PartialMessage]] = hikari.UNDEFINED,
+        mentions_everyone: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
+        mentions_reply: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
+        user_mentions: hikari.UndefinedOr[
+            t.Union[hikari.SnowflakeishSequence[hikari.PartialUser], bool]
+        ] = hikari.UNDEFINED,
+        role_mentions: hikari.UndefinedOr[
+            t.Union[hikari.SnowflakeishSequence[hikari.PartialRole], bool]
+        ] = hikari.UNDEFINED,
+    ) -> ResponseProxy:
+        ...
+
     @abc.abstractmethod
     async def respond(
         self, *args: t.Any, delete_after: t.Union[int, float, None] = None, **kwargs: t.Any
@@ -404,6 +459,15 @@ class ApplicationContext(Context, abc.ABC):
         Returns:
             :obj:`~ResponseProxy`: Proxy wrapping the response of the ``respond`` call.
         """
+
+        async def _cleanup(timeout: t.Union[int, float], proxy_: ResponseProxy) -> None:
+            await asyncio.sleep(timeout)
+
+            try:
+                await proxy_.delete()
+            except hikari.NotFoundError:
+                pass
+
         kwargs.pop("reply", None)
         kwargs.pop("mentions_reply", None)
         kwargs.pop("nonce", None)
@@ -416,8 +480,13 @@ class ApplicationContext(Context, abc.ABC):
             if args and isinstance(args[0], hikari.ResponseType):
                 args = args[1:]
 
-            self._responses.append(ResponseProxy(await self._interaction.execute(*args, **kwargs), editable=False))
+            proxy = ResponseProxy(await self._interaction.execute(*args, **kwargs), editable=False)
+            self._responses.append(proxy)
             self._deferred = False
+
+            if delete_after is not None:
+                asyncio.create_task(_cleanup(delete_after, proxy))
+
             return self._responses[-1]
 
         if args:
@@ -442,32 +511,22 @@ class ApplicationContext(Context, abc.ABC):
             await inter.edit_initial_response(*args_, **kwargs_)
             return await rp.message()
 
-        self._responses.append(
-            ResponseProxy(
-                fetcher=self._interaction.fetch_initial_response,
-                editor=functools.partial(_editor, inter=self._interaction)
-                if hikari.MessageFlag.EPHEMERAL in kwargs.get("flags", hikari.MessageFlag.NONE)
-                else None,
-            )
+        proxy = ResponseProxy(
+            fetcher=self._interaction.fetch_initial_response,
+            editor=functools.partial(_editor, inter=self._interaction)
+            if hikari.MessageFlag.EPHEMERAL in kwargs.get("flags", hikari.MessageFlag.NONE)
+            else None,
         )
+        self._responses.append(proxy)
         self._responded = True
-
-        if delete_after is not None:
-
-            async def _cleanup(timeout: t.Union[int, float]) -> None:
-                await asyncio.sleep(timeout)
-
-                try:
-                    await self._responses[-1].delete()
-                except hikari.NotFoundError:
-                    pass
-
-            asyncio.create_task(_cleanup(delete_after))
 
         if kwargs["response_type"] in (
             hikari.ResponseType.DEFERRED_MESSAGE_CREATE,
             hikari.ResponseType.DEFERRED_MESSAGE_UPDATE,
         ):
             self._deferred = True
+
+        if delete_after is not None:
+            asyncio.create_task(_cleanup(delete_after, proxy))
 
         return self._responses[-1]

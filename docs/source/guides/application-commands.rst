@@ -80,8 +80,6 @@ Adding options to slash commands is also identical to how you add options to pre
 
 
 To create message or user commands you need to add ``commands.MessageCommand`` and ``commands.UserCommand`` respectively
-to the ``@lightbulb.implements`` decorator. You should note that message and user commands cannot take any options.
-
-.. error::
-    Message and user commands are not currently supported by hikari so will **always** raise an error if you
-    try to create either currently.
+to the ``@lightbulb.implements`` decorator. You should note that message and user commands cannot take any options, however
+the target of the command will **always** be stored in the option ``target``. Any option decorators added to context menu
+commands will be ignored.

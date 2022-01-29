@@ -28,7 +28,7 @@ from lightbulb.commands import base
 
 class MessageCommand(base.ApplicationCommand):
     """
-    An implementation of :obj:`~.commabds.base.Command` representing a message context menu command.
+    An implementation of :obj:`~.commands.base.Command` representing a message context menu command.
 
     See the `API Documentation <https://discord.com/developers/docs/interactions/application-commands#message-commands>`_.
     """

@@ -41,11 +41,20 @@ if t.TYPE_CHECKING:
     from lightbulb import plugins
     from lightbulb.utils import parser as parser_
 
+_AutocompleteableOptionT = t.Union[str, int, float]
 AutocompleteCallbackT = t.TypeVar(
     "AutocompleteCallbackT",
     bound=t.Callable[
         ...,
-        t.Coroutine[t.Any, t.Any, t.Union[str, hikari.CommandChoice, t.Sequence[t.Union[str, hikari.CommandChoice]]]],
+        t.Coroutine[
+            t.Any,
+            t.Any,
+            t.Union[
+                _AutocompleteableOptionT,
+                hikari.CommandChoice,
+                t.Sequence[t.Union[_AutocompleteableOptionT, hikari.CommandChoice]],
+            ],
+        ],
     ],
 )
 
@@ -254,7 +263,13 @@ class CommandLike:
         t.Callable[
             [hikari.CommandInteractionOption, hikari.AutocompleteInteraction],
             t.Coroutine[
-                t.Any, t.Any, t.Union[str, hikari.CommandChoice, t.Sequence[t.Union[str, hikari.CommandChoice]]]
+                t.Any,
+                t.Any,
+                t.Union[
+                    _AutocompleteableOptionT,
+                    hikari.CommandChoice,
+                    t.Sequence[t.Union[_AutocompleteableOptionT, hikari.CommandChoice]],
+                ],
             ],
         ],
     ] = dataclasses.field(default_factory=dict, init=False)
@@ -307,7 +322,21 @@ class CommandLike:
 
     def autocomplete(self, opt1: str, *opts: str) -> t.Callable[[AutocompleteCallbackT], AutocompleteCallbackT]:
         """
-        Registers a function as an autocomplete callback for this command.
+        Second order decorator that registers a function as an autocomplete callback for this command.
+
+        The autocomplete callback **must** be an asyncronous function that takes exactly two arguments: ``option``
+        (an instance of :obj:`hikari.interactions.command_interactions.AutocompleteInteractionOption`) which is
+        the option being autocompleted, and ``interaction`` (an instance of :obj:`hikari.interactions.command_interactions.AutocompleteInteraction`)
+        which is the interaction that triggered the autocomplete.
+
+        Autocomplete can only be enabled for options with type :obj:`str`, :obj:`int`, or :obj:`float`.
+
+        The callback should return one of the following: a single item of the option type, a sequence of items of the
+        option type, a single :obj:`hikari.commands.CommandChoice`, or a sequence of :obj:`hikari.commands.CommandChoice`.
+
+        Args:
+            opt1 (:obj:`str`): Option that this callback will do autocomplete for.
+            *opts (:obj:`str`): Additional options that this callback will do autocomplete for.
         """
 
         def decorate(func: AutocompleteCallbackT) -> AutocompleteCallbackT:

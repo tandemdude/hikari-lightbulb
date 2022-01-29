@@ -39,6 +39,8 @@ Version 2.2.0
 
 - Add :obj:`lightbulb.app.BotApp.sync_application_commands`.
 
+- Add support for sending of attachment(s) within interaction initial responses.
+
 Version 2.1.3
 =============
 

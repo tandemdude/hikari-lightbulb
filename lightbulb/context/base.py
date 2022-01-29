@@ -516,9 +516,6 @@ class ApplicationContext(Context, abc.ABC):
         else:
             kwargs.setdefault("response_type", hikari.ResponseType.MESSAGE_CREATE)
 
-        kwargs.pop("attachment", None)
-        kwargs.pop("attachments", None)
-
         await self._interaction.create_initial_response(**kwargs)
 
         # Initial responses are special and need their own edit method defined

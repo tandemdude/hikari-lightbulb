@@ -324,7 +324,7 @@ class CommandLike:
         """
         Second order decorator that registers a function as an autocomplete callback for this command.
 
-        The autocomplete callback **must** be an asyncronous function that takes exactly two arguments: ``option``
+        The autocomplete callback **must** be an asynchronous function that takes exactly two arguments: ``option``
         (an instance of :obj:`hikari.interactions.command_interactions.AutocompleteInteractionOption`) which is
         the option being autocompleted, and ``interaction`` (an instance of :obj:`hikari.interactions.command_interactions.AutocompleteInteraction`)
         which is the interaction that triggered the autocomplete.

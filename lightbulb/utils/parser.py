@@ -146,7 +146,7 @@ class Parser(BaseParser):
         return None if self.idx == 0 else self.buffer[self.idx - 1]
 
     def get_word(self) -> str:
-        """Gets the next word, will return an empty strig if EOF."""
+        """Gets the next word, will return an empty string if EOF."""
         self.skip_ws()
         prev = self.idx
         while (char := self.get_char()) is not None and not char.isspace():
@@ -218,7 +218,7 @@ class Parser(BaseParser):
             _LOGGER.debug("Option has a default value, shifting to the next parameter")
             self.undo()
         else:
-            _LOGGER.debug("Sucessfuly converted %s to %s", raw, arg)
+            _LOGGER.debug("Successfully converted %s to %s", raw, arg)
             self.ctx._options[option.name] = arg
 
     async def _greedy_convert(self, raw: str, option: commands.base.OptionLike) -> None:

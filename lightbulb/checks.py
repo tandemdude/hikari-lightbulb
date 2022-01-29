@@ -111,7 +111,7 @@ class _ExclusiveCheck:
 
 class Check:
     """
-    Class representing a check. Check functions can be syncronous or asyncronous functions which take
+    Class representing a check. Check functions can be synchronous or asynchronous functions which take
     a single argument, which will be the context that the command is being invoked under, and return
     a boolean or raise a :obj:`.errors.CheckFailure` indicating whether the check passed or failed.
 

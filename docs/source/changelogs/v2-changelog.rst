@@ -41,6 +41,8 @@ Version 2.2.0
 
 - Add support for sending of attachment(s) within interaction initial responses.
 
+- Add typing overloads to ``Context.respond``.
+
 Version 2.1.3
 =============
 

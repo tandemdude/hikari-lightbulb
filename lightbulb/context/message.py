@@ -31,6 +31,29 @@ if t.TYPE_CHECKING:
 
 
 class MessageContext(base.ApplicationContext):
+    """
+    An implementation of :obj:`~.context.base.Context` for message context menu commands.
+
+    Args:
+        app (:obj:`~.app.BotApp`): The ``BotApp`` instance that the context is linked to.
+        event (:obj:`~hikari.events.interaction_events.InteractionCreateEvent`): The event to create the context
+            from.
+        command (:obj:`~.commands.message.MessageCommand`): The command that the context is for.
+
+    Note that the target message that this command was invoked on will **always** be stored
+    as the option ``target``.
+
+    Example:
+
+        .. code-block:: python
+
+            @lightbulb.command("id", "Gets the ID of the selected message")
+            @lightbulb.implements(lightbulb.MessageCommand)
+            async def get_message_id(ctx: lightbulb.MessageContext) -> None:
+                await ctx.respond(ctx.options.target.id)
+
+    """
+
     __slots__ = ("_options",)
 
     def __init__(

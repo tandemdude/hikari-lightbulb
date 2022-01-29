@@ -1225,13 +1225,14 @@ class BotApp(hikari.GatewayBot):
             return val
 
         resp_to_send: t.List[hikari.CommandChoice] = []
-        if isinstance(response, (str, hikari.CommandChoice)):
+        if isinstance(response, (str, int, float, hikari.CommandChoice)):
             resp_to_send.append(convert_response_value(response))
         elif isinstance(response, collections.abc.Sequence):
             for item in response:
                 resp_to_send.append(convert_response_value(item))
         else:
             _LOGGER.error("Invalid response returned from autocomplete handler %r", callback.__name__)
+            await event.interaction.create_response([])
             return
 
         await event.interaction.create_response(resp_to_send)

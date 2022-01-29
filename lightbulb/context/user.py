@@ -31,6 +31,29 @@ if t.TYPE_CHECKING:
 
 
 class UserContext(base.ApplicationContext):
+    """
+    An implementation of :obj:`~.context.base.Context` for user context menu commands.
+
+    Args:
+        app (:obj:`~.app.BotApp`): The ``BotApp`` instance that the context is linked to.
+        event (:obj:`~hikari.events.interaction_events.InteractionCreateEvent`): The event to create the context
+            from.
+        command (:obj:`~.commands.user.UserCommand`): The command that the context is for.
+
+    Note that the target user that this command was invoked on will **always** be stored
+    as the option ``target``.
+
+    Example:
+
+        .. code-block:: python
+
+            @lightbulb.command("id", "Gets the ID of the selected user")
+            @lightbulb.implements(lightbulb.UserCommand)
+            async def get_user_id(ctx: lightbulb.UserContext) -> None:
+                await ctx.respond(ctx.options.target.id)
+
+    """
+
     __slots__ = ("_options",)
 
     def __init__(

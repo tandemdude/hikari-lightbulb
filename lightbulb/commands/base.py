@@ -555,10 +555,18 @@ class ApplicationCommand(Command, abc.ABC):
         kwargs = self.as_create_kwargs()
         kwargs.update({"guild": guild} if guild is not None else {})
 
-        created_cmd = await self.app.rest.create_application_command(
-            self.app.application,
-            **kwargs,
-        )
+        cmd_type: hikari.CommandType = kwargs.pop("type")
+        if cmd_type is hikari.CommandType.SLASH:
+            created_cmd = await self.app.rest.create_slash_command(
+                self.app.application,
+                **kwargs,
+            )
+        else:
+            created_cmd = await self.app.rest.create_context_menu_command(
+                self.app.application,
+                **kwargs,
+            )
+
         self.instances[guild] = created_cmd
         assert isinstance(created_cmd, hikari.PartialCommand)
         return created_cmd
@@ -583,7 +591,6 @@ class ApplicationCommand(Command, abc.ABC):
         """
         cmd = self.instances.pop(guild, None)
         if cmd is None:
-            # TODO - this probably doesn't actually work most of the time
             return
         await cmd.delete()
 

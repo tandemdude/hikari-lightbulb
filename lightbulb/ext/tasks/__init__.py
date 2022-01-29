@@ -49,7 +49,7 @@ Tasks are created using the :obj:`~task` decorator.
 
     # Instead of having to call .start() manually, you can pass auto_start=True
     # into the task decorator if you wish
-    print_every_30_seonds.start()
+    print_every_30_seconds.start()
 
 See the :obj:`~task` decorator api reference for valid kwargs you can pass.
 
@@ -303,7 +303,8 @@ class Task(_BindableObjectWithCallback):
 
 async def wait_until_started() -> None:
     """
-    Wait until the bot has started.
+    Wait until the bot has started. Note that :obj:`.load` **must** have been
+    called in order for this to function.
 
     Roughly equivalent to:
 

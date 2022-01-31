@@ -104,10 +104,14 @@ class Task(_BindableObjectWithCallback):
 
     Args:
         callback: The function that will be executed every time the task is run.
-        repeats (:obj:`float`): How often the task will be executed in seconds.
+        trigger (:obj:`.triggers.Trigger`): The task trigger to use.
         auto_start (:obj:`bool`): Whether the task will be automatically started when instantiated.
         max_consecutive_failures (:obj:`int`): The number of consecutive task failures that will be ignored
             before the task is cancelled.
+        max_executions (Optional[:obj:`int`]): The maximum number of times that the task will be executed. If ``None``,
+            the task will run indefinitely.
+        pass_app (:obj:`bool`): Whether the :obj:`lightbulb.app.BotApp` object will be passed into the task upon
+            execution.
     """
 
     __slots__ = (
@@ -120,6 +124,7 @@ class Task(_BindableObjectWithCallback):
         "_max_consecutive_failures",
         "_max_executions",
         "_n_executions",
+        "_pass_app",
     )
     _app: t.Optional[lightbulb.BotApp] = None
     _app_starting: asyncio.Event = asyncio.Event()
@@ -133,6 +138,7 @@ class Task(_BindableObjectWithCallback):
         auto_start: bool,
         max_consecutive_failures: int,
         max_executions: t.Optional[int],
+        pass_app: bool,
     ) -> None:
         super().__init__(callback)
         self._trigger: triggers.Trigger = trigger
@@ -145,6 +151,7 @@ class Task(_BindableObjectWithCallback):
         self._consecutive_failures: int = 0
         self._max_executions: t.Optional[int] = max_executions
         self._n_executions: int = 0
+        self._pass_app: bool = pass_app
 
         if auto_start:
             self.start()
@@ -191,7 +198,7 @@ class Task(_BindableObjectWithCallback):
             _LOGGER.debug("Running task %r", self.__name__)
             self._n_executions += 1
             try:
-                maybe_coro = self._callback()
+                maybe_coro = self._callback(*([Task._app] if self._pass_app else []))
                 if inspect.iscoroutine(maybe_coro):
                     await maybe_coro
                 self._consecutive_failures = 0
@@ -339,6 +346,7 @@ def task(
     auto_start: bool = False,
     max_consecutive_failures: int = 3,
     max_executions: t.Optional[int] = None,
+    pass_app: bool = False,
     cls: t.Type[Task] = Task,
 ) -> t.Callable[[TaskCallbackT], Task]:
     ...
@@ -352,6 +360,7 @@ def task(
     auto_start: bool = False,
     max_consecutive_failures: int = 3,
     max_executions: t.Optional[int] = None,
+    pass_app: bool = False,
     cls: t.Type[Task] = Task,
 ) -> t.Callable[[TaskCallbackT], Task]:
     ...
@@ -369,6 +378,7 @@ def task(
     auto_start: bool = False,
     max_consecutive_failures: int = 3,
     max_executions: t.Optional[int] = None,
+    pass_app: bool = False,
     cls: t.Type[Task] = Task,
 ) -> t.Callable[[TaskCallbackT], Task]:
     ...
@@ -385,6 +395,7 @@ def task(
     auto_start: bool = False,
     max_consecutive_failures: int = 3,
     max_executions: t.Optional[int] = None,
+    pass_app: bool = False,
     cls: t.Type[Task] = Task,
 ) -> t.Callable[[TaskCallbackT], Task]:
     """
@@ -406,6 +417,8 @@ def task(
             before the task's execution is cancelled. Defaults to ``3``, minimum ``1``.
         max_executions (Optional[:obj:`int`]): The maximum number of times that the task will run. If ``None``, the
             task will run indefinitely.
+        pass_app (:obj:`bool`): Whether the :obj:`lightbulb.app.BotApp` instance should be passed into the
+            task on execution. Defaults to ``False``.
         cls (Type[:obj:`~Task`]): Task class to use.
     """
 
@@ -420,13 +433,15 @@ def task(
                 (trigger or triggers.UniformTrigger)(s + (m * 60) + (h * 3600) + (d * 86400)),
                 auto_start,
                 max(max_consecutive_failures, 1),
+                max_executions,
+                pass_app,
             )
 
         if trigger is None:
             raise ValueError("Interval values were not provided and no trigger was passed")
 
         assert isinstance(trigger, triggers.Trigger)
-        return cls(func, trigger, auto_start, max(max_consecutive_failures, 1), n_iterations)
+        return cls(func, trigger, auto_start, max(max_consecutive_failures, 1), max_executions, pass_app)
 
     return decorate
 

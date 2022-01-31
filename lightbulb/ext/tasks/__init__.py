@@ -118,6 +118,7 @@ class Task(_BindableObjectWithCallback):
         "_error_handler",
         "_consecutive_failures",
         "_max_consecutive_failures",
+        "_max_executions",
         "_n_executions",
     )
     _app: t.Optional[lightbulb.BotApp] = None
@@ -126,7 +127,12 @@ class Task(_BindableObjectWithCallback):
     _tasks: t.List[Task] = []
 
     def __init__(
-        self, callback: TaskCallbackT, trigger: triggers.Trigger, auto_start: bool, max_consecutive_failures: int
+        self,
+        callback: TaskCallbackT,
+        trigger: triggers.Trigger,
+        auto_start: bool,
+        max_consecutive_failures: int,
+        max_executions: t.Optional[int],
     ) -> None:
         super().__init__(callback)
         self._trigger: triggers.Trigger = trigger
@@ -137,6 +143,7 @@ class Task(_BindableObjectWithCallback):
         ] = None
         self._max_consecutive_failures: int = max_consecutive_failures
         self._consecutive_failures: int = 0
+        self._max_executions: t.Optional[int] = max_executions
         self._n_executions: int = 0
 
         if auto_start:
@@ -178,6 +185,9 @@ class Task(_BindableObjectWithCallback):
 
     async def _loop(self) -> None:
         while not self._stopped:
+            if self._max_executions is not None and self._n_executions >= self._max_executions:
+                break
+
             _LOGGER.debug("Running task %r", self.__name__)
             self._n_executions += 1
             try:
@@ -328,6 +338,7 @@ def task(
     d: float = 0,
     auto_start: bool = False,
     max_consecutive_failures: int = 3,
+    max_executions: t.Optional[int] = None,
     cls: t.Type[Task] = Task,
 ) -> t.Callable[[TaskCallbackT], Task]:
     ...
@@ -340,6 +351,7 @@ def task(
     *,
     auto_start: bool = False,
     max_consecutive_failures: int = 3,
+    max_executions: t.Optional[int] = None,
     cls: t.Type[Task] = Task,
 ) -> t.Callable[[TaskCallbackT], Task]:
     ...
@@ -356,6 +368,7 @@ def task(
     d: float = 0,
     auto_start: bool = False,
     max_consecutive_failures: int = 3,
+    max_executions: t.Optional[int] = None,
     cls: t.Type[Task] = Task,
 ) -> t.Callable[[TaskCallbackT], Task]:
     ...
@@ -371,6 +384,7 @@ def task(
     d: float = 0,
     auto_start: bool = False,
     max_consecutive_failures: int = 3,
+    max_executions: t.Optional[int] = None,
     cls: t.Type[Task] = Task,
 ) -> t.Callable[[TaskCallbackT], Task]:
     """
@@ -390,6 +404,8 @@ def task(
             :meth:`~Task.start` will have to be called manually in order to start the task's execution.
         max_consecutive_failures (:obj:`int`): The number of consecutive task failures that will be ignored
             before the task's execution is cancelled. Defaults to ``3``, minimum ``1``.
+        max_executions (Optional[:obj:`int`]): The maximum number of times that the task will run. If ``None``, the
+            task will run indefinitely.
         cls (Type[:obj:`~Task`]): Task class to use.
     """
 
@@ -410,7 +426,7 @@ def task(
             raise ValueError("Interval values were not provided and no trigger was passed")
 
         assert isinstance(trigger, triggers.Trigger)
-        return cls(func, trigger, auto_start, max(max_consecutive_failures, 1))
+        return cls(func, trigger, auto_start, max(max_consecutive_failures, 1), n_iterations)
 
     return decorate
 

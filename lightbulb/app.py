@@ -507,7 +507,7 @@ class BotApp(hikari.GatewayBot):
             del old
 
     def load_extensions_from(
-        self, *paths: t.Union[str, pathlib.Path], recursive: bool = False, must_exist: bool = False
+        self, *paths: t.Union[str, pathlib.Path], recursive: bool = False, must_exist: bool = True
     ) -> None:
         """
         Load all external extensions from the given directories. Files that begin with an underscore ( _ ) are ignored.
@@ -523,7 +523,7 @@ class BotApp(hikari.GatewayBot):
             recursive (:obj:`bool`): Whether to search the directories recursively. Defaults to False.
             must_exist (:obj:`bool`): Whether all directories must exist before extensions can be loaded. If this is
                 False and a directory does not exist, the directory will be ignored. If this is True, a
-                :obj:`FileNotFoundError` is thrown if any directory does not exist. Defaults to False.
+                :obj:`FileNotFoundError` is thrown if any directory does not exist. Defaults to True.
 
         Returns:
             ``None``
@@ -534,6 +534,7 @@ class BotApp(hikari.GatewayBot):
             :obj:`~.errors.ExtensionNotFound`: If the extension to be loaded does not exist.
             :obj:`FileNotFoundError`: If any directory to load extensions from does not exist and ``must_exist``
                 is True.
+            :obj:`ValueError`: If the path provided is not relative to the current working directory.
         """
         if len(paths) > 1 or not paths:
             for path_ in paths:
@@ -545,17 +546,20 @@ class BotApp(hikari.GatewayBot):
         if isinstance(path, str):
             path = pathlib.Path(path)
 
+        try:
+            path = path.resolve().relative_to(pathlib.Path.cwd())
+        except ValueError:
+            raise ValueError(f"'{path}' must be relative to the working directory") from None
+
         if not path.is_dir():
             if must_exist:
-                raise FileNotFoundError(f"{path} is not an existing directory")
+                raise FileNotFoundError(f"'{path}' is not an existing directory")
             return
 
-        if not path.is_absolute():
-            path = path.resolve()
-
-        cwd_len = len(f"{pathlib.Path.cwd()}/")
-        for ext in path.glob(("**/" if recursive else "") + "[!_]*.py"):
-            self.load_extensions(f"{ext}"[cwd_len:-3].replace(os.sep, "."))
+        glob = path.rglob if recursive else path.glob
+        for ext_path in glob("[!_]*.py"):
+            ext = str(ext_path.with_suffix("")).replace(os.sep, ".")
+            self.load_extensions(ext)
 
     async def fetch_owner_ids(self) -> t.Sequence[hikari.SnowflakeishOr[int]]:
         """

@@ -33,7 +33,6 @@ import typing as t
 from importlib import util
 
 import hikari
-from hikari.internal import ux
 from multidict import CIMultiDict
 
 from lightbulb import checks
@@ -382,9 +381,8 @@ class BotApp(hikari.GatewayBot):
                 return APPLICATION_COMMANDS_EVENTS_MAPPING[k]
         raise TypeError("Application command type not recognised")
 
-    @staticmethod
-    def print_banner(banner: t.Optional[str], allow_color: bool, force_color: bool) -> None:
-        ux.print_banner(banner, allow_color, force_color)
+    def print_banner(self, banner: t.Optional[str], allow_color: bool, force_color: bool) -> None:
+        super().print_banner(banner, allow_color, force_color)
         if banner == "hikari":
             sys.stdout.write("Thank you for using lightbulb!\n")
 
@@ -951,7 +949,8 @@ class BotApp(hikari.GatewayBot):
             ctx._parser = (ctx.command.parser or parser.Parser)(ctx, args)
         return ctx
 
-    async def process_prefix_commands(self, context: context_.prefix.PrefixContext) -> None:
+    @staticmethod
+    async def process_prefix_commands(context: context_.prefix.PrefixContext) -> None:
         """
         Invokes the appropriate command for the given context.
 

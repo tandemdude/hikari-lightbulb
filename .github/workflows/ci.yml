@@ -3,15 +3,9 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  test:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.8", "3.9", "3.10"]
-
-    name: Test
-    runs-on: ${{ matrix.os }}
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -20,12 +14,27 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.8"
 
       - name: Run black
         run: |
           pip install nox
           nox -s format
 
+  type-check:
+    name: Type-check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+
       - name: Run mypy
-        run: nox -s mypy
+        run: |
+          pip install nox
+          nox -s mypy

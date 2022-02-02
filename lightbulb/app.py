@@ -855,7 +855,7 @@ class BotApp(hikari.GatewayBot):
         """
         plugin: t.Optional[t.Union[plugins_.Plugin, str]] = plugin_or_name
         if isinstance(plugin, str):
-            plugin = self._plugins.pop(plugin, None)
+            plugin = self.get_plugin(plugin)
 
         if plugin is None:
             return
@@ -873,6 +873,7 @@ class BotApp(hikari.GatewayBot):
             if inspect.iscoroutine(maybe_coro):
                 asyncio.create_task(maybe_coro)
 
+        self._plugins.pop(plugin.name, None)
         _LOGGER.debug("Plugin removed %r", plugin.name)
 
     async def purge_application_commands(self, *guild_ids: hikari.Snowflakeish, global_commands: bool = False) -> None:

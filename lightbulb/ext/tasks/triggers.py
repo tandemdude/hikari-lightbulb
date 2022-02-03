@@ -111,7 +111,7 @@ if t.TYPE_CHECKING or _CRON_AVAILABLE:
         def __init__(self, /, **kwargs: _CT) -> None:
             ...
 
-        def __init__(self, crontab: t.Optional[str] = None, /, **kwargs: _CT) -> None:
+        def __init__(self, crontab: t.Optional[str] = None, **kwargs: _CT) -> None:
             if not crontab:
                 crontab = f"{kwargs.get('minute', '*')} {kwargs.get('hour', '*')} {kwargs.get('day', '*')} {kwargs.get('month', '*')} {kwargs.get('day_of_week', '*')} {kwargs.get('second', 0)}"
 
@@ -128,7 +128,7 @@ else:
     class CronTrigger(Trigger):
         __slots__ = ()
 
-        def __init__(self, _: str) -> None:
+        def __init__(self, _: str, **__: _CT) -> None:
             raise ModuleNotFoundError(
                 "'CronTrigger' is not available. Install lightbulb with option '[crontrigger]' to enable"
             )

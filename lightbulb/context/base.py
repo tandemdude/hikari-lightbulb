@@ -501,7 +501,7 @@ class ApplicationContext(Context, abc.ABC):
             self._deferred = False
 
             if delete_after is not None:
-                asyncio.create_task(_cleanup(delete_after, proxy))
+                self.app.create_task(_cleanup(delete_after, proxy))
 
             return self._responses[-1]
 
@@ -542,6 +542,6 @@ class ApplicationContext(Context, abc.ABC):
             self._deferred = True
 
         if delete_after is not None:
-            asyncio.create_task(_cleanup(delete_after, proxy))
+            self.app.create_task(_cleanup(delete_after, proxy))
 
         return self._responses[-1]

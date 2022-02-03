@@ -148,7 +148,7 @@ class PrefixContext(base.Context):
                 except hikari.NotFoundError:
                     pass
 
-            asyncio.create_task(_cleanup(delete_after))
+            self.app.create_task(_cleanup(delete_after))
 
         self._responses.append(base.ResponseProxy(msg))
         self._responded = True

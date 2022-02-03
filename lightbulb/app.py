@@ -191,6 +191,7 @@ class BotApp(hikari.GatewayBot):
         "_help_command",
         "_delete_unbound_commands",
         "_case_insensitive_prefix_commands",
+        "_running_tasks",
     )
 
     def __init__(
@@ -207,7 +208,7 @@ class BotApp(hikari.GatewayBot):
         **kwargs: t.Any,
     ) -> None:
         super().__init__(token, **kwargs)
-        # The prefix command handler expects an iterable to be returned from the get_prefix function
+        # The prefix command handler expects an iterable to be returned from the get_prefix function,
         # so we have to wrap a single string prefix in a list here.
         if prefix is not None:
             prefix = [prefix] if isinstance(prefix, str) else prefix
@@ -271,11 +272,35 @@ class BotApp(hikari.GatewayBot):
 
             self.command(__default_help)
 
+        # We need to store created tasks internally to ensure that they do not
+        # get destroyed mid-execution. See asyncio.create_task documentation for more.
+        self._running_tasks: t.List[asyncio.Task[t.Any]] = []
+
         if prefix is not None:
             self.subscribe(hikari.MessageCreateEvent, self.handle_message_create_for_prefix_commands)
         self.subscribe(hikari.StartedEvent, self._manage_application_commands)
         self.subscribe(hikari.InteractionCreateEvent, self.handle_interaction_create_for_application_commands)
         self.subscribe(hikari.InteractionCreateEvent, self.handle_interaction_create_for_autocomplete)
+
+    def create_task(self, coro: t.Awaitable[t.Any], *, name: t.Optional[str] = None) -> asyncio.Task[t.Any]:
+        """
+        Wrap the given awaitable into an :obj:`asyncio.Task` and schedule its execution. This
+        method functions the same as :meth:`asyncio.create_task`, but keeps a reference to the task
+        alive until execution is completed to ensure the task is not destroyed mid-execution.
+
+        Args:
+            coro (Awaitable[Any]): Coroutine to wrap into a task.
+
+        Keyword Args:
+            name (Optional[:obj:`str`]): The name of the task. Not required, defaults to ``None``.
+
+        Returns:
+            :obj:`asyncio.Task`: Created task object.
+        """
+        task = asyncio.create_task(coro, name=name)
+        self._running_tasks.append(task)
+        task.add_done_callback(lambda task_: self._running_tasks.remove(task_))
+        return task
 
     @property
     def help_command(self) -> t.Optional[help_command_.BaseHelpCommand]:
@@ -871,7 +896,7 @@ class BotApp(hikari.GatewayBot):
         if plugin._remove_hook is not None:
             maybe_coro = plugin._remove_hook()
             if inspect.iscoroutine(maybe_coro):
-                asyncio.create_task(maybe_coro)
+                self.create_task(maybe_coro)
 
         self._plugins.pop(plugin.name, None)
         _LOGGER.debug("Plugin removed %r", plugin.name)

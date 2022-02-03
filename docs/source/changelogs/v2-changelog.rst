@@ -43,6 +43,8 @@ Version 2.2.0
 
 - Add typing overloads to ``Context.respond``.
 
+- Add :obj:`lightbulb.app.BotApp.create_task`.
+
 Version 2.1.3
 =============
 

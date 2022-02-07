@@ -212,7 +212,9 @@ class Parser(BaseParser):
         except Exception as e:
             _LOGGER.debug("Failed to convert", exc_info=e)
             if option.required:
-                raise errors.ConverterFailure(f"Conversion failed for option {option.name!r}", opt=option) from e
+                raise errors.ConverterFailure(
+                    f"Conversion failed for option {option.name!r}", opt=option, raw=raw
+                ) from e
 
             self.ctx._options[option.name] = option.default
             _LOGGER.debug("Option has a default value, shifting to the next parameter")

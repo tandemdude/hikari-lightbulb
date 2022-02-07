@@ -147,12 +147,14 @@ class ConverterFailure(LightbulbError):
     Error raised when option type conversion fails while prefix command arguments are being parsed.
     """
 
-    __slots__ = ("option",)
+    __slots__ = ("option", "raw_value")
 
-    def __init__(self, *args: t.Any, opt: commands.base.OptionLike) -> None:
+    def __init__(self, *args: t.Any, opt: commands.base.OptionLike, raw: str) -> None:
         super().__init__(*args)
         self.option: commands.base.OptionLike = opt
         """The option that could not be converted."""
+        self.raw_value: str = raw
+        """The value that could not be converted."""
 
 
 class NotEnoughArguments(LightbulbError):

@@ -532,7 +532,8 @@ class ApplicationContext(Context, abc.ABC):
         proxy = ResponseProxy(
             fetcher=self._interaction.fetch_initial_response,
             editor=functools.partial(_editor, inter=self._interaction)
-            if hikari.MessageFlag.EPHEMERAL in kwargs.get("flags", hikari.MessageFlag.NONE)
+            if hikari.MessageFlag.EPHEMERAL & kwargs.get("flags", hikari.MessageFlag.NONE)
+            == hikari.MessageFlag.EPHEMERAL
             else None,
         )
         self._responses.append(proxy)

@@ -594,6 +594,7 @@ class ApplicationCommand(Command, abc.ABC):
         else:
             created_cmd = await self.app.rest.create_context_menu_command(
                 self.app.application,
+                type=cmd_type,
                 **kwargs,
             )
 

@@ -483,6 +483,10 @@ class ApplicationContext(Context, abc.ABC):
             except hikari.NotFoundError:
                 pass
 
+        includes_ephemeral: t.Callable[[t.Union[hikari.MessageFlag, int],], bool] = (
+            lambda flags: (hikari.MessageFlag.EPHEMERAL & flags) == hikari.MessageFlag.EPHEMERAL
+        )
+
         kwargs.pop("reply", None)
         kwargs.pop("mentions_reply", None)
         kwargs.pop("nonce", None)
@@ -495,10 +499,7 @@ class ApplicationContext(Context, abc.ABC):
             if args and isinstance(args[0], hikari.ResponseType):
                 args = args[1:]
 
-            editable = (
-                hikari.MessageFlag.EPHEMERAL & kwargs.get("flags", hikari.MessageFlag.NONE)
-                != hikari.MessageFlag.EPHEMERAL
-            )
+            editable = not includes_ephemeral(kwargs.get("flags", hikari.MessageFlag.NONE))
             proxy = ResponseProxy(await self._interaction.execute(*args, **kwargs), editable=editable)
             self._responses.append(proxy)
             self._deferred = False
@@ -532,8 +533,7 @@ class ApplicationContext(Context, abc.ABC):
         proxy = ResponseProxy(
             fetcher=self._interaction.fetch_initial_response,
             editor=functools.partial(_editor, inter=self._interaction)
-            if hikari.MessageFlag.EPHEMERAL & kwargs.get("flags", hikari.MessageFlag.NONE)
-            == hikari.MessageFlag.EPHEMERAL
+            if includes_ephemeral(kwargs.get("flags", hikari.MessageFlag.NONE))
             else None,
         )
         self._responses.append(proxy)

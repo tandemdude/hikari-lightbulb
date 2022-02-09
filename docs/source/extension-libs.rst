@@ -104,4 +104,74 @@ Declaring commands:
 
 ----
 
+lightbulb-ext-tungsten
+======================
+
+An extension library written by Christian-Tarello(Villager#5118) which provides an easier structure for building, editing and running
+button groups and select menus. 
+
+- Repository: `GitHub <https://github.com/Christian-Tarello/lightbulb-ext-tungsten>`_
+
+- Documentation: `Readthedocs <https://lightbulb-tungsten.readthedocs.io/en/latest/>`_
+
+Quick Examples
+--------------
+
+Making and running a button group:
+
+.. code-block:: python
+
+    import hikari
+
+    import lightbulb
+    from lightbulb.ext.tungsten import tungsten
+
+    class ExampleButtons(tungsten.Components):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.button_group = self.create_button_group()
+            
+            
+        def create_button_group(self):
+            button_states = {
+                    0: tungsten.ButtonState(label = "RED", style=hikari.ButtonStyle.DANGER, emoji="💣"),
+                    1: tungsten.ButtonState(label="GREY", style=hikari.ButtonStyle.SECONDARY),
+                    2: tungsten.ButtonState(label="GREEN", style=hikari.ButtonStyle.SUCCESS, emoji="👍"),
+                    3: tungsten.ButtonState(label="BLURPLE", style=hikari.ButtonStyle.PRIMARY)
+                }
+            button_rows = [
+                    [
+                    tungsten.Button(state=0, button_states=button_states),
+                    tungsten.Button(state=1, button_states=button_states),
+                    tungsten.Button(state=2, button_states=button_states),
+                    tungsten.Button(state=3, button_states=button_states),
+                    ]
+                ]
+            return tungsten.ButtonGroup(button_rows)
+        
+        async def button_callback(
+            self, 
+            button: tungsten.Button, 
+            x: int, 
+            y: int, 
+            interaction: hikari.ComponentInteraction
+            ) -> None:
+            state_cycle = {
+                0:1,
+                1:2,
+                2:3,
+                3:0,
+            }
+            self.button_group.edit_button(x, y, state = state_cycle[button.state])
+            await self.edit_msg(f"{button.style.name}", components = self.build())
+
+    @bot.command
+    @lightbulb.command("tungsten", "Test the tungsten extension library.")
+    @lightbulb.implements(lightbulb.PrefixCommand, lightbulb.SlashCommand)
+    async def tungsten_example_comand(ctx: lightbulb.Context) -> None:
+        buttons = ExampleButtons(ctx)
+        resp = await ctx.respond(f"Tungsten", components = buttons.build())
+        await buttons.run(resp)
+----
+
 More coming soon (hopefully).

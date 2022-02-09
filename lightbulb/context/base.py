@@ -499,8 +499,10 @@ class ApplicationContext(Context, abc.ABC):
             if args and isinstance(args[0], hikari.ResponseType):
                 args = args[1:]
 
-            editable = not includes_ephemeral(kwargs.get("flags", hikari.MessageFlag.NONE))
-            proxy = ResponseProxy(await self._interaction.execute(*args, **kwargs), editable=editable)
+            proxy = ResponseProxy(
+                await self._interaction.execute(*args, **kwargs),
+                editable=not includes_ephemeral(kwargs.get("flags", hikari.MessageFlag.NONE)),
+            )
             self._responses.append(proxy)
             self._deferred = False
 

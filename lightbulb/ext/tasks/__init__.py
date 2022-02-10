@@ -460,4 +460,5 @@ def load(app: lightbulb.BotApp) -> None:
     """
     Task._app = app
     app.subscribe(hikari.StartingEvent, Task._app_starting_listener)
+    app.subscribe(hikari.StartedEvent, Task._app_started_listener)
     app.subscribe(hikari.StoppingEvent, Task._app_stopping_listener)

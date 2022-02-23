@@ -173,8 +173,15 @@ class NotEnoughArguments(LightbulbError):
 class CheckFailure(LightbulbError):
     """
     Error raised when a check fails before command invocation. If another error caused this
-    to be raised then you can access it using ``CheckFailure.__cause__``.
+    to be raised then you can access it using ``CheckFailure.__cause__``, or in the case of
+    multiple checks failing, via ``CheckFailure.causes``.
     """
+
+    __slots__ = ("causes",)
+
+    def __init__(self, *args: t.Any, causes: t.Optional[t.Sequence[Exception]] = None) -> None:
+        super().__init__(*args)
+        self.failed_checks: t.Optional[t.Sequence[Exception]] = causes
 
 
 class InsufficientCache(CheckFailure):

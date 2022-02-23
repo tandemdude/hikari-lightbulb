@@ -88,14 +88,16 @@ class _ExclusiveCheck:
                 return True
             except Exception as ex:
                 if isinstance(ex, errors.CheckFailure) and not ex.__cause__:
-                    ex = errors.CheckFailure(str(ex))
+                    ex = errors.CheckFailure(str(ex), causes=[ex])
                     ex.__cause__ = ex
                 failed.append(ex)
 
         if failed:
             if len(failed) == 1:
                 raise failed[0]
-            raise errors.CheckFailure("None of the exclusive checks passed: " + ", ".join(str(ex) for ex in failed))
+            raise errors.CheckFailure(
+                "None of the exclusive checks passed: " + ", ".join(str(ex) for ex in failed), causes=failed
+            )
         return True
 
     def __call__(self, context: context_.base.Context) -> t.Coroutine[t.Any, t.Any, bool]:

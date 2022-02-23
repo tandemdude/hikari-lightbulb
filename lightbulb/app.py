@@ -382,7 +382,7 @@ class BotApp(hikari.GatewayBot):
             match = _APPLICATION_CMD_ERROR_REGEX.search(error_msg)
             guild_id = "unknown" if match is None else match.group(1)
             raise errors.ApplicationCommandCreationFailed(
-                f"Application command creation failed for guild {guild_id!r}. Is your bot in the guild and was it invited with the 'application.commands' scope?"
+                f"Application command creation failed for guild {guild_id!r}. Is your bot in the guild and was it invited with the 'applications.commands' scope?"
             ) from exc
         finally:
             await self.dispatch(events.LightbulbStartedEvent(app=self))

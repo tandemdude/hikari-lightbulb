@@ -527,7 +527,9 @@ class Command(abc.ABC):
                 failed_checks.append(error)
 
         if len(failed_checks) > 1:
-            raise errors.CheckFailure("Multiple checks failed: " + ", ".join(str(ex) for ex in failed_checks))
+            raise errors.CheckFailure(
+                "Multiple checks failed: " + ", ".join(str(ex) for ex in failed_checks), causes=failed_checks
+            )
         elif failed_checks:
             raise failed_checks[0]
 

@@ -181,7 +181,7 @@ class CheckFailure(LightbulbError):
 
     def __init__(self, *args: t.Any, causes: t.Optional[t.Sequence[Exception]] = None) -> None:
         super().__init__(*args)
-        self.failed_checks: t.Optional[t.Sequence[Exception]] = causes
+        self.causes: t.Sequence[Exception] = causes or []
 
 
 class InsufficientCache(CheckFailure):

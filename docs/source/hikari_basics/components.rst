@@ -54,7 +54,7 @@ Handling Component Interactions
 -------------------------------
 
 When a component is interacted with, discord sends an
-`InteractionCreateEvent<https://www.hikari-py.dev/hikari/events/interaction_events.html#hikari.events.interaction_events.InteractionCreateEvent>`_
+`InteractionCreateEvent <https://www.hikari-py.dev/hikari/events/interaction_events.html#hikari.events.interaction_events.InteractionCreateEvent>`_
 either through the gateway, or to your interaction server (if one has been set up). The type of ``event.interaction``
 will **always** be
 `ComponentInteraction <https://www.hikari-py.dev/hikari/interactions/component_interactions.html#hikari.interactions.component_interactions.ComponentInteraction>`_

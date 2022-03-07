@@ -58,6 +58,12 @@ AutocompleteCallbackT = t.TypeVar(
     ],
 )
 
+
+class CommandCallbackT(t.Protocol):
+    def __call__(self, context: context_.base.Context, **kwargs: t.Any) -> t.Coroutine[t.Any, t.Any, None]:
+        ...
+
+
 OPTION_TYPE_MAPPING = {
     str: hikari.OptionType.STRING,
     int: hikari.OptionType.INTEGER,
@@ -79,6 +85,7 @@ OPTION_TYPE_MAPPING = {
     hikari.Color: hikari.OptionType.STRING,
     hikari.Snowflake: hikari.OptionType.STRING,
     datetime.datetime: hikari.OptionType.STRING,
+    hikari.Attachment: hikari.OptionType.ATTACHMENT,
 }
 OPTION_NAME_REGEX: re.Pattern[str] = re.compile(r"^[\w-]{1,32}$", re.U)
 
@@ -222,7 +229,7 @@ class OptionLike:
 class CommandLike:
     """Generic dataclass representing a command. This can be converted into any command object."""
 
-    callback: t.Callable[[context_.base.Context], t.Coroutine[t.Any, t.Any, None]]
+    callback: CommandCallbackT
     """The callback function for the command."""
     name: str
     """The name of the command."""
@@ -258,6 +265,8 @@ class CommandLike:
     """Whether or not the command should be hidden from the help command."""
     inherit_checks: bool = False
     """Whether or not the command should inherit checks from the parent group."""
+    pass_options: bool = False
+    """Whether or not the command will have its options passed as keyword arguments when invoked."""
     _autocomplete_callbacks: t.Dict[
         str,
         t.Callable[
@@ -385,6 +394,7 @@ class Command(abc.ABC):
         "check_exempt",
         "hidden",
         "inherit_checks",
+        "pass_options",
     )
 
     def __init__(self, app: app_.BotApp, initialiser: CommandLike) -> None:
@@ -393,7 +403,7 @@ class Command(abc.ABC):
         self._plugin: t.Optional[plugins.Plugin] = None
         self.app: app_.BotApp = app
         """The ``BotApp`` instance the command is registered to."""
-        self.callback: t.Callable[[context_.base.Context], t.Coroutine[t.Any, t.Any, None]] = initialiser.callback
+        self.callback: CommandCallbackT = initialiser.callback
         """The callback function for the command."""
         self.name: str = initialiser.name
         """The name of the command."""
@@ -427,12 +437,17 @@ class Command(abc.ABC):
         """Whether or not the command should be hidden from the help command."""
         self.inherit_checks: bool = initialiser.inherit_checks
         """Whether or not the command should inherit checks from the parent group."""
+        self.pass_options: bool = initialiser.pass_options
+        """Whether or not the command will have its options passed as keyword arguments when invoked."""
 
     def __hash__(self) -> int:
         return hash(self.name)
 
-    async def __call__(self, context: context_.base.Context) -> None:
-        return await self.callback(context)
+    async def __call__(self, context: context_.base.Context, **kwargs: t.Any) -> None:
+        if self.pass_options:
+            for opt in context.raw_options:
+                kwargs.setdefault(opt, context.raw_options[opt])
+        return await self.callback(context, **kwargs)
 
     def _validate_attributes(self) -> None:
         pass

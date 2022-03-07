@@ -93,6 +93,9 @@ command types that can be created.
 - ``inherit_checks`` (optional) - Whether or not the command should inherit checks from the parent group. Naturally, this will
   only affect subgroups and subcommands. Defaults to ``False``.
 
+- ``pass_options`` (optional) - Whether or not the command will have its options passed as keyword arguments
+  when invoked. Defaults to ``False``.
+
 **For example:**
 
 .. code-block:: python
@@ -218,6 +221,8 @@ Acceptable primitives: ``str``, ``int``, ``float``
 
 - ``datetime.datetime`` - :obj:`lightbulb.converters.special.TimestampConverter`
 
+- ``hikari.Attachment`` - No converter, attachment will be pulled from the message attachments.
+
 **Slash command option type mapping:**
 
 - ``str`` - ``hikari.OptionType.STRING``
@@ -259,6 +264,8 @@ Acceptable primitives: ``str``, ``int``, ``float``
 - ``hikari.Snowflake`` - ``hikari.OptionType.STRING``
 
 - ``datetime.datetime`` - ``hikari.OptionType.STRING``
+
+- ``hikari.Attachment`` - ``hikari.OptionType.ATTACHMENT``
 
 ----
 

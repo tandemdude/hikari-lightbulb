@@ -63,6 +63,9 @@ class SlashContext(base.ApplicationContext):
             elif opt.type is hikari.OptionType.ROLE and self.resolved is not None:
                 val = t.cast(hikari.Snowflake, opt.value)
                 self._options[opt.name] = self.resolved.roles.get(val, opt.value)
+            elif opt.type is hikari.OptionType.ATTACHMENT and self.resolved is not None:
+                val = t.cast(hikari.Snowflake, int(opt.value) if isinstance(opt.value, str) else opt.value)
+                self._options[opt.name] = self.resolved.attachments.get(val, opt.value)
             else:
                 self._options[opt.name] = opt.value
 

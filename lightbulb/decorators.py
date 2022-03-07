@@ -87,6 +87,7 @@ def command(
         hidden (:obj:`bool`): Whether or not to hide the command from the help command. Defaults to ``False``.
         inherit_checks (:obj:`bool`): Whether or not the command should inherit checks from the parent group. Only
             affects subcommands. Defaults to ``False``.
+        pass_options (:obj:`bool`): Whether the command will have its options passed as keyword arguments when invoked.
         cls (Type[:obj:`~.commands.base.CommandLike`]): ``CommandLike`` class to instantiate from this decorator.
             Defaults to :obj:`~.commands.base.CommandLike`.
     """

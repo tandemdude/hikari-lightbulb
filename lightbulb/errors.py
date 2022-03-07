@@ -26,6 +26,7 @@ __all__ = [
     "CommandIsOnCooldown",
     "ConverterFailure",
     "NotEnoughArguments",
+    "MissingRequiredAttachmentArgument",
     "CheckFailure",
     "InsufficientCache",
     "NotOwner",
@@ -168,6 +169,19 @@ class NotEnoughArguments(LightbulbError):
         super().__init__(*args)
         self.missing_options: t.Sequence[commands.base.OptionLike] = missing
         """The missing options from the command invocation."""
+
+
+class MissingRequiredAttachmentArgument(LightbulbError):
+    """
+    Error raised when a prefix command expects an attachment but none were supplied with the invocation.
+    """
+
+    __slots__ = ("missing_option",)
+
+    def __init__(self, *args: t.Any, missing: commands.base.OptionLike) -> None:
+        super().__init__(*args)
+        self.missing_option: commands.base.OptionLike = missing
+        """The missing attachment option from the command invocation."""
 
 
 class CheckFailure(LightbulbError):

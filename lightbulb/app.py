@@ -407,9 +407,14 @@ class BotApp(hikari.GatewayBot):
                 return APPLICATION_COMMANDS_EVENTS_MAPPING[k]
         raise TypeError("Application command type not recognised")
 
-    @staticmethod
-    def print_banner(banner: t.Optional[str], allow_color: bool, force_color: bool) -> None:
-        ux.print_banner(banner, allow_color, force_color)
+    def print_banner(  # type: ignore[override]
+        self,
+        banner: t.Optional[str],
+        allow_color: bool,
+        force_color: bool,
+        extra_args: t.Optional[t.Dict[str, str]] = None,
+    ) -> None:
+        super().print_banner(banner, allow_color, force_color)
         if banner == "hikari":
             sys.stdout.write("Thank you for using lightbulb!\n")
 
@@ -1220,7 +1225,7 @@ class BotApp(hikari.GatewayBot):
 
             while current.type in (hikari.OptionType.SUB_COMMAND, hikari.OptionType.SUB_COMMAND_GROUP):
                 assert current.options is not None
-                current = get_focused(current.options)  # type: ignore[arg-type]
+                current = get_focused(current.options)
                 name.append(current.name)
 
             return current, name

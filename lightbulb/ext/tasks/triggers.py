@@ -108,7 +108,9 @@ if t.TYPE_CHECKING or _CRON_AVAILABLE:
             ...
 
         @t.overload
-        def __init__(self, /, **kwargs: _CT) -> None:
+        def __init__(
+            self, /, *, minute: _CT = "*", hour: _CT = "*", month: _CT = "*", day_of_week: _CT = "*", second: _CT = 0
+        ) -> None:
             ...
 
         def __init__(self, crontab: t.Optional[str] = None, /, **kwargs: _CT) -> None:

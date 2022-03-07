@@ -184,7 +184,16 @@ class Parser(BaseParser):
         return None
 
     async def inject_args_to_context(self) -> None:
+        attachments = list(self.ctx.attachments)
         while option := self.get_option():
+            if option.arg_type in (hikari.OptionType.ATTACHMENT, hikari.Attachment):
+                if not attachments:
+                    raise errors.MissingRequiredAttachmentArgument(
+                        "Command invocation expects an attachment but none were found.", missing=option
+                    )
+                self.ctx._options[option.name] = attachments.pop(0)
+                continue
+
             _LOGGER.debug("Getting arg for %s with type %s", option.name, option.arg_type)
 
             if not (

@@ -17,7 +17,16 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__ = ["implements", "command", "option", "add_checks", "check_exempt", "add_cooldown", "set_help"]
+__all__ = [
+    "implements",
+    "command",
+    "option",
+    "add_checks",
+    "check_exempt",
+    "add_cooldown",
+    "set_help",
+    "set_max_concurrency",
+]
 
 import functools
 import inspect
@@ -25,13 +34,13 @@ import typing as t
 
 import hikari
 
+from lightbulb import buckets
 from lightbulb import commands
 from lightbulb import cooldowns
 
 if t.TYPE_CHECKING:
     from lightbulb import checks as checks_
     from lightbulb import context
-    from lightbulb import events
 
 T = t.TypeVar("T")
 CommandCallbackT = t.TypeVar("CommandCallbackT", bound=t.Callable[..., t.Coroutine[t.Any, t.Any, None]])
@@ -229,7 +238,7 @@ def check_exempt(
 
 @t.overload
 def add_cooldown(
-    length: float, uses: int, bucket: t.Type[cooldowns.Bucket]
+    length: float, uses: int, bucket: t.Type[buckets.Bucket]
 ) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
     ...
 
@@ -237,9 +246,7 @@ def add_cooldown(
 @t.overload
 def add_cooldown(
     *,
-    callback: t.Callable[
-        [context.base.Context], t.Union[cooldowns.Bucket, t.Coroutine[t.Any, t.Any, cooldowns.Bucket]]
-    ],
+    callback: t.Callable[[context.base.Context], t.Union[buckets.Bucket, t.Coroutine[t.Any, t.Any, buckets.Bucket]]],
 ) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
     ...
 
@@ -247,10 +254,10 @@ def add_cooldown(
 def add_cooldown(
     length: t.Optional[float] = None,
     uses: t.Optional[int] = None,
-    bucket: t.Optional[t.Type[cooldowns.Bucket]] = None,
+    bucket: t.Optional[t.Type[buckets.Bucket]] = None,
     *,
     callback: t.Optional[
-        t.Callable[[context.base.Context], t.Union[cooldowns.Bucket, t.Coroutine[t.Any, t.Any, cooldowns.Bucket]]]
+        t.Callable[[context.base.Context], t.Union[buckets.Bucket, t.Coroutine[t.Any, t.Any, buckets.Bucket]]]
     ] = None,
     cls: t.Type[cooldowns.CooldownManager] = cooldowns.CooldownManager,
 ) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
@@ -260,19 +267,19 @@ def add_cooldown(
     Args:
         length (:obj:`float`): The length in seconds of the cooldown timer.
         uses (:obj:`int`): The number of command invocations before the cooldown will be triggered.
-        bucket (Type[:obj:`~.cooldowns.Bucket`]): The bucket to use for cooldowns.
+        bucket (Type[:obj:`~.buckets.Bucket`]): The bucket to use for cooldowns.
 
     Keyword Args:
-        callback (Callable[[:obj:`~.context.base.Context], Union[:obj:`~.cooldowns.Bucket`, Coroutine[Any, Any, :obj:`~.cooldowns.Bucket`]]]): Callable
+        callback (Callable[[:obj:`~.context.base.Context], Union[:obj:`~.buckets.Bucket`, Coroutine[Any, Any, :obj:`~.buckets.Bucket`]]]): Callable
             that takes the context the command was invoked under and returns the appropriate bucket object to use for
             cooldowns in the context.
         cls (Type[:obj:`~.cooldowns.CooldownManager`]): The cooldown manager class to use. Defaults to
             :obj:`~.cooldowns.CooldownManager`.
     """
-    getter: t.Callable[[context.base.Context], t.Union[cooldowns.Bucket, t.Coroutine[t.Any, t.Any, cooldowns.Bucket]]]
+    getter: t.Callable[[context.base.Context], t.Union[buckets.Bucket, t.Coroutine[t.Any, t.Any, buckets.Bucket]]]
     if length is not None and uses is not None and bucket is not None:
 
-        def _get_bucket(_: context.base.Context, b: t.Type[cooldowns.Bucket], l: float, u: int) -> cooldowns.Bucket:
+        def _get_bucket(_: context.base.Context, b: t.Type[buckets.Bucket], l: float, u: int) -> buckets.Bucket:
             return b(l, u)
 
         getter = functools.partial(_get_bucket, b=bucket, l=length, u=uses)
@@ -329,6 +336,30 @@ def set_help(
             getter = text
 
         c_like.help_getter = getter
+        return c_like
+
+    return decorate
+
+
+def set_max_concurrency(
+    uses: int, bucket: t.Type[buckets.Bucket]
+) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
+    """
+    Second order decorator that defines the max concurrency limit for a command.
+
+    Args:
+        uses (:obj:`int`): The maximum number of uses of the command that can be executing
+            concurrently before a :obj:`~.errors.MaxConcurrencyLimitReached` will be raised upon invocation.
+        bucket (Type[:obj:`~.buckets.Bucket`]): Bucket that command max concurrency will be processed under.
+    """
+    if uses < 1 or not isinstance(uses, int):
+        raise ValueError("'uses' must be a positive integer")
+
+    def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
+        if not isinstance(c_like, commands.base.CommandLike):
+            raise SyntaxError("'set_max_concurrency' decorator must be above the 'command' decorator")
+        c_like.max_concurrency = (uses, bucket)
+
         return c_like
 
     return decorate

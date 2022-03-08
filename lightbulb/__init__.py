@@ -120,6 +120,7 @@ __all__ = [
     "bot_has_role_permissions",
     "bot_only",
     "check_exempt",
+    "buckets",
     "checks",
     "command",
     "commands",
@@ -145,12 +146,14 @@ __all__ = [
     "owner_only",
     "plugins",
     "set_help",
+    "set_max_concurrency",
     "utils",
     "webhook_only",
     "when_mentioned_or",
 ]
 
 from lightbulb import app
+from lightbulb import buckets
 from lightbulb import checks
 from lightbulb import commands
 from lightbulb import context
@@ -163,6 +166,7 @@ from lightbulb import help_command
 from lightbulb import plugins
 from lightbulb import utils
 from lightbulb.app import *
+from lightbulb.buckets import *
 from lightbulb.checks import *
 from lightbulb.commands import *
 from lightbulb.context import *

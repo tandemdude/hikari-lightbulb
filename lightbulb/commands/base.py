@@ -20,6 +20,7 @@ from __future__ import annotations
 __all__ = ["OptionModifier", "OptionLike", "CommandLike", "Command", "ApplicationCommand", "SubCommandTrait"]
 
 import abc
+import asyncio
 import collections
 import dataclasses
 import datetime
@@ -34,6 +35,7 @@ from lightbulb import errors
 
 if t.TYPE_CHECKING:
     from lightbulb import app as app_
+    from lightbulb import buckets
     from lightbulb import checks
     from lightbulb import context as context_
     from lightbulb import cooldowns
@@ -267,6 +269,8 @@ class CommandLike:
     """Whether or not the command should inherit checks from the parent group."""
     pass_options: bool = False
     """Whether or not the command will have its options passed as keyword arguments when invoked."""
+    max_concurrency: t.Optional[t.Tuple[int, t.Type[buckets.Bucket]]] = None
+    """The max concurrency rule for the command."""
     _autocomplete_callbacks: t.Dict[
         str,
         t.Callable[
@@ -395,6 +399,8 @@ class Command(abc.ABC):
         "hidden",
         "inherit_checks",
         "pass_options",
+        "max_concurrency",
+        "_max_concurrency_semaphores",
     )
 
     def __init__(self, app: app_.BotApp, initialiser: CommandLike) -> None:
@@ -439,6 +445,9 @@ class Command(abc.ABC):
         """Whether or not the command should inherit checks from the parent group."""
         self.pass_options: bool = initialiser.pass_options
         """Whether or not the command will have its options passed as keyword arguments when invoked."""
+        self.max_concurrency: t.Optional[t.Tuple[int, t.Type[buckets.Bucket]]] = initialiser.max_concurrency
+        """The max concurrency rule for the command."""
+        self._max_concurrency_semaphores: t.Dict[t.Hashable, asyncio.Semaphore] = {}
 
     def __hash__(self) -> int:
         return hash(self.name)
@@ -501,15 +510,42 @@ class Command(abc.ABC):
         """The command's text signature."""
         ...
 
-    async def invoke(self, context: context_.base.Context) -> None:
+    async def _evaluate_max_concurrency(self, context: context_.base.Context) -> None:
+        if self.max_concurrency is None:
+            return
+        bucket_hash = self.max_concurrency[1].extract_hash(context)
+        if bucket_hash not in self._max_concurrency_semaphores:
+            self._max_concurrency_semaphores[bucket_hash] = asyncio.Semaphore(self.max_concurrency[0])
+        if self._max_concurrency_semaphores[bucket_hash].locked():
+            assert context.invoked is not None
+            raise errors.MaxConcurrencyLimitReached(
+                f"Maximum concurrency limit for command '{context.invoked.qualname}' exceeded"
+            )
+        await self._max_concurrency_semaphores[bucket_hash].acquire()
+
+    def _release_max_concurrency(self, context: context_.base.Context) -> None:
+        if self.max_concurrency is None:
+            return
+
+        if sem := self._max_concurrency_semaphores.get(self.max_concurrency[1].extract_hash(context)):
+            sem.release()
+
+    async def invoke(self, context: context_.base.Context, **kwargs: t.Any) -> None:
         """
-        Invokes the command under the given context. All checks and cooldowns will be processed
+        Invokes the command under the given context. All checks, cooldowns and concurrency limits will be processed
         prior to invocation.
         """
         context._invoked = self
-        await self.evaluate_checks(context)
-        await self.evaluate_cooldowns(context)
-        await self(context)
+
+        await self._evaluate_max_concurrency(context)
+        try:
+            await self.evaluate_checks(context)
+            await self.evaluate_cooldowns(context)
+            await self(context, **kwargs)
+        except Exception:
+            raise
+        finally:
+            self._release_max_concurrency(context)
 
     async def evaluate_checks(self, context: context_.base.Context) -> bool:
         """

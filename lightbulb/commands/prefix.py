@@ -103,13 +103,20 @@ class PrefixCommand(base.Command):
             sig += f" {' '.join(f'<{o.name}>' if o.required else f'[{o.name}={o.default}]' for o in self.options.values())}"
         return sig
 
-    async def invoke(self, context: context_.base.Context) -> None:
+    async def invoke(self, context: context_.base.Context, **kwargs: t.Any) -> None:
         context._invoked = self
-        await self.evaluate_checks(context)
-        await self.evaluate_cooldowns(context)
-        assert isinstance(context, context_.prefix.PrefixContext)
-        await context._parser.inject_args_to_context()
-        await self(context)
+
+        await self._evaluate_max_concurrency(context)
+        try:
+            await self.evaluate_checks(context)
+            await self.evaluate_cooldowns(context)
+            assert isinstance(context, context_.prefix.PrefixContext)
+            await context._parser.inject_args_to_context()
+            await self(context, **kwargs)
+        except Exception:
+            raise
+        finally:
+            self._release_max_concurrency(context)
 
     def _validate_attributes(self) -> None:
         if " " in self.name:
@@ -128,12 +135,12 @@ class PrefixSubCommand(PrefixCommand, base.SubCommandTrait):
         assert self.parent is not None
         return f"{self.parent.qualname} {self.name}"
 
-    async def invoke(self, context: context_.base.Context, *, arg_buffer: str = "") -> None:
+    async def invoke(self, context: context_.base.Context, *, _arg_buffer: str = "", **kwargs: t.Any) -> None:
         context._invoked = self
         assert isinstance(context, context_.prefix.PrefixContext)
-        context._parser = type(context._parser)(context, arg_buffer)
+        context._parser = type(context._parser)(context, _arg_buffer)
         context._parser.options = list(self.options.values())
-        await super().invoke(context)
+        await super().invoke(context, **kwargs)
 
 
 class PrefixSubGroup(PrefixCommand, PrefixGroupMixin, base.SubCommandTrait):
@@ -159,17 +166,17 @@ class PrefixSubGroup(PrefixCommand, PrefixGroupMixin, base.SubCommandTrait):
         assert self.parent is not None
         return f"{self.parent.qualname} {self.name}"
 
-    async def invoke(self, context: context_.base.Context, *, arg_buffer: str = "") -> None:
+    async def invoke(self, context: context_.base.Context, *, _arg_buffer: str = "", **kwargs: t.Any) -> None:
         context._invoked = self
-        subcmd, remainder = self.maybe_resolve_subcommand(arg_buffer)
+        subcmd, remainder = self.maybe_resolve_subcommand(_arg_buffer)
         if subcmd is not None:
-            await subcmd.invoke(context, arg_buffer=remainder)
+            await subcmd.invoke(context, _arg_buffer=remainder, **kwargs)
             return
 
         assert isinstance(context, context_.prefix.PrefixContext)
-        context._parser = type(context._parser)(context, arg_buffer)
+        context._parser = type(context._parser)(context, _arg_buffer)
         context._parser.options = list(self.options.values())
-        await super().invoke(context)
+        await super().invoke(context, **kwargs)
 
     def _validate_attributes(self) -> None:
         super()._validate_attributes()
@@ -198,7 +205,7 @@ class PrefixCommandGroup(PrefixCommand, PrefixGroupMixin):
         self._subcommands = {} if not app._case_insensitive_prefix_commands else CIMultiDict()  # type: ignore
         self.create_subcommands(self._raw_subcommands, app)
 
-    async def invoke(self, context: context_.base.Context) -> None:
+    async def invoke(self, context: context_.base.Context, **kwargs: t.Any) -> None:
         context._invoked = self
         assert isinstance(context, context_.prefix.PrefixContext) and context.event.message.content is not None
 
@@ -206,10 +213,10 @@ class PrefixCommandGroup(PrefixCommand, PrefixGroupMixin):
             context.event.message.content[len(context.prefix) + len(context.invoked_with) :].strip()
         )
         if subcmd is not None:
-            await subcmd.invoke(context, arg_buffer=remainder)
+            await subcmd.invoke(context, _arg_buffer=remainder)
             return
 
-        await super().invoke(context)
+        await super().invoke(context, **kwargs)
 
     def _validate_attributes(self) -> None:
         super()._validate_attributes()

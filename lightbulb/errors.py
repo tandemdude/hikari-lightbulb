@@ -27,6 +27,7 @@ __all__ = [
     "ConverterFailure",
     "NotEnoughArguments",
     "MissingRequiredAttachmentArgument",
+    "MaxConcurrencyLimitReached",
     "CheckFailure",
     "InsufficientCache",
     "NotOwner",
@@ -45,9 +46,11 @@ __all__ = [
     "MissingRequiredRole",
     "MissingRequiredPermission",
     "BotMissingRequiredPermission",
+    "MissingRequiredAttachment",
 ]
 
 import typing as t
+import warnings
 
 import hikari
 
@@ -184,6 +187,13 @@ class MissingRequiredAttachmentArgument(LightbulbError):
         """The missing attachment option from the command invocation."""
 
 
+class MaxConcurrencyLimitReached(LightbulbError):
+    """
+    Error raised when the maximum number of allowed concurrent invocations for a command
+    has been exceeded.
+    """
+
+
 class CheckFailure(LightbulbError):
     """
     Error raised when a check fails before command invocation. If another error caused this
@@ -288,3 +298,11 @@ class MissingRequiredAttachment(CheckFailure):
     """
     Error raised when an attachment is required for the command but none were supplied with the invocation.
     """
+
+    def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
+        warnings.warn(
+            "'MissingRequiredAttachment' is deprecated and scheduled for removal in version '2.5.0'. "
+            "Use an option with type 'hikari.Attachment' and catch 'MissingRequiredAttachmentArgument' instead.",
+            DeprecationWarning,
+        )
+        super().__init__(*args, **kwargs)

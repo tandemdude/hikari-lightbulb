@@ -40,6 +40,7 @@ import functools
 import inspect
 import operator
 import typing as t
+import warnings
 
 import hikari
 
@@ -533,4 +534,9 @@ def has_attachments(*extensions: str) -> Check:
     Note:
         If ``extensions`` is specified then all attachments must conform to the restriction.
     """
+    warnings.warn(
+        "'has_attachments' is deprecated and scheduled for removal in version '2.5.0'. "
+        "Use an option with type 'hikari.Attachment' instead.",
+        DeprecationWarning,
+    )
     return Check(functools.partial(_has_attachments, file_exts=extensions))

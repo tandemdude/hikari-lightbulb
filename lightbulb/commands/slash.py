@@ -179,7 +179,7 @@ class SlashSubGroup(SlashCommand, SlashGroupMixin, base.SubCommandTrait):
             options=[c.as_option() for c in self._subcommands.values()],
         )
 
-    async def invoke(self, context: context_.base.Context) -> None:
+    async def invoke(self, context: context_.base.Context, **_: t.Any) -> None:
         await self._invoke_subcommand(context)
 
     def _validate_attributes(self) -> None:
@@ -209,7 +209,7 @@ class SlashCommandGroup(SlashCommand, SlashGroupMixin):
         self._subcommands: t.Dict[str, t.Union[SlashSubGroup, SlashSubCommand]] = {}
         self.create_subcommands(self._raw_subcommands, app, (SlashSubCommand, SlashSubGroup))
 
-    async def invoke(self, context: context_.base.Context) -> None:
+    async def invoke(self, context: context_.base.Context, **_: t.Any) -> None:
         await self._invoke_subcommand(context)
 
     def as_create_kwargs(self) -> t.Dict[str, t.Any]:

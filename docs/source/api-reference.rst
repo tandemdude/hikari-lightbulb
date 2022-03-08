@@ -14,6 +14,7 @@ If you think anything is missing, make a merge request to add it, or contact tho
    :maxdepth: 2
 
    api_references/app
+   api_references/buckets
    api_references/checks
    api_references/commands
    api_references/context

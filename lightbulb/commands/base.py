@@ -454,8 +454,8 @@ class Command(abc.ABC):
 
     async def __call__(self, context: context_.base.Context, **kwargs: t.Any) -> None:
         if self.pass_options:
-            for opt in context.options._options:
-                kwargs.setdefault(opt, context.options._options[opt])
+            for opt, value in context.options._options.items():
+                kwargs.setdefault(opt, value)
         return await self.callback(context, **kwargs)
 
     def _validate_attributes(self) -> None:

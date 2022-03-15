@@ -188,6 +188,9 @@ class Parser(BaseParser):
         while option := self.get_option():
             if option.arg_type in (hikari.OptionType.ATTACHMENT, hikari.Attachment):
                 if not attachments:
+                    if not option.required:
+                        self.ctx._options[option.name] = option.default
+                        continue
                     raise errors.MissingRequiredAttachmentArgument(
                         "Command invocation expects an attachment but none were found.", missing=option
                     )

@@ -52,6 +52,8 @@ class SlashContext(base.ApplicationContext):
         self._parse_options(self.interaction.options)
 
     def _parse_options(self, options: t.Optional[t.Sequence[hikari.CommandInteractionOption]]) -> None:
+        # We need to clear the options here to ensure the subcommand name does not exist in the mapping
+        self._options.clear()
         for opt in options or []:
             # Why is mypy so annoying about this ??
             if opt.type is hikari.OptionType.USER and self.resolved is not None:
@@ -69,7 +71,8 @@ class SlashContext(base.ApplicationContext):
             else:
                 self._options[opt.name] = opt.value
 
-        for opt in self.command.options.values():
+        cmd = self.invoked or self.command
+        for opt in cmd.options.values():
             self._options.setdefault(opt.name, opt.default if opt.default is not hikari.UNDEFINED else None)
 
     @property

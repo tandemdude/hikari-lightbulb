@@ -230,7 +230,7 @@ class Plugin:
         """
         if listener_func is not None:
             if bind:
-                listener_func = listener_func.__get__(self)  # type: ignore
+                listener_func = listener_func.__get__(self)
             assert listener_func is not None
             self._listeners[event].append(listener_func)
             return listener_func
@@ -238,7 +238,7 @@ class Plugin:
         def decorate(func: ListenerT) -> ListenerT:
             # TODO - allow getting event type from type hint
             if bind:
-                func = func.__get__(self)  # type: ignore
+                func = func.__get__(self)
             self.listener(event, func)
             return func
 
@@ -269,14 +269,14 @@ class Plugin:
         """
         if func is not None:
             if bind:
-                func = func.__get__(self)  # type: ignore
+                func = func.__get__(self)
             assert func is not None
             self._error_handler = func
             return func
 
         def decorate(func_: ErrorHandlerT) -> ErrorHandlerT:
             if bind:
-                func_ = func_.__get__(self)  # type: ignore
+                func_ = func_.__get__(self)
             self._error_handler = func_
             return func_
 
@@ -311,14 +311,14 @@ class Plugin:
         """
         if func is not None:
             if bind:
-                func = func.__get__(self)  # type: ignore
+                func = func.__get__(self)
             assert func is not None
             self._remove_hook = func
             return func
 
         def decorate(func_: RemoveHookT) -> RemoveHookT:
             if bind:
-                func_ = func_.__get__(self)  # type: ignore
+                func_ = func_.__get__(self)
             self._remove_hook = func_
             return func_
 

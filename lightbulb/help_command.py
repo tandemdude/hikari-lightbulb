@@ -248,14 +248,6 @@ class DefaultHelpCommand(BaseHelpCommand):
             "",
             "==== Categories ====",
         ]
-        for plugin in self.app._plugins.values():
-            if not plugin._raw_commands or all([c.hidden for c in plugin._raw_commands]):
-                continue
-            lines.append(f"- {plugin.name}")
-        lines.append("```")
-
-        pages.append("\n".join(lines))
-        lines.clear()
 
         p_commands = await self._get_command_plugin_map(self.app._prefix_commands, context)
         s_commands = await self._get_command_plugin_map(self.app._slash_commands, context)
@@ -269,6 +261,8 @@ class DefaultHelpCommand(BaseHelpCommand):
         self._add_cmds_to_plugin_pages(plugin_pages, u_commands, "User")
 
         for plugin, page in plugin_pages.items():
+            if plugin is not None:
+                lines.append(f"- {plugin.name}")
             pages.append(
                 "\n".join(
                     [
@@ -282,6 +276,8 @@ class DefaultHelpCommand(BaseHelpCommand):
                     ]
                 )
             )
+        lines.append("```")
+        pages.insert(0, "\n".join(lines))
 
         navigator = nav.ButtonNavigator(pages)
         await navigator.run(context)

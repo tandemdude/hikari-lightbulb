@@ -1266,8 +1266,9 @@ class BotApp(hikari.GatewayBot):
             for item in response:
                 resp_to_send.append(convert_response_value(item))
         else:
-            _LOGGER.error("Invalid response returned from autocomplete handler %r", callback.__name__)
-            await event.interaction.create_response([])
-            return
+            _LOGGER.error("Invalid response returned from autocomplete handler %r", callback.__name__)  # type: ignore[unreachable]
 
-        await event.interaction.create_response(resp_to_send)
+        try:
+            await event.interaction.create_response(resp_to_send)
+        except hikari.NotFoundError as e:
+            _LOGGER.debug("Failed sending autocomplete response", exc_info=(type(e), e, e.__traceback__))

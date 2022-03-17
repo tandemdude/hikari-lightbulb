@@ -178,4 +178,4 @@ from lightbulb.events import *
 from lightbulb.help_command import *
 from lightbulb.plugins import *
 
-__version__ = "2.2.1"
+__version__ = "2.2.2"

@@ -169,6 +169,14 @@ class Task(_BindableObjectWithCallback):
             "__unknown_name__",
         )
 
+    @property
+    def _is_event_loop_running(self) -> bool:
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return False
+        return True
+
     @classmethod
     async def _app_starting_listener(cls, _: hikari.StartingEvent) -> None:
         assert Task._app is not None
@@ -287,7 +295,7 @@ class Task(_BindableObjectWithCallback):
             ``None``
         """
         Task._tasks.append(self)
-        if Task._app_starting.is_set():
+        if self._is_event_loop_running:
             _LOGGER.debug("Starting task %r", self.__name__)
             self._task = asyncio.create_task(self._loop())
 

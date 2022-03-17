@@ -65,7 +65,6 @@ class ResponseProxy:
         message: t.Optional[hikari.Message] = None,
         fetcher: t.Optional[t.Callable[[], t.Coroutine[t.Any, t.Any, hikari.Message]]] = None,
         editor: t.Optional[t.Callable[[ResponseProxy], t.Coroutine[t.Any, t.Any, hikari.Message]]] = None,
-        editable: bool = True,
         deleteable: bool = True,
     ) -> None:
         if message is None and fetcher is None:
@@ -74,7 +73,6 @@ class ResponseProxy:
         self._message = message
         self._fetcher = fetcher
         self._editor = editor
-        self._editable = editable
         self._deleteable = deleteable
 
         if editor is None:
@@ -112,9 +110,6 @@ class ResponseProxy:
             :obj:`~.errors.UnsupportedResponseOperation`: This response cannot be edited (for ephemeral
                 interaction followup responses).
         """
-        if not self._editable:
-            raise errors.UnsupportedResponseOperation("This response does not support editing.")
-
         assert self._editor is not None
         out = await self._editor(self, *args, **kwargs)
         assert isinstance(out, hikari.Message)
@@ -499,9 +494,26 @@ class ApplicationContext(Context, abc.ABC):
             if args and isinstance(args[0], hikari.ResponseType):
                 args = args[1:]
 
+            async def _ephemeral_followup_editor(
+                _: ResponseProxy,
+                *args_: t.Any,
+                _wh_id: hikari.Snowflake,
+                _tkn: str,
+                _m_id: hikari.Snowflake,
+                **kwargs_: t.Any,
+            ) -> hikari.Message:
+                return await self.app.rest.edit_webhook_message(_wh_id, _tkn, _m_id, *args_, **kwargs_)
+
+            message = await self._interaction.execute(*args, **kwargs)
             proxy = ResponseProxy(
-                await self._interaction.execute(*args, **kwargs),
-                editable=not includes_ephemeral(kwargs.get("flags", hikari.MessageFlag.NONE)),
+                message,
+                editor=functools.partial(
+                    _ephemeral_followup_editor,
+                    _wh_id=self._interaction.webhook_id,
+                    _tkn=self._interaction.token,
+                    _m_id=message.id,
+                ),
+                deleteable=not includes_ephemeral(kwargs.get("flags", hikari.MessageFlag.NONE)),
             )
             self._responses.append(proxy)
             self._deferred = False

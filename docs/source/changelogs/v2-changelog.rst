@@ -6,6 +6,33 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 2.2.1
+=============
+
+- Add :obj:`lightbulb.errors.ConverterFailure.raw_value`.
+
+- Fix context menu commands not able to be registered globally.
+
+- Fix ``StartingEvent`` listener not correctly being subscribed to in the tasks extension.
+
+- Update ``__all__`` to add missing items.
+
+- Add :obj:`lightbulb.errors.CheckFailure.causes`.
+
+- Fix non-ephemeral followup responses to interactions not being able to be edited.
+
+- Add support for ``hikari.Attachment`` option type.
+
+- Add kwarg ``pass_options`` to :obj:`lightbulb.decorators.command` decorator.
+
+- Add :obj:`lightbulb.decorators.set_max_concurrency`.
+
+- Deprecate :obj:`lightbulb.checks.has_attachment`.
+
+- Fix plugins being shown in the default help command even when no commands are visible in the plugin.
+
+- Fix subcommand names being present in ``Context.options`` for slash subcommands.
+
 Version 2.2.0
 =============
 

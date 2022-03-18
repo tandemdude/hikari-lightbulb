@@ -125,6 +125,7 @@ class Task(_BindableObjectWithCallback):
         "_max_executions",
         "_n_executions",
         "_pass_app",
+        "_wait_before_execution",
     )
     _app: t.Optional[lightbulb.BotApp] = None
     _app_starting: asyncio.Event = asyncio.Event()
@@ -139,6 +140,7 @@ class Task(_BindableObjectWithCallback):
         max_consecutive_failures: int,
         max_executions: t.Optional[int],
         pass_app: bool,
+        wait_before_execution: bool,
     ) -> None:
         super().__init__(callback)
         self._trigger: triggers.Trigger = trigger
@@ -152,6 +154,7 @@ class Task(_BindableObjectWithCallback):
         self._max_executions: t.Optional[int] = max_executions
         self._n_executions: int = 0
         self._pass_app: bool = pass_app
+        self._wait_before_execution = wait_before_execution
 
         if auto_start:
             self.start()
@@ -199,6 +202,9 @@ class Task(_BindableObjectWithCallback):
             task_.stop()
 
     async def _loop(self) -> None:
+        if self._wait_before_execution:
+            await asyncio.sleep(self._trigger.get_interval())
+
         while not self._stopped:
             if self._max_executions is not None and self._n_executions >= self._max_executions:
                 break
@@ -355,6 +361,7 @@ def task(
     max_consecutive_failures: int = 3,
     max_executions: t.Optional[int] = None,
     pass_app: bool = False,
+    wait_before_execution: bool = False,
     cls: t.Type[Task] = Task,
 ) -> t.Callable[[TaskCallbackT], Task]:
     ...
@@ -369,6 +376,7 @@ def task(
     max_consecutive_failures: int = 3,
     max_executions: t.Optional[int] = None,
     pass_app: bool = False,
+    wait_before_execution: bool = False,
     cls: t.Type[Task] = Task,
 ) -> t.Callable[[TaskCallbackT], Task]:
     ...
@@ -387,6 +395,7 @@ def task(
     max_consecutive_failures: int = 3,
     max_executions: t.Optional[int] = None,
     pass_app: bool = False,
+    wait_before_execution: bool = False,
     cls: t.Type[Task] = Task,
 ) -> t.Callable[[TaskCallbackT], Task]:
     ...
@@ -404,6 +413,7 @@ def task(
     max_consecutive_failures: int = 3,
     max_executions: t.Optional[int] = None,
     pass_app: bool = False,
+    wait_before_execution: bool = False,
     cls: t.Type[Task] = Task,
 ) -> t.Callable[[TaskCallbackT], Task]:
     """
@@ -427,6 +437,8 @@ def task(
             task will run indefinitely.
         pass_app (:obj:`bool`): Whether the :obj:`lightbulb.app.BotApp` instance should be passed into the
             task on execution. Defaults to ``False``.
+        wait_before_execution (:obj:`bool`): Whether the task will wait its given interval before the first
+            time the task is executed. Defaults to ``False``.
         cls (Type[:obj:`~Task`]): Task class to use.
     """
 
@@ -443,13 +455,16 @@ def task(
                 max(max_consecutive_failures, 1),
                 max_executions,
                 pass_app,
+                wait_before_execution,
             )
 
         if trigger is None:
             raise ValueError("Interval values were not provided and no trigger was passed")
 
         assert isinstance(trigger, triggers.Trigger)
-        return cls(func, trigger, auto_start, max(max_consecutive_failures, 1), max_executions, pass_app)
+        return cls(
+            func, trigger, auto_start, max(max_consecutive_failures, 1), max_executions, pass_app, wait_before_execution
+        )
 
     return decorate
 

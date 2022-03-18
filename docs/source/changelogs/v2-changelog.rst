@@ -6,6 +6,13 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 2.2.2
+=============
+
+- Add ability to edit ephemeral followup responses to application commands.
+
+- Implement ``wait_before_execution`` for tasks to allow delaying the first task execution.
+
 Version 2.2.1
 =============
 

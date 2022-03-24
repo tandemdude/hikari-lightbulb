@@ -316,6 +316,14 @@ class CommandLike:
 
         return decorate
 
+    @t.overload
+    def child(self) -> t.Callable[[CommandLike], CommandLike]:
+        ...
+
+    @t.overload
+    def child(self, cmd_like: CommandLike) -> CommandLike:
+        ...
+
     def child(
         self, cmd_like: t.Optional[CommandLike] = None
     ) -> t.Union[CommandLike, t.Callable[[CommandLike], CommandLike]]:
@@ -367,6 +375,8 @@ class SubCommandTrait(abc.ABC):
     You can check if any given command is a subcommand by checking ``issubclass``
     on the command's class or ``isinstance`` if you have the object.
     """
+
+    __slots__ = ()
 
 
 class Command(abc.ABC):

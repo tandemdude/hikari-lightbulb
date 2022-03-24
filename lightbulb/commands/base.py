@@ -59,6 +59,9 @@ AutocompleteCallbackT = t.TypeVar(
         ],
     ],
 )
+ErrorHandlerCallbackT = t.TypeVar(
+    "ErrorHandlerCallbackT", bound=t.Callable[..., t.Coroutine[t.Any, t.Any, t.Optional[bool]]]
+)
 
 
 class CommandCallbackT(t.Protocol):
@@ -290,16 +293,18 @@ class CommandLike:
     async def __call__(self, context: context_.base.Context) -> None:
         await self.callback(context)
 
+    @t.overload
+    def set_error_handler(self) -> t.Callable[[ErrorHandlerCallbackT], ErrorHandlerCallbackT]:
+        ...
+
+    @t.overload
+    def set_error_handler(self, func: ErrorHandlerCallbackT) -> ErrorHandlerCallbackT:
+        ...
+
     def set_error_handler(
         self,
-        func: t.Optional[t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]] = None,
-    ) -> t.Union[
-        t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]],
-        t.Callable[
-            [t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]],
-            t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]],
-        ],
-    ]:
+        func: t.Optional[ErrorHandlerCallbackT] = None,
+    ) -> t.Union[ErrorHandlerCallbackT, t.Callable[[ErrorHandlerCallbackT], ErrorHandlerCallbackT]]:
         """
         Registers a coroutine function as an error handler for this command. This can be used as a first or second
         order decorator, or called manually with the function to register.
@@ -308,9 +313,7 @@ class CommandLike:
             self.error_handler = func
             return func
 
-        def decorate(
-            func_: t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]
-        ) -> t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]:
+        def decorate(func_: ErrorHandlerCallbackT) -> ErrorHandlerCallbackT:
             self.error_handler = func_
             return func_
 

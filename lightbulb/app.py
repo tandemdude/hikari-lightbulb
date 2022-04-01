@@ -255,22 +255,27 @@ class BotApp(hikari.GatewayBot):
 
         self._help_command: t.Optional[help_command_.BaseHelpCommand] = None
         if help_class is not None:
-            self._help_command = help_class(self)
+            help_cmd_types: t.List[t.Type[commands.base.Command]] = []
 
-            help_cmd_types: t.List[t.Type[commands.base.Command]] = [commands.prefix.PrefixCommand]
+            if prefix is not None:
+                help_cmd_types.append(commands.prefix.PrefixCommand)
+
             if help_slash_command:
                 help_cmd_types.append(commands.slash.SlashCommand)
 
-            @decorators.option(
-                "obj", "Object to get help for", required=False, modifier=commands.base.OptionModifier.CONSUME_REST
-            )
-            @decorators.command("help", "Get help information for the bot", auto_defer=True)
-            @decorators.implements(*help_cmd_types)
-            async def __default_help(ctx: context_.base.Context) -> None:
-                assert self._help_command is not None
-                await self._help_command.send_help(ctx, ctx.options.obj)
+            if help_cmd_types:
+                self._help_command = help_class(self)
 
-            self.command(__default_help)
+                @decorators.option(
+                    "obj", "Object to get help for", required=False, modifier=commands.base.OptionModifier.CONSUME_REST
+                )
+                @decorators.command("help", "Get help information for the bot", auto_defer=True)
+                @decorators.implements(*help_cmd_types)
+                async def __default_help(ctx: context_.base.Context) -> None:
+                    assert self._help_command is not None
+                    await self._help_command.send_help(ctx, ctx.options.obj)
+
+                self.command(__default_help)
 
         # We need to store created tasks internally to ensure that they do not
         # get destroyed mid-execution. See asyncio.create_task documentation for more.

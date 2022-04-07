@@ -77,6 +77,14 @@ Adding options to slash commands is also identical to how you add options to pre
 
     bot.run()
 
+To create message or user commands you need to add ``commands.MessageCommand`` and ``commands.UserCommand`` respectively
+to the ``@lightbulb.implements`` decorator. You should note that message and user commands cannot take any options, however
+the target of the command will **always** be stored in the option ``target``. Any option decorators added to context menu
+commands will be ignored.
+
+Setting Default Guilds
+======================
+
 Setting default guilds for a single command can be done using the ``guilds`` kwarg in the ``@lightbulb.command`` decorator
 ::
 
@@ -116,7 +124,18 @@ Setting default guilds for all commands at once can be done using the ``default_
 
     bot.run()
 
-To create message or user commands you need to add ``commands.MessageCommand`` and ``commands.UserCommand`` respectively
-to the ``@lightbulb.implements`` decorator. You should note that message and user commands cannot take any options, however
-the target of the command will **always** be stored in the option ``target``. Any option decorators added to context menu
-commands will be ignored.
+Default Guild Resolution Order
+==============================
+
+When handling default guilds, lightbulb will resolve them in the following order:
+
+- Command-specific default guilds (see :obj:`lightbulb.commands.base.CommandLike.guilds`)
+
+- Plugin-specific default guilds (see :obj:`lightbulb.plugins.Plugin.default_enabled_guilds`)
+
+- BotApp default guilds (see :obj:`lightbulb.app.BotApp.default_enabled_guilds`)
+
+.. note::
+
+    If the default guilds are set to an empty tuple or list for a command or plugin, then the
+    command(s) will be global regardless of the downstream default guilds.

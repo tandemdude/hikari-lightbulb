@@ -34,8 +34,7 @@ For an example slash command, see the `examples directory <https://github.com/ta
 
 .. warning::
     Note that by default, application commands will be **global** unless you specify a set of guilds that they should
-    be created in using ``BotApp.default_enabled_guilds`` or by passing a set of guilds into the ``@lightbulb.command``
-    decorator. Global commands **will** take up to one hour to sync to discord, so it is reccommended that you use
+    be created in (more on this below). Global commands **will** take up to one hour to sync to discord, so it is recommended that you use
     guild-specific commands during development and testing.
 
 ----
@@ -78,6 +77,44 @@ Adding options to slash commands is also identical to how you add options to pre
 
     bot.run()
 
+Setting default guilds for a single command can be done using the ``guilds`` kwarg in the ``@lightbulb.command`` decorator
+::
+
+    import lightbulb
+
+    bot = lightbulb.BotApp(...)
+
+    @bot.command
+    @lightbulb.command("hello", "Says hello", guilds=(123, 456))
+    @lightbulb.implements(lightbulb.SlashCommand)
+    async def echo(ctx: lightbulb.Context) -> None:
+        await ctx.respond("Hi, this command only appears in guilds with ID 123 and 456.")
+
+    bot.run()
+
+Setting default guilds for commands in a ``lightbulb.Plugin`` can be done using the ``default_enabled_guilds`` kwarg in the
+``lightbulb.Plugin`` constructor
+::
+
+    import lightbulb
+
+    example = lightbulb.Plugin("Example", default_enabled_guilds=(123, 456))
+    # All subsequent commands registered to this plugin will be guild commands
+
+Setting default guilds for all commands at once can be done using the ``default_enabled_guilds`` kwarg in the ``BotApp`` constructor
+::
+
+    import lightbulb
+
+    bot = lightbulb.BotApp(..., default_enabled_guilds=(123, 456))
+
+    @bot.command
+    @lightbulb.command("whoami", "Checks who you are")
+    @lightbulb.implements(lightbulb.SlashCommand)
+    async def ping(ctx: lightbulb.Context) -> None:
+        await ctx.respond(ctx.author.username)
+
+    bot.run()
 
 To create message or user commands you need to add ``commands.MessageCommand`` and ``commands.UserCommand`` respectively
 to the ``@lightbulb.implements`` decorator. You should note that message and user commands cannot take any options, however

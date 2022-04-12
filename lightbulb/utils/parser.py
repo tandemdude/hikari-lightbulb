@@ -174,6 +174,7 @@ class Parser(BaseParser):
         return self.buffer[prev + 1 : self.idx - 1].replace(f"\\{closing}", closing)
 
     def read_rest(self) -> str:
+        self.skip_ws()
         self.idx = self.n
         return self.buffer[self.prev :]
 

@@ -269,6 +269,13 @@ class MissingRequiredRole(CheckFailure):
     Error raised when the member invoking a command is missing one or more of the required roles.
     """
 
+    def __init__(self, *args: t.Any, roles: t.Sequence[int], mode: t.Callable[[t.Sequence[bool]], bool]) -> None:
+        super().__init__(*args)
+        self.missing_roles: t.Sequence[int] = roles
+        "The roles that the member is missing."
+        self.mode = mode
+        "The mode used to check the roles, can be either ``any`` or ``all``."
+
 
 class MissingRequiredPermission(CheckFailure):
     """

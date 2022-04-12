@@ -38,9 +38,13 @@ COMMAND_NAME_REGEX: re.Pattern[str] = re.compile(r"^[\w-]{1,32}$", re.U)
 
 class SlashGroupMixin(abc.ABC):
     __slots__ = ()
-    name: str
     _plugin: t.Optional[plugins.Plugin]
     _subcommands: t.Dict[str, t.Union[SlashSubGroup, SlashSubCommand]]
+
+    @property
+    @abc.abstractmethod
+    def name(self) -> str:
+        ...
 
     def create_subcommands(
         self,

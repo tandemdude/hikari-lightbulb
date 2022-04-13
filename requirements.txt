@@ -1,1 +1,1 @@
-hikari @ git+https://github.com/HyperGH/hikari
+hikari~=2.0.0.dev108

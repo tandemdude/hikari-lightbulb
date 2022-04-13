@@ -50,13 +50,16 @@ async def ban(ctx: lightbulb.SlashContext) -> None:
 @lightbulb.implements(lightbulb.SlashCommand)
 async def purge(ctx: lightbulb.SlashContext, count: int) -> None:
     """Purge a certain amount of messages from a channel."""
+    if not ctx.guild_id:
+        await ctx.respond("This command can only be used in a server.")
+        return
 
     # Fetch messages that are not older than 14 days in the channel the command is invoked in
     # Messages older than 14 days cannot be deleted by bots, so this is a necessary precaution
     messages = ( 
         await ctx.app.rest.fetch_messages(ctx.channel_id)
         .take_until(lambda m: datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=14) > m.created_at)
-        .limit(ctx.options.count)
+        .limit(count)
     )
     if messages:
         await ctx.app.rest.delete_messages(ctx.channel_id, messages)

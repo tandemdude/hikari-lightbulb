@@ -30,7 +30,7 @@ async def ready_listener(_):
 @bot.command()
 @lightbulb.command("ping", "Checks that the bot is alive")
 @lightbulb.implements(lightbulb.PrefixCommand)
-async def ping(ctx: lightbulb.Context) -> None:
+async def ping(ctx: lightbulb.PrefixContext) -> None:
     """Checks that the bot is alive"""
     await ctx.respond("Pong!")
 
@@ -40,7 +40,7 @@ async def ping(ctx: lightbulb.Context) -> None:
 @lightbulb.option("num1", "First number", int)
 @lightbulb.command("add", "Adds the two given numbers together")
 @lightbulb.implements(lightbulb.PrefixCommand)
-async def add(ctx: lightbulb.Context) -> None:
+async def add(ctx: lightbulb.PrefixContext) -> None:
     """Adds the two given numbers together"""
     num1, num2 = ctx.options.num1, ctx.options.num2
     await ctx.respond(f"{num1} + {num2} = {num1 + num2}")
@@ -50,7 +50,7 @@ async def add(ctx: lightbulb.Context) -> None:
 @lightbulb.option("user", "User to greet", hikari.User)
 @lightbulb.command("greet", "Greets the specified user")
 @lightbulb.implements(lightbulb.PrefixCommand)
-async def greet(ctx: lightbulb.Context) -> None:
+async def greet(ctx: lightbulb.PrefixContext) -> None:
     await ctx.respond(f"Hello {ctx.options.user.mention}!")
 
 

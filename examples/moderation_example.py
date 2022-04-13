@@ -50,6 +50,7 @@ async def ban(ctx: lightbulb.SlashContext) -> None:
 @lightbulb.implements(lightbulb.SlashCommand)
 async def purge(ctx: lightbulb.SlashContext, count: int) -> None:
     """Purge a certain amount of messages from a channel."""
+
     # Fetch messages that are not older than 14 days in the channel the command is invoked in
     # Messages older than 14 days cannot be deleted by bots, so this is a necessary precaution
     messages = ( 

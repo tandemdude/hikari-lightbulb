@@ -229,8 +229,15 @@ def _has_roles(
 ) -> bool:
     _guild_only(context)
     assert context.member is not None
-    if not check_func([r in context.member.role_ids for r in roles]):
-        raise errors.MissingRequiredRole("You are missing one or more roles required in order to run this command")
+
+    missing_roles = [r for r in roles if r not in context.member.role_ids]
+    # TODO: could potentially optimise any() by stopping the iteration when a required role was found
+    if (check_func is all and missing_roles) or len(missing_roles) == len(roles):
+        raise errors.MissingRequiredRole(
+            "You are missing one or more roles required in order to run this command",
+            roles=missing_roles,
+            mode=check_func,
+        )
     return True
 
 

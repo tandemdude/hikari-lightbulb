@@ -393,74 +393,106 @@ class Command(abc.ABC):
 
     __slots__ = (
         "_initialiser",
-        "_help_getter",
         "app",
-        "callback",
-        "name",
-        "description",
-        "options",
-        "checks",
-        "error_handler",
         "parent",
         "_plugin",
-        "aliases",
-        "parser",
-        "cooldown_manager",
-        "auto_defer",
-        "default_ephemeral",
-        "check_exempt",
-        "hidden",
-        "inherit_checks",
-        "pass_options",
-        "max_concurrency",
         "_max_concurrency_semaphores",
     )
 
     def __init__(self, app: app_.BotApp, initialiser: CommandLike) -> None:
         self._initialiser = initialiser
-        self._help_getter = initialiser.help_getter
         self._plugin: t.Optional[plugins.Plugin] = None
         self.app: app_.BotApp = app
         """The ``BotApp`` instance the command is registered to."""
-        self.callback: CommandCallbackT = initialiser.callback
-        """The callback function for the command."""
-        self.name: str = initialiser.name
-        """The name of the command."""
-        self.description: str = initialiser.description
-        """The description of the command."""
-        self.options: t.MutableMapping[str, OptionLike] = initialiser.options
-        """The options for the command."""
-        self.checks: t.Sequence[t.Union[checks.Check, checks._ExclusiveCheck]] = initialiser.checks
-        """The checks for the command."""
-        self.error_handler: t.Optional[
-            t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]
-        ] = initialiser.error_handler
-        """The error handler function for the command."""
         self.parent: t.Optional[Command] = None
         """The parent for the command."""
-        self.aliases: t.Sequence[str] = initialiser.aliases
-        """The aliases for the command. This value means nothing for application commands."""
-        self.parser: t.Optional[t.Type[parser_.BaseParser]] = initialiser.parser
-        """The argument parser to use for prefix commands."""
-        self.cooldown_manager: t.Optional[cooldowns.CooldownManager] = initialiser.cooldown_manager
-        """The cooldown manager instance to use for the command."""
-        self.auto_defer: bool = initialiser.auto_defer
-        """Whether or not to automatically defer the response when the command is invoked."""
-        self.default_ephemeral: bool = initialiser.ephemeral
-        """Whether or not to send responses from this command as ephemeral messages by default."""
-        self.check_exempt: t.Callable[
-            [context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]
-        ] = initialiser.check_exempt or (lambda _: False)
-        """Check exempt predicate to use for the command."""
-        self.hidden: bool = initialiser.hidden
-        """Whether or not the command should be hidden from the help command."""
-        self.inherit_checks: bool = initialiser.inherit_checks
-        """Whether or not the command should inherit checks from the parent group."""
-        self.pass_options: bool = initialiser.pass_options
-        """Whether or not the command will have its options passed as keyword arguments when invoked."""
-        self.max_concurrency: t.Optional[t.Tuple[int, t.Type[buckets.Bucket]]] = initialiser.max_concurrency
-        """The max concurrency rule for the command."""
         self._max_concurrency_semaphores: t.Dict[t.Hashable, asyncio.Semaphore] = {}
+
+    @property
+    def _help_getter(self) -> t.Optional[t.Callable[[Command, context_.base.Context], str]]:
+        return self._initialiser.help_getter
+
+    @property
+    def callback(self) -> CommandCallbackT:
+        """The callback function for the command."""
+        return self._initialiser.callback
+
+    @property
+    def name(self) -> str:
+        """The name of the command."""
+        return self._initialiser.name
+
+    @property
+    def description(self) -> str:
+        """The description of the command."""
+        return self._initialiser.description
+
+    @property
+    def options(self) -> t.MutableMapping[str, OptionLike]:
+        """The options for the command."""
+        return self._initialiser.options
+
+    @property
+    def checks(self) -> t.Sequence[t.Union[checks.Check, checks._ExclusiveCheck]]:
+        """The checks for the command."""
+        return self._initialiser.checks
+
+    @property
+    def aliases(self) -> t.Sequence[str]:
+        """The aliases for the command. This value means nothing for application commands."""
+        return self._initialiser.aliases
+
+    @property
+    def error_handler(
+        self,
+    ) -> t.Optional[t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]]:
+        """The error handler function for the command."""
+        return self._initialiser.error_handler
+
+    @property
+    def parser(self) -> t.Optional[t.Type[parser_.BaseParser]]:
+        """The argument parser to use for prefix commands."""
+        return self._initialiser.parser
+
+    @property
+    def cooldown_manager(self) -> t.Optional[cooldowns.CooldownManager]:
+        """The cooldown manager instance to use for the command."""
+        return self._initialiser.cooldown_manager
+
+    @property
+    def auto_defer(self) -> bool:
+        """Whether or not to automatically defer the response when the command is invoked."""
+        return self._initialiser.auto_defer
+
+    @property
+    def default_ephemeral(self) -> bool:
+        """Whether or not to send responses from this command as ephemeral messages by default."""
+        return self._initialiser.ephemeral
+
+    @property
+    def check_exempt(self) -> t.Callable[[context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]]:
+        """Check exempt predicate to use for the command."""
+        return self._initialiser.check_exempt or (lambda _: False)
+
+    @property
+    def hidden(self) -> bool:
+        """Whether or not the command should be hidden from the help command."""
+        return self._initialiser.hidden
+
+    @property
+    def inherit_checks(self) -> bool:
+        """Whether or not the command should inherit checks from the parent group."""
+        return self._initialiser.inherit_checks
+
+    @property
+    def pass_options(self) -> bool:
+        """Whether or not the command will have its options passed as keyword arguments when invoked."""
+        return self._initialiser.pass_options
+
+    @property
+    def max_concurrency(self) -> t.Optional[t.Tuple[int, t.Type[buckets.Bucket]]]:
+        """The max concurrency rule for the command."""
+        return self._initialiser.max_concurrency
 
     def __hash__(self) -> int:
         return hash(self.name)

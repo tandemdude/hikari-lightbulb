@@ -35,9 +35,13 @@ if t.TYPE_CHECKING:
 
 class PrefixGroupMixin(abc.ABC):
     __slots__ = ()
-    name: str
     _plugin: t.Optional[plugins.Plugin]
     _subcommands: t.Dict[str, t.Union[PrefixSubGroup, PrefixSubCommand]]
+
+    @property
+    @abc.abstractmethod
+    def name(self) -> str:
+        ...
 
     def maybe_resolve_subcommand(
         self, arg_string: str

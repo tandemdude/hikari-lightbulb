@@ -65,7 +65,7 @@ async def purge(ctx: lightbulb.SlashContext, count: int) -> None:
         await ctx.app.rest.delete_messages(ctx.channel_id, messages)
         await ctx.respond(f"Purged {len(messages)} messages.")
     else:
-        await ctx.respond(f"Could not find any messages older than 14 days!")
+        await ctx.respond("Could not find any messages younger than 14 days!")
 
 
 bot.run()

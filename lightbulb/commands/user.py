@@ -37,7 +37,10 @@ class UserCommand(base.ApplicationCommand):
 
     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
-        self.options: t.Dict[str, t.Any] = {}
+
+    @property
+    def options(self) -> t.Dict[str, t.Any]:
+        return {}
 
     def _validate_attributes(self) -> None:
         if len(self.name) < 1 or len(self.name) > 32:

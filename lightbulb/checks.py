@@ -244,12 +244,9 @@ def _has_roles(
 def _has_guild_permissions(context: context_.base.Context, *, perms: hikari.Permissions) -> bool:
     _guild_only(context)
 
-    channel, guild = context.get_channel(), context.get_guild()
-    if channel is None or guild is None:
+    channel = context.get_channel()
+    if channel is None:
         raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
-
-    if guild.owner_id == context.author.id:
-        return True
 
     assert context.member is not None and isinstance(channel, hikari.GuildChannel)
     missing_perms = ~permissions.permissions_in(channel, context.member) & perms
@@ -297,9 +294,6 @@ def _bot_has_guild_permissions(context: context_.base.Context, *, perms: hikari.
     member = guild.get_my_member()
     if member is None:
         raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
-
-    if guild.owner_id == member.id:
-        return True
 
     assert isinstance(channel, hikari.GuildChannel)
     missing_perms = ~permissions.permissions_in(channel, member) & perms

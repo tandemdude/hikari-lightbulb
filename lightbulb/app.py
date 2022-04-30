@@ -302,7 +302,7 @@ class BotApp(hikari.GatewayBot):
         Returns:
             :obj:`asyncio.Task`: Created task object.
         """
-        task = asyncio.create_task(coro, name=name)
+        task = asyncio.create_task(coro, name=name)  # type: ignore [var-annotated, arg-type]
         self._running_tasks.append(task)
         task.add_done_callback(lambda task_: self._running_tasks.remove(task_))
         return task

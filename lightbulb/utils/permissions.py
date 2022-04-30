@@ -40,7 +40,7 @@ def permissions_for(member: hikari.Member) -> hikari.Permissions:
     for role in member.get_roles():
         permissions |= role.permissions
 
-    if hikari.Permissions.ADMINISTRATOR in permissions:
+    if hikari.Permissions.ADMINISTRATOR in permissions or member.id == member.get_guild().owner_id:
         return hikari.Permissions.all_permissions()
 
     return permissions
@@ -65,7 +65,7 @@ def permissions_in(
     if include_guild_permissions:
         allowed_perms |= permissions_for(member)
 
-    if hikari.Permissions.ADMINISTRATOR in allowed_perms:
+    if hikari.Permissions.ADMINISTRATOR in allowed_perms or member.id == member.get_guild().owner_id:
         return hikari.Permissions.all_permissions()
 
     overwrites = channel.permission_overwrites

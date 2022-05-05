@@ -82,12 +82,27 @@ class ResponseProxy:
 
             self._editor = _default_editor
 
+    def __await__(self) -> t.Generator[t.Any, None, hikari.Message]:
+        return self.message().__await__()
+
     async def message(self) -> hikari.Message:
         """
         Fetches and/or returns the created message from the context response.
 
         Returns:
             :obj:`~hikari.messages.Message`: The response's created message.
+
+        Note:
+            This object is awaitable, hence the following is also valid.
+
+            .. code-block:: python
+
+                # Where 'resp' is an instance of ResponseProxy
+
+                # Calling this method
+                message = await resp.message()
+                # Awaitint the object itself
+                message = await resp
         """
         if self._message is not None:
             return self._message

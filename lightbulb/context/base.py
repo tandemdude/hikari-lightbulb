@@ -101,7 +101,7 @@ class ResponseProxy:
 
                 # Calling this method
                 message = await resp.message()
-                # Awaitint the object itself
+                # Awaiting the object itself
                 message = await resp
         """
         if self._message is not None:

@@ -167,7 +167,7 @@ Lightbulb provides the :obj:`lightbulb.decorators.option` decorator for this pur
 
     import lightbulb
 
-    @lightbulb.option("text", "text to repeat", modifier=commands.OptionModifier.CONSUME_REST)
+    @lightbulb.option("text", "text to repeat", modifier=lightbulb.OptionModifier.CONSUME_REST)
     @lightbulb.command("echo", "repeats the given text")
     @lightbulb.implements(lightbulb.PrefixCommand)
     async def echo(ctx: lightbulb.Context) -> None:

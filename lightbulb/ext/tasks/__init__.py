@@ -140,7 +140,7 @@ class Task(_BindableObjectWithCallback):
         max_consecutive_failures: int,
         max_executions: t.Optional[int],
         pass_app: bool,
-        wait_before_execution: bool,
+        wait_before_execution: hikari.UndefinedOr[bool],
     ) -> None:
         super().__init__(callback)
         self._trigger: triggers.Trigger = trigger
@@ -154,7 +154,9 @@ class Task(_BindableObjectWithCallback):
         self._max_executions: t.Optional[int] = max_executions
         self._n_executions: int = 0
         self._pass_app: bool = pass_app
-        self._wait_before_execution = wait_before_execution
+        self._wait_before_execution: bool = (
+            wait_before_execution if wait_before_execution is not hikari.UNDEFINED else trigger.wait_before_execution
+        )
 
         if auto_start:
             self.start()
@@ -361,7 +363,7 @@ def task(
     max_consecutive_failures: int = 3,
     max_executions: t.Optional[int] = None,
     pass_app: bool = False,
-    wait_before_execution: bool = False,
+    wait_before_execution: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
     cls: t.Type[Task] = Task,
 ) -> t.Callable[[TaskCallbackT], Task]:
     ...
@@ -376,7 +378,7 @@ def task(
     max_consecutive_failures: int = 3,
     max_executions: t.Optional[int] = None,
     pass_app: bool = False,
-    wait_before_execution: bool = False,
+    wait_before_execution: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
     cls: t.Type[Task] = Task,
 ) -> t.Callable[[TaskCallbackT], Task]:
     ...
@@ -395,7 +397,7 @@ def task(
     max_consecutive_failures: int = 3,
     max_executions: t.Optional[int] = None,
     pass_app: bool = False,
-    wait_before_execution: bool = False,
+    wait_before_execution: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
     cls: t.Type[Task] = Task,
 ) -> t.Callable[[TaskCallbackT], Task]:
     ...
@@ -413,7 +415,7 @@ def task(
     max_consecutive_failures: int = 3,
     max_executions: t.Optional[int] = None,
     pass_app: bool = False,
-    wait_before_execution: bool = False,
+    wait_before_execution: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
     cls: t.Type[Task] = Task,
 ) -> t.Callable[[TaskCallbackT], Task]:
     """
@@ -437,8 +439,8 @@ def task(
             task will run indefinitely.
         pass_app (:obj:`bool`): Whether the :obj:`lightbulb.app.BotApp` instance should be passed into the
             task on execution. Defaults to ``False``.
-        wait_before_execution (:obj:`bool`): Whether the task will wait its given interval before the first
-            time the task is executed. Defaults to ``False``.
+        wait_before_execution (UndefinedOr[:obj:`bool`]): Whether the task will wait its given interval before the first
+            time the task is executed. Defaults to ``UNDEFINED`` (will use the trigger's default).
         cls (Type[:obj:`~Task`]): Task class to use.
     """
 

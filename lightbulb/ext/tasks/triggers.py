@@ -51,6 +51,15 @@ class Trigger(abc.ABC):
         """
         ...
 
+    @property
+    def wait_before_execution(self) -> bool:
+        """
+        Whether the trigger should wait `get_interval` amount of time before executing
+        for the first time by default. Will be overridden by the `wait_before_execution`
+        parameter in the `task` decorator.
+        """
+        return False
+
 
 class UniformTrigger(Trigger):
     """
@@ -124,6 +133,10 @@ if t.TYPE_CHECKING or _CRON_AVAILABLE:
                 datetime.timezone.utc
             )
             return difference.total_seconds()
+
+        @property
+        def wait_before_execution(self) -> bool:
+            return True
 
 else:
 

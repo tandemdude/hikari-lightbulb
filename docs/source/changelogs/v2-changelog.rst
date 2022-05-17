@@ -13,6 +13,16 @@ Version 2.2.2
 
 - Implement ``wait_before_execution`` for tasks to allow delaying the first task execution.
 
+- ``ResponseProxy`` is now awaitable to allow you to directly await the response to retreive the message.
+
+- Permission util methods (and by proxy checks) now account for guild owner having all permissions.
+
+- Improve typing and add missing method overloads.
+
+- Improve ``CONSUME_REST`` to strip leading whitespace before consuming the remaining string.
+
+- Fix subcommand attribute propogation problems when setting initialiser attributes.
+
 Version 2.2.1
 =============
 

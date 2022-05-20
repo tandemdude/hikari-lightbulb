@@ -84,8 +84,7 @@ if t.TYPE_CHECKING or _CRON_AVAILABLE:
         """
         A crontab-based task trigger. Tasks will be run dependent on the given crontab.
 
-        Note:
-            Keyword arguments are only used if no crontab expression is passed.
+        Keyword arguments are only used if no crontab expression is passed.
 
         Args:
             crontab (Optional[:obj:`str`]): Schedule that task executions will follow.

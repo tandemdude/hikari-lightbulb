@@ -308,6 +308,31 @@ class CommandLike:
         """
         Registers a coroutine function as an error handler for this command. This can be used as a first or second
         order decorator, or called manually with the function to register.
+
+        Example:
+
+            .. code-block:: python
+
+                @lightbulb.command(...)
+                @lightbulb.implements(...)
+                async def foo(ctx: lightbulb.Context) -> None:
+                    ...
+
+                # Valid
+                @foo.set_error_handler
+                async def foo_error_handler(event: lightbulb.CommandErrorEvent) -> bool:
+                    ...
+
+                # Also valid
+                @foo.set_error_handler()
+                async def foo_error_handler(event: lightbulb.CommandErrorEvent) -> bool:
+                    ...
+
+                # Also valid
+                async def foo_error_handler(event: lightbulb.CommandErrorEvent) -> bool:
+                    ...
+
+                foo.set_error_handler(foo_error_handler)
         """
         if func is not None:
             self.error_handler = func
@@ -333,6 +358,37 @@ class CommandLike:
         """
         Registers a :obj:`~CommandLike` object as a child to this command. This can be used as a first or second
         order decorator, or called manually with the :obj:`~CommandLike` instance to add as a child.
+
+        Example:
+
+            .. code-block:: python
+
+                @lightbulb.command(...)
+                @lightbulb.implements(...)
+                async def foo(ctx: lightbulb.Context) -> None:
+                    ...
+
+                # Valid
+                @foo.child
+                @lightbulb.command(...)
+                @lightbulb.implements(...)
+                async def foo_child(event: lightbulb.Context) -> None:
+                    ...
+
+                # Also valid
+                @foo.child()
+                @lightbulb.command(...)
+                @lightbulb.implements(...)
+                async def foo_child(event: lightbulb.Context) -> None:
+                    ...
+
+                # Also valid
+                @lightbulb.command(...)
+                @lightbulb.implements(...)
+                async def foo_child(event: lightbulb.Context) -> None:
+                    ...
+
+                foo.child(foo_child)
         """
         if cmd_like is not None:
             self.subcommands.append(cmd_like)
@@ -361,6 +417,22 @@ class CommandLike:
         Args:
             opt1 (:obj:`str`): Option that this callback will do autocomplete for.
             *opts (:obj:`str`): Additional options that this callback will do autocomplete for.
+
+        Example:
+
+            .. code-block:: python
+
+                @lightbulb.option("foo", "bar", autocomplete=True)
+                @lightbulb.command(...)
+                @lightbulb.implements(lightbulb.SlashCommand)
+                async def foo(ctx: lightbulb.Context) -> None
+                    ...
+
+                @foo.autocomplete("foo")  # Name of the option you want to autocomplete
+                async def foo_autocomplete(
+                    opt: hikari.AutocompleteInteractionOption, inter: hikari.AutocompleteInteraction
+                ) -> Union[str, Sequence[str], hikari.CommandChoice, Sequence[hikari.CommandChoice]]:
+                    ...
         """
 
         def decorate(func: AutocompleteCallbackT) -> AutocompleteCallbackT:

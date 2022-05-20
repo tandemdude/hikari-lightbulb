@@ -36,7 +36,7 @@ if t.TYPE_CHECKING:
 class OptionsProxy:
     """
     Proxy for the options that the command was invoked with allowing access using
-    dot notation instead of dictionary lookup.
+    dot notation as well as dictionary lookup.
 
     Args:
         options (Dict[:obj:`str`, Any]): Options to act as a proxy for.
@@ -138,7 +138,7 @@ class ResponseProxy:
             ``None``
 
         Raises:
-            :obj:`~.errors.UnsupportedResponseOperation`: This response cannot be deleted (for ephemeral
+            :obj:`~.errors.UnsupportedResponseOperation`: This response cannot be deleted (for some ephemeral
                 interaction responses).
         """
         if not self._deleteable:
@@ -477,7 +477,7 @@ class ApplicationContext(Context, abc.ABC):
         Args:
             *args (Any): Positional arguments passed to ``CommandInteraction.create_initial_response`` or
                 ``CommandInteraction.execute``.
-            delete_after (Union[int, float, None]): The number of seconds to wait before deleting this response.
+            delete_after (Union[:obj:`int`, :obj:`float`, ``None``]): The number of seconds to wait before deleting this response.
             **kwargs: Keyword arguments passed to ``CommandInteraction.create_initial_response`` or
                 ``CommandInteraction.execute``.
 

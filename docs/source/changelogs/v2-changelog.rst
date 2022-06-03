@@ -21,7 +21,7 @@ Version 2.2.2
 
 - Improve ``CONSUME_REST`` to strip leading whitespace before consuming the remaining string.
 
-- Fix subcommand attribute propogation problems when setting initialiser attributes.
+- Fix subcommand attribute propagation problems when setting initialiser attributes.
 
 Version 2.2.1
 =============

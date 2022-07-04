@@ -26,6 +26,7 @@ __all__ = [
     "add_cooldown",
     "set_help",
     "set_max_concurrency",
+    "app_command_permissions",
 ]
 
 import functools
@@ -359,6 +360,35 @@ def set_max_concurrency(
         if not isinstance(c_like, commands.base.CommandLike):
             raise SyntaxError("'set_max_concurrency' decorator must be above the 'command' decorator")
         c_like.max_concurrency = (uses, bucket)
+
+        return c_like
+
+    return decorate
+
+
+def app_command_permissions(
+    perms: t.Optional[hikari.Permissions] = None, *, dm_enabled: bool = True, bypass_checks: bool = False
+) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
+    """
+    Second order decorator that defines the application command permissions v2 configuration
+    for a command.
+
+    Args:
+        perms (Optional[:obj:`hikari.Permissions`]: The permissions to set as the default for the command when
+            it is created in a guild. If ``None``, no default permissions will be set.
+        dm_enabled (:obj:`bool`): Whether the command should be available in DM. If the command is not global
+            then this will have no effect.
+        bypass_checks (:obj:`bool`): Whether author permissions checks will be bypassed when this command is
+            invoked as an application command. This allows guild admins to dictate who is allowed to use the command
+            as opposed to enforcing a set of permissions.
+    """
+
+    def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
+        if perms is not None:
+            c_like.app_command_default_member_permissions = perms
+
+        c_like.app_command_dm_enabled = dm_enabled
+        c_like.app_command_bypass_author_permission_checks = bypass_checks
 
         return c_like
 

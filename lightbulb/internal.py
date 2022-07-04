@@ -79,6 +79,8 @@ def _serialise_hikari_command(command: hikari.PartialCommand) -> t.Dict[str, t.A
         "description": getattr(command, "description", None) or None,
         "options": [_serialise_option(o) for o in options],
         "guild_id": command.guild_id or None,
+        "default_member_permissions": command.default_member_permissions or None,
+        "dm_enabled": command.is_dm_enabled,
     }
 
 
@@ -90,6 +92,8 @@ def _serialise_lightbulb_command(command: base.ApplicationCommand) -> t.Dict[str
         "description": create_kwargs.get("description"),
         "options": [_serialise_option(o) for o in sorted(create_kwargs.get("options", []), key=lambda o: o.name)],  # type: ignore
         "guild_id": _GuildIDCollection(command.guilds) if command.guilds else None,
+        "default_member_permissions": command.app_command_default_member_permissions,
+        "dm_enabled": command.app_command_dm_enabled if not command.guilds else False,
     }
 
 
@@ -114,6 +118,10 @@ def _create_builder_from_command(
                 bld.add_option(option)
         else:
             bld = app.rest.context_menu_command_builder(cmd.type, cmd.name)
+
+        bld.set_default_member_permissions(cmd.default_member_permissions)
+        bld.set_is_dm_enabled(cmd.is_dm_enabled)
+
         bld.set_id(cmd.id)
     else:
         create_kwargs = cmd.as_create_kwargs()
@@ -123,6 +131,9 @@ def _create_builder_from_command(
                 bld.add_option(opt)
         else:
             bld = app.rest.context_menu_command_builder(create_kwargs["type"], create_kwargs["name"])
+
+        if cmd.app_command_default_member_permissions is not None:
+            bld.set_default_member_permissions(cmd.app_command_default_member_permissions)
 
     return bld
 

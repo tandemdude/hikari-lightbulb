@@ -115,6 +115,7 @@ __all__ = [
     "add_checks",
     "add_cooldown",
     "app",
+    "app_command_permissions",
     "bot_has_channel_permissions",
     "bot_has_guild_permissions",
     "bot_has_role_permissions",
@@ -178,4 +179,4 @@ from lightbulb.events import *
 from lightbulb.help_command import *
 from lightbulb.plugins import *
 
-__version__ = "2.2.2"
+__version__ = "2.2.3"

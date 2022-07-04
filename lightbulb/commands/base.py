@@ -274,6 +274,12 @@ class CommandLike:
     """Whether or not the command will have its options passed as keyword arguments when invoked."""
     max_concurrency: t.Optional[t.Tuple[int, t.Type[buckets.Bucket]]] = None
     """The max concurrency rule for the command."""
+    app_command_default_member_permissions: t.Optional[hikari.Permissions] = None
+    """The default member permissions for this command, if an application command."""
+    app_command_dm_enabled: bool = True
+    """Whether this command will be enabled in DMs, if an application command."""
+    app_command_bypass_author_permission_checks: bool = False
+    """Whether invocations of this command will bypass author permission checks, if an application command."""
     _autocomplete_callbacks: t.Dict[
         str,
         t.Callable[
@@ -533,12 +539,12 @@ class Command(abc.ABC):
 
     @property
     def auto_defer(self) -> bool:
-        """Whether or not to automatically defer the response when the command is invoked."""
+        """Whether to automatically defer the response when the command is invoked."""
         return self._initialiser.auto_defer
 
     @property
     def default_ephemeral(self) -> bool:
-        """Whether or not to send responses from this command as ephemeral messages by default."""
+        """Whether to send responses from this command as ephemeral messages by default."""
         return self._initialiser.ephemeral
 
     @property
@@ -548,23 +554,38 @@ class Command(abc.ABC):
 
     @property
     def hidden(self) -> bool:
-        """Whether or not the command should be hidden from the help command."""
+        """Whether the command should be hidden from the help command."""
         return self._initialiser.hidden
 
     @property
     def inherit_checks(self) -> bool:
-        """Whether or not the command should inherit checks from the parent group."""
+        """Whether the command should inherit checks from the parent group."""
         return self._initialiser.inherit_checks
 
     @property
     def pass_options(self) -> bool:
-        """Whether or not the command will have its options passed as keyword arguments when invoked."""
+        """Whether the command will have its options passed as keyword arguments when invoked."""
         return self._initialiser.pass_options
 
     @property
     def max_concurrency(self) -> t.Optional[t.Tuple[int, t.Type[buckets.Bucket]]]:
         """The max concurrency rule for the command."""
         return self._initialiser.max_concurrency
+
+    @property
+    def app_command_default_member_permissions(self) -> t.Optional[hikari.Permissions]:
+        """The default member permissions for this command, as an application command."""
+        return self._initialiser.app_command_default_member_permissions
+
+    @property
+    def app_command_dm_enabled(self) -> bool:
+        """Whether this command, as an application command, is enabled in DMs."""
+        return self._initialiser.app_command_dm_enabled
+
+    @property
+    def app_command_bypass_author_permission_checks(self) -> bool:
+        """Whether invocations of this command as an application command will bypass author permission checks."""
+        return self._initialiser.app_command_bypass_author_permission_checks
 
     def __hash__(self) -> int:
         return hash(self.name)
@@ -667,7 +688,7 @@ class Command(abc.ABC):
     async def evaluate_checks(self, context: context_.base.Context) -> bool:
         """
         Evaluate the command's checks under the given context. This method will either return
-        ``True`` if all the checks passed or it will raise :obj:`~.errors.CheckFailure`.
+        ``True`` if all the checks passed, or it will raise :obj:`~.errors.CheckFailure`.
         """
         exempt = self.check_exempt(context)
         if inspect.iscoroutine(exempt):
@@ -752,7 +773,10 @@ class ApplicationCommand(Command, abc.ABC):
         """
         assert self.app.application is not None
         kwargs = self.as_create_kwargs()
-        kwargs.update({"guild": guild} if guild is not None else {})
+        kwargs.update({"guild": guild, "dm_enabled": self.app_command_dm_enabled} if guild is not None else {})
+
+        if self.app_command_default_member_permissions is not None:
+            kwargs["default_member_permissions"] = self.app_command_default_member_permissions
 
         cmd_type: hikari.CommandType = kwargs.pop("type")
         created_cmd: hikari.PartialCommand

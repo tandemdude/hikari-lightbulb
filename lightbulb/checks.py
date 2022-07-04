@@ -242,6 +242,11 @@ def _has_roles(
 
 
 def _has_guild_permissions(context: context_.base.Context, *, perms: hikari.Permissions) -> bool:
+    if isinstance(context, context_.base.ApplicationContext):
+        cmd = t.cast("commands.base.ApplicationCommand", context.invoked)
+        if (context.guild_id is None and cmd.app_command_dm_enabled) or cmd.app_command_bypass_author_permission_checks:
+            return True
+
     _guild_only(context)
 
     channel = context.get_channel()
@@ -258,6 +263,11 @@ def _has_guild_permissions(context: context_.base.Context, *, perms: hikari.Perm
 
 
 def _has_role_permissions(context: context_.base.Context, *, perms: hikari.Permissions) -> bool:
+    if isinstance(context, context_.base.ApplicationContext):
+        cmd = t.cast("commands.base.ApplicationCommand", context.invoked)
+        if (context.guild_id is None and cmd.app_command_dm_enabled) or cmd.app_command_bypass_author_permission_checks:
+            return True
+
     _guild_only(context)
 
     assert context.member is not None
@@ -270,6 +280,11 @@ def _has_role_permissions(context: context_.base.Context, *, perms: hikari.Permi
 
 
 def _has_channel_permissions(context: context_.base.Context, *, perms: hikari.Permissions) -> bool:
+    if isinstance(context, context_.base.ApplicationContext):
+        cmd = t.cast("commands.base.ApplicationCommand", context.invoked)
+        if (context.guild_id is None and cmd.app_command_dm_enabled) or cmd.app_command_bypass_author_permission_checks:
+            return True
+
     _guild_only(context)
 
     channel = context.get_channel()

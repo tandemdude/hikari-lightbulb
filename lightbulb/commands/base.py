@@ -773,7 +773,9 @@ class ApplicationCommand(Command, abc.ABC):
         """
         assert self.app.application is not None
         kwargs = self.as_create_kwargs()
-        kwargs.update({"guild": guild, "dm_enabled": self.app_command_dm_enabled} if guild is not None else {})
+        kwargs.update({"guild": guild} if guild is not None else {})
+        if guild is None:
+            kwargs["dm_enabled"] = self.app_command_dm_enabled
 
         if self.app_command_default_member_permissions is not None:
             kwargs["default_member_permissions"] = self.app_command_default_member_permissions

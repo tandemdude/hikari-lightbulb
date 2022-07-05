@@ -134,6 +134,7 @@ def _create_builder_from_command(
 
         if cmd.app_command_default_member_permissions is not None:
             bld.set_default_member_permissions(cmd.app_command_default_member_permissions)
+        bld.set_is_dm_enabled(cmd.app_command_dm_enabled)
 
     return bld
 

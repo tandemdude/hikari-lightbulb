@@ -34,7 +34,9 @@ jobs:
         id: deploy
 
       - name: Push Tag
-        uses: actions-ecosystem/action-push-tag@v1
-        with:
-          tag: ${{ steps.deploy.outputs.version }}
-          message: "Release version ${{ steps.deploy.outputs.version}}"
+        run: |
+          tag="v${{ steps.deploy.outputs.version }}"
+          message="Release ${{ steps.deploy.outputs.version }}"
+          git config user.name "${GITHUB_ACTOR}" && git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          git tag -a "${tag}" -m "${message}"
+          git push origin "${tag}"

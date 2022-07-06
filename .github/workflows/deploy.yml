@@ -35,7 +35,7 @@ jobs:
 
       - name: Push Tag
         run: |
-          tag="v${{ steps.deploy.outputs.version }}"
+          tag="${{ steps.deploy.outputs.version }}"
           message="Release ${{ steps.deploy.outputs.version }}"
           git config user.name "${GITHUB_ACTOR}" && git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
           git tag -a "${tag}" -m "${message}"

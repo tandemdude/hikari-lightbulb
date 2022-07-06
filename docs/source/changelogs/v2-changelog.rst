@@ -6,6 +6,11 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 2.2.3
+=============
+
+- Implement application command permissions V2. See :obj:`~lightbulb.decorators.app_command_permissions`.
+
 Version 2.2.2
 =============
 

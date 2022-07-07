@@ -374,7 +374,7 @@ def app_command_permissions(
     for a command.
 
     Args:
-        perms (Optional[:obj:`hikari.Permissions`]: The permissions to set as the default for the command when
+        perms (Optional[:obj:`hikari.Permissions`]): The permissions to set as the default for the command when
             it is created in a guild. If ``None``, no default permissions will be set.
         dm_enabled (:obj:`bool`): Whether the command should be available in DM. If the command is not global
             then this will have no effect.

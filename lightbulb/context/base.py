@@ -93,7 +93,7 @@ class ResponseProxy:
             :obj:`~hikari.messages.Message`: The response's created message.
 
         Note:
-            This object is awaitable, hence the following is also valid.
+            This object is awaitable (since version `2.2.2`), hence the following is also valid.
 
             .. code-block:: python
 
@@ -270,12 +270,21 @@ class Context(abc.ABC):
     @property
     @abc.abstractmethod
     def command(self) -> t.Optional[commands.base.Command]:
-        """The root command object that the context is for."""
+        """
+        The root command object that the context is for.
+
+        See Also:
+            :obj:`~Context.invoked`
+        """
         ...
 
     @property
     def invoked(self) -> t.Optional[commands.base.Command]:
-        """The command or subcommand that was invoked in this context."""
+        """
+        The command or subcommand that was invoked in this context.
+
+        .. versionadded:: 2.1.0
+        """
         return self._invoked
 
     @abc.abstractmethod
@@ -483,6 +492,9 @@ class ApplicationContext(Context, abc.ABC):
 
         Returns:
             :obj:`~ResponseProxy`: Proxy wrapping the response of the ``respond`` call.
+
+        .. versionadded:: 2.2.0
+            ``delete_after`` kwarg.
         """
 
         async def _cleanup(timeout: t.Union[int, float], proxy_: ResponseProxy) -> None:

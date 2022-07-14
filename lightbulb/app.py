@@ -301,6 +301,8 @@ class BotApp(hikari.GatewayBot):
 
         Returns:
             :obj:`asyncio.Task`: Created task object.
+
+        .. versionadded:: 2.2.0
         """
         task: asyncio.Task[None] = asyncio.create_task(coro, name=name)  # type: ignore[arg-type]
         self._running_tasks.append(task)
@@ -398,6 +400,8 @@ class BotApp(hikari.GatewayBot):
 
         Returns:
             ``None``
+
+        .. versionadded:: 2.2.0
         """
         await internal.manage_application_commands(self)
 

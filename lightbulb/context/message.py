@@ -52,6 +52,7 @@ class MessageContext(base.ApplicationContext):
             async def get_message_id(ctx: lightbulb.MessageContext) -> None:
                 await ctx.respond(ctx.options.target.id)
 
+    .. versionadded:: 2.2.0
     """
 
     __slots__ = ("_options",)

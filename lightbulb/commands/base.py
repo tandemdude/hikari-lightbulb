@@ -159,9 +159,17 @@ class OptionLike:
     modifier: OptionModifier = OptionModifier.NONE
     """Additional modifier controlling how the option should be parsed. This only affects prefix commands."""
     min_value: t.Optional[t.Union[float, int]] = None
-    """The minimum value permitted for this option (inclusive). The option must be ``INTEGER`` or ``FLOAT`` to use this."""
+    """
+    The minimum value permitted for this option (inclusive). The option must be ``INTEGER`` or ``FLOAT`` to use this.
+    
+    .. versionadded:: 2.1.3
+    """
     max_value: t.Optional[t.Union[float, int]] = None
-    """The maximum value permitted for this option (inclusive). The option must be ``INTEGER`` or ``FLOAT`` to use this."""
+    """
+    The maximum value permitted for this option (inclusive). The option must be ``INTEGER`` or ``FLOAT`` to use this.
+    
+    .. versionadded:: 2.1.3
+    """
     autocomplete: bool = False
     """Whether the option should be autocompleted or not. This only affects slash commands."""
 

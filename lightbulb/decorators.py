@@ -100,6 +100,11 @@ def command(
         pass_options (:obj:`bool`): Whether the command will have its options passed as keyword arguments when invoked.
         cls (Type[:obj:`~.commands.base.CommandLike`]): ``CommandLike`` class to instantiate from this decorator.
             Defaults to :obj:`~.commands.base.CommandLike`.
+
+    .. versionadded:: 2.1.0
+        ``cls`` kwarg.
+    .. versionadded:: 2.2.1
+        ``pass_options`` kwarg.
     """
 
     def decorate(func: CommandCallbackT) -> commands.base.CommandLike:
@@ -152,6 +157,11 @@ def option(
             Defaults to ``False``.
         cls (Type[:obj:`~.commands.base.OptionLike`]): ``OptionLike`` class to instantiate from this decorator. Defaults
             to :obj:`~.commands.base.OptionLike`.
+
+    .. versionadded:: 2.1.0
+        ``cls`` kwarg.
+    .. versionadded:: 2.1.3
+        ``min_value`` and ``max_value`` kwargs.
     """
 
     def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
@@ -352,6 +362,8 @@ def set_max_concurrency(
         uses (:obj:`int`): The maximum number of uses of the command that can be executing
             concurrently before a :obj:`~.errors.MaxConcurrencyLimitReached` will be raised upon invocation.
         bucket (Type[:obj:`~.buckets.Bucket`]): Bucket that command max concurrency will be processed under.
+
+    .. versionadded:: 2.2.1
     """
     if uses < 1 or not isinstance(uses, int):
         raise ValueError("'uses' must be a positive integer")
@@ -381,6 +393,8 @@ def app_command_permissions(
         bypass_checks (:obj:`bool`): Whether author permissions checks will be bypassed when this command is
             invoked as an application command. This allows guild admins to dictate who is allowed to use the command
             as opposed to enforcing a set of permissions.
+
+    .. versionadded:: 2.2.3
     """
 
     def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:

@@ -52,6 +52,7 @@ class UserContext(base.ApplicationContext):
             async def get_user_id(ctx: lightbulb.UserContext) -> None:
                 await ctx.respond(ctx.options.target.id)
 
+    .. versionadded:: 2.2.0
     """
 
     __slots__ = ("_options",)

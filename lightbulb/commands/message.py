@@ -31,6 +31,8 @@ class MessageCommand(base.ApplicationCommand):
     An implementation of :obj:`~.commands.base.Command` representing a message context menu command.
 
     See the `API Documentation <https://discord.com/developers/docs/interactions/application-commands#message-commands>`_.
+
+    .. versionadded:: 2.2.0
     """
 
     __slots__ = ()

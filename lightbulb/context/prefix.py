@@ -128,6 +128,9 @@ class PrefixContext(base.Context):
 
         Returns:
             :obj:`~hikari.messages.Message`: The created message object.
+
+        .. versionadded:: 2.2.0
+            ``delete_after`` kwarg.
         """
         self._deferred = False
 

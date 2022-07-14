@@ -4,6 +4,8 @@
 Extension Libraries
 ===================
 
+.. versionadded:: 2.1.0
+
 --------
 Built In
 --------

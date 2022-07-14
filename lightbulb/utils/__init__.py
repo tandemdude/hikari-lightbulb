@@ -80,6 +80,8 @@ def build_invite_url(
 
     Returns:
         :obj:`str`: Created invite link.
+
+    .. versionadded:: 2.2.0
     """
     if app.application is None:
         raise ValueError("Cannot build invite url when 'app.application' is None")

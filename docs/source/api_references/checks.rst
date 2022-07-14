@@ -12,6 +12,8 @@ Checks API Reference
 Exclusive Checks
 ================
 
+.. versionadded:: 2.0.1
+
 Check objects support the bitwise or (``|``) operator for the creation of exclusive checks. This allows you to add
 a check to the command which will pass if any one of the provided checks pass instead of requiring all of the checks
 to pass.

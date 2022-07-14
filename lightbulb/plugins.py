@@ -53,6 +53,9 @@ class Plugin:
         default_enabled_guilds (UndefinedOr[Union[:obj:`int`, Sequence[:obj:`int`]]]): The guilds to create application
             commands registered to this plugin in by default. This overrides :obj:`~.app.BotApp.default_enabled_guilds`
             but is overridden by :obj:`~.commands.base.CommandLike.guilds`.
+
+    .. versionadded:: 2.1.2
+        ``default_enabled_guilds`` arg.
     """
 
     __slots__ = (

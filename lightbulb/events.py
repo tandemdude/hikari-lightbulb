@@ -70,7 +70,11 @@ class LightbulbEvent(hikari.Event, abc.ABC):
 
 @attr.s(slots=True, weakref_slot=False)
 class LightbulbStartedEvent(LightbulbEvent):
-    """Event dispatched after the application commands have been managed."""
+    """
+    Event dispatched after the application commands have been managed.
+
+    .. versionadded:: 2.1.0
+    """
 
 
 @attr.s(slots=True, weakref_slot=False)

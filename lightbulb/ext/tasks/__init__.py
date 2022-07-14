@@ -18,6 +18,8 @@
 """
 An implementation of simple repeating asyncio tasks.
 
+.. versionadded:: 2.2.0
+
 Setup
 -----
 
@@ -442,6 +444,9 @@ def task(
         wait_before_execution (UndefinedOr[:obj:`bool`]): Whether the task will wait its given interval before the first
             time the task is executed. Defaults to ``UNDEFINED`` (will use the trigger's default).
         cls (Type[:obj:`~Task`]): Task class to use.
+
+    .. versionadded:: 2.2.2
+        ``wait_before_execution`` kwarg.
     """
 
     def decorate(func: TaskCallbackT) -> Task:

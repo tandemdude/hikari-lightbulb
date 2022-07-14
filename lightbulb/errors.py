@@ -158,7 +158,11 @@ class ConverterFailure(LightbulbError):
         self.option: commands.base.OptionLike = opt
         """The option that could not be converted."""
         self.raw_value: str = raw
-        """The value that could not be converted."""
+        """
+        The value that could not be converted.
+        
+        .. versionadded:: 2.2.1
+        """
 
 
 class NotEnoughArguments(LightbulbError):
@@ -198,7 +202,7 @@ class CheckFailure(LightbulbError):
     """
     Error raised when a check fails before command invocation. If another error caused this
     to be raised then you can access it using ``CheckFailure.__cause__``, or in the case of
-    multiple checks failing, via ``CheckFailure.causes``.
+    multiple checks failing, via ``CheckFailure.causes`` (since version `2.2.1`).
     """
 
     __slots__ = ("causes",)

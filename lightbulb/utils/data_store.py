@@ -73,6 +73,8 @@ class DataStore(t.Dict[str, t.Any]):
 
         Raises:
             :obj:`ValueError`: If a key of name ``item`` has not been set.
+
+        .. versionadded:: 2.2.4
         """
         if item not in self:
             raise TypeError(f"Item {item!r} was never set")

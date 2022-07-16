@@ -6,6 +6,11 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 2.2.4
+=============
+
+- Add :obj:`~lightbulb.utils.data_store.DataStore.get_as` to allow ``DataStore`` to be more type-complete.
+
 Version 2.2.3
 =============
 

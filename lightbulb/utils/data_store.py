@@ -21,11 +21,13 @@ __all__ = ["DataStore"]
 
 import typing as t
 
+T = t.TypeVar("T")
+
 
 class DataStore(t.Dict[str, t.Any]):
     """
     Data storage class allowing setting, retrieval and unsetting of custom
-    attributes. This class subclasses dict so the data can be accessed the same
+    attributes. This class subclasses :obj:`dict` so the data can be accessed the same
     as you would a dictionary as well as using dot notation.
 
     Example:
@@ -57,3 +59,21 @@ class DataStore(t.Dict[str, t.Any]):
 
     def __delattr__(self, item: str) -> None:
         self.pop(item, None)
+
+    def get_as(self, item: str, type: t.Type[T]) -> T:
+        """
+        Helper method to allow type-complete getting of items from this ``DataStore``.
+
+        Args:
+            item (:obj:`str`): The name of the key that the item is stored at.
+            type (Type[T]): The type to cast the item as.
+
+        Returns:
+            T: The item stored at key ``item``, cast to the given type.
+
+        Raises:
+            :obj:`ValueError`: If a key of name ``item`` has not been set.
+        """
+        if item not in self:
+            raise TypeError(f"Item {item!r} was never set")
+        return t.cast(type, self.get(item))  # type: ignore

@@ -74,8 +74,12 @@ class DataStore(t.Dict[str, t.Any]):
         Raises:
             :obj:`ValueError`: If a key of name ``item`` has not been set.
 
+        Note:
+            This does **not** verify types, it just performs a :meth:`typing.cast` to fool the
+            type system into thinking that the return value is of the correct type.
+
         .. versionadded:: 2.2.4
         """
         if item not in self:
             raise TypeError(f"Item {item!r} was never set")
-        return t.cast(type, self.get(item))  # type: ignore
+        return t.cast(T, self.get(item))

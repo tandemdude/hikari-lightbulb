@@ -1,4 +1,4 @@
 -r requirements.txt
 -r docs_requirements.txt
 -r crontrigger_requirements.txt
-nox~=2022.1.7
+nox~=2022.8.7

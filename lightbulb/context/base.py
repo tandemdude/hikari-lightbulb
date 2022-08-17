@@ -32,6 +32,8 @@ if t.TYPE_CHECKING:
     from lightbulb import app as app_
     from lightbulb import commands
 
+    dict_items = type({}.items())
+
 
 class OptionsProxy:
     """
@@ -42,6 +44,8 @@ class OptionsProxy:
         options (Dict[:obj:`str`, Any]): Options to act as a proxy for.
     """
 
+    __slots__ = ("_options",)
+
     def __init__(self, options: t.Dict[str, t.Any]) -> None:
         self._options = options
 
@@ -50,6 +54,19 @@ class OptionsProxy:
 
     def __getitem__(self, item: str) -> t.Any:
         return self._options.get(item)
+
+    def items(self) -> dict_items[str, t.Any]:
+        """
+        Iterates through the options and returns a series of key:value
+        pairs.
+
+        Returns:
+            :obj:`dict_items[:obj:`str`, Any]`: The options items. This
+                is functionally similar to a list of tuples, where for
+                each tuple, the key is the option name, and the value is
+                the option value.
+        """
+        return self._options.items()
 
 
 class ResponseProxy:

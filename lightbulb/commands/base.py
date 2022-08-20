@@ -808,10 +808,10 @@ class ApplicationCommand(Command, abc.ABC):
         if self.app_command_default_member_permissions is not None:
             kwargs["default_member_permissions"] = self.app_command_default_member_permissions
                 
-        if self.name_localisations != {}:
+        if self.name_localisations:
             kwargs["name_localizations"] = self.name_localisations
         
-        if self.description_localisations != {}:
+        if self.description_localisations:
             kwargs["description_localizations"] = self.description_localisations
 
         cmd_type: hikari.CommandType = kwargs.pop("type")

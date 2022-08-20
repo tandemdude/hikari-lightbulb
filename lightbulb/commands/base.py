@@ -172,6 +172,10 @@ class OptionLike:
     """
     autocomplete: bool = False
     """Whether the option should be autocompleted or not. This only affects slash commands."""
+    name_localisations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
+    """A set of name localisations for this option"""
+    description_localisations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
+    """A set of description localisations for this option"""
 
     def as_application_command_option(self) -> hikari.CommandOption:
         """
@@ -215,6 +219,8 @@ class OptionLike:
             "description": self.description,
             "is_required": self.required,
             "autocomplete": self.autocomplete,
+            "name_localizations": self.name_localisations,
+            "description_localizations": self.description_localisations
         }
 
         if self.choices:
@@ -288,6 +294,10 @@ class CommandLike:
     """Whether this command will be enabled in DMs, if an application command."""
     app_command_bypass_author_permission_checks: bool = False
     """Whether invocations of this command will bypass author permission checks, if an application command."""
+    name_localisations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
+    """A set of name localisations for this command"""
+    description_localisations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
+    """A set of description localisations for this command"""
     _autocomplete_callbacks: t.Dict[
         str,
         t.Callable[
@@ -595,6 +605,16 @@ class Command(abc.ABC):
         """Whether invocations of this command as an application command will bypass author permission checks."""
         return self._initialiser.app_command_bypass_author_permission_checks
 
+    @property
+    def name_localisations(self) -> t.Mapping[t.Union[hikari.Locale, str], str]:
+        """A set of name localisations for this command"""
+        return self._initialiser.name_localisations
+    
+    @property
+    def description_localisations(self) -> t.Mapping[t.Union[hikari.Locale, str], str]:
+        """A set of description localisations for this command"""
+        return self._initialiser.description_localisations
+
     def __hash__(self) -> int:
         return hash(self.name)
 
@@ -787,6 +807,12 @@ class ApplicationCommand(Command, abc.ABC):
 
         if self.app_command_default_member_permissions is not None:
             kwargs["default_member_permissions"] = self.app_command_default_member_permissions
+                
+        if self.name_localisations != {}:
+            kwargs["name_localizations"] = self.name_localisations
+        
+        if self.description_localisations != {}:
+            kwargs["description_localizations"] = self.description_localisations
 
         cmd_type: hikari.CommandType = kwargs.pop("type")
         created_cmd: hikari.PartialCommand

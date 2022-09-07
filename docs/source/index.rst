@@ -50,7 +50,7 @@ Helpful Resources:
 
 - `Hikari Documentation <https://www.hikari-py.dev/>`_
 
-- `Lightbulb Tutorial <https://neonjonn.readthedocs.io/en/latest/hikari-get-started/lightbulb.html>`_ (Thanks to NeonJonn)
+- `Lightbulb Tutorial <https://novanai.readthedocs.io/en/latest/lightbulb/index.html>`_ (Thanks to Nova)
 
 - :ref:`guides`
 

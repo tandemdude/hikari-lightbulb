@@ -32,8 +32,6 @@ if t.TYPE_CHECKING:
     from lightbulb import app as app_
     from lightbulb import commands
 
-    dict_items = type({}.items())
-
 
 class OptionsProxy:
     """
@@ -55,7 +53,7 @@ class OptionsProxy:
     def __getitem__(self, item: str) -> t.Any:
         return self._options.get(item)
 
-    def items(self) -> dict_items[str, t.Any]:
+    def items(self) -> t.ItemsView[str, t.Any]:
         """
         Iterates through the options and returns a series of key:value
         pairs.

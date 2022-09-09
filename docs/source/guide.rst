@@ -19,5 +19,5 @@ contact thomm.o#8637 on discord.
    guides/commands
    guides/custom-help
    guides/error-handling
-   guides/extensions
    guides/plugins
+   guides/extensions

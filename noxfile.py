@@ -24,7 +24,7 @@ PATH_TO_PROJECT = os.path.join(".", "lightbulb")
 SCRIPT_PATHS = [
     PATH_TO_PROJECT,
     "noxfile.py",
-    "release_webhook.py",
+    "release_helpers.py",
     "docs/source/conf.py",
 ]
 

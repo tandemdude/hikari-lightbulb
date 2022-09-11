@@ -1,6 +1,6 @@
 import os
-import sys
 import re
+import sys
 
 import lightbulb
 
@@ -13,6 +13,7 @@ if len(sys.argv) < 2:
 command = sys.argv[1]
 if command == "send_webhook":
     import requests
+
     requests.post(
         os.environ["RELEASE_WEBHOOK"],
         json={
@@ -32,7 +33,7 @@ elif command == "bump_version":
 
     with open("lightbulb/__init__.py") as fp:
         content = fp.read()
-        new_content = version_regex.sub(f"__version__ = \"{new_version}\"", content)
+        new_content = version_regex.sub(f'__version__ = "{new_version}"', content)
 
     with open("lightbulb/__init__.py", "w") as fp:
         fp.write(new_content)

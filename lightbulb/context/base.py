@@ -59,7 +59,7 @@ class OptionsProxy:
         pairs.
 
         Returns:
-            :obj:`dict_items[:obj:`str`, Any]`: The options items. This
+            ItemsView[:obj:`str`, Any]: The options items. This
                 is functionally similar to a list of tuples, where for
                 each tuple, the key is the option name, and the value is
                 the option value.

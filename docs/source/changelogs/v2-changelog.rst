@@ -6,6 +6,11 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 2.3.0
+=============
+
+- Add support for Python 3.11.
+
 Version 2.2.4
 =============
 

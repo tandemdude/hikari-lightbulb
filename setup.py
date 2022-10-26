@@ -70,7 +70,7 @@ setup(
     zip_safe=False,
     install_requires=parse_requirements_file("requirements.txt"),
     extras_require={"crontrigger": parse_requirements_file("crontrigger_requirements.txt")},
-    python_requires=">=3.8.0,<=3.11",
+    python_requires=">=3.8.0,<3.12",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Framework :: AsyncIO",

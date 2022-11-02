@@ -6,15 +6,19 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
-Version 2.3.0
+Version 2.2.5
 =============
 
 - Add support for Python 3.11.
 
+- Bump hikari requirement to ``2.0.0.dev111``.
+
+- Allow a user to iterate through ``ctx.options`` using :meth:`~lightbulb.context.base.OptionsProxy.items`.
+
 Version 2.2.4
 =============
 
-- Add :obj:`~lightbulb.utils.data_store.DataStore.get_as` to allow ``DataStore`` to be more type-complete.
+- Add :meth:`~lightbulb.utils.data_store.DataStore.get_as` to allow ``DataStore`` to be more type-complete.
 
 Version 2.2.3
 =============

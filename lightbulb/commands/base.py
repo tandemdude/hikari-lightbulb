@@ -228,7 +228,7 @@ class OptionLike:
             "is_required": self.required,
             "autocomplete": self.autocomplete,
             "name_localizations": self.name_localizations,
-            "description_localizations": self.description_localizations
+            "description_localizations": self.description_localizations,
         }
 
         if self.choices:

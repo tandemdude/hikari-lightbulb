@@ -98,6 +98,8 @@ def command(
         inherit_checks (:obj:`bool`): Whether or not the command should inherit checks from the parent group. Only
             affects subcommands. Defaults to ``False``.
         pass_options (:obj:`bool`): Whether the command will have its options passed as keyword arguments when invoked.
+        name_localizations (Mapping[Union[hikari.locales.Locale, :obj:`str`], :obj:`s®tr`]): A set of name localizations for this command. Defaults to an empty dictionary.
+        description_localizations (Mapping[Union[hikari.locales.Locale, :obj:`str`], :obj:`str`]): A set of description localizations for this command. Defaults to an empty dictionary.
         cls (Type[:obj:`~.commands.base.CommandLike`]): ``CommandLike`` class to instantiate from this decorator.
             Defaults to :obj:`~.commands.base.CommandLike`.
 
@@ -105,6 +107,8 @@ def command(
         ``cls`` kwarg.
     .. versionadded:: 2.2.1
         ``pass_options`` kwarg.
+    .. versionadded:: 2.2.5
+        ``name_localizations`` and ``description_localizations`` kwargs.
     """
 
     def decorate(func: CommandCallbackT) -> commands.base.CommandLike:
@@ -155,6 +159,8 @@ def option(
         autocomplete (Union[:obj:`bool`, AutocompleteCallbackT]): Boolean representing whether the option will use
             autocomplete or the callback to use for autocomplete for this option. This will only affect slash commands.
             Defaults to ``False``.
+        name_localizations (Mapping[Union[hikari.locales.Locale, :obj:`str`], :obj:`str`]): A set of name localizations for this option. Defaults to an empty dictionary.
+        description_localizations (Mapping[Union[hikari.locales.Locale, :obj:`str`], :obj:`str`]): A set of description localizations for this option. Defaults to an empty dictionary.
         cls (Type[:obj:`~.commands.base.OptionLike`]): ``OptionLike`` class to instantiate from this decorator. Defaults
             to :obj:`~.commands.base.OptionLike`.
 

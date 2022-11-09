@@ -304,13 +304,13 @@ class CommandLike:
     """Whether invocations of this command will bypass author permission checks, if an application command."""
     name_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
     """
-    A set of name localizations for this command
+    A mapping of locale to name localizations for this command
     
     .. versionadded:: 2.3.0
     """
     description_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
     """
-    A set of description localizations for this command
+    A mapping of locale to description localizations for this command
     
     .. versionadded:: 2.3.0
     """
@@ -623,12 +623,12 @@ class Command(abc.ABC):
 
     @property
     def name_localizations(self) -> t.Mapping[t.Union[hikari.Locale, str], str]:
-        """A set of name localizations for this command"""
+        """A set mapping of locale to localizations for this command"""
         return self._initialiser.name_localizations
 
     @property
     def description_localizations(self) -> t.Mapping[t.Union[hikari.Locale, str], str]:
-        """A set of description localizations for this command"""
+        """A mapping of locale to description localizations for this command"""
         return self._initialiser.description_localizations
 
     def __hash__(self) -> int:

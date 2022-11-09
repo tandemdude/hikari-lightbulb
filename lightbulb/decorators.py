@@ -98,7 +98,7 @@ def command(
         inherit_checks (:obj:`bool`): Whether or not the command should inherit checks from the parent group. Only
             affects subcommands. Defaults to ``False``.
         pass_options (:obj:`bool`): Whether the command will have its options passed as keyword arguments when invoked.
-        name_localizations (Mapping[Union[hikari.locales.Locale, :obj:`str`], :obj:`s®tr`]): A set of name localizations for this command. Defaults to an empty dictionary.
+        name_localizations (Mapping[Union[hikari.locales.Locale, :obj:`str`], :obj:`str`]): A set of name localizations for this command. Defaults to an empty dictionary.
         description_localizations (Mapping[Union[hikari.locales.Locale, :obj:`str`], :obj:`str`]): A set of description localizations for this command. Defaults to an empty dictionary.
         cls (Type[:obj:`~.commands.base.CommandLike`]): ``CommandLike`` class to instantiate from this decorator.
             Defaults to :obj:`~.commands.base.CommandLike`.
@@ -107,7 +107,7 @@ def command(
         ``cls`` kwarg.
     .. versionadded:: 2.2.1
         ``pass_options`` kwarg.
-    .. versionadded:: 2.2.5
+    .. versionadded:: 2.3.0
         ``name_localizations`` and ``description_localizations`` kwargs.
     """
 

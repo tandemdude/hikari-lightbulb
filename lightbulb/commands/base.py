@@ -175,14 +175,14 @@ class OptionLike:
     name_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
     """
     A set of name localizations for this option
-    
-    .. versionadded:: 2.2.5
+
+    .. versionadded:: 2.3.0
     """
     description_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
     """
     A set of description localizations for this option
-    
-    .. versionadded:: 2.2.5
+
+    .. versionadded:: 2.3.0
     """
 
     def as_application_command_option(self) -> hikari.CommandOption:
@@ -306,13 +306,13 @@ class CommandLike:
     """
     A set of name localizations for this command
     
-    .. versionadded:: 2.2.5
+    .. versionadded:: 2.3.0
     """
     description_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
     """
     A set of description localizations for this command
     
-    .. versionadded:: 2.2.5
+    .. versionadded:: 2.3.0
     """
     _autocomplete_callbacks: t.Dict[
         str,

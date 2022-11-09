@@ -174,13 +174,13 @@ class OptionLike:
     """Whether the option should be autocompleted or not. This only affects slash commands."""
     name_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
     """
-    A set of name localizations for this option
+    A mapping of locale to name localizations for this option
 
     .. versionadded:: 2.3.0
     """
     description_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
     """
-    A set of description localizations for this option
+    A mapping of locale to description localizations for this option
 
     .. versionadded:: 2.3.0
     """
@@ -623,7 +623,7 @@ class Command(abc.ABC):
 
     @property
     def name_localizations(self) -> t.Mapping[t.Union[hikari.Locale, str], str]:
-        """A set mapping of locale to localizations for this command"""
+        """A mapping of locale to localizations for this command"""
         return self._initialiser.name_localizations
 
     @property

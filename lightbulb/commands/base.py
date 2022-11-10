@@ -623,7 +623,7 @@ class Command(abc.ABC):
 
     @property
     def name_localizations(self) -> t.Mapping[t.Union[hikari.Locale, str], str]:
-        """A mapping of locale to localizations for this command"""
+        """A mapping of locale to name localizations for this command"""
         return self._initialiser.name_localizations
 
     @property

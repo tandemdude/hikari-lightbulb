@@ -93,7 +93,7 @@ class Parser(BaseParser):
 
     def __init__(
         self,
-        context: context_.base.BaseContext,
+        context: context_.base.Context,
         options: t.Optional[t.List[OptionLike]] = None,
         buffer: t.Optional[str] = None,
     ):
@@ -101,7 +101,7 @@ class Parser(BaseParser):
         self._idx = 0
 
         if buffer is None:
-            if not isinstance(context, context_.prefix.PrefixContext):
+            if not isinstance(self.ctx, context_.prefix.PrefixContext):
                 raise RuntimeError("Please provide the buffer to parse")  # todo: proper error
 
             message = self.ctx.event.message

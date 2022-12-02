@@ -253,7 +253,7 @@ def _has_guild_permissions(context: context_.base.Context, *, perms: hikari.Perm
     if channel is None:
         raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
 
-    assert context.member is not None and isinstance(channel, hikari.GuildChannel)
+    assert context.member is not None and isinstance(channel, hikari.PermissibleGuildChannel)
     missing_perms = ~permissions.permissions_in(channel, context.member) & perms
     if missing_perms is not hikari.Permissions.NONE:
         raise errors.MissingRequiredPermission(
@@ -291,7 +291,7 @@ def _has_channel_permissions(context: context_.base.Context, *, perms: hikari.Pe
     if channel is None:
         raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
 
-    assert context.member is not None and isinstance(channel, hikari.GuildChannel)
+    assert context.member is not None and isinstance(channel, hikari.PermissibleGuildChannel)
     missing_perms = ~permissions.permissions_in(channel, context.member, include_guild_permissions=False) & perms
     if missing_perms is not hikari.Permissions.NONE:
         raise errors.MissingRequiredPermission(
@@ -310,7 +310,7 @@ def _bot_has_guild_permissions(context: context_.base.Context, *, perms: hikari.
     if member is None:
         raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
 
-    assert isinstance(channel, hikari.GuildChannel)
+    assert isinstance(channel, hikari.PermissibleGuildChannel)
     missing_perms = ~permissions.permissions_in(channel, member) & perms
     if missing_perms is not hikari.Permissions.NONE:
         raise errors.BotMissingRequiredPermission(
@@ -347,7 +347,7 @@ def _bot_has_channel_permissions(context: context_.base.Context, *, perms: hikar
     if member is None:
         raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
 
-    assert isinstance(channel, hikari.GuildChannel)
+    assert isinstance(channel, hikari.PermissibleGuildChannel)
     missing_perms = ~permissions.permissions_in(channel, member, include_guild_permissions=False) & perms
     if missing_perms is not hikari.Permissions.NONE:
         raise errors.BotMissingRequiredPermission(

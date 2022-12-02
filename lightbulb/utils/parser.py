@@ -79,26 +79,20 @@ CONVERTER_TYPE_MAPPING = {
 
 
 class BaseParser(abc.ABC):
-    __slots__ = ()
+    __slots__ = ("ctx", "_buffer", "len", "options")
 
+    len: int
+    ctx: context_.base.Context
+    _buffer: str
     options: t.List[OptionLike]
-
-    @abc.abstractmethod
-    async def parse(self) -> t.Dict[str, t.Any]:
-        ...
-
-
-class Parser(BaseParser):
-    __slots__ = ("ctx", "_idx", "buffer", "n", "prev", "options")
 
     def __init__(
         self,
         context: context_.base.Context,
         buffer: t.Optional[str] = None,
         options: t.Optional[t.List[OptionLike]] = None,
-    ):
+    ) -> None:
         self.ctx = context
-        self._idx = 0
 
         if buffer is None:
             if not isinstance(self.ctx, context_.prefix.PrefixContext):
@@ -106,21 +100,45 @@ class Parser(BaseParser):
 
             message = self.ctx.event.message
             assert message.content is not None
-            buffer = message.content
-            self._idx += len(self.ctx.prefix) + len(self.ctx.invoked_with)
+            buffer = message.content[len(self.ctx.prefix) + len(self.ctx.invoked_with) :]
 
         self.buffer = buffer
-        self.n = len(buffer)
-        self.prev = 0
 
         if options is not None:
             self.options = options
         else:
-            self.options = list(context.command.options.values()) if context.command else []
+            self.options = list(self.ctx.command.options.values()) if self.ctx.command else []
+
+    @property
+    def buffer(self) -> str:
+        return self._buffer
+
+    @buffer.setter
+    def buffer(self, val: str) -> None:
+        self._buffer = val
+        self.len = len(val)
+
+    @abc.abstractmethod
+    async def parse(self) -> t.Dict[str, t.Any]:
+        ...
+
+
+class Parser(BaseParser):
+    __slots__ = ("_idx", "prev")
+
+    def __init__(
+        self,
+        context: context_.base.Context,
+        buffer: t.Optional[str] = None,
+        options: t.Optional[t.List[OptionLike]] = None,
+    ) -> None:
+        self._idx = 0
+        self.prev = 0
+        super().__init__(context, buffer, options)
 
     @property
     def is_eof(self) -> bool:
-        return self.idx >= self.n
+        return self.idx >= self.len
 
     @property
     def idx(self) -> int:
@@ -183,7 +201,7 @@ class Parser(BaseParser):
 
     def read_rest(self) -> str:
         self.skip_ws()
-        self.idx = self.n
+        self.idx = self.len
         return self.buffer[self.prev :]
 
     def get_option(self) -> t.Optional[commands.base.OptionLike]:

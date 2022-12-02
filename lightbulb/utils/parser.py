@@ -84,22 +84,26 @@ class BaseParser(abc.ABC):
     options: t.List[OptionLike]
 
     @abc.abstractmethod
-    def __init__(self, context: context_.prefix.PrefixContext, args: t.Optional[str]) -> None:
-        ...
-
-    @abc.abstractmethod
-    async def inject_args_to_context(self) -> None:
+    async def parse(self) -> t.Dict[str, t.Any]:
         ...
 
 
 class Parser(BaseParser):
     __slots__ = ("ctx", "_idx", "buffer", "n", "prev", "options")
 
-    def __init__(self, context: context_.prefix.PrefixContext, buffer: t.Optional[str]):
+    def __init__(
+        self,
+        context: context_.base.BaseContext,
+        options: t.Optional[t.List[OptionLike]] = None,
+        buffer: t.Optional[str] = None,
+    ):
         self.ctx = context
         self._idx = 0
 
         if buffer is None:
+            if not isinstance(context, context_.prefix.PrefixContext):
+                raise RuntimeError("Please provide the buffer to parse")  # todo: proper error
+
             message = self.ctx.event.message
             assert message.content is not None
             buffer = message.content
@@ -108,7 +112,11 @@ class Parser(BaseParser):
         self.buffer = buffer
         self.n = len(buffer)
         self.prev = 0
-        self.options = list(context.command.options.values()) if context.command else []
+
+        if options is not None:
+            self.options = options
+        else:
+            self.options = list(context.command.options.values()) if context.command else []
 
     @property
     def is_eof(self) -> bool:
@@ -184,18 +192,19 @@ class Parser(BaseParser):
 
         return None
 
-    async def inject_args_to_context(self) -> None:
-        attachments = list(self.ctx.attachments)
+    async def parse(self) -> t.Dict[str, t.Any]:
+        ret = {}
+        attachments = list(self.ctx.attachments) if isinstance(self.ctx, context_.prefix.PrefixContext) else []
         while option := self.get_option():
             if option.arg_type in (hikari.OptionType.ATTACHMENT, hikari.Attachment):
                 if not attachments:
                     if not option.required:
-                        self.ctx._options[option.name] = option.default
+                        ret[option.name] = option.default
                         continue
                     raise errors.MissingRequiredAttachmentArgument(
                         "Command invocation expects an attachment but none were found.", missing=option
                     )
-                self.ctx._options[option.name] = attachments.pop(0)
+                ret[option.name] = attachments.pop(0)
                 continue
 
             _LOGGER.debug("Getting arg for %s with type %s", option.name, option.arg_type)
@@ -212,14 +221,16 @@ class Parser(BaseParser):
                         missing=[option, *(o for o in self.options if o.required)],
                     )
 
-                self.ctx._options[option.name] = option.default
+                ret[option.name] = option.default
                 continue
 
             _LOGGER.debug("Got raw arg %s", raw_arg)
             convert = self._greedy_convert if option.modifier is OptionModifier.GREEDY else self._try_convert
-            await convert(raw_arg, option)
+            await convert(raw_arg, option, ret)
 
-    async def _try_convert(self, raw: str, option: commands.base.OptionLike) -> None:
+        return ret
+
+    async def _try_convert(self, raw: str, option: commands.base.OptionLike, options: t.Dict[str, t.Any]) -> None:
         try:
             arg = await self._convert(raw, option.arg_type)
         except Exception as e:
@@ -229,15 +240,15 @@ class Parser(BaseParser):
                     f"Conversion failed for option {option.name!r}", opt=option, raw=raw
                 ) from e
 
-            self.ctx._options[option.name] = option.default
+            options[option.name] = option.default
             _LOGGER.debug("Option has a default value, shifting to the next parameter")
             self.undo()
         else:
             _LOGGER.debug("Successfully converted %s to %s", raw, arg)
-            self.ctx._options[option.name] = arg
+            options[option.name] = arg
 
-    async def _greedy_convert(self, raw: str, option: commands.base.OptionLike) -> None:
-        self.ctx._options[option.name] = args = []
+    async def _greedy_convert(self, raw: str, option: commands.base.OptionLike, options: t.Dict[str, t.Any]) -> None:
+        options[option.name] = args = []
         _LOGGER.debug("Attempting to greedy convert %s to %s", raw, option.arg_type)
         while raw:
             try:

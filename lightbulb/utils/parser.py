@@ -94,8 +94,8 @@ class Parser(BaseParser):
     def __init__(
         self,
         context: context_.base.Context,
-        options: t.Optional[t.List[OptionLike]] = None,
         buffer: t.Optional[str] = None,
+        options: t.Optional[t.List[OptionLike]] = None,
     ):
         self.ctx = context
         self._idx = 0

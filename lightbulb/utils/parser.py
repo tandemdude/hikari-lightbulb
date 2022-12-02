@@ -248,7 +248,7 @@ class Parser(BaseParser):
 
         return ret
 
-    async def _try_convert(self, raw: str, option: commands.base.OptionLike, options: t.Dict[str, t.Any]) -> None:
+    async def _try_convert(self, raw: str, option: commands.base.OptionLike, out: t.Dict[str, t.Any]) -> None:
         try:
             arg = await self._convert(raw, option.arg_type)
         except Exception as e:
@@ -258,15 +258,15 @@ class Parser(BaseParser):
                     f"Conversion failed for option {option.name!r}", opt=option, raw=raw
                 ) from e
 
-            options[option.name] = option.default
+            out[option.name] = option.default
             _LOGGER.debug("Option has a default value, shifting to the next parameter")
             self.undo()
         else:
             _LOGGER.debug("Successfully converted %s to %s", raw, arg)
-            options[option.name] = arg
+            out[option.name] = arg
 
-    async def _greedy_convert(self, raw: str, option: commands.base.OptionLike, options: t.Dict[str, t.Any]) -> None:
-        options[option.name] = args = []
+    async def _greedy_convert(self, raw: str, option: commands.base.OptionLike, out: t.Dict[str, t.Any]) -> None:
+        out[option.name] = args = []
         _LOGGER.debug("Attempting to greedy convert %s to %s", raw, option.arg_type)
         while raw:
             try:

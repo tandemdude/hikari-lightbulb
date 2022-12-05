@@ -49,7 +49,7 @@ def permissions_for(member: hikari.Member) -> hikari.Permissions:
 
 
 def permissions_in(
-    channel: hikari.GuildChannel, member: hikari.Member, include_guild_permissions: bool = True
+    channel: hikari.PermissibleGuildChannel, member: hikari.Member, include_guild_permissions: bool = True
 ) -> hikari.Permissions:
     """
     Get the permissions for the given member in the given guild channel.

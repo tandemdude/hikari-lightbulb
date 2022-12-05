@@ -19,10 +19,9 @@
 import typing as t
 
 import hikari
+from hikari.impl import MessageActionRowBuilder
+
 import lightbulb
-
-from hikari.api import ActionRowBuilder
-
 
 ########################################################################
 # Helper functions and data.
@@ -56,13 +55,13 @@ COLORS: t.Mapping[str, t.Tuple[int, str]] = {
 }
 
 
-async def generate_rows(bot: lightbulb.BotApp) -> t.Iterable[ActionRowBuilder]:
+async def generate_rows(bot: lightbulb.BotApp) -> t.Iterable[MessageActionRowBuilder]:
     """Generate 2 action rows with 4 buttons each."""
 
     # This will hold our action rows of buttons. The limit
     # imposed by Discord is 5 rows with 5 buttons each. We
     # will not use that many here, however.
-    rows: t.List[ActionRowBuilder] = []
+    rows: t.List[MessageActionRowBuilder] = []
 
     # Build the first action row
     row = bot.rest.build_action_row()

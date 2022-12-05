@@ -77,11 +77,11 @@ class PrefixContext(base.Context):
         return self._options
 
     @property
-    def channel_id(self) -> hikari.Snowflakeish:
+    def channel_id(self) -> hikari.Snowflake:
         return self.event.message.channel_id
 
     @property
-    def guild_id(self) -> t.Optional[hikari.Snowflakeish]:
+    def guild_id(self) -> t.Optional[hikari.Snowflake]:
         return self.event.message.guild_id
 
     @property
@@ -110,8 +110,8 @@ class PrefixContext(base.Context):
 
     def get_channel(self) -> t.Optional[t.Union[hikari.GuildChannel, hikari.Snowflake]]:
         if self.guild_id is not None:
-            return self.app.cache.get_guild_channel(self.channel_id)
-        return self.app.cache.get_dm_channel_id(self.author.id)
+            return self.app.cache.get_guild_channel(self.channel_id) or self.app.cache.get_thread(self.channel_id)
+        return self.channel_id
 
     async def respond(
         self, *args: t.Any, delete_after: t.Union[int, float, None] = None, **kwargs: t.Any

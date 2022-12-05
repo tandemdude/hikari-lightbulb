@@ -6,6 +6,22 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 2.3.0
+=============
+
+**Breaking Changes**
+
+- :obj:`lightbulb.utils.Parser` api has been completely changed. If you use this class directly
+  in your own codebase then you will need to change your code.
+
+**Other Changes**
+
+- Add support for hikari ``2.0.0.dev113``.
+
+- Checks should not work in threads.
+
+- Implement application command localization.
+
 Version 2.2.5
 =============
 

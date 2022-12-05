@@ -77,6 +77,8 @@ async def _get_or_fetch_guild_channel_from_id(
 async def _try_convert_to_guild_channel(context: context_.base.Context, arg: str) -> t.Optional[hikari.GuildChannel]:
     if context.guild_id is None:
         raise TypeError("Cannot resolve a guild channel object for a command run outside of a guild")
+
+    channel: t.Optional[hikari.GuildChannel]
     try:
         channel_id = _resolve_id_from_arg(arg, CHANNEL_MENTION_REGEX)
     except ValueError:
@@ -251,7 +253,7 @@ class MessageConverter(base.BaseConverter[hikari.Message]):
 
     async def convert(self, arg: str) -> hikari.Message:
         try:
-            m_id, c_id = int(arg), self.context.channel_id
+            m_id, c_id = int(arg), int(self.context.channel_id)
         except ValueError:
             parts = arg.rstrip("/").split("/")
             m_id, c_id = int(parts[-1]), int(parts[-2])

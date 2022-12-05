@@ -239,13 +239,13 @@ class Context(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def channel_id(self) -> hikari.Snowflakeish:
+    def channel_id(self) -> hikari.Snowflake:
         """The channel ID for the context."""
         ...
 
     @property
     @abc.abstractmethod
-    def guild_id(self) -> t.Optional[hikari.Snowflakeish]:
+    def guild_id(self) -> t.Optional[hikari.Snowflake]:
         """The guild ID for the context."""
         ...
 
@@ -449,11 +449,11 @@ class ApplicationContext(Context, abc.ABC):
         return self._interaction
 
     @property
-    def channel_id(self) -> hikari.Snowflakeish:
+    def channel_id(self) -> hikari.Snowflake:
         return self._interaction.channel_id
 
     @property
-    def guild_id(self) -> t.Optional[hikari.Snowflakeish]:
+    def guild_id(self) -> t.Optional[hikari.Snowflake]:
         return self._interaction.guild_id
 
     @property
@@ -482,8 +482,8 @@ class ApplicationContext(Context, abc.ABC):
 
     def get_channel(self) -> t.Optional[t.Union[hikari.GuildChannel, hikari.Snowflake]]:
         if self.guild_id is not None:
-            return self.app.cache.get_guild_channel(self.channel_id)
-        return self.app.cache.get_dm_channel_id(self.user)
+            return self.app.cache.get_guild_channel(self.channel_id) or self.app.cache.get_thread(self.channel_id)
+        return self.channel_id
 
     async def respond(
         self, *args: t.Any, delete_after: t.Union[int, float, None] = None, **kwargs: t.Any

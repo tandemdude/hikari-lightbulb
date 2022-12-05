@@ -115,7 +115,7 @@ class PrefixCommand(base.Command):
             await self.evaluate_checks(context)
             await self.evaluate_cooldowns(context)
             assert isinstance(context, context_.prefix.PrefixContext)
-            await context._parser.inject_args_to_context()
+            context._options = await context._parser.parse()
             await self(context, **kwargs)
         except Exception:
             raise

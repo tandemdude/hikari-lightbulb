@@ -33,8 +33,8 @@ import asyncio
 import typing as t
 
 import hikari
-from hikari.api.special_endpoints import ActionRowBuilder
-from hikari.messages import ButtonStyle
+from hikari.api.special_endpoints import MessageActionRowBuilder
+from hikari.components import ButtonStyle
 
 from lightbulb import context as context_
 
@@ -115,12 +115,12 @@ class ComponentButton:
         self.custom_id = custom_id
         self.callback = callback
 
-    def build(self, container: ActionRowBuilder, disabled: bool = False) -> None:
+    def build(self, container: MessageActionRowBuilder, disabled: bool = False) -> None:
         """
         Build and add the button to the given container.
 
         Args:
-            container (:obj:`hikari.api.special_endpoints.ActionRowBuilder`): The container to add the button to.
+            container (:obj:`hikari.api.special_endpoints.MessageActionRowBuilder`): The container to add the button to.
             disabled (:obj:`bool`): Whether or not to display the button as disabled.
 
         Returns:
@@ -454,9 +454,9 @@ class ButtonNavigator(t.Generic[T]):
         ]
         return buttons
 
-    async def build_buttons(self, disabled: bool = False) -> t.Union[ActionRowBuilder, hikari.UndefinedType]:
+    async def build_buttons(self, disabled: bool = False) -> hikari.UndefinedOr[MessageActionRowBuilder]:
         assert self._context is not None
-        buttons = self._context.app.rest.build_action_row()
+        buttons = self._context.app.rest.build_message_action_row()
         for button in self.buttons:
             button.build(buttons, disabled)
         return buttons

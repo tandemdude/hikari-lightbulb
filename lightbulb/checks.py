@@ -218,8 +218,17 @@ def _human_only(context: context_.base.Context) -> bool:
 def _nsfw_channel_only(context: context_.base.Context) -> bool:
     if context.guild_id is None:
         raise errors.NSFWChannelOnly("This command can only be used in NSFW channels")
+
     channel = context.get_channel()
-    if not isinstance(channel, hikari.GuildChannel) or not channel.is_nsfw:
+
+    # Threads do not have their nsfw status attached to them,
+    # they inherit that from the channel they are part of
+    if isinstance(channel, hikari.GuildThreadChannel):
+        channel = context.app.cache.get_guild_channel(channel.parent_id)
+
+    assert isinstance(channel, hikari.PermissibleGuildChannel)
+
+    if not channel.is_nsfw:
         raise errors.NSFWChannelOnly("This command can only be used in NSFW channels")
     return True
 
@@ -250,6 +259,12 @@ def _has_guild_permissions(context: context_.base.Context, *, perms: hikari.Perm
     _guild_only(context)
 
     channel = context.get_channel()
+
+    # Threads do not have permissions attached to them, they inherit that from
+    # the channel they are part of
+    if isinstance(channel, hikari.GuildThreadChannel):
+        channel = context.app.cache.get_guild_channel(channel.parent_id)
+
     if channel is None:
         raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
 
@@ -288,6 +303,12 @@ def _has_channel_permissions(context: context_.base.Context, *, perms: hikari.Pe
     _guild_only(context)
 
     channel = context.get_channel()
+
+    # Threads do not have permissions attached to them, they inherit that from
+    # the channel they are part of
+    if isinstance(channel, hikari.GuildThreadChannel):
+        channel = context.app.cache.get_guild_channel(channel.parent_id)
+
     if channel is None:
         raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
 
@@ -303,10 +324,20 @@ def _has_channel_permissions(context: context_.base.Context, *, perms: hikari.Pe
 def _bot_has_guild_permissions(context: context_.base.Context, *, perms: hikari.Permissions) -> bool:
     _guild_only(context)
 
-    channel, guild = context.get_channel(), context.get_guild()
-    if channel is None or guild is None:
+    channel = context.get_channel()
+
+    # Threads do not have permissions attached to them, they inherit that from
+    # the channel they are part of
+    if isinstance(channel, hikari.GuildThreadChannel):
+        channel = context.app.cache.get_guild_channel(channel.parent_id)
+
+    if channel is None:
         raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
-    member = guild.get_my_member()
+
+    me = context.app.get_me()
+    assert me is not None
+    assert context.guild_id is not None  # Asserted above through _guild_only
+    member = context.app.cache.get_member(context.guild_id, me.id)
     if member is None:
         raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
 
@@ -322,10 +353,10 @@ def _bot_has_guild_permissions(context: context_.base.Context, *, perms: hikari.
 def _bot_has_role_permissions(context: context_.base.Context, *, perms: hikari.Permissions) -> bool:
     _guild_only(context)
 
-    guild = context.get_guild()
-    if guild is None:
-        raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
-    member = guild.get_my_member()
+    me = context.app.get_me()
+    assert me is not None
+    assert context.guild_id is not None  # Asserted above through _guild_only
+    member = context.app.cache.get_member(context.guild_id, me.id)
     if member is None:
         raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
 
@@ -340,10 +371,21 @@ def _bot_has_role_permissions(context: context_.base.Context, *, perms: hikari.P
 def _bot_has_channel_permissions(context: context_.base.Context, *, perms: hikari.Permissions) -> bool:
     _guild_only(context)
 
-    channel, guild = context.get_channel(), context.get_guild()
-    if channel is None or guild is None:
+    channel = context.get_channel()
+
+    # Threads do not have permissions attached to them, they inherit that from
+    # the channel they are part of
+    if isinstance(channel, hikari.GuildThreadChannel):
+        channel = context.app.cache.get_guild_channel(channel.parent_id)
+
+    if channel is None:
         raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
-    member = guild.get_my_member()
+
+    me = context.app.get_me()
+    assert me is not None
+    assert context.guild_id is not None  # Asserted above through _guild_only
+    member = context.app.cache.get_member(context.guild_id, me.id)
+
     if member is None:
         raise errors.InsufficientCache("Some objects required for this check could not be resolved from the cache")
 

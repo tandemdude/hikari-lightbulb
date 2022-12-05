@@ -480,9 +480,9 @@ class ApplicationContext(Context, abc.ABC):
     def resolved(self) -> t.Optional[hikari.ResolvedOptionData]:
         return self._interaction.resolved
 
-    def get_channel(self) -> t.Optional[t.Union[hikari.PermissibleGuildChannel, hikari.Snowflake]]:
+    def get_channel(self) -> t.Optional[t.Union[hikari.GuildChannel, hikari.Snowflake]]:
         if self.guild_id is not None:
-            return self.app.cache.get_guild_channel(self.channel_id)
+            return self.app.cache.get_guild_channel(self.channel_id) or self.app.cache.get_thread(self.channel_id)
         return self.channel_id
 
     async def respond(

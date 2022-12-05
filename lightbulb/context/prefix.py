@@ -110,7 +110,7 @@ class PrefixContext(base.Context):
 
     def get_channel(self) -> t.Optional[t.Union[hikari.GuildChannel, hikari.Snowflake]]:
         if self.guild_id is not None:
-            return self.app.cache.get_guild_channel(self.channel_id)
+            return self.app.cache.get_guild_channel(self.channel_id) or self.app.cache.get_thread(self.channel_id)
         return self.channel_id
 
     async def respond(

@@ -29,6 +29,8 @@ import hikari
 from lightbulb import errors
 
 if t.TYPE_CHECKING:
+    from hikari.api import special_endpoints
+
     from lightbulb import app as app_
     from lightbulb import commands
 
@@ -186,7 +188,7 @@ class Context(abc.ABC):
 
     @property
     def deferred(self) -> bool:
-        """Whether or not the response from this context is currently deferred."""
+        """Whether the response from this context is currently deferred."""
         return self._deferred
 
     @property
@@ -418,6 +420,21 @@ class Context(abc.ABC):
 
         await self._responses.pop().delete()
 
+    @abc.abstractmethod
+    async def respond_with_modal(
+        self,
+        title: str,
+        custom_id: str,
+        component: hikari.UndefinedOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
+        components: hikari.UndefinedOr[t.Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
+    ) -> None:
+        """
+        Create a modal response to this context.
+
+        .. versionadded:: 2.3.1
+        """
+        ...
+
 
 class ApplicationContext(Context, abc.ABC):
     __slots__ = ("_event", "_interaction", "_command")
@@ -605,3 +622,32 @@ class ApplicationContext(Context, abc.ABC):
             self.app.create_task(_cleanup(delete_after, proxy))
 
         return self._responses[-1]
+
+    async def respond_with_modal(
+        self,
+        title: str,
+        custom_id: str,
+        component: hikari.UndefinedOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
+        components: hikari.UndefinedOr[t.Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
+    ) -> None:
+        """
+        Create a modal response to this context.
+
+        Args:
+            title (:obj:`str`): The title that will show up in the modal.
+            custom_id (:obj:`str`): Developer set custom ID used for identifying interactions with this modal.
+            component (UndefinedOr[:obj:`hikari.api.special_endpoints.ComponentBuilder`]):  A component builder
+                to send in this modal.
+            components (UndefinedOr[Sequence[:obj:`hikari.api.special_endpoints.ComponentBuilder`]]): A sequence
+                of component builders to send in this modal.
+
+        Returns:
+            ``None``
+
+        Raises:
+            :obj:`ValueError`: If both ``component`` and ``components`` are specified or if neither are specified.
+
+        .. versionadded:: 2.3.1
+        """
+        await self._interaction.create_modal_response(title, custom_id, component, components)
+        self._responded = True

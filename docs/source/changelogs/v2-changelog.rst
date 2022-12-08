@@ -6,6 +6,18 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 2.3.1
+=============
+
+- Add :obj:`lightbulb.commands.base.CommandLike.nsfw` and ``nsfw`` kwarg in :obj:`lightbulb.decorators.command`
+  decorator in order to mark a command as only usable in NSFW channels.
+
+- Deprecate :obj:`lightbulb.checks.nsfw_channel_only`. Use the above new feature instead. The check will
+  be removed in version `2.4.0`.
+
+- Add :obj:`lightbulb.context.base.Context.respond_with_modal`. Note that this will not work if called
+  on an instance of :obj:`lightbulb.context.prefix.PrefixContext`.
+
 Version 2.3.0
 =============
 
@@ -18,7 +30,7 @@ Version 2.3.0
 
 - Add support for hikari ``2.0.0.dev113``.
 
-- Checks should not work in threads.
+- Checks should now work in threads.
 
 - Implement application command localization.
 

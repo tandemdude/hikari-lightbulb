@@ -18,6 +18,8 @@ Version 2.3.1
 - Add :obj:`lightbulb.context.base.Context.respond_with_modal`. Note that this will not work if called
   on an instance of :obj:`lightbulb.context.prefix.PrefixContext`.
 
+- Add :obj:`lightbulb.plugins.Plugin.listeners`.
+
 Version 2.3.0
 =============
 

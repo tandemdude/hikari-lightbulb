@@ -153,6 +153,13 @@ class Plugin:
         """List of all created command objects registered to the plugin."""
         return self._all_commands
 
+    @property
+    def listeners(
+        self,
+    ) -> t.Mapping[t.Type[hikari.Event], t.Collection[t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]]]]:
+        """Mapping of event type to listeners registered to the plugin"""
+        return self._listeners
+
     def create_commands(self) -> None:
         """
         Creates the command objects implemented by the :obj:`~.commands.base.CommandLike` objects registered

@@ -36,11 +36,11 @@ import typing as t
 import hikari
 
 from lightbulb import buckets
+from lightbulb import checks as checks_
 from lightbulb import commands
 from lightbulb import cooldowns
 
 if t.TYPE_CHECKING:
-    from lightbulb import checks as checks_
     from lightbulb import context
 
 T = t.TypeVar("T")
@@ -88,18 +88,23 @@ def command(
             application commands. Defaults to an empty list.
         parser (:obj:`~.utils.parser.BaseParser`): The argument parser to use for prefix commands. Defaults
             to :obj:`~.utils.parser.Parser`.
-        auto_defer (:obj:`bool`): Whether or not to automatically defer the response when the command is invoked. If
+        auto_defer (:obj:`bool`): Whether to automatically defer the response when the command is invoked. If
             ``True``, the bot will send an initial response of type ``DEFERRED_MESSAGE_CREATE`` for interactions, and
             for prefix commands, typing will be triggered in the invocation channel.
-        ephemeral (:obj:`bool`): Whether or not to send responses from the invocation of this command as ephemeral by
+        ephemeral (:obj:`bool`): Whether to send responses from the invocation of this command as ephemeral by
             default. If ``True`` then all responses from the command will use the flag :obj:`hikari.MessageFlags.EPHEMERAL`.
             This will not affect prefix commands as responses from prefix commands **cannot** be ephemeral.
-        hidden (:obj:`bool`): Whether or not to hide the command from the help command. Defaults to ``False``.
+        hidden (:obj:`bool`): Whether to hide the command from the help command. Defaults to ``False``.
         inherit_checks (:obj:`bool`): Whether or not the command should inherit checks from the parent group. Only
             affects subcommands. Defaults to ``False``.
         pass_options (:obj:`bool`): Whether the command will have its options passed as keyword arguments when invoked.
-        name_localizations (Mapping[Union[:obj:`hikari.locales.Locale`, :obj:`str`], :obj:`str`]): A mapping of locale to name localizations for this command. Defaults to an empty dictionary.
-        description_localizations (Mapping[Union[:obj:`hikari.locales.Locale`, :obj:`str`], :obj:`str`]): A mapping of locale to description localizations for this command. Defaults to an empty dictionary.
+        name_localizations (Mapping[Union[:obj:`hikari.locales.Locale`, :obj:`str`], :obj:`str`]): A mapping of
+            locale to name localizations for this command. Defaults to an empty dictionary.
+        description_localizations (Mapping[Union[:obj:`hikari.locales.Locale`, :obj:`str`], :obj:`str`]): A mapping
+            of locale to description localizations for this command. Defaults to an empty dictionary.
+        nsfw (:obj:`bool`): Whether the command should only be enabled in NSFW channels. For prefix commands, this
+            will add an NSFW-channel only check to the command automatically. For slash commands, this will behave
+            as specified in the Discord documentation.
         cls (Type[:obj:`~.commands.base.CommandLike`]): ``CommandLike`` class to instantiate from this decorator.
             Defaults to :obj:`~.commands.base.CommandLike`.
 
@@ -112,7 +117,13 @@ def command(
     """
 
     def decorate(func: CommandCallbackT) -> commands.base.CommandLike:
-        return cls(func, name, description, **kwargs)
+        cmd = cls(func, name, description, **kwargs)
+        if cmd.nsfw:
+            # Add nsfw channel check only for prefix commands. For other command types the check will just return True
+            add_checks(checks_.Check(checks_._nsfw_channel_only, lambda ctx: True, lambda ctx: True, lambda ctx: True))(
+                cmd
+            )
+        return cmd
 
     return decorate
 

@@ -81,6 +81,7 @@ def _serialise_hikari_command(command: hikari.PartialCommand) -> t.Dict[str, t.A
         "guild_id": command.guild_id or None,
         "default_member_permissions": command.default_member_permissions or None,
         "dm_enabled": command.is_dm_enabled,
+        "nsfw": command.is_nsfw,
     }
 
 
@@ -94,6 +95,7 @@ def _serialise_lightbulb_command(command: base.ApplicationCommand) -> t.Dict[str
         "guild_id": _GuildIDCollection(command.guilds) if command.guilds else None,
         "default_member_permissions": command.app_command_default_member_permissions,
         "dm_enabled": command.app_command_dm_enabled if not command.guilds else False,
+        "nsfw": command.nsfw,
     }
 
 
@@ -121,6 +123,7 @@ def _create_builder_from_command(
 
         bld.set_default_member_permissions(cmd.default_member_permissions)
         bld.set_is_dm_enabled(cmd.is_dm_enabled)
+        bld.set_is_nsfw(cmd.is_nsfw)
 
         bld.set_id(cmd.id)
     else:
@@ -135,6 +138,7 @@ def _create_builder_from_command(
         if cmd.app_command_default_member_permissions is not None:
             bld.set_default_member_permissions(cmd.app_command_default_member_permissions)
         bld.set_is_dm_enabled(cmd.app_command_dm_enabled)
+        bld.set_is_nsfw(cmd.nsfw)
 
     return bld
 

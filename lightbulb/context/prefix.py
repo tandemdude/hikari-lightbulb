@@ -27,6 +27,8 @@ import hikari
 from lightbulb.context import base
 
 if t.TYPE_CHECKING:
+    from hikari.api import special_endpoints
+
     from lightbulb import app as app_
     from lightbulb import commands
     from lightbulb.utils import parser
@@ -156,3 +158,21 @@ class PrefixContext(base.Context):
         self._responses.append(base.ResponseProxy(msg))
         self._responded = True
         return self._responses[-1]
+
+    async def respond_with_modal(
+        self,
+        title: str,
+        custom_id: str,
+        component: hikari.UndefinedOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
+        components: hikari.UndefinedOr[t.Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
+    ) -> t.NoReturn:
+        """
+        Method only preserved for API consistency. If you attempt to call this method for a prefix command,
+        a :obj:`NotImplementedError` will **always** be raised.
+
+        Raises:
+            :obj:`NotImplementedError`: **Always**
+
+        .. versionadded:: 2.3.1
+        """
+        raise NotImplementedError("You cannot respond to a prefix command with a modal")

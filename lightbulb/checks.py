@@ -423,7 +423,13 @@ webhook_only = Check(_webhook_only)
 human_only = Check(_human_only)
 """Prevents a command from being used by anyone other than a human."""
 nsfw_channel_only = Check(_nsfw_channel_only)
-"""Prevents a command from being used in any channel other than one marked as NSFW."""
+"""
+Prevents a command from being used in any channel other than one marked as NSFW.
+
+.. deprecated:: 2.3.1
+    Use the ``nsfw`` kwarg in the :obj:`~lightbulb.decorators.command` decorator instead. This will be removed
+    in version ``2.4.0``.
+"""
 
 
 def has_roles(role1: int, *roles: int, mode: t.Callable[[t.Sequence[bool]], bool] = all) -> Check:

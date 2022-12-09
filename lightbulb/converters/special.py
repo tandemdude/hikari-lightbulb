@@ -55,6 +55,7 @@ CHANNEL_MENTION_REGEX: t.Final[re.Pattern[str]] = re.compile(r"<#(\d+)>")
 ROLE_MENTION_REGEX: t.Final[re.Pattern[str]] = re.compile(r"<@&(\d+)>")
 EMOJI_MENTION_REGEX: t.Final[re.Pattern[str]] = re.compile(r"<a?:\w+:(\d+)>")
 TIMESTAMP_MENTION_REGEX: t.Final[re.Pattern[str]] = re.compile(r"<t:(\d+)(?::[tTdDfFR])?>")
+CHANNEL_MESSAGE_REGEX: t.Final[re.Pattern[str]] = re.compile(r"(\d+)-(\d+)")
 
 BOOLEAN_MAPPING: t.Dict[str, bool] = {"yes": True, "y": True, "1": True, "no": False, "n": False, "0": False}
 
@@ -252,9 +253,11 @@ class MessageConverter(base.BaseConverter[hikari.Message]):
     __slots__ = ()
 
     async def convert(self, arg: str) -> hikari.Message:
-        try:
+        if arg.isdigit():
             m_id, c_id = int(arg), int(self.context.channel_id)
-        except ValueError:
+        elif match := CHANNEL_MESSAGE_REGEX.match(arg):
+            m_id, c_id = int(match.group(2)), int(match.group(1))
+        else:
             parts = arg.rstrip("/").split("/")
             m_id, c_id = int(parts[-1]), int(parts[-2])
 

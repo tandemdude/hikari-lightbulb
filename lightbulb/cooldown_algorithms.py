@@ -17,7 +17,13 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__ = ["CooldownStatus", "CooldownAlgorithm", "BangBangCooldownAlgorithm", "SlidingWindowCooldownAlgorithm"]
+__all__ = [
+    "CooldownStatus",
+    "CooldownAlgorithm",
+    "BangBangCooldownAlgorithm",
+    "FixedWindowCooldownAlgorithm",
+    "SlidingWindowCooldownAlgorithm",
+]
 
 import abc
 import enum
@@ -74,6 +80,31 @@ class BangBangCooldownAlgorithm(CooldownAlgorithm):
         self._commands_run += 1
         if self._commands_run >= bucket.usages:
             bucket.activate()
+        return CooldownStatus.INACTIVE
+
+
+class FixedWindowCooldownAlgorithm(CooldownAlgorithm):
+    """
+    Cooldown algorithm that allows ``n`` command invocations within a fixed window time period. I.e. 5 invocations
+    within a 30-second time period, allowing additional invocations once the entire period has elapsed.
+    """
+
+    __slots__ = ("_commands_run", "_expires")
+
+    def __init__(self) -> None:
+        self._commands_run: int = 0
+        self._expires: t.Optional[float] = None
+
+    def evaluate(self, bucket: buckets.Bucket) -> CooldownStatus:
+        self._expires = self._expires or (time.perf_counter() + bucket.length)
+        if self._expires > time.perf_counter():
+            self._commands_run = 0
+
+        self._commands_run += 1
+        if self._commands_run > bucket.usages:
+            raise errors.CommandIsOnCooldown(
+                "This command is on cooldown", retry_after=(self._expires - time.perf_counter())
+            )
         return CooldownStatus.INACTIVE
 
 

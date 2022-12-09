@@ -52,6 +52,7 @@ __all__ = [
     "ExtensionMissingUnload",
     "ExtensionNotFound",
     "ExtensionNotLoaded",
+    "FixedWindowCooldownAlgorithm",
     "GlobalBucket",
     "GuildBucket",
     "GuildCategoryConverter",

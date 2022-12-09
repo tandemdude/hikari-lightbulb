@@ -38,6 +38,7 @@ import hikari
 from lightbulb import buckets
 from lightbulb import checks as checks_
 from lightbulb import commands
+from lightbulb import cooldown_algorithms
 from lightbulb import cooldowns
 
 if t.TYPE_CHECKING:
@@ -266,7 +267,10 @@ def check_exempt(
 
 @t.overload
 def add_cooldown(
-    length: float, uses: int, bucket: t.Type[buckets.Bucket]
+    length: float,
+    uses: int,
+    bucket: t.Type[buckets.Bucket],
+    algorithm: t.Type[cooldown_algorithms.CooldownAlgorithm] = cooldown_algorithms.BangBangCooldownAlgorithm,
 ) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
     ...
 
@@ -283,6 +287,7 @@ def add_cooldown(
     length: t.Optional[float] = None,
     uses: t.Optional[int] = None,
     bucket: t.Optional[t.Type[buckets.Bucket]] = None,
+    algorithm: t.Type[cooldown_algorithms.CooldownAlgorithm] = cooldown_algorithms.BangBangCooldownAlgorithm,
     *,
     callback: t.Optional[
         t.Callable[[context.base.Context], t.Union[buckets.Bucket, t.Coroutine[t.Any, t.Any, buckets.Bucket]]]
@@ -296,6 +301,8 @@ def add_cooldown(
         length (:obj:`float`): The length in seconds of the cooldown timer.
         uses (:obj:`int`): The number of command invocations before the cooldown will be triggered.
         bucket (Type[:obj:`~.buckets.Bucket`]): The bucket to use for cooldowns.
+        algorithm (Type[:obj:`~.cooldown_algorithms.CooldownAlgorithm`]): The cooldown algorithm to use. Defaults
+            to :obj:`~.cooldown_algorithms.BangBangCooldownAlgorithm`.
 
     Keyword Args:
         callback (Callable[[:obj:`~.context.base.Context], Union[:obj:`~.buckets.Bucket`, Coroutine[Any, Any, :obj:`~.buckets.Bucket`]]]): Callable
@@ -307,10 +314,16 @@ def add_cooldown(
     getter: t.Callable[[context.base.Context], t.Union[buckets.Bucket, t.Coroutine[t.Any, t.Any, buckets.Bucket]]]
     if length is not None and uses is not None and bucket is not None:
 
-        def _get_bucket(_: context.base.Context, b: t.Type[buckets.Bucket], l: float, u: int) -> buckets.Bucket:
-            return b(l, u)
+        def _get_bucket(
+            _: context.base.Context,
+            b: t.Type[buckets.Bucket],
+            l: float,
+            u: int,
+            a: t.Type[cooldown_algorithms.CooldownAlgorithm],
+        ) -> buckets.Bucket:
+            return b(l, u, a)
 
-        getter = functools.partial(_get_bucket, b=bucket, l=length, u=uses)
+        getter = functools.partial(_get_bucket, b=bucket, l=length, u=uses, a=algorithm)
     elif callback is not None:
         getter = callback
     else:

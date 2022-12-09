@@ -9,6 +9,15 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 Version 2.3.1
 =============
 
+**Potentially Breaking**
+
+- :obj:`lightbulb.cooldown_algorithms.CooldownStatus` has been moved from the ``buckets`` module to the
+  ``cooldown_algorithms`` module.
+
+- ``commands_run`` attribute has been removed from the :obj:`lightbulb.buckets.Bucket` class.
+
+**Other Changes**
+
 - Add :obj:`lightbulb.commands.base.CommandLike.nsfw` and ``nsfw`` kwarg in :obj:`lightbulb.decorators.command`
   decorator in order to mark a command as only usable in NSFW channels.
 
@@ -21,6 +30,8 @@ Version 2.3.1
 - Add :obj:`lightbulb.plugins.Plugin.listeners`.
 
 - Improve :obj:`lightbulb.converters.special.MessageConverter` to support conversion of `channelid-messageid` format.
+
+- Implement multiple built-in cooldown algorithms which can be specified when adding a cooldown to a command.
 
 Version 2.3.0
 =============

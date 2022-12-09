@@ -20,6 +20,8 @@ Version 2.3.1
 
 - Add :obj:`lightbulb.plugins.Plugin.listeners`.
 
+- Improve :obj:`lightbulb.converters.special.MessageConverter` to support conversion of `channelid-messageid` format.
+
 Version 2.3.0
 =============
 

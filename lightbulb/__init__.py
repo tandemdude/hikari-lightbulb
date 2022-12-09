@@ -131,6 +131,7 @@ __all__ = [
     "context",
     "converters",
     "cooldowns",
+    "cooldown_algorithms",
     "decorators",
     "dm_only",
     "errors",

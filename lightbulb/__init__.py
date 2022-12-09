@@ -20,6 +20,7 @@ __all__ = [
     "ApplicationCommand",
     "ApplicationCommandCreationFailed",
     "ApplicationContext",
+    "BangBangCooldownAlgorithm",
     "BaseConverter",
     "BaseHelpCommand",
     "BooleanConverter",
@@ -41,6 +42,7 @@ __all__ = [
     "CommandNotFound",
     "Context",
     "ConverterFailure",
+    "CooldownAlgorithm",
     "CooldownManager",
     "CooldownStatus",
     "DefaultHelpCommand",
@@ -100,6 +102,7 @@ __all__ = [
     "SlashGroupMixin",
     "SlashSubCommand",
     "SlashSubGroup",
+    "SlidingWindowCooldownAlgorithm",
     "SnowflakeConverter",
     "SubCommandTrait",
     "TextableGuildChannelConverter",
@@ -159,6 +162,7 @@ from lightbulb import checks
 from lightbulb import commands
 from lightbulb import context
 from lightbulb import converters
+from lightbulb import cooldown_algorithms
 from lightbulb import cooldowns
 from lightbulb import decorators
 from lightbulb import errors
@@ -172,6 +176,7 @@ from lightbulb.checks import *
 from lightbulb.commands import *
 from lightbulb.context import *
 from lightbulb.converters import *
+from lightbulb.cooldown_algorithms import *
 from lightbulb.cooldowns import *
 from lightbulb.decorators import *
 from lightbulb.errors import *

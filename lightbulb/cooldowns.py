@@ -24,6 +24,7 @@ import time
 import typing as t
 
 from lightbulb import buckets
+from lightbulb import cooldown_algorithms
 from lightbulb import errors
 
 if t.TYPE_CHECKING:
@@ -73,19 +74,24 @@ class CooldownManager:
 
         if cooldown_bucket is not None:
             cooldown_status = cooldown_bucket.acquire()
-            if cooldown_status is buckets.CooldownStatus.ACTIVE:
+            if inspect.iscoroutine(cooldown_status):
+                cooldown_status = await cooldown_status
+
+            if cooldown_status is cooldown_algorithms.CooldownStatus.ACTIVE:
                 # Cooldown has been activated
                 assert cooldown_bucket.start_time is not None
                 raise errors.CommandIsOnCooldown(
                     "This command is on cooldown",
                     retry_after=(cooldown_bucket.start_time + cooldown_bucket.length) - time.perf_counter(),
                 )
-            elif cooldown_status is buckets.CooldownStatus.INACTIVE:
+            elif cooldown_status is cooldown_algorithms.CooldownStatus.INACTIVE:
                 # Cooldown has not yet been activated.
                 return
 
         self.cooldowns[cooldown_hash] = bucket
-        self.cooldowns[cooldown_hash].acquire()
+        maybe_coro = self.cooldowns[cooldown_hash].acquire()
+        if inspect.iscoroutine(maybe_coro):
+            await maybe_coro
 
     async def reset_cooldown(self, context: ctx_base.Context) -> None:
         """

@@ -17,21 +17,16 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__ = ["Bucket", "UserBucket", "GuildBucket", "GlobalBucket", "ChannelBucket", "CooldownStatus"]
+__all__ = ["Bucket", "UserBucket", "GuildBucket", "GlobalBucket", "ChannelBucket"]
 
 import abc
-import enum
 import time
 import typing as t
 
+from lightbulb import cooldown_algorithms
+
 if t.TYPE_CHECKING:
     from lightbulb.context import base as ctx_base
-
-
-class CooldownStatus(enum.Enum):
-    INACTIVE = enum.auto()
-    ACTIVE = enum.auto()
-    EXPIRED = enum.auto()
 
 
 class Bucket(abc.ABC):
@@ -46,13 +41,19 @@ class Bucket(abc.ABC):
         max_usages (:obj:`int`): Number of command usages before the cooldown is activated.
     """
 
-    __slots__ = ("length", "usages", "commands_run", "activated", "start_time")
+    __slots__ = ("length", "usages", "cooldown_algorithm", "activated", "start_time")
 
-    def __init__(self, length: float, max_usages: int) -> None:
+    def __init__(
+        self,
+        length: float,
+        max_usages: int,
+        cooldown_algorithm: t.Type[
+            cooldown_algorithms.CooldownAlgorithm
+        ] = cooldown_algorithms.BangBangCooldownAlgorithm,
+    ) -> None:
         self.length = length
         self.usages = max_usages
-        self.commands_run: int = 0
-        """Commands run for this bucket since it was created."""
+        self.cooldown_algorithm = cooldown_algorithm()
         self.activated = False
         self.start_time: t.Optional[float] = None
         """The start time of the bucket cooldown. This is relative to :meth:`time.perf_counter`."""
@@ -71,7 +72,9 @@ class Bucket(abc.ABC):
         """
         ...
 
-    def acquire(self) -> CooldownStatus:
+    def acquire(
+        self,
+    ) -> t.Union[cooldown_algorithms.CooldownStatus, t.Coroutine[t.Any, t.Any, cooldown_algorithms.CooldownStatus]]:
         """
         Get the current state of the cooldown and add a command usage if the cooldown is not
         currently active or has expired.
@@ -82,15 +85,11 @@ class Bucket(abc.ABC):
             :obj:`~CooldownStatus`: The status of the cooldown bucket.
         """
         if self.active:
-            return CooldownStatus.ACTIVE
+            return cooldown_algorithms.CooldownStatus.ACTIVE
         elif self.activated and self.expired:
-            return CooldownStatus.EXPIRED
+            return cooldown_algorithms.CooldownStatus.EXPIRED
 
-        self.commands_run += 1
-        if self.commands_run >= self.usages:
-            self.activated = True
-            self.start_time = time.perf_counter()
-        return CooldownStatus.INACTIVE
+        return self.cooldown_algorithm.evaluate(self)
 
     @property
     def active(self) -> bool:
@@ -107,6 +106,10 @@ class Bucket(abc.ABC):
         if self.start_time is not None:
             return time.perf_counter() >= (self.start_time + self.length)
         return True
+
+    def activate(self) -> None:
+        self.activated = True
+        self.start_time = time.perf_counter()
 
 
 class GlobalBucket(Bucket):

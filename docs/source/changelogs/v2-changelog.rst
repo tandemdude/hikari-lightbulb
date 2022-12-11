@@ -9,7 +9,7 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 Version 2.3.1
 =============
 
-**Potentially Breaking**
+**Potentially Breaking Changes**
 
 - :obj:`lightbulb.cooldown_algorithms.CooldownStatus` has been moved from the ``buckets`` module to the
   ``cooldown_algorithms`` module.

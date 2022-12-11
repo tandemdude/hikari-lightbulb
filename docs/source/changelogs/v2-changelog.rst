@@ -29,7 +29,7 @@ Version 2.3.1
 
 - Add :obj:`lightbulb.plugins.Plugin.listeners`.
 
-- Improve :obj:`lightbulb.converters.special.MessageConverter` to support conversion of `channelid-messageid` format.
+- Improve :obj:`lightbulb.converters.special.MessageConverter` to support conversion of ``channelid-messageid`` format.
 
 - Implement multiple built-in cooldown algorithms which can be specified when adding a cooldown to a command.
 

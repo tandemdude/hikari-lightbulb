@@ -22,7 +22,7 @@ Version 2.3.1
   decorator in order to mark a command as only usable in NSFW channels.
 
 - Deprecate :obj:`lightbulb.checks.nsfw_channel_only`. Use the above new feature instead. The check will
-  be removed in version `2.4.0`.
+  be removed in version ``2.4.0``.
 
 - Add :obj:`lightbulb.context.base.Context.respond_with_modal`. Note that this will not work if called
   on an instance of :obj:`lightbulb.context.prefix.PrefixContext`.

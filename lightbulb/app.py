@@ -33,7 +33,6 @@ import typing as t
 from importlib import util
 
 import hikari
-from hikari.internal import ux
 from multidict import CIMultiDict
 
 from lightbulb import checks
@@ -44,9 +43,9 @@ from lightbulb import errors
 from lightbulb import events
 from lightbulb import help_command as help_command_
 from lightbulb import internal
+from lightbulb import parser
 from lightbulb import plugins as plugins_
 from lightbulb.utils import data_store
-from lightbulb.utils import parser
 
 _LOGGER = logging.getLogger("lightbulb.app")
 _APPLICATION_CMD_ERROR_REGEX: re.Pattern[str] = re.compile(

@@ -40,8 +40,8 @@ if t.TYPE_CHECKING:
     from lightbulb import context as context_
     from lightbulb import cooldowns
     from lightbulb import events
+    from lightbulb import parser as parser_
     from lightbulb import plugins
-    from lightbulb.utils import parser as parser_
 
 _AutocompleteableOptionT = t.Union[str, int, float]
 AutocompleteCallbackT = t.TypeVar(

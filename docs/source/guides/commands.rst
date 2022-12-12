@@ -267,6 +267,12 @@ Acceptable primitives: ``str``, ``int``, ``float``
 
 - ``hikari.Attachment`` - ``hikari.OptionType.ATTACHMENT``
 
+.. note::
+    Slash command options that resolve to type ``hikari.OptionType.STRING`` will also have the appropriate
+    converter run upon invocation. If this causes the command to take too long to run then you can
+    pass ``auto_defer=True`` to the ``lightbulb.command`` decorator. The deferral will be processed prior
+    to the conversion of options.
+
 ----
 
 Adding Checks to Commands

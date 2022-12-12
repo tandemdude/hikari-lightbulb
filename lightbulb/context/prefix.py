@@ -31,7 +31,7 @@ if t.TYPE_CHECKING:
 
     from lightbulb import app as app_
     from lightbulb import commands
-    from lightbulb.utils import parser
+    from lightbulb import parser
 
 
 class PrefixContext(base.Context):

@@ -6,6 +6,17 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 2.3.2
+=============
+
+**Potentially Breaking Changes**
+
+- Module ``lightbulb.utils.parser`` has been moved up a level to ``lightbulb.parser``.
+
+**Other Changes**
+
+- Slash commands now have full custom converter support.
+
 Version 2.3.1
 =============
 

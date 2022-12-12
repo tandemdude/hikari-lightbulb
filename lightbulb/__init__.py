@@ -23,6 +23,7 @@ __all__ = [
     "BangBangCooldownAlgorithm",
     "BaseConverter",
     "BaseHelpCommand",
+    "BaseParser",
     "BooleanConverter",
     "BotApp",
     "BotMissingRequiredPermission",
@@ -82,6 +83,7 @@ __all__ = [
     "OptionLike",
     "OptionModifier",
     "OptionsProxy",
+    "Parser",
     "Plugin",
     "PrefixCommand",
     "PrefixCommandCompletionEvent",
@@ -150,6 +152,7 @@ __all__ = [
     "nsfw_channel_only",
     "option",
     "owner_only",
+    "parser",
     "plugins",
     "set_help",
     "set_max_concurrency",
@@ -170,6 +173,7 @@ from lightbulb import decorators
 from lightbulb import errors
 from lightbulb import events
 from lightbulb import help_command
+from lightbulb import parser
 from lightbulb import plugins
 from lightbulb import utils
 from lightbulb.app import *
@@ -184,6 +188,7 @@ from lightbulb.decorators import *
 from lightbulb.errors import *
 from lightbulb.events import *
 from lightbulb.help_command import *
+from lightbulb.parser import *
 from lightbulb.plugins import *
 
-__version__ = "2.3.1"
+__version__ = "2.3.2"

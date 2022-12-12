@@ -22,7 +22,8 @@ __all__ = ["BaseConverter"]
 import abc
 import typing as t
 
-from lightbulb import context as context_
+if t.TYPE_CHECKING:
+    from lightbulb import context as context_
 
 T = t.TypeVar("T")
 
@@ -38,7 +39,7 @@ class BaseConverter(abc.ABC, t.Generic[T]):
     __slots__ = ("context",)
 
     def __init__(self, context: context_.base.Context) -> None:
-        self.context = context
+        self.context: context_.Context = context
         """Context to convert the argument(s) under."""
 
     @abc.abstractmethod

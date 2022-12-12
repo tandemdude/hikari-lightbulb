@@ -26,14 +26,6 @@ Pag
 
 ----
 
-Parser
-======
-
-.. automodule:: lightbulb.utils.parser
-   :members:
-
-----
-
 Permissions
 ===========
 

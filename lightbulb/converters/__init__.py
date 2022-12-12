@@ -36,7 +36,31 @@ __all__ = [
     "UserConverter",
 ]
 
+import datetime
+import typing as t
+
+import hikari
+
 from lightbulb.converters import base
 from lightbulb.converters import special
 from lightbulb.converters.base import *
 from lightbulb.converters.special import *
+
+CONVERTER_TYPE_MAPPING: t.Mapping[t.Any, t.Type[base.BaseConverter[t.Any]]] = {
+    hikari.User: special.UserConverter,
+    hikari.Member: special.MemberConverter,
+    hikari.GuildChannel: special.GuildChannelConverter,
+    hikari.TextableGuildChannel: special.TextableGuildChannelConverter,
+    hikari.TextableChannel: special.TextableGuildChannelConverter,
+    hikari.GuildCategory: special.GuildCategoryConverter,
+    hikari.GuildVoiceChannel: special.GuildVoiceChannelConverter,
+    hikari.Role: special.RoleConverter,
+    hikari.Emoji: special.EmojiConverter,
+    hikari.Guild: special.GuildConverter,
+    hikari.Message: special.MessageConverter,
+    hikari.Invite: special.InviteConverter,
+    hikari.Colour: special.ColourConverter,
+    hikari.Color: special.ColourConverter,
+    hikari.Snowflake: special.SnowflakeConverter,
+    datetime.datetime: special.TimestampConverter,
+}

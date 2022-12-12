@@ -20,7 +20,6 @@ from __future__ import annotations
 __all__ = ["BaseParser", "Parser"]
 
 import abc
-import datetime
 import inspect
 import logging
 import typing as t
@@ -32,8 +31,8 @@ from lightbulb import context as context_
 from lightbulb import errors
 from lightbulb.commands.base import OptionLike
 from lightbulb.commands.base import OptionModifier
-from lightbulb.converters import special
-from lightbulb.converters.base import BaseConverter
+from lightbulb.converters import CONVERTER_TYPE_MAPPING
+from lightbulb.converters import BaseConverter
 
 T = t.TypeVar("T")
 _quotes = {
@@ -57,25 +56,6 @@ _quotes = {
     "〈": "〉",
 }
 _LOGGER = logging.getLogger("lightbulb.utils.parser")
-
-CONVERTER_TYPE_MAPPING = {
-    hikari.User: special.UserConverter,
-    hikari.Member: special.MemberConverter,
-    hikari.GuildChannel: special.GuildChannelConverter,
-    hikari.TextableGuildChannel: special.TextableGuildChannelConverter,
-    hikari.TextableChannel: special.TextableGuildChannelConverter,
-    hikari.GuildCategory: special.GuildCategoryConverter,
-    hikari.GuildVoiceChannel: special.GuildVoiceChannelConverter,
-    hikari.Role: special.RoleConverter,
-    hikari.Emoji: special.EmojiConverter,
-    hikari.Guild: special.GuildConverter,
-    hikari.Message: special.MessageConverter,
-    hikari.Invite: special.InviteConverter,
-    hikari.Colour: special.ColourConverter,
-    hikari.Color: special.ColourConverter,
-    hikari.Snowflake: special.SnowflakeConverter,
-    datetime.datetime: special.TimestampConverter,
-}
 
 
 class BaseParser(abc.ABC):
@@ -287,7 +267,7 @@ class Parser(BaseParser):
             t.Callable[[str], t.Union[T, t.Coroutine[t.Any, t.Any, T]]], t.Type[BaseConverter[T]]
         ],
     ) -> T:
-        callback_or_type = CONVERTER_TYPE_MAPPING.get(callback_or_type, callback_or_type)  # type: ignore
+        callback_or_type = CONVERTER_TYPE_MAPPING.get(callback_or_type, callback_or_type)
         _LOGGER.debug("Attempting to convert %s to %s", value, callback_or_type)
         conversion_func = callback_or_type
         if inspect.isclass(callback_or_type) and issubclass(callback_or_type, BaseConverter):

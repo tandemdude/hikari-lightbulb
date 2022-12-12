@@ -19,12 +19,14 @@ from __future__ import annotations
 
 __all__ = ["SlashContext"]
 
+import asyncio
 import typing as t
 
 import hikari
 
 from lightbulb import commands
 from lightbulb.context import base
+from lightbulb.converters import CONVERTER_TYPE_MAPPING
 
 if t.TYPE_CHECKING:
     from lightbulb import app as app_
@@ -41,7 +43,7 @@ class SlashContext(base.ApplicationContext):
         command (:obj:`~.commands.slash.SlashCommand`): The command that the context is for.
     """
 
-    __slots__ = ("_options", "_raw_options")
+    __slots__ = ("_options", "_raw_options", "_to_convert")
 
     def __init__(
         self, app: app_.BotApp, event: hikari.InteractionCreateEvent, command: commands.slash.SlashCommand
@@ -49,7 +51,15 @@ class SlashContext(base.ApplicationContext):
         super().__init__(app, event, command)
         self._options: t.Dict[str, t.Any] = {}
         self._raw_options: t.Sequence[hikari.CommandInteractionOption] = self.interaction.options or []
+        self._to_convert: t.List[t.Coroutine[t.Any, t.Any, None]] = []
         self._parse_options(self.interaction.options)
+
+    async def _convert_option(self, name: str, value: str) -> None:
+        cmd = self.invoked or self.command
+        if cmd.options[name].arg_type in CONVERTER_TYPE_MAPPING:
+            self._options[name] = await CONVERTER_TYPE_MAPPING[cmd.options[name].arg_type](self).convert(value)
+            return
+        self._options[name] = value
 
     def _parse_options(self, options: t.Optional[t.Sequence[hikari.CommandInteractionOption]]) -> None:
         # We need to clear the options here to ensure the subcommand name does not exist in the mapping
@@ -69,11 +79,19 @@ class SlashContext(base.ApplicationContext):
                 val = t.cast(hikari.Snowflake, int(opt.value) if isinstance(opt.value, str) else opt.value)
                 self._options[opt.name] = self.resolved.attachments.get(val, opt.value)
             else:
+                if isinstance(opt.value, str):
+                    self._to_convert.append(self._convert_option(opt.name, opt.value))
+                    continue
                 self._options[opt.name] = opt.value
 
         cmd = self.invoked or self.command
         for opt in cmd.options.values():
             self._options.setdefault(opt.name, opt.default if opt.default is not hikari.UNDEFINED else None)
+
+    async def _maybe_defer(self) -> None:
+        await super()._maybe_defer()
+        # Ensure that running converters don't block the automatic deferral
+        await asyncio.gather(*self._to_convert)
 
     @property
     def raw_options(self) -> t.Dict[str, t.Any]:

@@ -20,6 +20,7 @@ from __future__ import annotations
 __all__ = ["SlashContext"]
 
 import asyncio
+import inspect
 import typing as t
 
 import hikari
@@ -27,6 +28,7 @@ import hikari
 from lightbulb import commands
 from lightbulb.context import base
 from lightbulb.converters import CONVERTER_TYPE_MAPPING
+from lightbulb.converters import BaseConverter
 
 if t.TYPE_CHECKING:
     from lightbulb import app as app_
@@ -56,10 +58,18 @@ class SlashContext(base.ApplicationContext):
 
     async def _convert_option(self, name: str, value: str) -> None:
         cmd = self.invoked or self.command
-        if cmd.options[name].arg_type in CONVERTER_TYPE_MAPPING:
+        opt_type = cmd.options[name].arg_type
+        if opt_type in CONVERTER_TYPE_MAPPING:
             self._options[name] = await CONVERTER_TYPE_MAPPING[cmd.options[name].arg_type](self).convert(value)
-            return
-        self._options[name] = value
+        elif inspect.isclass(opt_type) and issubclass(cmd.options[name].arg_type, BaseConverter):
+            self._options[name] = await opt_type.convert(value)
+        elif callable(opt_type):
+            temp: t.Any = opt_type(value)
+            if inspect.iscoroutine(temp):
+                temp = await temp
+            self._options[name] = temp
+        else:
+            self._options[name] = value
 
     def _parse_options(self, options: t.Optional[t.Sequence[hikari.CommandInteractionOption]]) -> None:
         # We need to clear the options here to ensure the subcommand name does not exist in the mapping

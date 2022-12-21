@@ -12,10 +12,10 @@ contact thomm.o#8637 on discord.
 **Index:**
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   hikari_basics/api-requests
-   hikari_basics/cache
-   hikari_basics/components
-   hikari_basics/embeds
-   hikari_basics/intents
+    hikari_basics/api-requests
+    hikari_basics/cache
+    hikari_basics/components
+    hikari_basics/embeds
+    hikari_basics/intents

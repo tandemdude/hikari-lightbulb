@@ -6,7 +6,7 @@ Data Store
 ==========
 
 .. automodule:: lightbulb.utils.data_store
-   :members:
+    :members:
 
 ----
 
@@ -14,7 +14,7 @@ Nav
 ===
 
 .. automodule:: lightbulb.utils.nav
-   :members:
+    :members:
 
 ----
 
@@ -22,7 +22,7 @@ Pag
 ===
 
 .. automodule:: lightbulb.utils.pag
-   :members:
+    :members:
 
 ----
 
@@ -30,7 +30,7 @@ Permissions
 ===========
 
 .. automodule:: lightbulb.utils.permissions
-   :members:
+    :members:
 
 ----
 
@@ -38,4 +38,4 @@ Search
 ======
 
 .. automodule:: lightbulb.utils.search
-   :members:
+    :members:

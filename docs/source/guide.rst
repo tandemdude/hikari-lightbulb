@@ -12,12 +12,12 @@ contact thomm.o#8637 on discord.
 **Index:**
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   guides/application-commands
-   guides/command-groups
-   guides/commands
-   guides/custom-help
-   guides/error-handling
-   guides/extensions
-   guides/plugins
+    guides/application-commands
+    guides/command-groups
+    guides/commands
+    guides/custom-help
+    guides/error-handling
+    guides/extensions
+    guides/plugins

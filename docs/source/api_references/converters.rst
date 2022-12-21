@@ -2,12 +2,11 @@
 Converters API Reference
 ========================
 
-
 Base
 ====
 
 .. automodule:: lightbulb.converters.base
-   :members:
+    :members:
 
 ----
 
@@ -15,4 +14,4 @@ Special
 =======
 
 .. automodule:: lightbulb.converters.special
-   :members:
+    :members:

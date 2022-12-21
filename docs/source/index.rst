@@ -83,13 +83,13 @@ Index:
 ------
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   getting-started
-   guide
-   api-reference
-   changelog
-   extension-libs
-   hikari-basics
+    getting-started
+    guide
+    api-reference
+    changelog
+    extension-libs
+    hikari-basics
 
 * :ref:`genindex`

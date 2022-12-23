@@ -258,6 +258,15 @@ def _has_guild_permissions(context: context_.base.Context, *, perms: hikari.Perm
 
     _guild_only(context)
 
+    if isinstance(context, context_.base.ApplicationContext):
+        assert context.interaction.member is not None
+        missing_perms = ~context.interaction.member.permissions & perms
+        if missing_perms is not hikari.Permissions.NONE:
+            raise errors.MissingRequiredPermission(
+                "You are missing one or more permissions required in order to run this command", perms=missing_perms
+            )
+        return True
+
     channel = context.get_channel()
 
     # Threads do not have permissions attached to them, they inherit that from
@@ -323,6 +332,16 @@ def _has_channel_permissions(context: context_.base.Context, *, perms: hikari.Pe
 
 def _bot_has_guild_permissions(context: context_.base.Context, *, perms: hikari.Permissions) -> bool:
     _guild_only(context)
+
+    # TODO - do we need to check for dm_enabled for these checks?
+    if isinstance(context, context_.base.ApplicationContext):
+        assert context.interaction.app_permissions is not None
+        missing_perms = ~context.interaction.app_permissions & perms
+        if missing_perms is not hikari.Permissions.NONE:
+            raise errors.BotMissingRequiredPermission(
+                "The bot is missing one or more permissions required in order to run this command", perms=missing_perms
+            )
+        return True
 
     channel = context.get_channel()
 

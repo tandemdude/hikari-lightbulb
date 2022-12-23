@@ -17,6 +17,8 @@ Version 2.3.2
 
 - Slash commands now have full custom converter support.
 
+- Permission checks improved to use interaction permission fields where appropriate.
+
 Version 2.3.1
 =============
 

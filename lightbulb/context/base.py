@@ -50,10 +50,16 @@ class OptionsProxy:
         self._options = options
 
     def __getattr__(self, item: str) -> t.Any:
-        return self._options.get(item)
+        try:
+            return self._options[item]
+        except KeyError:
+            raise AttributeError(f"There is no option called '{item}'") from None
 
     def __getitem__(self, item: str) -> t.Any:
-        return self._options.get(item)
+        try:
+            return self._options[item]
+        except KeyError:
+            raise AttributeError(f"There is no option called '{item}'") from None
 
     def items(self) -> t.ItemsView[str, t.Any]:
         """
@@ -449,7 +455,7 @@ class ApplicationContext(Context, abc.ABC):
         self._command = command
 
     async def _maybe_defer(self) -> None:
-        if (self._invoked or self._command).auto_defer:
+        if (self._invoked or self._command).auto_defer and not self._deferred:
             await self.respond(hikari.ResponseType.DEFERRED_MESSAGE_CREATE)
 
     @property

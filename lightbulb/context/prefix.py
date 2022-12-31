@@ -66,7 +66,7 @@ class PrefixContext(base.Context):
         self._parser: parser.BaseParser
 
     async def _maybe_defer(self) -> None:
-        if self._command is not None and (self._invoked or self._command).auto_defer:
+        if self._command is not None and (self._invoked or self._command).auto_defer and not self._deferred:
             await self.app.rest.trigger_typing(self.channel_id)
             self._deferred = True
 

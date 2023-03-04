@@ -44,6 +44,10 @@ class UserCommand(base.ApplicationCommand):
     def options(self) -> t.Dict[str, t.Any]:
         return {}
 
+    @property
+    def description_localizations(self) -> t.Mapping[t.Union[hikari.Locale, str], str]:
+        return {}
+
     def _validate_attributes(self) -> None:
         if len(self.name) < 1 or len(self.name) > 32:
             raise ValueError(f"User command {self.name!r}: name must be from 1-32 characters long") from None

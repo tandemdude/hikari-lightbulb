@@ -64,7 +64,7 @@ async def generate_rows(bot: lightbulb.BotApp) -> t.Iterable[MessageActionRowBui
     rows: t.List[MessageActionRowBuilder] = []
 
     # Build the first action row
-    row = bot.rest.build_action_row()
+    row = bot.rest.build_message_action_row()
 
     # Here we iterate len(COLORS) times.
     for i in range(len(COLORS)):
@@ -73,7 +73,7 @@ async def generate_rows(bot: lightbulb.BotApp) -> t.Iterable[MessageActionRowBui
             # append the first row to rows and build the second
             # action row. (Gives a more even button layout)
             rows.append(row)
-            row = bot.rest.build_action_row()
+            row = bot.rest.build_message_action_row()
 
         # Extract the current color from the mapping and assign
         # to this label var for later.

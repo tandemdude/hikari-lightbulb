@@ -23,7 +23,7 @@ on your bot's REST client.
 .. code-block:: python
 
     # Bot is assumed to be an instance of GatewayBot or a subclass
-    row = bot.rest.build_action_row()
+    row = bot.rest.build_message_action_row()
 
 To add a button to the action row, the method ``add_button`` is used. Likewise, ``add_select_menu`` is used to add
 a select menu to the row. The following examples will only be for buttons, however select menus are very similar

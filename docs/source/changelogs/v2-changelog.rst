@@ -6,6 +6,11 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 2.3.3
+=============
+
+- Fix :obj:`~lightbulb.commands.base.ApplicationCommand.nsfw` not applying correctly for global commands.
+
 Version 2.3.2
 =============
 

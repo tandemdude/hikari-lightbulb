@@ -727,7 +727,7 @@ class Command(abc.ABC):
 
     @property
     def is_subcommand(self) -> bool:
-        """Boolean representing whether or not this object is a subcommand."""
+        """Boolean representing whether this object is a subcommand."""
         return isinstance(self, SubCommandTrait)
 
     @property
@@ -859,14 +859,12 @@ class ApplicationCommand(Command, abc.ABC):
 
         Returns:
             :obj:`~hikari.commands.PartialCommand`: Created hikari ``Command`` object.
-
-        Notes:
-            If creating a command globally, it will take up to 1 hour to appear and be usable. As mentioned in the
-            `API documentation <https://discord.com/developers/docs/interactions/application-commands#making-a-global-command>`_
         """
         assert self.app.application is not None
         kwargs = self.as_create_kwargs()
         kwargs.update({"guild": guild} if guild is not None else {})
+        kwargs["nsfw"] = self.nsfw
+
         if guild is None:
             kwargs["dm_enabled"] = self.app_command_dm_enabled
 

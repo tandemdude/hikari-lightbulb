@@ -170,6 +170,18 @@ class OptionLike:
     
     .. versionadded:: 2.1.3
     """
+    min_length: t.Optional[int] = None
+    """
+    The minimum length permitted for this option. The option must be ``STRING`` to use this.
+
+    .. versionadded:: 2.3.3
+    """
+    max_length: t.Optional[int] = None
+    """
+    The maximum length permitted for this option. The option must be ``STRING`` to use this.
+
+    .. versionadded:: 2.3.3
+    """
     autocomplete: bool = False
     """Whether the option should be autocompleted or not. This only affects slash commands."""
     name_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
@@ -213,6 +225,11 @@ class OptionLike:
                 f"Application command option {self.name!r}: 'min_value' or 'max_value' was provided but the option type is not numeric"
             )
 
+        if (self.min_length is not None or self.max_length is not None) and arg_type is not hikari.OptionType.STRING:
+            raise ValueError(
+                f"Application command option {self.name!r}: 'min_length' or 'max_length' was provided but the option type is not string"
+            )
+
         if (
             arg_type not in (hikari.OptionType.INTEGER, hikari.OptionType.FLOAT, hikari.OptionType.STRING)
             and self.autocomplete
@@ -248,6 +265,11 @@ class OptionLike:
             kwargs["max_value"] = (
                 int(self.max_value) if arg_type is hikari.OptionType.INTEGER else float(self.max_value)
             )
+
+        if self.min_length is not None:
+            kwargs["min_length"] = self.min_length
+        if self.max_length is not None:
+            kwargs["max_length"] = self.max_length
 
         return hikari.CommandOption(**kwargs)
 

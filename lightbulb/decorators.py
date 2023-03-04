@@ -141,6 +141,8 @@ def option(
     modifier: commands.base.OptionModifier = commands.base.OptionModifier.NONE,
     min_value: t.Optional[t.Union[int, float]] = None,
     max_value: t.Optional[t.Union[int, float]] = None,
+    min_length: t.Optional[int] = None,
+    max_length: t.Optional[int] = None,
     autocomplete: t.Union[bool, AutocompleteCallbackT] = False,
     cls: t.Type[commands.base.OptionLike] = commands.base.OptionLike,
     **kwargs: t.Any,
@@ -168,11 +170,17 @@ def option(
             Only available if the option type is numeric (integer or float). Defaults to ``None``.
         max_value (Optional[Union[:obj:`float`, :obj:`int`]]): The maximum value permitted for this option (inclusive).
             Only available if the option type is numeric (integer or float). Defaults to ``None``.
+        min_length (Optional[:obj:`int`]): The minimum length permitted for this option. Only available if this option
+            is string type.
+        max_length (Optional[:obj:`int`]): The maximum length permitted for this option. Only available if this option
+            is string type.
         autocomplete (Union[:obj:`bool`, AutocompleteCallbackT]): Boolean representing whether the option will use
             autocomplete or the callback to use for autocomplete for this option. This will only affect slash commands.
             Defaults to ``False``.
-        name_localizations (Mapping[Union[:obj:`hikari.locales.Locale`, :obj:`str`], :obj:`str`]): A mapping of locale to name localizations for this option. Defaults to an empty dictionary.
-        description_localizations (Mapping[Union[:obj:`hikari.locales.Locale`, :obj:`str`], :obj:`str`]): A mapping of locale to description localizations for this option. Defaults to an empty dictionary.
+        name_localizations (Mapping[Union[:obj:`hikari.locales.Locale`, :obj:`str`], :obj:`str`]): A mapping of locale
+            to name localizations for this option. Defaults to an empty dictionary.
+        description_localizations (Mapping[Union[:obj:`hikari.locales.Locale`, :obj:`str`], :obj:`str`]): A mapping of
+            locale to description localizations for this option. Defaults to an empty dictionary.
         cls (Type[:obj:`~.commands.base.OptionLike`]): ``OptionLike`` class to instantiate from this decorator. Defaults
             to :obj:`~.commands.base.OptionLike`.
 
@@ -180,6 +188,8 @@ def option(
         ``cls`` kwarg.
     .. versionadded:: 2.1.3
         ``min_value`` and ``max_value`` kwargs.
+    .. versionadded:: 2.3.3
+        ``min_length`` and ``max_length`` kwargs.
     """
 
     def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
@@ -208,6 +218,8 @@ def option(
             modifier=modifier,
             min_value=min_value,
             max_value=max_value,
+            min_length=min_length,
+            max_length=max_length,
             autocomplete=autocomplete,
             **kwargs,
         )

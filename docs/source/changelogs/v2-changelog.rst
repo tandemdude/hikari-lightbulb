@@ -11,6 +11,8 @@ Version 2.3.3
 
 - Fix :obj:`~lightbulb.commands.base.ApplicationCommand.nsfw` not applying correctly for global commands.
 
+- Implement ``min_length`` and ``max_length`` for command options.
+
 Version 2.3.2
 =============
 

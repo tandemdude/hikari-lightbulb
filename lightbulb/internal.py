@@ -67,6 +67,8 @@ def _serialise_option(option: hikari.CommandOption) -> t.Dict[str, t.Any]:
         "channel_types": list(sorted(option.channel_types if option.channel_types is not None else [])),
         "min_value": option.min_value,
         "max_value": option.max_value,
+        "min_length": option.min_length,
+        "max_length": option.max_length,
         "autocomplete": option.autocomplete,
     }
 

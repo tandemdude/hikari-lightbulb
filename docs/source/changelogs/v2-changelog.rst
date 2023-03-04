@@ -6,13 +6,6 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
-Version 2.3.3
-=============
-
-- Fix :obj:`~lightbulb.commands.base.ApplicationCommand.nsfw` not applying correctly for global commands.
-
-- Implement ``min_length`` and ``max_length`` for command options.
-
 Version 2.3.2
 =============
 
@@ -25,6 +18,10 @@ Version 2.3.2
 - Slash commands now have full custom converter support.
 
 - Permission checks improved to use interaction permission fields where appropriate.
+
+- Fix :obj:`~lightbulb.commands.base.ApplicationCommand.nsfw` not applying correctly for global commands.
+
+- Implement ``min_length`` and ``max_length`` for command options.
 
 Version 2.3.1
 =============

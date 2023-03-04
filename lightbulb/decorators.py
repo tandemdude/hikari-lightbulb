@@ -188,7 +188,7 @@ def option(
         ``cls`` kwarg.
     .. versionadded:: 2.1.3
         ``min_value`` and ``max_value`` kwargs.
-    .. versionadded:: 2.3.3
+    .. versionadded:: 2.3.2
         ``min_length`` and ``max_length`` kwargs.
     """
 

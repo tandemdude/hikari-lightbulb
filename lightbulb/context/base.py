@@ -537,7 +537,12 @@ class ApplicationContext(Context, abc.ABC):
             except hikari.NotFoundError:
                 pass
 
-        includes_ephemeral: t.Callable[[t.Union[hikari.MessageFlag, int],], bool] = (
+        includes_ephemeral: t.Callable[
+            [
+                t.Union[hikari.MessageFlag, int],
+            ],
+            bool,
+        ] = (
             lambda flags: (hikari.MessageFlag.EPHEMERAL & flags) == hikari.MessageFlag.EPHEMERAL
         )
 

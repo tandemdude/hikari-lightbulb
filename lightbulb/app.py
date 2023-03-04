@@ -599,12 +599,12 @@ class BotApp(hikari.GatewayBot):
             ext = str(ext_path.with_suffix("")).replace(os.sep, ".")
             self.load_extensions(ext)
 
-    async def fetch_owner_ids(self) -> t.Sequence[hikari.SnowflakeishOr[int]]:
+    async def fetch_owner_ids(self) -> t.Sequence[hikari.Snowflakeish]:
         """
         Fetch the bot's owner IDs, or return the given owner IDs on instantiation if provided.
 
         Returns:
-            Sequence[SnowflakeishOr[:obj:`int`]]: The IDs of the bot's owners.
+            Sequence[Snowflakeish]: The IDs of the bot's owners.
         """
         if self.owner_ids:
             return self.owner_ids

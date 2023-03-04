@@ -13,6 +13,8 @@ Version 2.3.2
 
 - Module ``lightbulb.utils.parser`` has been moved up a level to ``lightbulb.parser``.
 
+- ``OptionsProxy`` will now raise an :obj:`AttributeError` when trying to access an option that does not exist.
+
 **Other Changes**
 
 - Slash commands now have full custom converter support.
@@ -22,6 +24,8 @@ Version 2.3.2
 - Fix :obj:`~lightbulb.commands.base.ApplicationCommand.nsfw` not applying correctly for global commands.
 
 - Implement ``min_length`` and ``max_length`` for command options.
+
+- Fix deferral of slash subcommands not working as intended.
 
 Version 2.3.1
 =============

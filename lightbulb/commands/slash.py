@@ -77,7 +77,6 @@ class SlashGroupMixin(abc.ABC):
         assert isinstance(context, context_.slash.SlashContext)
         cmd_option = context._raw_options[0]
         context._raw_options = cmd_option.options or []
-        subcommand = self._subcommands[cmd_option.name]
         # Replace the invoked command prematurely so that _parse_options uses the correct command options
         context._invoked = self._subcommands[cmd_option.name]
         # Reparse the options for the subcommand

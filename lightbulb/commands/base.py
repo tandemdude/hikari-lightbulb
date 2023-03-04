@@ -174,13 +174,13 @@ class OptionLike:
     """
     The minimum length permitted for this option. The option must be ``STRING`` to use this.
 
-    .. versionadded:: 2.3.3
+    .. versionadded:: 2.3.2
     """
     max_length: t.Optional[int] = None
     """
     The maximum length permitted for this option. The option must be ``STRING`` to use this.
 
-    .. versionadded:: 2.3.3
+    .. versionadded:: 2.3.2
     """
     autocomplete: bool = False
     """Whether the option should be autocompleted or not. This only affects slash commands."""

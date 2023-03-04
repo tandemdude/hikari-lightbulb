@@ -77,15 +77,14 @@ class SlashGroupMixin(abc.ABC):
         assert isinstance(context, context_.slash.SlashContext)
         cmd_option = context._raw_options[0]
         context._raw_options = cmd_option.options or []
-        subcommand = self._subcommands[cmd_option.name]
         # Replace the invoked command prematurely so that _parse_options uses the correct command options
-        context._invoked = subcommand
-        # Re-parse the options for the subcommand
+        context._invoked = self._subcommands[cmd_option.name]
+        # Reparse the options for the subcommand
         context._parse_options(cmd_option.options)
         # Ensure we call _maybe_defer
         await context._maybe_defer()
         # Invoke the subcommand
-        await subcommand.invoke(context)
+        await context._invoked.invoke(context)
 
     def get_subcommand(self, name: str) -> t.Optional[t.Union[SlashSubGroup, SlashSubCommand]]:
         """Get the group's subcommand with the given name."""

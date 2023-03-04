@@ -455,7 +455,10 @@ class ApplicationContext(Context, abc.ABC):
         self._command = command
 
     async def _maybe_defer(self) -> None:
-        if (self._invoked or self._command).auto_defer and not self._deferred:
+        if self._deferred:
+            return
+
+        if (self._invoked or self._command).auto_defer:
             await self.respond(hikari.ResponseType.DEFERRED_MESSAGE_CREATE)
 
     @property

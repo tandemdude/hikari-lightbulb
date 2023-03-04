@@ -30,7 +30,7 @@ jobs:
           twine upload --skip-existing dist/*
           python release_helpers.py send_webhook
           output=$(python -c "import lightbulb, sys; sys.stdout.write(lightbulb.__version__)")
-          echo "::set-output name=version::$output"
+          echo "version=$output" >> $GITHUB_OUTPUT
         id: deploy
 
       - name: Push Tag

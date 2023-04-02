@@ -69,7 +69,7 @@ class ReactionButton:
             event (:obj:`~hikari.events.message.MessageReactionEvent`): The event to check the button is pressed in.
 
         Returns:
-            :obj:`bool`: Whether or not the button is pressed in the given event.
+            :obj:`bool`: Whether the button is pressed in the given event.
         """
         if event.emoji_id is not None and isinstance(self.emoji, hikari.CustomEmoji):
             return event.emoji_id == self.emoji.id
@@ -94,7 +94,7 @@ class ComponentButton:
         label (:obj:`str`): The label of the button.
         label_is_emoji (:obj:`bool`): Whether the label is an emoji or not. This affects whether ``set_label`` or
             ``set_emoji`` is called when building the button.
-        style (:obj:`hikari.ButtonStyle`): The style of the button.
+        style (:obj:`hikari.InteractiveButtonTypesT`): The style of the button.
         custom_id (:obj:`str`): The custom ID of the button.
         callback: The coroutine function to be called on button press.
     """
@@ -105,7 +105,7 @@ class ComponentButton:
         self,
         label: str,
         label_is_emoji: bool,
-        style: ButtonStyle,
+        style: hikari.InteractiveButtonTypesT,
         custom_id: str,
         callback: t.Callable[[ButtonNavigator[T], hikari.InteractionCreateEvent], t.Coroutine[t.Any, t.Any, None]],
     ) -> None:
@@ -121,15 +121,17 @@ class ComponentButton:
 
         Args:
             container (:obj:`hikari.api.special_endpoints.MessageActionRowBuilder`): The container to add the button to.
-            disabled (:obj:`bool`): Whether or not to display the button as disabled.
+            disabled (:obj:`bool`): Whether to display the button as disabled.
 
         Returns:
             ``None``
         """
-        btn = container.add_button(self.style, self.custom_id)
-        btn.set_is_disabled(disabled)
-        getattr(btn, f"set_{'emoji' if self.label_is_emoji else 'label'}")(self.label)
-        btn.add_to_container()
+        container.add_interactive_button(
+            self.style,
+            self.custom_id,
+            is_disabled=disabled,
+            **{"emoji" if self.label_is_emoji else "label": self.label},
+        )
 
     def is_pressed(self, event: hikari.InteractionCreateEvent) -> bool:
         """

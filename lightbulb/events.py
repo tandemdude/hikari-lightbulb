@@ -43,7 +43,6 @@ import typing as t
 
 import attr
 import hikari
-from hikari.events import base_events
 
 if t.TYPE_CHECKING:
     from lightbulb import app as app_

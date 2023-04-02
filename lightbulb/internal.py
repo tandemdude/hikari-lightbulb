@@ -19,7 +19,6 @@ from __future__ import annotations
 
 __all__ = ["serialise_command", "manage_application_commands"]
 
-import collections
 import logging
 import typing as t
 

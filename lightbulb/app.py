@@ -145,7 +145,7 @@ def _default_get_prefix(_: BotApp, __: hikari.Message, *, prefixes: t.Sequence[s
 
 class BotApp(hikari.GatewayBot):
     """
-    A subclassed implementation of the :obj:`~hikari.impl.bot.GatewayBot` class containing a command
+    A subclassed implementation of the :obj:`~hikari.impl.gateway_bot.GatewayBot` class containing a command
     handler. This should be instantiated instead of the superclass if you wish to use the command
     handler implementation provided.
 
@@ -168,7 +168,7 @@ class BotApp(hikari.GatewayBot):
             find an implementation for when the bot starts. Defaults to ``True``.
         case_insensitive_prefix_commands (:obj:`bool`): Whether or not prefix command names should be case-insensitive.
             Defaults to ``False``.
-        **kwargs (Any): Additional keyword arguments passed to the constructor of the :obj:`~hikari.impl.bot.GatewayBot`
+        **kwargs (Any): Additional keyword arguments passed to the constructor of the :obj:`~hikari.impl.gateway_bot.GatewayBot`
             class.
     """
 
@@ -1262,13 +1262,15 @@ class BotApp(hikari.GatewayBot):
             await event.interaction.create_response([])
             return
 
-        def convert_response_value(val: t.Union[str, int, float, hikari.CommandChoice]) -> hikari.CommandChoice:
+        def convert_response_value(
+            val: t.Union[str, int, float, hikari.impl.AutocompleteChoiceBuilder]
+        ) -> hikari.impl.AutocompleteChoiceBuilder:
             if isinstance(val, (str, int, float)):
-                return hikari.CommandChoice(name=str(val), value=val)
+                return hikari.impl.AutocompleteChoiceBuilder(name=str(val), value=val)
             return val
 
-        resp_to_send: t.List[hikari.CommandChoice] = []
-        if isinstance(response, (str, int, float, hikari.CommandChoice)):
+        resp_to_send: t.List[hikari.impl.AutocompleteChoiceBuilder] = []
+        if isinstance(response, (str, int, float, hikari.impl.AutocompleteChoiceBuilder)):
             resp_to_send.append(convert_response_value(response))
         elif isinstance(response, collections.abc.Sequence):
             for item in response:

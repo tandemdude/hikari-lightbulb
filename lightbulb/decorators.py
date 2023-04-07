@@ -48,7 +48,13 @@ T = t.TypeVar("T")
 CommandCallbackT = t.TypeVar("CommandCallbackT", bound=t.Callable[..., t.Coroutine[t.Any, t.Any, None]])
 AutocompleteCallbackT = t.Callable[
     [hikari.CommandInteractionOption, hikari.AutocompleteInteraction],
-    t.Coroutine[t.Any, t.Any, t.Union[str, hikari.CommandChoice, t.Sequence[t.Union[str, hikari.CommandChoice]]]],
+    t.Coroutine[
+        t.Any,
+        t.Any,
+        t.Union[
+            str, hikari.impl.AutocompleteChoiceBuilder, t.Sequence[t.Union[str, hikari.impl.AutocompleteChoiceBuilder]]
+        ],
+    ],
 ]
 
 

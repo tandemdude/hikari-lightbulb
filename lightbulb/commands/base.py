@@ -161,13 +161,13 @@ class OptionLike:
     min_value: t.Optional[t.Union[float, int]] = None
     """
     The minimum value permitted for this option (inclusive). The option must be ``INTEGER`` or ``FLOAT`` to use this.
-    
+
     .. versionadded:: 2.1.3
     """
     max_value: t.Optional[t.Union[float, int]] = None
     """
     The maximum value permitted for this option (inclusive). The option must be ``INTEGER`` or ``FLOAT`` to use this.
-    
+
     .. versionadded:: 2.1.3
     """
     min_length: t.Optional[int] = None
@@ -317,52 +317,52 @@ class CommandLike:
     pass_options: bool = False
     """
     Whether or not the command will have its options passed as keyword arguments when invoked.
-    
+
     .. versionadded:: 2.2.1
     """
     max_concurrency: t.Optional[t.Tuple[int, t.Type[buckets.Bucket]]] = None
     """
     The max concurrency rule for the command.
-    
+
     .. versionadded:: 2.2.1
     """
     app_command_default_member_permissions: t.Optional[hikari.Permissions] = None
     """
     The default member permissions for this command, if an application command.
-    
+
     .. versionadded:: 2.2.3
     """
     app_command_dm_enabled: bool = True
     """
     Whether this command will be enabled in DMs, if an application command.
-    
+
     .. versionadded:: 2.2.3
     """
     app_command_bypass_author_permission_checks: bool = False
     """
     Whether invocations of this command will bypass author permission checks, if an application command.
-    
+
     .. versionadded:: 2.2.3
     """
     name_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
     """
     A mapping of locale to name localizations for this command
-    
+
     .. versionadded:: 2.3.0
     """
     description_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
     """
     A mapping of locale to description localizations for this command
-    
+
     .. versionadded:: 2.3.0
     """
     nsfw: bool = False
     """
     Whether the command should only be enabled in NSFW channels.
-    
+
     For prefix commands, this will add an NSFW-channel only check to the command automatically.
     For slash commands, this will behave as specified in the Discord documentation.
-    
+
     .. versionadded:: 2.3.1
     """
     _autocomplete_callbacks: t.Dict[
@@ -772,7 +772,8 @@ class Command(abc.ABC):
         if self._max_concurrency_semaphores[bucket_hash].locked():
             assert context.invoked is not None
             raise errors.MaxConcurrencyLimitReached(
-                f"Maximum concurrency limit for command '{context.invoked.qualname}' exceeded"
+                f"Maximum concurrency limit for command '{context.invoked.qualname}' exceeded",
+                bucket=self.max_concurrency[1],
             )
         await self._max_concurrency_semaphores[bucket_hash].acquire()
 

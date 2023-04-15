@@ -53,8 +53,8 @@ AutocompleteCallbackT = t.TypeVar(
             t.Any,
             t.Union[
                 _AutocompleteableOptionT,
-                hikari.impl.AutocompleteChoiceBuilder,
-                t.Sequence[t.Union[_AutocompleteableOptionT, hikari.impl.AutocompleteChoiceBuilder]],
+                hikari.api.AutocompleteChoiceBuilder,
+                t.Sequence[t.Union[_AutocompleteableOptionT, hikari.api.AutocompleteChoiceBuilder]],
             ],
         ],
     ],
@@ -374,8 +374,8 @@ class CommandLike:
                 t.Any,
                 t.Union[
                     _AutocompleteableOptionT,
-                    hikari.impl.AutocompleteChoiceBuilder,
-                    t.Sequence[t.Union[_AutocompleteableOptionT, hikari.impl.AutocompleteChoiceBuilder]],
+                    hikari.api.AutocompleteChoiceBuilder,
+                    t.Sequence[t.Union[_AutocompleteableOptionT, hikari.api.AutocompleteChoiceBuilder]],
                 ],
             ],
         ],
@@ -522,7 +522,7 @@ class CommandLike:
                 @foo.autocomplete("foo")  # Name of the option you want to autocomplete
                 async def foo_autocomplete(
                     opt: hikari.AutocompleteInteractionOption, inter: hikari.AutocompleteInteraction
-                ) -> Union[str, Sequence[str], hikari.impl.AutocompleteChoiceBuilder, Sequence[hikari.impl.AutocompleteChoiceBuilder]]:
+                ) -> Union[str, Sequence[str], hikari.api.AutocompleteChoiceBuilder, Sequence[hikari.api.AutocompleteChoiceBuilder]]:
                     ...
         """
 

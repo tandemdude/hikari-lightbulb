@@ -52,7 +52,7 @@ AutocompleteCallbackT = t.Callable[
         t.Any,
         t.Any,
         t.Union[
-            str, hikari.impl.AutocompleteChoiceBuilder, t.Sequence[t.Union[str, hikari.impl.AutocompleteChoiceBuilder]]
+            str, hikari.api.AutocompleteChoiceBuilder, t.Sequence[t.Union[str, hikari.api.AutocompleteChoiceBuilder]]
         ],
     ],
 ]

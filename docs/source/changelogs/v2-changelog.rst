@@ -6,6 +6,13 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 2.3.3
+=============
+
+**Other Changes**
+
+- ``bucket`` attribute has been added to the :obj:`~lightbulb.errors.MaxConcurrencyLimitReached` class.
+
 Version 2.3.2
 =============
 

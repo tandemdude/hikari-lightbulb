@@ -1268,8 +1268,6 @@ class BotApp(hikari.GatewayBot):
             if isinstance(val, (str, int, float)):
                 return hikari.impl.AutocompleteChoiceBuilder(name=str(val), value=val)
 
-                return hikari.impl.AutocompleteChoiceBuilder(name=val.name, value=val.value)
-
             return val
 
         resp_to_send: t.List[hikari.api.AutocompleteChoiceBuilder] = []

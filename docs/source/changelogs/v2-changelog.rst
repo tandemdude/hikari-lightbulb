@@ -9,9 +9,11 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 Version 2.3.3
 =============
 
-**Other Changes**
-
 - ``bucket`` attribute has been added to the :obj:`~lightbulb.errors.MaxConcurrencyLimitReached` class.
+
+- Fix button navigator due to hikari breaking changes.
+
+- Autocomplete callbacks may no longer return instances of ``hikari.CommandChoice` as it has been deprecated. Use ``AutocompleteChoiceBuilder`` instead.
 
 Version 2.3.2
 =============

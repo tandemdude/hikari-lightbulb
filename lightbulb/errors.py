@@ -55,6 +55,7 @@ import warnings
 import hikari
 
 if t.TYPE_CHECKING:
+    from lightbulb import buckets
     from lightbulb import commands
 
 
@@ -160,7 +161,7 @@ class ConverterFailure(LightbulbError):
         self.raw_value: str = raw
         """
         The value that could not be converted.
-        
+
         .. versionadded:: 2.2.1
         """
 
@@ -196,6 +197,17 @@ class MaxConcurrencyLimitReached(LightbulbError):
     Error raised when the maximum number of allowed concurrent invocations for a command
     has been exceeded.
     """
+
+    __slots__ = ("bucket",)
+
+    def __init__(self, *args: t.Any, bucket: t.Type[buckets.Bucket]) -> None:
+        super().__init__(*args)
+        self.bucket = bucket
+        """
+        The bucket type that triggered the max concurrency limit.
+
+        .. versionadded:: 2.3.3
+        """
 
 
 class CheckFailure(LightbulbError):

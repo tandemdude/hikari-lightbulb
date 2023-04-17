@@ -13,7 +13,7 @@ Version 2.3.3
 
 - Fix button navigator due to hikari breaking changes.
 
-- Autocomplete callbacks may no longer return instances of ``hikari.CommandChoice` as it has been deprecated. Use ``AutocompleteChoiceBuilder`` instead.
+- Autocomplete callbacks may no longer return instances of ``hikari.CommandChoice`` as it has been deprecated. Use ``AutocompleteChoiceBuilder`` instead.
 
 Version 2.3.2
 =============

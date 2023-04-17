@@ -1262,20 +1262,11 @@ class BotApp(hikari.GatewayBot):
             await event.interaction.create_response([])
             return
 
-        warned = False
-
         def convert_response_value(
             val: t.Union[str, int, float, hikari.api.AutocompleteChoiceBuilder]
         ) -> hikari.api.AutocompleteChoiceBuilder:
             if isinstance(val, (str, int, float)):
                 return hikari.impl.AutocompleteChoiceBuilder(name=str(val), value=val)
-            if isinstance(val, hikari.CommandChoice):
-                nonlocal warned
-                if not warned:
-                    _LOGGER.warning(
-                        "DeprecationWarning: Passing CommandChoice is deprecated and will be removed in `2.0.0.dev119`. Use AutocompleteChoiceBuilder instead"
-                    )
-                    warned = True
 
                 return hikari.impl.AutocompleteChoiceBuilder(name=val.name, value=val.value)
 

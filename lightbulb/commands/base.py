@@ -772,7 +772,8 @@ class Command(abc.ABC):
         if self._max_concurrency_semaphores[bucket_hash].locked():
             assert context.invoked is not None
             raise errors.MaxConcurrencyLimitReached(
-                f"Maximum concurrency limit for command '{context.invoked.qualname}' exceeded"
+                f"Maximum concurrency limit for command '{context.invoked.qualname}' exceeded",
+                bucket=self.max_concurrency[1],
             )
         await self._max_concurrency_semaphores[bucket_hash].acquire()
 

@@ -323,7 +323,7 @@ def add_cooldown(
             to :obj:`~.cooldown_algorithms.BangBangCooldownAlgorithm`.
 
     Keyword Args:
-        callback (Callable[[:obj:`~.context.base.Context], Union[:obj:`~.buckets.Bucket`, Coroutine[Any, Any, :obj:`~.buckets.Bucket`]]]): Callable
+        callback (Callable[[:obj:`~.context.base.Context`], Union[:obj:`~.buckets.Bucket`, Coroutine[Any, Any, :obj:`~.buckets.Bucket`]]]): Callable
             that takes the context the command was invoked under and returns the appropriate bucket object to use for
             cooldowns in the context.
         cls (Type[:obj:`~.cooldowns.CooldownManager`]): The cooldown manager class to use. Defaults to

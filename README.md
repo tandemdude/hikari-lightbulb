@@ -25,7 +25,7 @@ bot = lightbulb.BotApp(token="your_token_here", prefix="your_prefix_here")
 # Register the command to the bot
 @bot.command
 # Use the command decorator to convert the function into a command
-@lightbulb.command("ping", "checks the bot is alive")
+@lightbulb.command("ping", "checks if the bot is alive") # The syntax for this is: @lightbulb.command("name", "description")
 # Define the command type(s) that this command implements
 @lightbulb.implements(lightbulb.PrefixCommand)
 # Define the command's callback. The callback should take a single argument which will be

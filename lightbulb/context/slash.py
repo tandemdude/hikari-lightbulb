@@ -62,7 +62,7 @@ class SlashContext(base.ApplicationContext):
         if opt_type in CONVERTER_TYPE_MAPPING:
             self._options[name] = await CONVERTER_TYPE_MAPPING[cmd.options[name].arg_type](self).convert(value)
         elif inspect.isclass(opt_type) and issubclass(cmd.options[name].arg_type, BaseConverter):
-            self._options[name] = await opt_type.convert(value)
+            self._options[name] = await opt_type(self).convert(value)
         elif callable(opt_type):
             temp: t.Any = opt_type(value)
             if inspect.iscoroutine(temp):

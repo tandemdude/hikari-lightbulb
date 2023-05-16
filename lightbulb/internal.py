@@ -142,7 +142,6 @@ def _create_builder_from_command(
         bld.set_name_localizations(cmd.name_localizations)
         bld.set_description_localizations(cmd.description_localizations)
         bld.set_is_dm_enabled(cmd.app_command_dm_enabled)
-        bld.set_name_localizations(cmd.name_localizations)
         bld.set_is_nsfw(cmd.nsfw)
 
     return bld

@@ -120,6 +120,8 @@ class SlashCommand(base.ApplicationCommand):
             "name": self.name,
             "description": self.description,
             "options": [o.as_application_command_option() for o in sorted_opts],
+            "name_localizations": self.name_localizations,
+            "description_localizations": self.description_localizations
         }
 
     def _validate_attributes(self) -> None:
@@ -153,6 +155,8 @@ class SlashSubCommand(SlashCommand, base.SubCommandTrait):
             description=self.description,
             is_required=False,
             options=[o.as_application_command_option() for o in sorted_opts],
+            name_localizations=self.name_localizations,
+            description_localizations=self.description_localizations
         )
 
 
@@ -187,6 +191,8 @@ class SlashSubGroup(SlashCommand, SlashGroupMixin, base.SubCommandTrait):
             description=self.description,
             is_required=False,
             options=[c.as_option() for c in self._subcommands.values()],
+            name_localizations=self.name_localizations,
+            description_localizations=self.description_localizations
         )
 
     async def invoke(self, context: context_.base.Context, **_: t.Any) -> None:
@@ -228,6 +234,8 @@ class SlashCommandGroup(SlashCommand, SlashGroupMixin):
             "name": self.name,
             "description": self.description,
             "options": [c.as_option() for c in self._subcommands.values()],
+            "name_localizations": self.name_localizations,
+            "description_localizations": self.description_localizations
         }
 
     def _validate_attributes(self) -> None:

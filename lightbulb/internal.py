@@ -59,7 +59,7 @@ def _serialise_option(option: hikari.CommandOption) -> t.Dict[str, t.Any]:
         "choices": list(
             sorted(
                 [{"n": c.name, "v": c.value} for c in option.choices] if option.choices is not None else [],
-                key=lambda d: d["n"],  # type: ignore
+                key=lambda d: d["n"],
             )
         ),
         "options": [_serialise_option(o) for o in option.options] if option.options is not None else [],
@@ -92,7 +92,7 @@ def _serialise_lightbulb_command(command: base.ApplicationCommand) -> t.Dict[str
         "type": create_kwargs["type"],
         "name": create_kwargs["name"],
         "description": create_kwargs.get("description"),
-        "options": [_serialise_option(o) for o in sorted(create_kwargs.get("options", []), key=lambda o: o.name)],  # type: ignore
+        "options": [_serialise_option(o) for o in sorted(create_kwargs.get("options", []), key=lambda o: o.name)],
         "guild_id": _GuildIDCollection(command.guilds) if command.guilds else None,
         "default_member_permissions": command.app_command_default_member_permissions,
         "dm_enabled": command.app_command_dm_enabled if not command.guilds else False,

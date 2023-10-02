@@ -238,6 +238,8 @@ class ReactionNavigator(t.Generic[T]):
                 await navigator.run(ctx)
     """
 
+    __slots__ = ("pages", "buttons", "_timeout", "current_page_index", "_context", "_msg", "_timeout_task")
+
     def __init__(
         self,
         pages: t.Union[t.Iterable[T], t.Iterator[T]],
@@ -383,6 +385,8 @@ class ButtonNavigator(t.Generic[T]):
                 navigator = nav.ButtonNavigator(paginated_help.build_pages())
                 await navigator.run(ctx)
     """
+
+    __slots__ = ("pages", "buttons", "_timeout", "current_page_index", "_context", "_msg", "_timeout_task")
 
     def __init__(
         self,

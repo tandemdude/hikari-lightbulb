@@ -48,6 +48,8 @@ class DataStore(t.Dict[str, t.Any]):
             DataStore()
     """
 
+    __slots__ = ()
+
     def __repr__(self) -> str:
         return "DataStore(" + ", ".join(f"{k}={v!r}" for k, v in self.items()) + ")"
 

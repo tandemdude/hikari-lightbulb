@@ -30,6 +30,20 @@ T = t.TypeVar("T")
 
 
 class Paginator(abc.ABC, t.Generic[T]):
+    __slots__ = (
+        "_max_total_chars",
+        "_max_total_lines",
+        "_max_content_chars",
+        "_max_content_lines",
+        "_line_separator",
+        "_page_prefix",
+        "_page_suffix",
+        "_next_page",
+        "_pages",
+        "_page_factory",
+        "current_page",
+    )
+
     @abc.abstractmethod
     def __init__(
         self,
@@ -210,6 +224,8 @@ class StringPaginator(Paginator[str]):
                     await ctx.respond(page)
     """
 
+    __slots__ = ()
+
     def __init__(
         self,
         *,
@@ -244,6 +260,8 @@ class EmbedPaginator(Paginator[hikari.Embed]):
         prefix (:obj:`str`): The string to prefix every page with. Defaults to an empty string.
         suffix (:obj:`str`): The string to suffix every page with. Defaults to an empty string.
     """
+
+    __slots__ = ()
 
     def __init__(
         self,

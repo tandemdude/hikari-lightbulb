@@ -389,7 +389,7 @@ def set_help(
             cmd_doc = inspect.getdoc(c_like.callback)
             if cmd_doc is None:
                 raise ValueError("docstring=True was provided but the command does not have a docstring")
-            getter = lambda _, __: cmd_doc  # type: ignore
+            getter = lambda _, __: cmd_doc
         else:
             assert text is not None
             getter = text

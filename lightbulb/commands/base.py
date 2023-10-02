@@ -22,13 +22,13 @@ __all__ = ["OptionModifier", "OptionLike", "CommandLike", "Command", "Applicatio
 import abc
 import asyncio
 import collections
-import dataclasses
 import datetime
 import enum
 import inspect
 import re
 import typing as t
 
+import attrs
 import hikari
 
 from lightbulb import errors
@@ -103,8 +103,6 @@ class _HasRecreateSubcommands(t.Protocol):
 
 
 class _SubcommandListProxy(collections.UserList):  # type: ignore
-    __slots__ = ("parents",)
-
     def __init__(self, *args: t.Any, parent: _HasRecreateSubcommands, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
         self.parents = [parent]
@@ -136,7 +134,7 @@ class OptionModifier(enum.Enum):
     """Consume rest option. This will consume the entire remainder of the string."""
 
 
-@dataclasses.dataclass
+@attrs.define(slots=True)
 class OptionLike:
     """
     Generic dataclass representing a command option. Compatible with both prefix and application commands.
@@ -184,13 +182,13 @@ class OptionLike:
     """
     autocomplete: bool = False
     """Whether the option should be autocompleted or not. This only affects slash commands."""
-    name_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
+    name_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = attrs.field(factory=dict)
     """
     A mapping of locale to name localizations for this option
 
     .. versionadded:: 2.3.0
     """
-    description_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
+    description_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = attrs.field(factory=dict)
     """
     A mapping of locale to description localizations for this option
 
@@ -274,7 +272,7 @@ class OptionLike:
         return hikari.CommandOption(**kwargs)
 
 
-@dataclasses.dataclass
+@attrs.define(slots=True)
 class CommandLike:
     """Generic dataclass representing a command. This can be converted into any command object."""
 
@@ -284,19 +282,19 @@ class CommandLike:
     """The name of the command."""
     description: str
     """The description of the command."""
-    options: t.MutableMapping[str, OptionLike] = dataclasses.field(default_factory=dict)
+    options: t.MutableMapping[str, OptionLike] = attrs.field(factory=dict)
     """The options for the command."""
-    checks: t.Sequence[t.Union[checks.Check, checks._ExclusiveCheck]] = dataclasses.field(default_factory=list)
+    checks: t.Sequence[t.Union[checks.Check, checks._ExclusiveCheck]] = attrs.field(factory=list)
     """The checks for the command."""
     error_handler: t.Optional[
         t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]
     ] = None
     """The error handler for the command."""
-    aliases: t.Sequence[str] = dataclasses.field(default_factory=list)
+    aliases: t.Sequence[str] = attrs.field(factory=list)
     """The aliases for the command. This only affects prefix commands."""
     guilds: hikari.UndefinedOr[t.Sequence[int]] = hikari.UNDEFINED
     """The guilds for the command. This only affects application commands."""
-    subcommands: t.List[CommandLike] = dataclasses.field(default_factory=list)
+    subcommands: t.List[CommandLike] = attrs.field(factory=list)
     """Subcommands for the command."""
     parser: t.Optional[t.Type[parser_.BaseParser]] = None
     """The argument parser to use for prefix commands."""
@@ -344,13 +342,13 @@ class CommandLike:
 
     .. versionadded:: 2.2.3
     """
-    name_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
+    name_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = attrs.field(factory=dict)
     """
     A mapping of locale to name localizations for this command
 
     .. versionadded:: 2.3.0
     """
-    description_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
+    description_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = attrs.field(factory=dict)
     """
     A mapping of locale to description localizations for this command
 
@@ -379,7 +377,7 @@ class CommandLike:
                 ],
             ],
         ],
-    ] = dataclasses.field(default_factory=dict, init=False)
+    ] = attrs.field(factory=dict, init=False)
 
     async def __call__(self, context: context_.base.Context) -> None:
         await self.callback(context)

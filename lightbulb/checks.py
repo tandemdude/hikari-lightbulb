@@ -59,6 +59,8 @@ _CallbackT = t.Union[
 
 
 class _ExclusiveCheck:
+    __slots__ = ("_checks",)
+
     def __init__(self, *checks: "Check") -> None:
         self._checks = list(checks)
 

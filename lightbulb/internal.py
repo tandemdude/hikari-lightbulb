@@ -140,7 +140,8 @@ def _create_builder_from_command(
         if cmd.app_command_default_member_permissions is not None:
             bld.set_default_member_permissions(cmd.app_command_default_member_permissions)
         bld.set_name_localizations(cmd.name_localizations)
-        bld.set_description_localizations(cmd.description_localizations)
+        if isinstance(bld, hikari.api.SlashCommandBuilder):
+            bld.set_description_localizations(cmd.description_localizations)
         bld.set_is_dm_enabled(cmd.app_command_dm_enabled)
         bld.set_is_nsfw(cmd.nsfw)
 

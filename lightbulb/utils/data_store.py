@@ -46,6 +46,8 @@ class DataStore(t.Dict[str, t.Any]):
             'bar'
             >>> d
             DataStore()
+
+    A DataStore instance is attached to :obj:`~.app.BotApp` instances as :attr:`bot.d <.app.BotApp.d>` for your convenience.
     """
 
     __slots__ = ()

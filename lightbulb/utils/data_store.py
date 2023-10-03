@@ -46,8 +46,8 @@ class DataStore(t.Dict[str, t.Any]):
             'bar'
             >>> d
             DataStore()
-            
-    A DataStore instance is attached to :obj:class:`lightbulb.app.BotApp` instances as ``bot.d`` for your convenience.  
+
+    A DataStore instance is attached to :obj:`~.app.BotApp` instances as :attr:`bot.d <.app.BotApp.d>` for your convenience.
     """
 
     def __repr__(self) -> str:

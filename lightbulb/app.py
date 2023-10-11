@@ -971,7 +971,7 @@ class BotApp(hikari.GatewayBot):
         prefixes = sorted(prefixes, key=len, reverse=True)
 
         message = event.message.content
-        if self.case_insensitive_prefixes:
+        if self._case_insensitive_prefixes:
             message = message.lower()
             prefixes = [x.lower() for x in prefixes]
 

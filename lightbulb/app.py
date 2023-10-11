@@ -166,6 +166,8 @@ class BotApp(hikari.GatewayBot):
             as well as a prefix command. Defaults to ``False``.
         delete_unbound_commands (:obj:`bool`): Whether or not the bot should delete application commands that it cannot
             find an implementation for when the bot starts. Defaults to ``True``.
+        case_insensitive_prefixes (:obj:`bool`): Wheter or not command prefixes should be case-insensitive.
+            Defaults to ``False``.
         case_insensitive_prefix_commands (:obj:`bool`): Whether or not prefix command names should be case-insensitive.
             Defaults to ``False``.
         **kwargs (Any): Additional keyword arguments passed to the constructor of the :obj:`~hikari.impl.gateway_bot.GatewayBot`
@@ -189,6 +191,7 @@ class BotApp(hikari.GatewayBot):
         "default_enabled_guilds",
         "_help_command",
         "_delete_unbound_commands",
+        "_case_insensitive_prefixes",
         "_case_insensitive_prefix_commands",
         "_running_tasks",
     )
@@ -203,6 +206,7 @@ class BotApp(hikari.GatewayBot):
         help_class: t.Optional[t.Type[help_command_.BaseHelpCommand]] = help_command_.DefaultHelpCommand,
         help_slash_command: bool = False,
         delete_unbound_commands: bool = True,
+        case_insensitive_prefixes: bool = False,
         case_insensitive_prefix_commands: bool = False,
         **kwargs: t.Any,
     ) -> None:
@@ -220,6 +224,7 @@ class BotApp(hikari.GatewayBot):
             ] = prefix
 
         self._delete_unbound_commands = delete_unbound_commands
+        self._case_insensitive_prefixes = case_insensitive_prefixes
         self._case_insensitive_prefix_commands = case_insensitive_prefix_commands
 
         self.ignore_bots: bool = ignore_bots
@@ -965,9 +970,14 @@ class BotApp(hikari.GatewayBot):
             prefixes = [prefixes]
         prefixes = sorted(prefixes, key=len, reverse=True)
 
+        message = event.message.content
+        if self.case_insensitive_prefixes:
+            message = message.lower()
+            prefixes = [x.lower() for x in prefixes]
+
         invoked_prefix = None
         for prefix in prefixes:
-            if event.message.content.startswith(prefix):
+            if message.startswith(prefix):
                 invoked_prefix = prefix
                 break
 

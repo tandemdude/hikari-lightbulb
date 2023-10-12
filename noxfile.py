@@ -28,35 +28,43 @@ SCRIPT_PATHS = [
     "docs/source/conf.py",
 ]
 
-options.sessions = ["format_fix", "mypy", "sphinx"]
+options.sessions = ["format_fix", "pyright", "slotscheck"]
 
 
 @nox.session()
 def format_fix(session):
-    session.install("black")
-    session.install("isort")
+    session.install("-Ur", "dev-requirements/formatting.txt")
     session.run("python", "-m", "black", *SCRIPT_PATHS)
-    session.run("python", "-m", "isort", *SCRIPT_PATHS)
+    session.run("python", "-m", "ruff", "--fix", *SCRIPT_PATHS)
 
 
 # noinspection PyShadowingBuiltins
 @nox.session()
-def format(session):
-    session.install("-U", "black")
+def format_check(session):
+    session.install("-Ur", "dev-requirements/formatting.txt")
     session.run("python", "-m", "black", *SCRIPT_PATHS, "--check")
+    session.run("python", "-m", "ruff", "--output-format", "github", *SCRIPT_PATHS)
 
 
 @nox.session()
-def mypy(session):
+def pyright(session):
     session.install("-Ur", "requirements.txt")
     session.install("-Ur", "crontrigger_requirements.txt")
-    session.install("-U", "mypy")
-    session.run("python", "-m", "mypy", "lightbulb")
+    session.install("-Ur", "dev-requirements/pyright.txt")
+    session.run("python", "-m", "pyright")
+
+
+@nox.session()
+def slotscheck(session):
+    session.install("-Ur", "requirements.txt")
+    session.install("-Ur", "crontrigger_requirements.txt")
+    session.install("-Ur", "dev-requirements/slotscheck.txt")
+    session.run("python", "-m", "slotscheck", "-m", "lightbulb")
 
 
 @nox.session(reuse_venv=True)
 def sphinx(session):
-    session.install("-Ur", "docs_requirements.txt")
+    session.install("-Ur", "dev-requirements/docs.txt")
     session.install("-Ur", "crontrigger_requirements.txt")
     session.install("-Ur", "requirements.txt")
     session.run("python", "-m", "sphinx.cmd.build", "docs/source", "docs/build", "-b", "html")

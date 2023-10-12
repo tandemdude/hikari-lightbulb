@@ -7,3 +7,41 @@ build-backend = "setuptools.build_meta"
 line-length     = 120
 target-version  = ["py38"]
 include         = ".*py$"
+
+[tool.ruff]
+line-length = 120
+target-version = "py38"
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # Pyflakes
+    "I",  # isort
+]
+fixable = [
+    "I",     # isort errors
+    "F401",  # unused import
+    "F404",  # late __future__ import
+    "F541",  # f-string with no placeholders
+]
+
+[tool.ruff.isort]
+force-single-line = true
+
+[tool.ruff.per-file-ignores]
+# init files don't use their imports
+"__init__.py" = ["F401"]
+
+[tool.slotscheck]
+strict-imports = true
+require-superclass = true
+require-subclass = true
+
+[tool.pyright]
+include = ["lightbulb"]
+exclude = ["**/__init__.py"]
+typeCheckingMode = "strict"
+pythonVersion = "3.8"
+verboseOutput = true
+reportImportCycles = false
+reportUnnecessaryTypeIgnoreComment = true
+reportImplicitStringConcatenation = true

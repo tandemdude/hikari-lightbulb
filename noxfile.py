@@ -28,7 +28,7 @@ SCRIPT_PATHS = [
     "docs/source/conf.py",
 ]
 
-options.sessions = ["format_fix", "pyright", "slotscheck"]
+options.sessions = ["format_fix", "mypy", "slotscheck"]
 
 
 @nox.session()
@@ -46,12 +46,22 @@ def format_check(session):
     session.run("python", "-m", "ruff", "--output-format", "github", *SCRIPT_PATHS)
 
 
+# Lightbulb is such a mess that it would take forever to make pyright happy
+# Maybe someday we can uncomment this, but for now it's all just a distant dream
+# @nox.session()
+# def pyright(session):
+#     session.install("-Ur", "requirements.txt")
+#     session.install("-Ur", "crontrigger_requirements.txt")
+#     session.install("-Ur", "dev-requirements/pyright.txt")
+#     session.run("python", "-m", "pyright")
+
+
 @nox.session()
-def pyright(session):
+def mypy(session):
     session.install("-Ur", "requirements.txt")
     session.install("-Ur", "crontrigger_requirements.txt")
-    session.install("-Ur", "dev-requirements/pyright.txt")
-    session.run("python", "-m", "pyright")
+    session.install("-Ur", "dev-requirements/mypy.txt")
+    session.run("python", "-m", "mypy", "lightbulb")
 
 
 @nox.session()

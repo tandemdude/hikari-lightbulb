@@ -170,7 +170,7 @@ class BotApp(hikari.GatewayBot):
             Defaults to ``False``.
         **kwargs (Any): Additional keyword arguments passed to the constructor of the :obj:`~hikari.impl.gateway_bot.GatewayBot`
             class.
-    """
+    """  # noqa: E501
 
     __slots__ = (
         "get_prefix",
@@ -232,7 +232,8 @@ class BotApp(hikari.GatewayBot):
         """The default guilds that application commands will be enabled in."""
 
         self.application: t.Optional[hikari.Application] = None
-        """The :obj:`~hikari.applications.Application` for the bot account. This will always be ``None`` before the bot has logged in."""
+        """The :obj:`~hikari.applications.Application` for the bot account.
+        This will always be ``None`` before the bot has logged in."""
 
         self.d: data_store.DataStore = data_store.DataStore()
         """A :obj:`~.utils.data_store.DataStore` instance enabling storage of custom data without subclassing."""
@@ -388,7 +389,8 @@ class BotApp(hikari.GatewayBot):
             match = _APPLICATION_CMD_ERROR_REGEX.search(error_msg)
             guild_id = "unknown" if match is None else match.group(1)
             raise errors.ApplicationCommandCreationFailed(
-                f"Application command creation failed for guild {guild_id!r}. Is your bot in the guild and was it invited with the 'applications.commands' scope?"
+                f"Application command creation failed for guild {guild_id!r}. "
+                + "Is your bot in the guild and was it invited with the 'applications.commands' scope?"
             ) from exc
         finally:
             await self.dispatch(events.LightbulbStartedEvent(app=self))
@@ -611,7 +613,7 @@ class BotApp(hikari.GatewayBot):
 
         self.application = self.application or await self.rest.fetch_application()
 
-        owner_ids = []
+        owner_ids: t.List[hikari.Snowflake] = []
         if self.application.owner is not None:
             owner_ids.append(self.application.owner.id)
         if self.application.team is not None:
@@ -1221,9 +1223,11 @@ class BotApp(hikari.GatewayBot):
         assert event.interaction.command_type is hikari.CommandType.SLASH
         assert event.interaction.options is not None and len(event.interaction.options) > 0
 
-        get_focused: t.Callable[
-            [t.Sequence[hikari.AutocompleteInteractionOption]], hikari.AutocompleteInteractionOption
-        ] = lambda opts: next(filter(lambda o: o.is_focused, opts), opts[0])
+        def is_focused(opt: hikari.AutocompleteInteractionOption) -> bool:
+            return opt.is_focused
+
+        def get_focused(opts: t.Sequence[hikari.AutocompleteInteractionOption]) -> hikari.AutocompleteInteractionOption:
+            return next(filter(is_focused, opts), opts[0])
 
         def flatten_command_option(
             opt: hikari.AutocompleteInteractionOption,

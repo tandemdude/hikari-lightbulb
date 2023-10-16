@@ -63,7 +63,8 @@ class SlashGroupMixin(abc.ABC):
 
                     if cmd.name in self._subcommands:
                         raise errors.CommandAlreadyExists(
-                            f"A prefix subcommand with name or alias {cmd.name!r} already exists for group {self.name!r}"
+                            f"A prefix subcommand with name or alias {cmd.name!r} "
+                            + f"already exists for group {self.name!r}"
                         )
                     self._subcommands[cmd.name] = cmd
 

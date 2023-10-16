@@ -121,7 +121,7 @@ def command(
         ``pass_options`` kwarg.
     .. versionadded:: 2.3.0
         ``name_localizations`` and ``description_localizations`` kwargs.
-    """
+    """  # noqa: E501
 
     def decorate(func: CommandCallbackT) -> commands.base.CommandLike:
         cmd = cls(func, name, description, **kwargs)
@@ -196,7 +196,7 @@ def option(
         ``min_value`` and ``max_value`` kwargs.
     .. versionadded:: 2.3.2
         ``min_length`` and ``max_length`` kwargs.
-    """
+    """  # noqa: E501
 
     def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
         nonlocal default, required, autocomplete
@@ -328,18 +328,18 @@ def add_cooldown(
             cooldowns in the context.
         cls (Type[:obj:`~.cooldowns.CooldownManager`]): The cooldown manager class to use. Defaults to
             :obj:`~.cooldowns.CooldownManager`.
-    """
+    """  # noqa: E501
     getter: t.Callable[[context.base.Context], t.Union[buckets.Bucket, t.Coroutine[t.Any, t.Any, buckets.Bucket]]]
     if length is not None and uses is not None and bucket is not None:
 
         def _get_bucket(
-            _: context.base.Context,
-            b: t.Type[buckets.Bucket],
-            l: float,
-            u: int,
-            a: t.Type[cooldown_algorithms.CooldownAlgorithm],
+            ctx: context.base.Context,
+            _bucket: t.Type[buckets.Bucket],
+            _length: float,
+            _max_usages: int,
+            _algorithm: t.Type[cooldown_algorithms.CooldownAlgorithm],
         ) -> buckets.Bucket:
-            return b(l, u, a)
+            return _bucket(_length, _max_usages, _algorithm)
 
         getter = functools.partial(_get_bucket, b=bucket, l=length, u=uses, a=algorithm)
     elif callback is not None:
@@ -375,7 +375,7 @@ def set_help(
     Keyword Args:
         docstring (:obj:`bool`): Whether the command help text should be extracted from the command's docstring.
             If this is ``False`` (default) then a value **must** be provided for the ``text`` arg.
-    """
+    """  # noqa: E501
     if text is None and docstring is False:
         raise ValueError("Either help text/callable or docstring=True must be provided")
 
@@ -384,12 +384,12 @@ def set_help(
             raise SyntaxError("'set_help' decorator must be above the 'command' decorator")
 
         if isinstance(text, str):
-            getter = lambda _, __: text
+            getter = lambda _, __: text  # noqa: E731
         elif docstring:
             cmd_doc = inspect.getdoc(c_like.callback)
             if cmd_doc is None:
                 raise ValueError("docstring=True was provided but the command does not have a docstring")
-            getter = lambda _, __: cmd_doc
+            getter = lambda _, __: cmd_doc  # noqa: E731
         else:
             assert text is not None
             getter = text

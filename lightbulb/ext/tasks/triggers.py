@@ -123,7 +123,10 @@ if t.TYPE_CHECKING or _CRON_AVAILABLE:
 
         def __init__(self, crontab: t.Optional[str] = None, /, **kwargs: _CT) -> None:
             if not crontab:
-                crontab = f"{kwargs.get('minute', '*')} {kwargs.get('hour', '*')} {kwargs.get('day', '*')} {kwargs.get('month', '*')} {kwargs.get('day_of_week', '*')} {kwargs.get('second', 0)}"
+                crontab = (
+                    f"{kwargs.get('minute', '*')} {kwargs.get('hour', '*')} {kwargs.get('day', '*')} "
+                    f"{kwargs.get('month', '*')} {kwargs.get('day_of_week', '*')} {kwargs.get('second', 0)}"
+                )
 
             self._croniter = croniter.croniter(crontab, datetime.datetime.now(datetime.timezone.utc))
 

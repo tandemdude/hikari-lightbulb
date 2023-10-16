@@ -147,7 +147,8 @@ class OptionLike:
     arg_type: t.Any = str
     """The type of the option."""
     required: bool = True
-    """Whether or not the option is required. This will be inferred from whether or not a default value was provided if unspecified."""
+    """Whether or not the option is required. This will be inferred from whether or not
+    a default value was provided if unspecified."""
     choices: t.Optional[t.Sequence[t.Union[str, int, float, hikari.CommandChoice]]] = None
     """The option's choices. This only affects slash commands."""
     channel_types: t.Optional[t.Sequence[hikari.ChannelType]] = None
@@ -204,7 +205,8 @@ class OptionLike:
         """
         if not OPTION_NAME_REGEX.fullmatch(self.name) or self.name != self.name.lower():
             raise ValueError(
-                f"Application command option {self.name!r}: name must match regex '^[\\w-]{1,32}$' and be all lowercase"
+                f"Application command option {self.name!r}: "
+                + "name must match regex '^[\\w-]{1, 32}$' and be all lowercase"
             )
         if len(self.description) < 1 or len(self.description) > 100:
             raise ValueError(
@@ -213,19 +215,21 @@ class OptionLike:
 
         arg_type = OPTION_TYPE_MAPPING.get(self.arg_type, self.arg_type)
         if not isinstance(arg_type, hikari.OptionType):
-            arg_type = hikari.OptionType.STRING  # type: ignore[unreachable]
+            arg_type = hikari.OptionType.STRING
 
         if (self.min_value is not None or self.max_value is not None) and arg_type not in (
             hikari.OptionType.INTEGER,
             hikari.OptionType.FLOAT,
         ):
             raise ValueError(
-                f"Application command option {self.name!r}: 'min_value' or 'max_value' was provided but the option type is not numeric"
+                f"Application command option {self.name!r}: "
+                + "'min_value' or 'max_value' was provided but the option type is not numeric"
             )
 
         if (self.min_length is not None or self.max_length is not None) and arg_type is not hikari.OptionType.STRING:
             raise ValueError(
-                f"Application command option {self.name!r}: 'min_length' or 'max_length' was provided but the option type is not string"
+                f"Application command option {self.name!r}: "
+                + "'min_length' or 'max_length' was provided but the option type is not string"
             )
 
         if (
@@ -233,7 +237,8 @@ class OptionLike:
             and self.autocomplete
         ):
             raise ValueError(
-                f"Application command option {self.name!r}: 'autocomplete' is True but the option type does not support choices"
+                f"Application command option {self.name!r}: "
+                + "'autocomplete' is True but the option type does not support choices"
             )
 
         kwargs: t.MutableMapping[str, t.Any] = {
@@ -522,7 +527,7 @@ class CommandLike:
                     opt: hikari.AutocompleteInteractionOption, inter: hikari.AutocompleteInteraction
                 ) -> Union[str, Sequence[str], hikari.api.AutocompleteChoiceBuilder, Sequence[hikari.api.AutocompleteChoiceBuilder]]:
                     ...
-        """
+        """  # noqa: E501
 
         def decorate(func: AutocompleteCallbackT) -> AutocompleteCallbackT:
             for opt in [opt1, *opts]:
@@ -867,7 +872,9 @@ class ApplicationCommand(Command, abc.ABC):
     def signature(self) -> str:
         sig = self.qualname
         if self.options:
-            sig += f" {' '.join(f'<{o.name}>' if o.required else f'[{o.name}={o.default}]' for o in self.options.values())}"
+            sig += " " + " ".join(
+                f"<{o.name}>" if o.required else f"[{o.name}={o.default}]" for o in self.options.values()
+            )
         return sig
 
     async def create(self, guild: t.Optional[int] = None) -> hikari.PartialCommand:

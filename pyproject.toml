@@ -38,16 +38,6 @@ strict-imports = true
 require-superclass = true
 require-subclass = true
 
-#[tool.pyright]
-#include = ["lightbulb"]
-#exclude = ["**/__init__.py"]
-#typeCheckingMode = "strict"
-#pythonVersion = "3.8"
-#verboseOutput = true
-#reportImportCycles = false
-#reportUnnecessaryTypeIgnoreComment = true
-#reportImplicitStringConcatenation = true
-
 [tool.mypy]
 # general settings
 strict = true

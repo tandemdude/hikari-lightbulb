@@ -967,13 +967,14 @@ class BotApp(hikari.GatewayBot):
         prefixes = t.cast(t.Sequence[str], prefixes)
 
         if isinstance(prefixes, str):
-            prefixes = [prefixes]
-        prefixes = sorted(prefixes, key=len, reverse=True)
+            prefixes = (prefixes,)
 
         message = event.message.content
         if self._case_insensitive_prefixes:
             message = message.lower()
-            prefixes = map(str.lower, prefixes)
+            prefixes = tuple(map(str.lower, prefixes))
+
+        prefixes = sorted(prefixes, key=len, reverse=True)
 
         invoked_prefix = None
         for prefix in prefixes:

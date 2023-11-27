@@ -86,7 +86,7 @@ class PrefixGroupMixin(abc.ABC):
         return self._subcommands
 
     def _set_plugin(self, pl: plugins.Plugin) -> None:
-        self._plugin = pl
+        self._plugin = pl  # type: ignore[misc]
         for command in self._subcommands.values():
             if isinstance(command, PrefixGroupMixin):
                 command._set_plugin(pl)

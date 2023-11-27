@@ -54,8 +54,7 @@ if t.TYPE_CHECKING:
     from lightbulb import plugins
 
 _CallbackT = t.Union[
-    t.Callable[[context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]],
-    functools.partial[t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]],
+    t.Callable[[context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]], functools.partial
 ]
 
 

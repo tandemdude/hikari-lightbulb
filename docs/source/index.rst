@@ -79,6 +79,8 @@ Contributors:
 
 - `Parafoxia#1911 <https://github.com/parafoxia>`_
 
+- `nulldomain <https://github.com/null-domain>`_
+
 Index:
 ------
 

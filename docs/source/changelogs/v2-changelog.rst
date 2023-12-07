@@ -6,6 +6,24 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 2.3.4
+=============
+
+- Add validators to options in PrefixContext
+
+- Fix custom option converter not being initialized for slash commands.
+
+- Implemented slotting in some classes.
+
+- Fixed localization options not being passed to subcommands or command options.
+
+- Added case insensitive prefixes.
+
+- Add support for Python 3.12.
+
+- Bump hikari requirement to ``2.0.0.dev122``.
+
+
 Version 2.3.3
 =============
 

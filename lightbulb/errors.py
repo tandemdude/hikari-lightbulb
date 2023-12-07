@@ -158,6 +158,21 @@ class ConverterFailure(LightbulbError):
         """
 
 
+class InvalidArgument(LightbulbError):
+    """
+    Error raised when the converted argument is invalid.
+    """
+
+    def __init__(self, *args: t.Any, opt: commands.base.OptionLike, value: t.Any) -> None:
+        super().__init__(*args)
+        self.option: commands.base.OptionLike = opt
+        """The option that failed the check."""
+        self.value: t.Any = value
+        """
+        The argument that didn't match the required criteria.
+        """
+
+
 class NotEnoughArguments(LightbulbError):
     """
     Error raised when a prefix command expects more options than could be parsed from the user's input.

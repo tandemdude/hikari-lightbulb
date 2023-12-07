@@ -22,13 +22,13 @@ __all__ = ["OptionModifier", "OptionLike", "CommandLike", "Command", "Applicatio
 import abc
 import asyncio
 import collections
-import dataclasses
 import datetime
 import enum
 import inspect
 import re
 import typing as t
 
+import attrs
 import hikari
 
 from lightbulb import errors
@@ -103,8 +103,6 @@ class _HasRecreateSubcommands(t.Protocol):
 
 
 class _SubcommandListProxy(collections.UserList):  # type: ignore
-    __slots__ = ("parents",)
-
     def __init__(self, *args: t.Any, parent: _HasRecreateSubcommands, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
         self.parents = [parent]
@@ -136,7 +134,7 @@ class OptionModifier(enum.Enum):
     """Consume rest option. This will consume the entire remainder of the string."""
 
 
-@dataclasses.dataclass
+@attrs.define(slots=True)
 class OptionLike:
     """
     Generic dataclass representing a command option. Compatible with both prefix and application commands.
@@ -149,7 +147,8 @@ class OptionLike:
     arg_type: t.Any = str
     """The type of the option."""
     required: bool = True
-    """Whether or not the option is required. This will be inferred from whether or not a default value was provided if unspecified."""
+    """Whether or not the option is required. This will be inferred from whether or not
+    a default value was provided if unspecified."""
     choices: t.Optional[t.Sequence[t.Union[str, int, float, hikari.CommandChoice]]] = None
     """The option's choices. This only affects slash commands."""
     channel_types: t.Optional[t.Sequence[hikari.ChannelType]] = None
@@ -184,13 +183,13 @@ class OptionLike:
     """
     autocomplete: bool = False
     """Whether the option should be autocompleted or not. This only affects slash commands."""
-    name_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
+    name_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = attrs.field(factory=dict)
     """
     A mapping of locale to name localizations for this option
 
     .. versionadded:: 2.3.0
     """
-    description_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
+    description_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = attrs.field(factory=dict)
     """
     A mapping of locale to description localizations for this option
 
@@ -206,7 +205,8 @@ class OptionLike:
         """
         if not OPTION_NAME_REGEX.fullmatch(self.name) or self.name != self.name.lower():
             raise ValueError(
-                f"Application command option {self.name!r}: name must match regex '^[\\w-]{1,32}$' and be all lowercase"
+                f"Application command option {self.name!r}: "
+                + "name must match regex '^[\\w-]{1, 32}$' and be all lowercase"
             )
         if len(self.description) < 1 or len(self.description) > 100:
             raise ValueError(
@@ -215,19 +215,21 @@ class OptionLike:
 
         arg_type = OPTION_TYPE_MAPPING.get(self.arg_type, self.arg_type)
         if not isinstance(arg_type, hikari.OptionType):
-            arg_type = hikari.OptionType.STRING  # type: ignore[unreachable]
+            arg_type = hikari.OptionType.STRING
 
         if (self.min_value is not None or self.max_value is not None) and arg_type not in (
             hikari.OptionType.INTEGER,
             hikari.OptionType.FLOAT,
         ):
             raise ValueError(
-                f"Application command option {self.name!r}: 'min_value' or 'max_value' was provided but the option type is not numeric"
+                f"Application command option {self.name!r}: "
+                + "'min_value' or 'max_value' was provided but the option type is not numeric"
             )
 
         if (self.min_length is not None or self.max_length is not None) and arg_type is not hikari.OptionType.STRING:
             raise ValueError(
-                f"Application command option {self.name!r}: 'min_length' or 'max_length' was provided but the option type is not string"
+                f"Application command option {self.name!r}: "
+                + "'min_length' or 'max_length' was provided but the option type is not string"
             )
 
         if (
@@ -235,7 +237,8 @@ class OptionLike:
             and self.autocomplete
         ):
             raise ValueError(
-                f"Application command option {self.name!r}: 'autocomplete' is True but the option type does not support choices"
+                f"Application command option {self.name!r}: "
+                + "'autocomplete' is True but the option type does not support choices"
             )
 
         kwargs: t.MutableMapping[str, t.Any] = {
@@ -274,7 +277,7 @@ class OptionLike:
         return hikari.CommandOption(**kwargs)
 
 
-@dataclasses.dataclass
+@attrs.define(slots=True)
 class CommandLike:
     """Generic dataclass representing a command. This can be converted into any command object."""
 
@@ -284,19 +287,19 @@ class CommandLike:
     """The name of the command."""
     description: str
     """The description of the command."""
-    options: t.MutableMapping[str, OptionLike] = dataclasses.field(default_factory=dict)
+    options: t.MutableMapping[str, OptionLike] = attrs.field(factory=dict)
     """The options for the command."""
-    checks: t.Sequence[t.Union[checks.Check, checks._ExclusiveCheck]] = dataclasses.field(default_factory=list)
+    checks: t.Sequence[t.Union[checks.Check, checks._ExclusiveCheck]] = attrs.field(factory=list)
     """The checks for the command."""
     error_handler: t.Optional[
         t.Callable[[events.CommandErrorEvent], t.Coroutine[t.Any, t.Any, t.Optional[bool]]]
     ] = None
     """The error handler for the command."""
-    aliases: t.Sequence[str] = dataclasses.field(default_factory=list)
+    aliases: t.Sequence[str] = attrs.field(factory=list)
     """The aliases for the command. This only affects prefix commands."""
     guilds: hikari.UndefinedOr[t.Sequence[int]] = hikari.UNDEFINED
     """The guilds for the command. This only affects application commands."""
-    subcommands: t.List[CommandLike] = dataclasses.field(default_factory=list)
+    subcommands: t.List[CommandLike] = attrs.field(factory=list)
     """Subcommands for the command."""
     parser: t.Optional[t.Type[parser_.BaseParser]] = None
     """The argument parser to use for prefix commands."""
@@ -344,13 +347,13 @@ class CommandLike:
 
     .. versionadded:: 2.2.3
     """
-    name_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
+    name_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = attrs.field(factory=dict)
     """
     A mapping of locale to name localizations for this command
 
     .. versionadded:: 2.3.0
     """
-    description_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = dataclasses.field(default_factory=dict)
+    description_localizations: t.Mapping[t.Union[hikari.Locale, str], str] = attrs.field(factory=dict)
     """
     A mapping of locale to description localizations for this command
 
@@ -379,7 +382,7 @@ class CommandLike:
                 ],
             ],
         ],
-    ] = dataclasses.field(default_factory=dict, init=False)
+    ] = attrs.field(factory=dict, init=False)
 
     async def __call__(self, context: context_.base.Context) -> None:
         await self.callback(context)
@@ -524,7 +527,7 @@ class CommandLike:
                     opt: hikari.AutocompleteInteractionOption, inter: hikari.AutocompleteInteraction
                 ) -> Union[str, Sequence[str], hikari.api.AutocompleteChoiceBuilder, Sequence[hikari.api.AutocompleteChoiceBuilder]]:
                     ...
-        """
+        """  # noqa: E501
 
         def decorate(func: AutocompleteCallbackT) -> AutocompleteCallbackT:
             for opt in [opt1, *opts]:
@@ -869,7 +872,9 @@ class ApplicationCommand(Command, abc.ABC):
     def signature(self) -> str:
         sig = self.qualname
         if self.options:
-            sig += f" {' '.join(f'<{o.name}>' if o.required else f'[{o.name}={o.default}]' for o in self.options.values())}"
+            sig += " " + " ".join(
+                f"<{o.name}>" if o.required else f"[{o.name}={o.default}]" for o in self.options.values()
+            )
         return sig
 
     async def create(self, guild: t.Optional[int] = None) -> hikari.PartialCommand:

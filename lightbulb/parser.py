@@ -225,7 +225,7 @@ class Parser(BaseParser):
             _LOGGER.debug("Got raw arg %s", raw_arg)
             convert = self._greedy_convert if option.modifier is OptionModifier.GREEDY else self._try_convert
             await convert(raw_arg, option, ret)
-
+            self._validate(option, ret[option.name])
         return ret
 
     async def _try_convert(self, raw: str, option: commands.base.OptionLike, out: t.Dict[str, t.Any]) -> None:
@@ -280,3 +280,20 @@ class Parser(BaseParser):
 
         converted = t.cast(T, converted)
         return converted
+
+    def _validate(self, option: commands.base.OptionLike, arg: t.Any) -> None:
+        if option.max_length and len(arg) > option.max_length:
+            raise errors.InvalidArgument("Value too long", opt=option, value=arg)
+        if option.min_length and len(arg) < option.min_length:
+            raise errors.InvalidArgument("Value too short", opt=option, value=arg)
+
+        if option.min_value and len(arg) < option.min_value:
+            raise errors.InvalidArgument("Value too small", opt=option, value=arg)
+        if option.max_value and len(arg) > option.max_value:
+            raise errors.InvalidArgument("Value too big", opt=option, value=arg)
+        if option.choices and arg not in option.choices:
+            raise errors.InvalidArgument("Value not in available choices", opt=option, value=arg)
+
+        if option.channel_types and isinstance(arg, hikari.PartialChannel):
+            if arg.type not in option.channel_types:
+                raise errors.InvalidArgument("Invalid channel type", opt=option, value=arg)

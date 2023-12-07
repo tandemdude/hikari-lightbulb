@@ -46,7 +46,11 @@ class DataStore(t.Dict[str, t.Any]):
             'bar'
             >>> d
             DataStore()
-    """
+
+    A DataStore instance is attached to :obj:`~.app.BotApp` instances as :attr:`bot.d <.app.BotApp.d>` for your convenience.
+    """  # noqa: E501
+
+    __slots__ = ()
 
     def __repr__(self) -> str:
         return "DataStore(" + ", ".join(f"{k}={v!r}" for k, v in self.items()) + ")"

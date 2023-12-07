@@ -63,7 +63,8 @@ class SlashGroupMixin(abc.ABC):
 
                     if cmd.name in self._subcommands:
                         raise errors.CommandAlreadyExists(
-                            f"A prefix subcommand with name or alias {cmd.name!r} already exists for group {self.name!r}"
+                            f"A prefix subcommand with name or alias {cmd.name!r} "
+                            + f"already exists for group {self.name!r}"
                         )
                     self._subcommands[cmd.name] = cmd
 
@@ -96,7 +97,7 @@ class SlashGroupMixin(abc.ABC):
         return self._subcommands
 
     def _set_plugin(self, pl: plugins.Plugin) -> None:
-        self._plugin = pl
+        self._plugin = pl  # type: ignore[misc]
         for command in self._subcommands.values():
             if isinstance(command, SlashGroupMixin):
                 command._set_plugin(pl)
@@ -120,6 +121,8 @@ class SlashCommand(base.ApplicationCommand):
             "name": self.name,
             "description": self.description,
             "options": [o.as_application_command_option() for o in sorted_opts],
+            "name_localizations": self.name_localizations,
+            "description_localizations": self.description_localizations,
         }
 
     def _validate_attributes(self) -> None:
@@ -153,6 +156,8 @@ class SlashSubCommand(SlashCommand, base.SubCommandTrait):
             description=self.description,
             is_required=False,
             options=[o.as_application_command_option() for o in sorted_opts],
+            name_localizations=self.name_localizations,
+            description_localizations=self.description_localizations,
         )
 
 
@@ -187,6 +192,8 @@ class SlashSubGroup(SlashCommand, SlashGroupMixin, base.SubCommandTrait):
             description=self.description,
             is_required=False,
             options=[c.as_option() for c in self._subcommands.values()],
+            name_localizations=self.name_localizations,
+            description_localizations=self.description_localizations,
         )
 
     async def invoke(self, context: context_.base.Context, **_: t.Any) -> None:
@@ -228,6 +235,8 @@ class SlashCommandGroup(SlashCommand, SlashGroupMixin):
             "name": self.name,
             "description": self.description,
             "options": [c.as_option() for c in self._subcommands.values()],
+            "name_localizations": self.name_localizations,
+            "description_localizations": self.description_localizations,
         }
 
     def _validate_attributes(self) -> None:

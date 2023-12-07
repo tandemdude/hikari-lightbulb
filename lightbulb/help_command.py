@@ -217,6 +217,8 @@ class DefaultHelpCommand(BaseHelpCommand):
     An implementation of the :obj:`~BaseHelpCommand` that the bot uses by default.
     """
 
+    __slots__ = ()
+
     @staticmethod
     async def _get_command_plugin_map(
         cmd_map: t.Mapping[str, commands.base.Command], context: context_.base.Context

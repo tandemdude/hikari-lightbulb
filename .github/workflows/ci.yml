@@ -1,6 +1,10 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches-ignore:
+      - "dependabot/**"
+  pull_request:
 
 jobs:
   lint:
@@ -16,10 +20,10 @@ jobs:
         with:
           python-version: "3.8"
 
-      - name: Run black
+      - name: Run format checks
         run: |
           pip install nox
-          nox -s format
+          nox -s format_check
 
   type-check:
     name: Type-check
@@ -38,3 +42,21 @@ jobs:
         run: |
           pip install nox
           nox -s mypy
+
+  slotscheck:
+    name: Slotscheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+
+      - name: Run slotscheck
+        run: |
+          pip install nox
+          nox -s slotscheck

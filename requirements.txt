@@ -1,1 +1,1 @@
-hikari~=2.0.0.dev118
+hikari~=2.0.0.dev122

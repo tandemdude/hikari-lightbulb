@@ -9,13 +9,13 @@ version: 2
 sphinx:
   configuration: docs/source/conf.py
 
-
 build:
-  image: latest
+  os: ubuntu-22.04
+  tools:
+    python: "3.11"
 
 # Optionally set the version of Python and requirements required to build your docs
 python:
-  version: 3.8
   install:
     - requirements: requirements.txt
-    - requirements: docs_requirements.txt
+    - requirements: dev-requirements/docs.txt

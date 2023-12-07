@@ -54,11 +54,14 @@ if t.TYPE_CHECKING:
     from lightbulb import plugins
 
 _CallbackT = t.Union[
-    t.Callable[[context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]], functools.partial
+    t.Callable[[context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]],
+    functools.partial,  # type: ignore[type-arg]
 ]
 
 
 class _ExclusiveCheck:
+    __slots__ = ("_checks",)
+
     def __init__(self, *checks: "Check") -> None:
         self._checks = list(checks)
 

@@ -538,7 +538,7 @@ class ApplicationContext(Context, abc.ABC):
 
         .. versionadded:: 2.2.0
             ``delete_after`` kwarg.
-        """
+        """  # noqa: E501
 
         async def _cleanup(timeout: t.Union[int, float], proxy_: ResponseProxy) -> None:
             await asyncio.sleep(timeout)
@@ -548,14 +548,8 @@ class ApplicationContext(Context, abc.ABC):
             except hikari.NotFoundError:
                 pass
 
-        includes_ephemeral: t.Callable[
-            [
-                t.Union[hikari.MessageFlag, int],
-            ],
-            bool,
-        ] = (
-            lambda flags: (hikari.MessageFlag.EPHEMERAL & flags) == hikari.MessageFlag.EPHEMERAL
-        )
+        def includes_ephemeral(flags: t.Union[hikari.MessageFlag, int]) -> bool:
+            return (hikari.MessageFlag.EPHEMERAL & flags) == hikari.MessageFlag.EPHEMERAL
 
         kwargs.pop("reply", None)
         kwargs.pop("mentions_reply", None)

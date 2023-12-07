@@ -68,7 +68,8 @@ class PrefixGroupMixin(abc.ABC):
                     for name in [cmd.name, *cmd.aliases]:
                         if name in self._subcommands:
                             raise errors.CommandAlreadyExists(
-                                f"A prefix subcommand with name or alias {name!r} already exists for group {self.name!r}"
+                                f"A prefix subcommand with name or alias {name!r} "
+                                + f"already exists for group {self.name!r}"
                             )
                         self._subcommands[name] = cmd
 
@@ -85,7 +86,7 @@ class PrefixGroupMixin(abc.ABC):
         return self._subcommands
 
     def _set_plugin(self, pl: plugins.Plugin) -> None:
-        self._plugin = pl
+        self._plugin = pl  # type: ignore[misc]
         for command in self._subcommands.values():
             if isinstance(command, PrefixGroupMixin):
                 command._set_plugin(pl)
@@ -104,7 +105,9 @@ class PrefixCommand(base.Command):
     def signature(self) -> str:
         sig = self.qualname
         if self.options:
-            sig += f" {' '.join(f'<{o.name}>' if o.required else f'[{o.name}={o.default}]' for o in self.options.values())}"
+            sig += " " + " ".join(
+                f"<{o.name}>" if o.required else f"[{o.name}={o.default}]" for o in self.options.values()
+            )
         return sig
 
     async def invoke(self, context: context_.base.Context, **kwargs: t.Any) -> None:

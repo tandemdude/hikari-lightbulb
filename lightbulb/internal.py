@@ -59,7 +59,7 @@ def _serialise_option(option: hikari.CommandOption) -> t.Dict[str, t.Any]:
         "choices": list(
             sorted(
                 [{"n": c.name, "v": c.value} for c in option.choices] if option.choices is not None else [],
-                key=lambda d: d["n"],  # type: ignore
+                key=lambda d: d["n"],
             )
         ),
         "options": [_serialise_option(o) for o in option.options] if option.options is not None else [],
@@ -92,7 +92,7 @@ def _serialise_lightbulb_command(command: base.ApplicationCommand) -> t.Dict[str
         "type": create_kwargs["type"],
         "name": create_kwargs["name"],
         "description": create_kwargs.get("description"),
-        "options": [_serialise_option(o) for o in sorted(create_kwargs.get("options", []), key=lambda o: o.name)],  # type: ignore
+        "options": [_serialise_option(o) for o in sorted(create_kwargs.get("options", []), key=lambda o: o.name)],
         "guild_id": _GuildIDCollection(command.guilds) if command.guilds else None,
         "default_member_permissions": command.app_command_default_member_permissions,
         "dm_enabled": command.app_command_dm_enabled if not command.guilds else False,
@@ -125,12 +125,13 @@ def _create_builder_from_command(
         bld.set_default_member_permissions(cmd.default_member_permissions)
         bld.set_is_dm_enabled(cmd.is_dm_enabled)
         bld.set_is_nsfw(cmd.is_nsfw)
-
+        bld.set_name_localizations(cmd.name_localizations)
         bld.set_id(cmd.id)
     else:
         create_kwargs = cmd.as_create_kwargs()
         if "description" in create_kwargs:
             bld = app.rest.slash_command_builder(create_kwargs["name"], description=create_kwargs["description"])
+            bld.set_description_localizations(cmd.description_localizations)
             for opt in create_kwargs.get("options", []):
                 bld.add_option(opt)
         else:
@@ -138,6 +139,9 @@ def _create_builder_from_command(
 
         if cmd.app_command_default_member_permissions is not None:
             bld.set_default_member_permissions(cmd.app_command_default_member_permissions)
+        bld.set_name_localizations(cmd.name_localizations)
+        if isinstance(bld, hikari.api.SlashCommandBuilder):
+            bld.set_description_localizations(cmd.description_localizations)
         bld.set_is_dm_enabled(cmd.app_command_dm_enabled)
         bld.set_is_nsfw(cmd.nsfw)
 

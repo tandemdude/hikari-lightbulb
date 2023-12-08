@@ -6,6 +6,11 @@ Below are all the changelogs for the stable versions of hikari-lightbulb (versio
 
 ----
 
+Version 2.3.5
+=============
+
+- Fix incorrect parameters being passed to _get_bucket which prevented the add_cooldown decorator from functioning correctly.
+
 Version 2.3.4
 =============
 

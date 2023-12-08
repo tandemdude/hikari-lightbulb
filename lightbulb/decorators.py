@@ -336,12 +336,12 @@ def add_cooldown(
             ctx: context.base.Context,
             _bucket: t.Type[buckets.Bucket],
             _length: float,
-            _max_usages: int,
+            _uses: int,
             _algorithm: t.Type[cooldown_algorithms.CooldownAlgorithm],
         ) -> buckets.Bucket:
-            return _bucket(_length, _max_usages, _algorithm)
+            return _bucket(_length, _uses, _algorithm)
 
-        getter = functools.partial(_get_bucket, b=bucket, l=length, u=uses, a=algorithm)
+        getter = functools.partial(_get_bucket, _bucket=bucket, _length=length, _uses=uses, _algorithm=algorithm)
     elif callback is not None:
         getter = callback
     else:

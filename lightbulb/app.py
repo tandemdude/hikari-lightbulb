@@ -433,7 +433,7 @@ class BotApp(hikari.GatewayBot):
         if banner == "hikari":
             sys.stdout.write("Thank you for using lightbulb!\n")
 
-    def load_extensions(self, *extensions: str) -> None:
+    def load_extensions(self, *extensions: str|function) -> None:
         """
         Load external extension(s) into the bot. Extension name follows the format ``<directory>.<filename>``
         Each extension **must** contain a function ``load`` which takes a single argument which will be the
@@ -468,10 +468,13 @@ class BotApp(hikari.GatewayBot):
         ext = t.cast(_ExtensionT, module)
         self._current_extension = ext
 
-        if not hasattr(module, "load"):
+        if not hasattr(module, "load") and type(extension)==str:
             raise errors.ExtensionMissingLoad(f"Extension {extension!r} is missing a load function")
-        else:
-            ext.load(self)
+        elif hasattr(module) or type(extenstion)==function:
+            if function == "load":
+                ext.load(self)
+            elif type(extension) == function:
+                extension(self)
             self.extensions.append(extension)
             _LOGGER.info("Extension loaded %r", extension)
         self._current_extension = None

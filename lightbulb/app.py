@@ -468,7 +468,7 @@ class BotApp(hikari.GatewayBot):
         ext = t.cast(_ExtensionT, module)
         self._current_extension = ext
 
-        if not hasattr(module, "load") and type(extension)==str:
+        if not( hasattr(module, "load")) and not(type(extension)==str or type(extension)==function):
             raise errors.ExtensionMissingLoad(f"Extension {extension!r} is missing a load function")
         elif hasattr(module) or type(extenstion)==function:
             if function == "load":
@@ -479,7 +479,7 @@ class BotApp(hikari.GatewayBot):
             _LOGGER.info("Extension loaded %r", extension)
         self._current_extension = None
 
-    def unload_extensions(self, *extensions: str) -> None:
+    def unload_extensions(self, *extensions: str|function) -> None:
         """
         Unload external extension(s) from the bot. This method relies on a function, ``unload``
         existing in the extensions which the bot will use to remove all commands and/or plugins
@@ -513,10 +513,13 @@ class BotApp(hikari.GatewayBot):
         ext = t.cast(_ExtensionT, module)
         self._current_extension = ext
 
-        if not hasattr(module, "unload"):
+        if not(hasattr(module, "load")) and not(type(extension)==str or type(extension)==function):
             raise errors.ExtensionMissingUnload(f"Extension {extension!r} is missing an unload function")
-        else:
-            ext.unload(self)
+        elif hasattr(module) or type(extenstion)==function:
+            if function == "load":
+                ext.unload(self)
+            elif type(extension) == function:
+                extension(self)
             self.extensions.remove(extension)
             del sys.modules[extension]
             _LOGGER.info("Extension unloaded %r", extension)

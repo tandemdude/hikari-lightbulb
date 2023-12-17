@@ -35,9 +35,7 @@ _CT = t.Union[int, str, None]
 
 
 class Trigger(abc.ABC):
-    """
-    Base class representing a task trigger.
-    """
+    """Base class representing a task trigger."""
 
     __slots__ = ()
 

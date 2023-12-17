@@ -76,7 +76,7 @@ class BaseHelpCommand(abc.ABC):
 
     @property
     def bot(self) -> t.Optional[app_.BotApp]:
-        """Alias for :obj:`~BaseHelpCommand.app`"""
+        """Alias for :obj:`~BaseHelpCommand.app`."""
         return self.app
 
     async def send_help(self, context: context_.base.Context, obj: t.Optional[str]) -> None:
@@ -213,9 +213,7 @@ class BaseHelpCommand(abc.ABC):
 
 
 class DefaultHelpCommand(BaseHelpCommand):
-    """
-    An implementation of the :obj:`~BaseHelpCommand` that the bot uses by default.
-    """
+    """An implementation of the :obj:`~BaseHelpCommand` that the bot uses by default."""
 
     __slots__ = ()
 

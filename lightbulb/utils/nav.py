@@ -17,6 +17,8 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+import contextlib
+
 __all__ = [
     "ReactionNavigator",
     "ButtonNavigator",
@@ -33,10 +35,12 @@ import asyncio
 import typing as t
 
 import hikari
-from hikari.api.special_endpoints import MessageActionRowBuilder
 from hikari.components import ButtonStyle
 
-from lightbulb import context as context_
+if t.TYPE_CHECKING:
+    from hikari.api.special_endpoints import MessageActionRowBuilder
+
+    from lightbulb import context as context_
 
 
 class ReactionButton:
@@ -160,40 +164,30 @@ T = t.TypeVar("T")
 
 
 async def next_page(nav: t.Union[ReactionNavigator[T], ButtonNavigator[T]], _: hikari.Event) -> None:
-    """
-    :obj:`NavButton` callback to make the ReactionNavigator go to the next page.
-    """
+    """:obj:`NavButton` callback to make the ReactionNavigator go to the next page."""
     nav.current_page_index += 1
     nav.current_page_index %= len(nav.pages)
 
 
 async def prev_page(nav: t.Union[ReactionNavigator[T], ButtonNavigator[T]], _: hikari.Event) -> None:
-    """
-    :obj:`NavButton` callback to make the navigator go to the previous page.
-    """
+    """:obj:`NavButton` callback to make the navigator go to the previous page."""
     nav.current_page_index -= 1
     if nav.current_page_index < 0:
         nav.current_page_index = len(nav.pages) - 1
 
 
 async def first_page(nav: t.Union[ReactionNavigator[T], ButtonNavigator[T]], _: hikari.Event) -> None:
-    """
-    :obj:`NavButton` callback to make the navigator go to the first page.
-    """
+    """:obj:`NavButton` callback to make the navigator go to the first page."""
     nav.current_page_index = 0
 
 
 async def last_page(nav: t.Union[ReactionNavigator[T], ButtonNavigator[T]], _: hikari.Event) -> None:
-    """
-    :obj:`NavButton` callback to make the navigator go to the last page.
-    """
+    """:obj:`NavButton` callback to make the navigator go to the last page."""
     nav.current_page_index = len(nav.pages) - 1
 
 
 async def stop(nav: t.Union[ReactionNavigator[T], ButtonNavigator[T]], _: hikari.Event) -> None:
-    """
-    :obj:`NavButton` callback to make the navigator stop navigation.
-    """
+    """:obj:`NavButton` callback to make the navigator stop navigation."""
     assert nav._msg is not None
     await nav._remove_listener()
     await nav._msg.delete()
@@ -203,17 +197,17 @@ async def stop(nav: t.Union[ReactionNavigator[T], ButtonNavigator[T]], _: hikari
 
 
 class ReactionNavigator(t.Generic[T]):
-    """
+    r"""
     A reaction navigator system for navigating through a list of items that can be sent through the
     ``content`` argument of :obj:`hikari.Message.respond`.
 
     Default buttons:
 
-    - ``\\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\\N{VARIATION SELECTOR-16}`` (Go to first page)
-    - ``\\N{BLACK LEFT-POINTING TRIANGLE}\\N{VARIATION SELECTOR-16}`` (Go to previous page)
-    - ``\\N{BLACK SQUARE FOR STOP}\\N{VARIATION SELECTOR-16}`` (Stop navigation)
-    - ``\\N{BLACK RIGHT-POINTING TRIANGLE}\\N{VARIATION SELECTOR-16}`` (Go to next page)
-    - ``\\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\\N{VARIATION SELECTOR-16}`` (Go to last page)
+    - ``\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}`` (Go to first page)
+    - ``\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}`` (Go to previous page)
+    - ``\N{BLACK SQUARE FOR STOP}\\N{VARIATION SELECTOR-16}`` (Stop navigation)
+    - ``\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}`` (Go to next page)
+    - ``\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}\N{VARIATION SELECTOR-16}`` (Go to last page)
 
     Args:
         pages (Sequence[T]): Pages to navigate through.
@@ -232,7 +226,7 @@ class ReactionNavigator(t.Generic[T]):
             @bot.command()
             async def foo(ctx):
                 paginated_help = pag.StringPaginator()
-                for l in thing_that_creates_a_lot_of_text.split("\\n"):
+                for l in thing_that_creates_a_lot_of_text.split("\n"):
                     paginated_help.add_line(l)
                 navigator = nav.ReactionNavigator(paginated_help.build_pages())
                 await navigator.run(ctx)
@@ -251,9 +245,8 @@ class ReactionNavigator(t.Generic[T]):
             raise ValueError("You cannot pass fewer than 1 page to the navigator.")
         self.pages: t.Sequence[T] = tuple(pages)
 
-        if buttons is not None:
-            if any(not isinstance(btn, ReactionButton) for btn in buttons):
-                raise TypeError("Buttons must be an instance of ReactionButton")
+        if buttons is not None and any(not isinstance(btn, ReactionButton) for btn in buttons):
+            raise TypeError("Buttons must be an instance of ReactionButton")
 
         self.buttons: t.Sequence[ReactionButton]
         if len(self.pages) == 1 and not buttons:
@@ -299,10 +292,9 @@ class ReactionNavigator(t.Generic[T]):
                 await button.press(self, event)
                 if self._msg is not None:
                     await self._edit_msg(self._msg, self.pages[self.current_page_index])
-                    try:
+
+                    with contextlib.suppress(hikari.ForbiddenError):
                         await self._msg.remove_reaction(button.emoji, user=self._context.author)
-                    except hikari.ForbiddenError:
-                        pass
                 break
 
     async def _remove_listener(self) -> None:
@@ -312,10 +304,8 @@ class ReactionNavigator(t.Generic[T]):
         if self._msg is None:
             return
 
-        try:
-            await self._msg.remove_all_reactions()
-        except (hikari.ForbiddenError, hikari.NotFoundError):
-            pass
+        with contextlib.suppress(hikari.ForbiddenError, hikari.NotFoundError):
+            await self._msg.delete()
 
     async def _timeout_coro(self) -> None:
         try:
@@ -359,7 +349,7 @@ class ReactionNavigator(t.Generic[T]):
 
 
 class ButtonNavigator(t.Generic[T]):
-    """
+    r"""
     A button navigator system for navigating through a list of items that can be sent through the
     ``content`` argument of :obj:`hikari.Message.respond`.
 
@@ -380,7 +370,7 @@ class ButtonNavigator(t.Generic[T]):
             @bot.command()
             async def foo(ctx):
                 paginated_help = pag.StringPaginator()
-                for l in thing_that_creates_a_lot_of_text.split("\\n"):
+                for l in thing_that_creates_a_lot_of_text.split("\n"):
                     paginated_help.add_line(l)
                 navigator = nav.ButtonNavigator(paginated_help.build_pages())
                 await navigator.run(ctx)
@@ -418,7 +408,7 @@ class ButtonNavigator(t.Generic[T]):
         return await resp.message()
 
     async def _edit_msg(self, inter: hikari.ComponentInteraction, page: T) -> None:
-        buttons = await self.build_buttons(disabled=True if self._msg is None else False)
+        buttons = await self.build_buttons(disabled=self._msg is None)
         try:
             await inter.create_initial_response(hikari.ResponseType.MESSAGE_UPDATE, page, component=buttons)
         except hikari.NotFoundError:

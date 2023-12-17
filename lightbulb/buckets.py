@@ -93,16 +93,12 @@ class Bucket(abc.ABC):
 
     @property
     def active(self) -> bool:
-        """
-        Whether the cooldown represented by the bucket is currently active.
-        """
+        """Whether the cooldown represented by the bucket is currently active."""
         return self.activated and not self.expired
 
     @property
     def expired(self) -> bool:
-        """
-        Whether the cooldown represented by the bucket has expired.
-        """
+        """Whether the cooldown represented by the bucket has expired."""
         if self.start_time is not None:
             return time.perf_counter() >= (self.start_time + self.length)
         return True

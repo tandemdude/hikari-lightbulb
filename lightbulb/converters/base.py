@@ -30,7 +30,7 @@ T = t.TypeVar("T")
 
 class BaseConverter(abc.ABC, t.Generic[T]):
     """
-    Base converter class
+    Base converter class.
 
     Args:
         context (:obj:`~.context.base.Context`): Context to convert the argument under.

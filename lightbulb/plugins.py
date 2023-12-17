@@ -140,7 +140,7 @@ class Plugin:
 
     @property
     def bot(self) -> app_.BotApp:
-        """Alias for :obj:`~Plugin.app`"""
+        """Alias for :obj:`~Plugin.app`."""
         return self.app
 
     @property
@@ -157,7 +157,7 @@ class Plugin:
     def listeners(
         self,
     ) -> t.Mapping[t.Type[hikari.Event], t.Collection[t.Callable[[hikari.Event], t.Coroutine[t.Any, t.Any, None]]]]:
-        """Mapping of event type to listeners registered to the plugin"""
+        """Mapping of event type to listeners registered to the plugin."""
         return self._listeners
 
     def create_commands(self) -> None:
@@ -232,6 +232,7 @@ class Plugin:
 
         Args:
             event (Type[:obj:`~hikari.events.base_events.Event`): Event that the listener is for.
+            listener_func (Optional[ListenerT]): The listener function to add to the plugin.
 
         Keyword Args:
             bind (:obj:`bool`): Whether or not to bind the listener function to the plugin. If ``True``, the
@@ -271,6 +272,9 @@ class Plugin:
         """
         Sets the error handler function for the plugin. This method can be used as a second order decorator,
         or called manually with the event type and function to set the plugin's error handler to.
+
+        Args:
+            func ([ErrorHandlerT]): The error handler function to set for the plugin.
 
         Keyword Args:
             bind (:obj:`bool`): Whether or not to bind the error handler function to the plugin. If ``True``, the
@@ -313,6 +317,9 @@ class Plugin:
 
         This function will be called **after** all the members of the plugin (listeners and commands) have already
         been removed from the bot.
+
+        Args:
+            func (Optional[ErrorHandlerT]): The function to set as the plugin's remove hook.
 
         Keyword Args:
             bind (:obj:`bool`): Whether or not to bind the remove hook function to the plugin. If ``True``, the

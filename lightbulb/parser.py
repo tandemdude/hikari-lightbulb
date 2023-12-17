@@ -294,6 +294,5 @@ class Parser(BaseParser):
         if option.choices and arg not in option.choices:
             raise errors.InvalidArgument("Value not in available choices", opt=option, value=arg)
 
-        if option.channel_types and isinstance(arg, hikari.PartialChannel):
-            if arg.type not in option.channel_types:
-                raise errors.InvalidArgument("Invalid channel type", opt=option, value=arg)
+        if option.channel_types and isinstance(arg, hikari.PartialChannel) and arg.type not in option.channel_types:
+            raise errors.InvalidArgument("Invalid channel type", opt=option, value=arg)

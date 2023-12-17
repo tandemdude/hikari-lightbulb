@@ -75,7 +75,7 @@ def implements(
     return decorate
 
 
-def command(
+def command(  # noqa: D417
     name: str, description: str, *, cls: t.Type[commands.base.CommandLike] = commands.base.CommandLike, **kwargs: t.Any
 ) -> t.Callable[[CommandCallbackT], commands.base.CommandLike]:
     """
@@ -135,7 +135,7 @@ def command(
     return decorate
 
 
-def option(
+def option(  # noqa: D417
     name: str,
     description: str,
     type: t.Any = str,
@@ -235,7 +235,7 @@ def option(
 
 
 def add_checks(
-    *cmd_checks: t.Union[checks_.Check, checks_._ExclusiveCheck]
+    *cmd_checks: t.Union[checks_.Check, checks_._ExclusiveCheck],
 ) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
     """
     Second order decorator that adds one or more checks to the decorated :obj:`~.commands.base.CommandLike`
@@ -261,7 +261,7 @@ def add_checks(
 
 
 def check_exempt(
-    predicate: t.Callable[[context.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]]
+    predicate: t.Callable[[context.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]],
 ) -> t.Callable[[commands.base.CommandLike], commands.base.CommandLike]:
     """
     Second order decorator which allows all checks to be bypassed if the ``predicate`` conditions are met.

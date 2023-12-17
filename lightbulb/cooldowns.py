@@ -32,9 +32,7 @@ if t.TYPE_CHECKING:
 
 
 class CooldownManager:
-    """
-    The cooldown manager for a command.
-    """
+    """The cooldown manager for a command."""
 
     __slots__ = ("callback", "cooldowns")
 

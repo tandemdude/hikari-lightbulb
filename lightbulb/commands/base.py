@@ -118,7 +118,7 @@ class _SubcommandListProxy(collections.UserList):  # type: ignore
 
 
 def _get_choice_objects_from_choices(
-    choices: t.Sequence[t.Union[str, int, float, hikari.CommandChoice]]
+    choices: t.Sequence[t.Union[str, int, float, hikari.CommandChoice]],
 ) -> t.Sequence[hikari.CommandChoice]:
     return [c if isinstance(c, hikari.CommandChoice) else hikari.CommandChoice(name=str(c), value=c) for c in choices]
 
@@ -136,9 +136,7 @@ class OptionModifier(enum.Enum):
 
 @attrs.define(slots=True)
 class OptionLike:
-    """
-    Generic dataclass representing a command option. Compatible with both prefix and application commands.
-    """
+    """Generic dataclass representing a command option. Compatible with both prefix and application commands."""
 
     name: str
     """The name of the option."""
@@ -678,7 +676,7 @@ class Command(abc.ABC):
     @property
     def name_localizations(self) -> t.Mapping[t.Union[hikari.Locale, str], str]:
         """
-        A mapping of locale to name localizations for this command
+        A mapping of locale to name localizations for this command.
 
         .. versionadded:: 2.3.0
         """
@@ -687,7 +685,7 @@ class Command(abc.ABC):
     @property
     def description_localizations(self) -> t.Mapping[t.Union[hikari.Locale, str], str]:
         """
-        A mapping of locale to description localizations for this command
+        A mapping of locale to description localizations for this command.
 
         .. versionadded:: 2.3.0
         """
@@ -731,7 +729,7 @@ class Command(abc.ABC):
 
     @property
     def bot(self) -> app_.BotApp:
-        """Alias for :obj:`~Context.app`"""
+        """Alias for :obj:`~Context.app`."""
         return self.app
 
     def get_help(self, context: context_.base.Context) -> str:

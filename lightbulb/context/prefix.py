@@ -138,7 +138,7 @@ class PrefixContext(base.Context):
 
         .. versionadded:: 2.2.0
             ``delete_after`` kwarg.
-        """  # noqa: E501
+        """  # noqa: E501 (line-too-long)
         self._deferred = False
 
         kwargs.pop("flags", None)

@@ -48,7 +48,7 @@ class DataStore(t.Dict[str, t.Any]):
             DataStore()
 
     A DataStore instance is attached to :obj:`~.app.BotApp` instances as :attr:`bot.d <.app.BotApp.d>` for your convenience.
-    """  # noqa: E501
+    """  # noqa: E501 (line-too-long)
 
     __slots__ = ()
 

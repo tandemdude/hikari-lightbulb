@@ -75,7 +75,7 @@ def implements(
     return decorate
 
 
-def command(  # noqa: D417
+def command(  # noqa: D417 (undocumented-param)
     name: str, description: str, *, cls: t.Type[commands.base.CommandLike] = commands.base.CommandLike, **kwargs: t.Any
 ) -> t.Callable[[CommandCallbackT], commands.base.CommandLike]:
     """
@@ -121,7 +121,7 @@ def command(  # noqa: D417
         ``pass_options`` kwarg.
     .. versionadded:: 2.3.0
         ``name_localizations`` and ``description_localizations`` kwargs.
-    """  # noqa: E501
+    """  # noqa: E501 (line-too-long)
 
     def decorate(func: CommandCallbackT) -> commands.base.CommandLike:
         cmd = cls(func, name, description, **kwargs)
@@ -135,7 +135,7 @@ def command(  # noqa: D417
     return decorate
 
 
-def option(  # noqa: D417
+def option(  # noqa: D417 (undocumented-param)
     name: str,
     description: str,
     type: t.Any = str,
@@ -196,7 +196,7 @@ def option(  # noqa: D417
         ``min_value`` and ``max_value`` kwargs.
     .. versionadded:: 2.3.2
         ``min_length`` and ``max_length`` kwargs.
-    """  # noqa: E501
+    """  # noqa: E501 (line-too-long)
 
     def decorate(c_like: commands.base.CommandLike) -> commands.base.CommandLike:
         nonlocal default, required, autocomplete
@@ -328,7 +328,7 @@ def add_cooldown(
             cooldowns in the context.
         cls (Type[:obj:`~.cooldowns.CooldownManager`]): The cooldown manager class to use. Defaults to
             :obj:`~.cooldowns.CooldownManager`.
-    """  # noqa: E501
+    """  # noqa: E501 (line-too-long)
     getter: t.Callable[[context.base.Context], t.Union[buckets.Bucket, t.Coroutine[t.Any, t.Any, buckets.Bucket]]]
     if length is not None and uses is not None and bucket is not None:
 
@@ -375,7 +375,7 @@ def set_help(
     Keyword Args:
         docstring (:obj:`bool`): Whether the command help text should be extracted from the command's docstring.
             If this is ``False`` (default) then a value **must** be provided for the ``text`` arg.
-    """  # noqa: E501
+    """  # noqa: E501 (line-too-long)
     if text is None and docstring is False:
         raise ValueError("Either help text/callable or docstring=True must be provided")
 
@@ -384,12 +384,12 @@ def set_help(
             raise SyntaxError("'set_help' decorator must be above the 'command' decorator")
 
         if isinstance(text, str):
-            getter = lambda _, __: text  # noqa: E731
+            getter = lambda _, __: text  # noqa: E731 (lambda-assignment)
         elif docstring:
             cmd_doc = inspect.getdoc(c_like.callback)
             if cmd_doc is None:
                 raise ValueError("docstring=True was provided but the command does not have a docstring")
-            getter = lambda _, __: cmd_doc  # noqa: E731
+            getter = lambda _, __: cmd_doc  # noqa: E731 (lambda-assignment)
         else:
             assert text is not None
             getter = text

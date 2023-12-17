@@ -539,7 +539,7 @@ class ApplicationContext(Context, abc.ABC):
 
         .. versionadded:: 2.2.0
             ``delete_after`` kwarg.
-        """  # noqa: E501
+        """  # noqa: E501 (line-too-long)
 
         async def _cleanup(timeout: t.Union[int, float], proxy_: ResponseProxy) -> None:
             await asyncio.sleep(timeout)

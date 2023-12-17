@@ -525,7 +525,7 @@ class CommandLike:
                     opt: hikari.AutocompleteInteractionOption, inter: hikari.AutocompleteInteraction
                 ) -> Union[str, Sequence[str], hikari.api.AutocompleteChoiceBuilder, Sequence[hikari.api.AutocompleteChoiceBuilder]]:
                     ...
-        """  # noqa: E501
+        """  # noqa: E501 (line-too-long)
 
         def decorate(func: AutocompleteCallbackT) -> AutocompleteCallbackT:
             for opt in [opt1, *opts]:

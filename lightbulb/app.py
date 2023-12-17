@@ -172,7 +172,7 @@ class BotApp(hikari.GatewayBot):
             Defaults to ``False``.
         **kwargs (Any): Additional keyword arguments passed to the constructor of the :obj:`~hikari.impl.gateway_bot.GatewayBot`
             class.
-    """  # noqa: E501
+    """  # noqa: E501 (line-too-long)
 
     __slots__ = (
         "get_prefix",
@@ -625,7 +625,7 @@ class BotApp(hikari.GatewayBot):
             owner_ids.extend(member_id for member_id in self.application.team.members)
         return owner_ids
 
-    async def maybe_dispatch_error_event(  # noqa: D417 (ignore unused parameter)
+    async def maybe_dispatch_error_event(  # noqa: D417 (undocumented-param)
         self,
         event: events.CommandErrorEvent,
         priority_handlers: t.Sequence[

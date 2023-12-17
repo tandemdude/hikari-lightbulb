@@ -21,6 +21,7 @@ __all__ = ["Context", "ApplicationContext", "OptionsProxy", "ResponseProxy"]
 
 import abc
 import asyncio
+import contextlib
 import functools
 import typing as t
 
@@ -215,7 +216,7 @@ class Context(abc.ABC):
 
     @property
     def resolved(self) -> t.Optional[hikari.ResolvedOptionData]:
-        """The resolved option data for this context. Will be ``None`` for prefix commands"""
+        """The resolved option data for this context. Will be ``None`` for prefix commands."""
         # Just to keep the interfaces the same for prefix commands and application commands
         return None
 
@@ -226,7 +227,7 @@ class Context(abc.ABC):
 
     @property
     def bot(self) -> app_.BotApp:
-        """Alias for :obj:`~Context.app`"""
+        """Alias for :obj:`~Context.app`."""
         return self.app
 
     @property
@@ -334,6 +335,7 @@ class Context(abc.ABC):
         await self.command.invoke(self)
 
     @t.overload
+    @abc.abstractmethod
     async def respond(
         self,
         response_type: hikari.ResponseType,
@@ -363,6 +365,7 @@ class Context(abc.ABC):
         ...
 
     @t.overload
+    @abc.abstractmethod
     async def respond(
         self,
         content: hikari.UndefinedOr[t.Any] = hikari.UNDEFINED,
@@ -394,9 +397,7 @@ class Context(abc.ABC):
     async def respond(
         self, *args: t.Any, delete_after: t.Union[int, float, None] = None, **kwargs: t.Any
     ) -> ResponseProxy:
-        """
-        Create a response to this context.
-        """
+        """Create a response to this context."""
         ...
 
     async def edit_last_response(self, *args: t.Any, **kwargs: t.Any) -> t.Optional[hikari.Message]:
@@ -538,15 +539,13 @@ class ApplicationContext(Context, abc.ABC):
 
         .. versionadded:: 2.2.0
             ``delete_after`` kwarg.
-        """  # noqa: E501
+        """  # noqa: E501 (line-too-long)
 
         async def _cleanup(timeout: t.Union[int, float], proxy_: ResponseProxy) -> None:
             await asyncio.sleep(timeout)
 
-            try:
+            with contextlib.suppress(hikari.NotFoundError):
                 await proxy_.delete()
-            except hikari.NotFoundError:
-                pass
 
         def includes_ephemeral(flags: t.Union[hikari.MessageFlag, int]) -> bool:
             return (hikari.MessageFlag.EPHEMERAL & flags) == hikari.MessageFlag.EPHEMERAL

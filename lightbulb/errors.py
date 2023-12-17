@@ -52,9 +52,9 @@ __all__ = [
 import typing as t
 import warnings
 
-import hikari
-
 if t.TYPE_CHECKING:
+    import hikari
+
     from lightbulb import buckets
     from lightbulb import commands
 
@@ -86,11 +86,11 @@ class ExtensionAlreadyLoaded(LightbulbError):
 
 
 class ExtensionMissingLoad(LightbulbError):
-    """Exception raised when an extension is attempted to be loaded but does not contain a load function"""
+    """Exception raised when an extension is attempted to be loaded but does not contain a load function."""
 
 
 class ExtensionMissingUnload(LightbulbError):
-    """Exception raised when an extension is attempted to be unloaded but does not contain an unload function"""
+    """Exception raised when an extension is attempted to be unloaded but does not contain an unload function."""
 
 
 class ExtensionNotLoaded(LightbulbError):
@@ -131,9 +131,7 @@ class CommandInvocationError(LightbulbError):
 
 
 class CommandIsOnCooldown(LightbulbError):
-    """
-    Error raised when a command was on cooldown when it was attempted to be invoked.
-    """
+    """Error raised when a command was on cooldown when it was attempted to be invoked."""
 
     def __init__(self, *args: t.Any, retry_after: float) -> None:
         super().__init__(*args)
@@ -142,9 +140,7 @@ class CommandIsOnCooldown(LightbulbError):
 
 
 class ConverterFailure(LightbulbError):
-    """
-    Error raised when option type conversion fails while prefix command arguments are being parsed.
-    """
+    """Error raised when option type conversion fails while prefix command arguments are being parsed."""
 
     def __init__(self, *args: t.Any, opt: commands.base.OptionLike, raw: str) -> None:
         super().__init__(*args)
@@ -159,9 +155,7 @@ class ConverterFailure(LightbulbError):
 
 
 class InvalidArgument(LightbulbError):
-    """
-    Error raised when the converted argument is invalid.
-    """
+    """Error raised when the converted argument is invalid."""
 
     def __init__(self, *args: t.Any, opt: commands.base.OptionLike, value: t.Any) -> None:
         super().__init__(*args)
@@ -174,9 +168,7 @@ class InvalidArgument(LightbulbError):
 
 
 class NotEnoughArguments(LightbulbError):
-    """
-    Error raised when a prefix command expects more options than could be parsed from the user's input.
-    """
+    """Error raised when a prefix command expects more options than could be parsed from the user's input."""
 
     def __init__(self, *args: t.Any, missing: t.Sequence[commands.base.OptionLike]) -> None:
         super().__init__(*args)
@@ -185,9 +177,7 @@ class NotEnoughArguments(LightbulbError):
 
 
 class MissingRequiredAttachmentArgument(LightbulbError):
-    """
-    Error raised when a prefix command expects an attachment but none were supplied with the invocation.
-    """
+    """Error raised when a prefix command expects an attachment but none were supplied with the invocation."""
 
     def __init__(self, *args: t.Any, missing: commands.base.OptionLike) -> None:
         super().__init__(*args)
@@ -280,9 +270,7 @@ class NSFWChannelOnly(CheckFailure):
 
 
 class MissingRequiredRole(CheckFailure):
-    """
-    Error raised when the member invoking a command is missing one or more of the required roles.
-    """
+    """Error raised when the member invoking a command is missing one or more of the required roles."""
 
     def __init__(self, *args: t.Any, roles: t.Sequence[int], mode: t.Callable[[t.Sequence[bool]], bool]) -> None:
         super().__init__(*args)
@@ -317,9 +305,7 @@ class BotMissingRequiredPermission(CheckFailure):
 
 
 class MissingRequiredAttachment(CheckFailure):
-    """
-    Error raised when an attachment is required for the command but none were supplied with the invocation.
-    """
+    """Error raised when an attachment is required for the command but none were supplied with the invocation."""
 
     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
         warnings.warn(

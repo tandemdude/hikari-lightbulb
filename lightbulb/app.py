@@ -130,7 +130,7 @@ def when_mentioned_or(
             prefixes = prefix_provider
 
         if isinstance(prefixes, str):
-            return mentions + [prefixes]
+            return [*mentions, prefixes]
         elif isinstance(prefixes, t.Sequence):
             return mentions + list(prefixes)
         return mentions
@@ -172,7 +172,7 @@ class BotApp(hikari.GatewayBot):
             Defaults to ``False``.
         **kwargs (Any): Additional keyword arguments passed to the constructor of the :obj:`~hikari.impl.gateway_bot.GatewayBot`
             class.
-    """  # noqa: E501
+    """  # noqa: E501 (line-too-long)
 
     __slots__ = (
         "get_prefix",
@@ -622,10 +622,10 @@ class BotApp(hikari.GatewayBot):
         if self.application.owner is not None:
             owner_ids.append(self.application.owner.id)
         if self.application.team is not None:
-            owner_ids.extend([member_id for member_id in self.application.team.members])
+            owner_ids.extend(member_id for member_id in self.application.team.members)
         return owner_ids
 
-    async def maybe_dispatch_error_event(
+    async def maybe_dispatch_error_event(  # noqa: D417 (undocumented-param)
         self,
         event: events.CommandErrorEvent,
         priority_handlers: t.Sequence[
@@ -651,13 +651,12 @@ class BotApp(hikari.GatewayBot):
             if listener is not None:
                 handled = bool(await listener(event))
 
-        if not handled:
-            if self.get_listeners(type(event), polymorphic=True):
-                await self.dispatch(event)
-                handled = True
-            elif self.get_listeners(events.CommandErrorEvent, polymorphic=True):
-                await self.dispatch(event)
-                handled = True
+        if not handled and (
+            self.get_listeners(type(event), polymorphic=True)
+            or self.get_listeners(events.CommandErrorEvent, polymorphic=True)
+        ):
+            await self.dispatch(event)
+            handled = True
 
         return handled
 
@@ -689,7 +688,7 @@ class BotApp(hikari.GatewayBot):
             return check
 
         def decorate(
-            check_func: t.Callable[[context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]]
+            check_func: t.Callable[[context_.base.Context], t.Union[bool, t.Coroutine[t.Any, t.Any, bool]]],
         ) -> checks.Check:
             new_check = checks.Check(check_func)
             self._checks.append(new_check)
@@ -1219,7 +1218,7 @@ class BotApp(hikari.GatewayBot):
         """
         Autocomplete :obj:`~hikari.events.interaction_events.InteractionCreateEvent` listener. This handles resolving
         the function to use for autocompletion, response conversion into :obj:`~hikari.commands.CommandChoice` and
-        responding to the interaction with the provided options
+        responding to the interaction with the provided options.
 
         Args:
             event (:obj:`~hikari.events.interaction_events.InteractionCreateEvent`): Event that autocomplete
@@ -1278,7 +1277,7 @@ class BotApp(hikari.GatewayBot):
             return
 
         def convert_response_value(
-            val: t.Union[str, int, float, hikari.api.AutocompleteChoiceBuilder]
+            val: t.Union[str, int, float, hikari.api.AutocompleteChoiceBuilder],
         ) -> hikari.api.AutocompleteChoiceBuilder:
             if isinstance(val, (str, int, float)):
                 return hikari.impl.AutocompleteChoiceBuilder(name=str(val), value=val)

@@ -132,7 +132,7 @@ class Task(_BindableObjectWithCallback):
     _app: t.Optional[lightbulb.BotApp] = None
     _app_starting: asyncio.Event = asyncio.Event()
     _app_started: asyncio.Event = asyncio.Event()
-    _tasks: t.List[Task] = []
+    _tasks: t.ClassVar[t.List[Task]] = []
 
     def __init__(
         self,

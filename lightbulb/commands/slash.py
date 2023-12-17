@@ -137,9 +137,7 @@ class SlashCommand(base.ApplicationCommand):
 
 
 class SlashSubCommand(SlashCommand, base.SubCommandTrait):
-    """
-    Class representing a slash subcommand.
-    """
+    """Class representing a slash subcommand."""
 
     __slots__ = ()
 
@@ -162,9 +160,7 @@ class SlashSubCommand(SlashCommand, base.SubCommandTrait):
 
 
 class SlashSubGroup(SlashCommand, SlashGroupMixin, base.SubCommandTrait):
-    """
-    Class representing a slash subgroup of commands.
-    """
+    """Class representing a slash subgroup of commands."""
 
     __slots__ = ("_raw_subcommands", "_subcommands")
 
@@ -209,9 +205,7 @@ class SlashSubGroup(SlashCommand, SlashGroupMixin, base.SubCommandTrait):
 
 
 class SlashCommandGroup(SlashCommand, SlashGroupMixin):
-    """
-    Class representing a slash command group.
-    """
+    """Class representing a slash command group."""
 
     __slots__ = ("_raw_subcommands", "_subcommands")
 

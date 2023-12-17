@@ -95,9 +95,7 @@ class PrefixGroupMixin(abc.ABC):
 
 
 class PrefixCommand(base.Command):
-    """
-    An implementation of :obj:`~.commands.base.Command` representing a prefix command.
-    """
+    """An implementation of :obj:`~.commands.base.Command` representing a prefix command."""
 
     __slots__ = ()
 
@@ -131,9 +129,7 @@ class PrefixCommand(base.Command):
 
 
 class PrefixSubCommand(PrefixCommand, base.SubCommandTrait):
-    """
-    Class representing a prefix subcommand.
-    """
+    """Class representing a prefix subcommand."""
 
     __slots__ = ()
 
@@ -151,9 +147,7 @@ class PrefixSubCommand(PrefixCommand, base.SubCommandTrait):
 
 
 class PrefixSubGroup(PrefixCommand, PrefixGroupMixin, base.SubCommandTrait):
-    """
-    Class representing a prefix subgroup of commands.
-    """
+    """Class representing a prefix subgroup of commands."""
 
     __slots__ = ("_raw_subcommands", "_subcommands")
 
@@ -195,9 +189,7 @@ class PrefixSubGroup(PrefixCommand, PrefixGroupMixin, base.SubCommandTrait):
 
 
 class PrefixCommandGroup(PrefixCommand, PrefixGroupMixin):
-    """
-    Class representing a prefix command group.
-    """
+    """Class representing a prefix command group."""
 
     __slots__ = ("_raw_subcommands", "_subcommands")
 

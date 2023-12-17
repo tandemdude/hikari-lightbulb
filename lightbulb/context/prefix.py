@@ -17,6 +17,8 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+import contextlib
+
 __all__ = ["PrefixContext"]
 
 import asyncio
@@ -136,7 +138,7 @@ class PrefixContext(base.Context):
 
         .. versionadded:: 2.2.0
             ``delete_after`` kwarg.
-        """  # noqa: E501
+        """  # noqa: E501 (line-too-long)
         self._deferred = False
 
         kwargs.pop("flags", None)
@@ -151,10 +153,8 @@ class PrefixContext(base.Context):
             async def _cleanup(timeout: t.Union[int, float]) -> None:
                 await asyncio.sleep(timeout)
 
-                try:
+                with contextlib.suppress(hikari.NotFoundError):
                     await msg.delete()
-                except hikari.NotFoundError:
-                    pass
 
             self.app.create_task(_cleanup(delete_after))
 

@@ -210,9 +210,10 @@ def _webhook_only(context: context_.base.Context) -> bool:
 
 
 def _human_only(context: context_.base.Context) -> bool:
-    if isinstance(context, context_.prefix.PrefixContext):
-        if context.author.is_bot or context.event.message.webhook_id is not None:
-            raise errors.HumanOnly("This command can only be used by humans")
+    if isinstance(context, context_.prefix.PrefixContext) and (
+        context.author.is_bot or context.event.message.webhook_id is not None
+    ):
+        raise errors.HumanOnly("This command can only be used by humans")
     if context.author.is_bot:
         raise errors.HumanOnly("This command can only be used by humans")
     return True

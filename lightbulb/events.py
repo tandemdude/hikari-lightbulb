@@ -38,13 +38,14 @@ __all__ = [
 ]
 
 import abc
-import types
 import typing as t
 
 import attr
 import hikari
 
 if t.TYPE_CHECKING:
+    import types
+
     from lightbulb import app as app_
     from lightbulb import commands
     from lightbulb import context as context_

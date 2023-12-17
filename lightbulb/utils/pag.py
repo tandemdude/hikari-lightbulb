@@ -64,9 +64,8 @@ class Paginator(abc.ABC, t.Generic[T]):
         extra_lines = prefix.count(line_separator) + suffix.count(line_separator)
         min_total_lines = min_content.count(line_separator) + extra_lines
 
-        if max_lines is not None:
-            if max_lines < min_total_lines:
-                raise ValueError(f"This configuration requires at least {min_total_lines} lines per page!")
+        if max_lines is not None and max_lines < min_total_lines:
+            raise ValueError(f"This configuration requires at least {min_total_lines} lines per page!")
 
         # At least 1 character per page, or we recurse forever!
         prefix_len = len(prefix) + len(suffix)

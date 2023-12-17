@@ -34,7 +34,7 @@ options.sessions = ["format_fix", "mypy", "slotscheck"]
 @nox.session()
 def format_fix(session):
     session.install("-Ur", "dev-requirements/formatting.txt")
-    session.run("python", "-m", "black", *SCRIPT_PATHS)
+    session.run("python", "-m", "ruff", "format", *SCRIPT_PATHS)
     session.run("python", "-m", "ruff", "--fix", *SCRIPT_PATHS)
 
 
@@ -42,7 +42,7 @@ def format_fix(session):
 @nox.session()
 def format_check(session):
     session.install("-Ur", "dev-requirements/formatting.txt")
-    session.run("python", "-m", "black", *SCRIPT_PATHS, "--check")
+    session.run("python", "-m", "ruff", "format", *SCRIPT_PATHS, "--check")
     session.run("python", "-m", "ruff", "--output-format", "github", *SCRIPT_PATHS)
 
 

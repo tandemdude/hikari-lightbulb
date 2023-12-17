@@ -12,20 +12,44 @@ include         = ".*py$"
 line-length = 120
 target-version = "py38"
 select = [
-    "E",  # pycodestyle errors
-    "W",  # pycodestyle warnings
-    "F",  # Pyflakes
-    "I",  # isort
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # Pyflakes
+    "I",     # isort
+    "TCH",   # typechecking imports
+    "N",     # naming
+    "ASYNC", # async lints
+    "Q",     # enforce double-quotes
+    "RSE",   # avoid needless parens
+    "SIM",   # simplification
+    "RUF",   # ruff lints
+    "D2",    # Docstring formatting
+    "D213",  # Multi-line docstring summary should start at the second line
+    "D3",    # Use triple-quotes
+    "D415",  # First line of docstring should end with period
+    "D417",  # Missing argument descriptions in docstring
+    "D418",  # No docstring on @overload
+    "D419",  # No empty docstring
 ]
 fixable = [
     "I",     # isort errors
+    "TCH",   # typechecking imports
     "F401",  # unused import
     "F404",  # late __future__ import
     "F541",  # f-string with no placeholders
 ]
+ignore = [
+    "D212",  # Multi-line docstring summary should start at the first line
+    "RUF001", # ambiguous character
+    "N818",   # exception name should end in Error
+    "D205",   # 1 blank line required between summary line and description
+]
 
 [tool.ruff.isort]
 force-single-line = true
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.per-file-ignores]
 # F401 (Unused import) - init files don't use their imports

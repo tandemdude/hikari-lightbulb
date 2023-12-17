@@ -21,12 +21,12 @@ __all__ = ["UserContext"]
 
 import typing as t
 
-import hikari
-
 from lightbulb import commands
 from lightbulb.context import base
 
 if t.TYPE_CHECKING:
+    import hikari
+
     from lightbulb import app as app_
 
 

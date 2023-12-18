@@ -287,9 +287,9 @@ class Parser(BaseParser):
         if option.min_length and len(arg) < option.min_length:
             raise errors.InvalidArgument("Value too short", opt=option, value=arg)
 
-        if option.min_value and len(arg) < option.min_value:
+        if option.min_value is not None and arg < option.min_value:
             raise errors.InvalidArgument("Value too small", opt=option, value=arg)
-        if option.max_value and len(arg) > option.max_value:
+        if option.max_value is not None and arg > option.max_value:
             raise errors.InvalidArgument("Value too big", opt=option, value=arg)
         if option.choices and arg not in option.choices:
             raise errors.InvalidArgument("Value not in available choices", opt=option, value=arg)

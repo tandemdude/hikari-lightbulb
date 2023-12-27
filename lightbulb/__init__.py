@@ -23,6 +23,7 @@ __all__ = [
     "Client",
     "GatewayEnabledClient",
     "RestEnabledClient",
+    "client_from_app",
     "SlashCommand",
     "MessageCommand",
     "UserCommand",

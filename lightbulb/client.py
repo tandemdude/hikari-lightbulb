@@ -26,7 +26,7 @@ import hikari
 from lightbulb import commands
 from lightbulb import context as context_
 
-__all__ = ["Client", "GatewayEnabledClient", "RestEnabledClient"]
+__all__ = ["Client", "GatewayEnabledClient", "RestEnabledClient", "client_from_app"]
 
 CommandT = t.TypeVar("CommandT", bound=t.Type[commands.CommandBase])
 CommandMapT = t.MutableMapping[str, t.Type[commands.CommandBase]]
@@ -34,10 +34,12 @@ CommandMapT = t.MutableMapping[str, t.Type[commands.CommandBase]]
 LOGGER = logging.getLogger("lightbulb.client")
 
 
+@t.runtime_checkable
 class GatewayClientAppT(hikari.EventManagerAware, hikari.RESTAware, t.Protocol):
     ...
 
 
+@t.runtime_checkable
 class RestClientAppT(hikari.InteractionServerAware, hikari.RESTAware, t.Protocol):
     ...
 
@@ -179,3 +181,13 @@ class RestEnabledClient(Client):
     ) -> t.Union[hikari.api.InteractionDeferredBuilder, hikari.api.InteractionMessageBuilder]:  # type: ignore[reportGeneralTypeIssues]
         await super().handle_application_command_interaction(interaction)
         # TODO - intercept context respond calls
+
+
+def client_from_app(app: t.Union[GatewayClientAppT, RestClientAppT], default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = ()) -> Client:
+    if isinstance(app, GatewayClientAppT):
+        LOGGER.debug("building gateway client from app")
+        return GatewayEnabledClient(app, default_enabled_guilds)
+    elif isinstance(app, RestClientAppT):
+        LOGGER.debug("building REST client from app")
+        return RestEnabledClient(app, default_enabled_guilds)
+    raise TypeError("No client supports the given application")

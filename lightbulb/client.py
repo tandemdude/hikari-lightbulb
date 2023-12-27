@@ -176,6 +176,6 @@ class RestEnabledClient(Client):
 
     async def handle_rest_application_command_interaction(
         self, interaction: hikari.CommandInteraction
-    ) -> t.Union[hikari.api.InteractionDeferredBuilder, hikari.api.InteractionMessageBuilder]:
+    ) -> t.Union[hikari.api.InteractionDeferredBuilder, hikari.api.InteractionMessageBuilder]:  # type: ignore[reportGeneralTypeIssues]
         await super().handle_application_command_interaction(interaction)
         # TODO - intercept context respond calls

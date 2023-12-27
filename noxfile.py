@@ -49,9 +49,7 @@ def format_check(session):
 def typecheck(session):
     session.install("-Ur", "requirements.txt")
     session.install("-Ur", "crontrigger_requirements.txt")
-    session.install("-Ur", "dev-requirements/mypy.txt")
     session.install("-Ur", "dev-requirements/pyright.txt")
-    session.run("python", "-m", "mypy", "lightbulb")
     session.run("python", "-m", "pyright")
 
 

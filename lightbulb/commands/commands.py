@@ -35,6 +35,7 @@ __all__ = ["CommandData", "CommandMeta", "CommandBase", "CommandUtils", "UserCom
 
 T = t.TypeVar("T")
 D = t.TypeVar("D")
+CommandT = t.TypeVar("CommandT", bound="CommandBase")
 
 LOGGER = logging.getLogger("lightbulb.commands")
 
@@ -54,11 +55,12 @@ class CommandData:
 
     def as_command_builder(self) -> hikari.api.CommandBuilder:
         if self.type is hikari.CommandType.SLASH:
-            bld = hikari.impl.SlashCommandBuilder(self.name, self.description)
+            bld = hikari.impl.SlashCommandBuilder(name=self.name, description=self.description)
             for option in self.options.values():
                 bld.add_option(option.to_command_option())
             return bld
-        raise NotImplementedError
+
+        return hikari.impl.ContextMenuCommandBuilder(type=self.type, name=self.name)
 
 
 class CommandMeta(type):
@@ -76,7 +78,7 @@ class CommandMeta(type):
         cmd_type: hikari.CommandType
         # Bodge because I cannot figure out how to avoid initialising all the kwargs in our
         # own convenience classes any other way
-        if attrs["__module__"] == cls.__module__:
+        if "type" in kwargs:
             cmd_type = kwargs.pop("type")
             new_cls = super().__new__(cls, cls_name, bases, attrs, **kwargs)
             # Store the command type for our convenience class so that we can retrieve it when the
@@ -177,6 +179,10 @@ class SlashCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.S
 class UserCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.USER):
     __slots__ = ()
 
+    target: hikari.User = t.cast(hikari.User, options_.ContextMenuOption(hikari.User))
+
 
 class MessageCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.MESSAGE):
     __slots__ = ()
+
+    target: hikari.Message = t.cast(hikari.Message, options_.ContextMenuOption(hikari.Message))

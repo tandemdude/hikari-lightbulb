@@ -23,6 +23,8 @@ import typing as t
 import attr
 import hikari
 
+from lightbulb import utils
+
 if t.TYPE_CHECKING:
     from lightbulb import commands
 
@@ -30,6 +32,7 @@ __all__ = ["OptionData", "Option", "string"]
 
 T = t.TypeVar("T")
 D = t.TypeVar("D")
+CtxMenuOptionReturnT = t.Union[hikari.User, hikari.Message]
 
 
 def _non_undefined_or(item: hikari.UndefinedOr[T], default: D) -> t.Union[T, D]:
@@ -41,7 +44,7 @@ class OptionData(t.Generic[D]):
     type: hikari.OptionType
     name: str
     description: str
-    default: hikari.UndefinedOr[D]
+    default: hikari.UndefinedOr[D] = hikari.UNDEFINED
     choices: hikari.UndefinedOr[t.Any] = hikari.UNDEFINED  # TODO
     channel_types: hikari.UndefinedOr[t.Sequence[hikari.ChannelType]] = hikari.UNDEFINED
     min_value: hikari.UndefinedOr[t.Union[int, float]] = hikari.UNDEFINED
@@ -75,15 +78,55 @@ class Option(t.Generic[T, D]):
         self._unbound_default = default_when_not_bound
 
     def __get__(self, instance: t.Optional[commands.CommandBase], owner: t.Type[commands.CommandBase]) -> t.Union[T, D]:
-        if instance is None:
+        if instance is None or instance._current_context is None:
             return self._unbound_default
 
-        if instance._current_context is None:
-            # TODO - logging?
+        return instance._.resolve_option(instance._current_context, self)
+
+
+class ContextMenuOption(Option[CtxMenuOptionReturnT, CtxMenuOptionReturnT]):
+    __slots__ = ("_type",)
+
+    def __init__(self, type: t.Type[CtxMenuOptionReturnT]) -> None:
+        self._type = type
+        super().__init__(
+            OptionData(
+                type=hikari.OptionType.STRING,
+                name="target",
+                description="target",
+            ),
+            utils.EMPTY_USER if type is hikari.User else utils.EMPTY_MESSAGE,
+        )
+
+    @t.overload
+    def __get__(self, instance: t.Optional[commands.UserCommand], owner: t.Type[commands.UserCommand]) -> hikari.User:
+        ...
+
+    @t.overload
+    def __get__(
+        self, instance: t.Optional[commands.MessageCommand], owner: t.Type[commands.MessageCommand]
+    ) -> hikari.Message:
+        ...
+
+    def __get__(
+        self, instance: t.Optional[commands.CommandBase], owner: t.Type[commands.CommandBase]
+    ) -> CtxMenuOptionReturnT:
+        if instance is None or instance._current_context is None:
             return self._unbound_default
 
-        # I have absolutely no idea how to fix this type error
-        return instance._.resolve_option(instance._current_context, self)  # type: ignore[arg-type]
+        interaction = instance._current_context.interaction
+        resolved = interaction.resolved
+
+        assert resolved is not None
+        assert interaction.target_id is not None
+        if self._type is hikari.User:
+            user = resolved.members.get(interaction.target_id) or resolved.users.get(interaction.target_id)
+            assert isinstance(user, hikari.User)
+            return user
+
+        message = resolved.messages.get(interaction.target_id)
+        assert isinstance(message, hikari.Message)
+        return message
 
 
 def string(

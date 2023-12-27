@@ -31,6 +31,9 @@ __all__ = [
     "on_invoke",
     "post_invoke",
     "string",
+    "integer",
+    "boolean",
+    "number",
 ]
 
 __version__ = "3.0.0"

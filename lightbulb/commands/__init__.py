@@ -35,4 +35,7 @@ __all__ = [
     "OptionData",
     "Option",
     "string",
+    "integer",
+    "boolean",
+    "number",
 ]

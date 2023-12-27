@@ -2,7 +2,6 @@
 requires = ["wheel", "setuptools"]
 build-backend = "setuptools.build_meta"
 
-
 [tool.black]
 line-length     = 120
 target-version  = ["py38"]
@@ -61,6 +60,11 @@ convention = "google"
 strict-imports = true
 require-superclass = true
 require-subclass = true
+exclude-classes = """
+(
+    ^lightbulb\\.commands\\.commands:CommandMeta$
+)
+"""
 
 [tool.mypy]
 # general settings
@@ -70,7 +74,7 @@ incremental = true
 namespace_packages = true
 no_implicit_optional = true
 pretty = true
-python_version = 3.8
+python_version = "3.10"
 show_column_numbers = true
 show_error_codes = true
 show_error_context = true
@@ -91,3 +95,23 @@ warn_return_any = true
 warn_unreachable = true
 warn_unused_configs = true
 warn_unused_ignores = true
+
+[tool.pyright]
+include = ["lightbulb"]
+exclude = ["docs", ".github"]
+pythonVersion = "3.10"
+typeCheckingMode = "strict"
+
+reportUnnecessaryTypeIgnoreComment = "error"
+reportMissingTypeStubs = "none"
+reportImportCycles = "none" # Doesn't account for TYPE_CHECKING
+reportIncompatibleMethodOverride = "none"  # This relies on ordering for keyword-only arguments
+reportOverlappingOverload = "none" # Type-Vars in last overloads may interfere
+reportIncompatibleVariableOverride = "none" # Cannot overwrite abstract properties using attrs
+reportPrivateUsage = "none" # Too annoying
+
+# Attrs validators will always be unknown
+# https://github.com/python-attrs/attrs/issues/795
+reportUnknownMemberType = "warning"
+reportUntypedFunctionDecorator = "warning"
+reportOptionalMemberAccess = "warning"

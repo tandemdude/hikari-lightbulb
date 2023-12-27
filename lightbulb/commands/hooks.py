@@ -16,23 +16,33 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 
-from lightbulb.commands.commands import *
-from lightbulb.commands.hooks import *
-from lightbulb.commands.options import *
+import enum
+import typing as t
 
-__all__ = [
-    "CommandData",
-    "CommandMeta",
-    "CommandBase",
-    "CommandUtils",
-    "UserCommand",
-    "MessageCommand",
-    "SlashCommand",
-    "HookType",
-    "pre_invoke",
-    "on_invoke",
-    "post_invoke",
-    "OptionData",
-    "Option",
-    "string",
-]
+__all__ = ["HookType", "pre_invoke", "on_invoke", "post_invoke"]
+
+HookFunctionT = t.TypeVar("HookFunctionT", bound=t.Callable[..., t.Any])
+
+
+class HookType(enum.Enum):
+    PRE_INVOKE = enum.auto()
+    ON_INVOKE = enum.auto()
+    POST_INVOKE = enum.auto()
+
+
+_HOOK_TYPE_ATTR = "__command_hook_type__"
+
+
+def pre_invoke(func: HookFunctionT) -> HookFunctionT:
+    setattr(func, _HOOK_TYPE_ATTR, HookType.PRE_INVOKE)
+    return func
+
+
+def on_invoke(func: HookFunctionT) -> HookFunctionT:
+    setattr(func, _HOOK_TYPE_ATTR, HookType.ON_INVOKE)
+    return func
+
+
+def post_invoke(func: HookFunctionT) -> HookFunctionT:
+    setattr(func, _HOOK_TYPE_ATTR, HookType.POST_INVOKE)
+    return func

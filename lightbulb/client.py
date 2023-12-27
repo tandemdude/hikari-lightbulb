@@ -183,11 +183,12 @@ class RestEnabledClient(Client):
         # TODO - intercept context respond calls
 
 
-def client_from_app(app: t.Union[GatewayClientAppT, RestClientAppT], default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = ()) -> Client:
+def client_from_app(
+    app: t.Union[GatewayClientAppT, RestClientAppT], default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = ()
+) -> Client:
     if isinstance(app, GatewayClientAppT):
         LOGGER.debug("building gateway client from app")
         return GatewayEnabledClient(app, default_enabled_guilds)
-    elif isinstance(app, RestClientAppT):
-        LOGGER.debug("building REST client from app")
-        return RestEnabledClient(app, default_enabled_guilds)
-    raise TypeError("No client supports the given application")
+
+    LOGGER.debug("building REST client from app")
+    return RestEnabledClient(app, default_enabled_guilds)

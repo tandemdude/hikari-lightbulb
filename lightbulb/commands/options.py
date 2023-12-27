@@ -28,7 +28,7 @@ from lightbulb import utils
 if t.TYPE_CHECKING:
     from lightbulb import commands
 
-__all__ = ["OptionData", "Option", "string"]
+__all__ = ["OptionData", "Option", "string", "integer", "boolean", "number"]
 
 T = t.TypeVar("T")
 D = t.TypeVar("D")
@@ -152,5 +152,78 @@ def string(
                 autocomplete=autocomplete,
             ),
             "",
+        ),
+    )
+
+
+def integer(
+    name: str,
+    description: str,
+    default: hikari.UndefinedNoneOr[D] = hikari.UNDEFINED,
+    choices: t.Any = hikari.UNDEFINED,  # TODO
+    min_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
+    max_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
+    autocomplete: t.Any = hikari.UNDEFINED,  # TODO
+) -> int:
+    return t.cast(
+        int,
+        Option(
+            OptionData(
+                type=hikari.OptionType.INTEGER,
+                name=name,
+                description=description,
+                default=default,
+                choices=choices,
+                min_value=min_value,
+                max_value=max_value,
+                autocomplete=autocomplete,
+            ),
+            0,
+        ),
+    )
+
+
+def boolean(
+    name: str,
+    description: str,
+    default: hikari.UndefinedNoneOr[D] = hikari.UNDEFINED,
+) -> bool:
+    return t.cast(
+        bool,
+        Option(
+            OptionData(
+                type=hikari.OptionType.BOOLEAN,
+                name=name,
+                description=description,
+                default=default,
+            ),
+            False,
+        ),
+    )
+
+
+def number(
+    name: str,
+    description: str,
+    default: hikari.UndefinedNoneOr[D] = hikari.UNDEFINED,
+    choices: t.Any = hikari.UNDEFINED,  # TODO
+    min_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
+    max_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
+    autocomplete: t.Any = hikari.UNDEFINED,  # TODO
+) -> float:
+    return t.cast(
+        float,
+        Option(
+            OptionData(
+                type=hikari.OptionType.FLOAT,
+                name=name,
+                description=description,
+                default=default,
+                choices=choices,
+                min_value=min_value,
+                max_value=max_value,
+                autocomplete=autocomplete,
+            ),
+            0.0,
         ),
     )

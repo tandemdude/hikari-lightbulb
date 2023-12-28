@@ -38,6 +38,13 @@ D = t.TypeVar("D")
 CommandT = t.TypeVar("CommandT", bound="CommandBase")
 
 LOGGER = logging.getLogger("lightbulb.commands")
+_PRIMITIVE_OPTION_TYPES = (
+    hikari.OptionType.STRING,
+    hikari.OptionType.INTEGER,
+    hikari.OptionType.FLOAT,
+    hikari.OptionType.BOOLEAN,
+    hikari.OptionType.MENTIONABLE,
+)
 
 
 @attr.define(frozen=True, kw_only=True, slots=True)
@@ -45,7 +52,6 @@ class CommandData:
     type: hikari.CommandType
     name: str
     description: str
-    guilds: t.Sequence[int]
     nsfw: bool
     localizations: t.Any  # TODO
     parent: t.Any  # TODO
@@ -99,7 +105,6 @@ class CommandMeta(type):
         if not description and cmd_type is hikari.CommandType.SLASH:
             raise TypeError("'description' is required for slash commands")
 
-        guilds: t.Sequence[int] = kwargs.pop("guilds", ())
         nsfw: bool = kwargs.pop("nsfw", False)
         localizations: t.Any = kwargs.pop("localizations", None)
         parent: t.Any = kwargs.pop("parent", None)
@@ -124,7 +129,6 @@ class CommandMeta(type):
                 type=cmd_type,
                 name=cmd_name,
                 description=description,
-                guilds=guilds,
                 nsfw=nsfw,
                 localizations=localizations,
                 parent=parent,
@@ -141,6 +145,9 @@ class CommandUtils:
     command_data: CommandData
 
     def resolve_option(self, context: context_.Context, option: options_.Option[T, D]) -> t.Union[T, D]:
+        if option._data.name in context.command._resolved_option_cache:
+            return t.cast(T, context.command._resolved_option_cache[option._data.name])
+
         # TODO - groups
         options = context.interaction.options
         if options is None:
@@ -148,14 +155,38 @@ class CommandUtils:
 
         found = [opt for opt in options if opt.name == option._data.name]
 
-        if found:
+        if not found or (option._data.type not in _PRIMITIVE_OPTION_TYPES and context.interaction.resolved is None):
+            if option._data.default is hikari.UNDEFINED:
+                # error lol
+                raise ValueError("no option resolved and no default provided")
+
+            return option._data.default
+
+        if option._data.type in _PRIMITIVE_OPTION_TYPES:
+            context.command._resolved_option_cache[option._data.name] = found[0].value
             return t.cast(T, found[0].value)
 
-        if option._data.default is hikari.UNDEFINED:
-            # error lol
-            raise ValueError("no option resolved and no default provided")
+        snowflake = found[0].value
+        resolved = context.interaction.resolved
+        option_type = option._data.type
 
-        return option._data.default
+        assert isinstance(snowflake, hikari.Snowflake)
+        assert resolved is not None
+
+        resolved_option: t.Any
+        if option_type is hikari.OptionType.USER:
+            resolved_option = resolved.members.get(snowflake) or resolved.users[snowflake]
+        elif option_type is hikari.OptionType.ROLE:
+            resolved_option = resolved.roles[snowflake]
+        elif option_type is hikari.OptionType.CHANNEL:
+            resolved_option = resolved.channels[snowflake]
+        elif option_type is hikari.OptionType.ATTACHMENT:
+            resolved_option = resolved.attachments[snowflake]
+        else:
+            raise TypeError("unsupported option type passed")
+
+        context.command._resolved_option_cache[option._data.name] = resolved_option
+        return t.cast(T, resolved_option)
 
 
 class CommandBase:

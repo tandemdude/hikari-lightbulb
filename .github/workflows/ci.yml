@@ -38,10 +38,10 @@ jobs:
         with:
           python-version: "3.8"
 
-      - name: Run mypy
+      - name: Run pyright
         run: |
           pip install nox
-          nox -s mypy
+          nox -s typecheck
 
   slotscheck:
     name: Slotscheck

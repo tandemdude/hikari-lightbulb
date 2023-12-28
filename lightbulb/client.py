@@ -53,11 +53,17 @@ class Client(abc.ABC):
         self._commands: CommandMapT = {}
         self._application: t.Optional[hikari.PartialApplication] = None
 
-    def register(self, command: CommandT) -> CommandT:
-        name = command._.command_data.name
-        self._commands[name] = command
-        LOGGER.debug("command %s registered successfully", name)
-        return command
+    def register(self, guilds: t.Sequence[hikari.Snowflakeish] = ()) -> t.Callable[[CommandT], CommandT]:
+        # Convenience check to prevent people from accidentally using this method as a first order decorator
+        if type(guilds) is commands.CommandMeta:
+            raise TypeError("Client#register must be used as a second order decorator")
+
+        def _inner(command: CommandT) -> CommandT:
+            self._commands[command._.command_data.name] = command
+            LOGGER.debug("command %s registered successfully", command._.command_data.name)
+            return command
+
+        return _inner
 
     async def _ensure_application(self) -> hikari.PartialApplication:
         if self._application is not None:

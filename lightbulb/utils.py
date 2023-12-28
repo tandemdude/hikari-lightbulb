@@ -19,6 +19,8 @@ import datetime
 
 import hikari
 
+__all__ = ["EMPTY_USER", "EMPTY_MESSAGE", "EMPTY_CHANNEL", "EMPTY_ROLE"]
+
 
 class _EmptyUser(hikari.User):
     __slots__ = ()
@@ -69,4 +71,43 @@ EMPTY_MESSAGE = hikari.Message(
     channel_mentions=hikari.UNDEFINED,
     role_mention_ids=hikari.UNDEFINED,
     mentions_everyone=hikari.UNDEFINED,
+)
+EMPTY_CHANNEL = hikari.PartialChannel(
+    app=None,  # type: ignore[reportGeneralTypeIssues]
+    id=hikari.Snowflake(0),
+    name="",
+    type=hikari.ChannelType.GUILD_TEXT,
+)
+EMPTY_ROLE = hikari.Role(
+    app=None,  # type: ignore[reportGeneralTypeIssues]
+    id=hikari.Snowflake(0),
+    name="",
+    color=hikari.Color.from_int(0),
+    guild_id=hikari.Snowflake(0),
+    is_hoisted=False,
+    icon_hash=None,
+    unicode_emoji=None,
+    is_managed=False,
+    is_mentionable=False,
+    permissions=hikari.Permissions.NONE,
+    position=0,
+    bot_id=None,
+    integration_id=None,
+    is_premium_subscriber_role=False,
+    subscription_listing_id=None,
+    is_available_for_purchase=False,
+    is_guild_linked_role=False,
+)
+EMPTY_ATTACHMENT = hikari.Attachment(
+    id=hikari.Snowflake(0),
+    url="",
+    filename="",
+    media_type=None,
+    size=0,
+    proxy_url="",
+    height=None,
+    width=None,
+    is_ephemeral=False,
+    duration=None,
+    waveform=None,
 )

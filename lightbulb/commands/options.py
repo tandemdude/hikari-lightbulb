@@ -28,7 +28,19 @@ from lightbulb import utils
 if t.TYPE_CHECKING:
     from lightbulb import commands
 
-__all__ = ["OptionData", "Option", "string", "integer", "boolean", "number"]
+__all__ = [
+    "OptionData",
+    "Option",
+    "string",
+    "integer",
+    "boolean",
+    "number",
+    "user",
+    "channel",
+    "role",
+    "mentionable",
+    "attachment",
+]
 
 T = t.TypeVar("T")
 D = t.TypeVar("D")
@@ -132,7 +144,7 @@ class ContextMenuOption(Option[CtxMenuOptionReturnT, CtxMenuOptionReturnT]):
 def string(
     name: str,
     description: str,
-    default: hikari.UndefinedNoneOr[D] = hikari.UNDEFINED,
+    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
     choices: t.Any = hikari.UNDEFINED,  # TODO
     min_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     max_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
@@ -159,7 +171,7 @@ def string(
 def integer(
     name: str,
     description: str,
-    default: hikari.UndefinedNoneOr[D] = hikari.UNDEFINED,
+    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
     choices: t.Any = hikari.UNDEFINED,  # TODO
     min_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     max_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
@@ -186,7 +198,7 @@ def integer(
 def boolean(
     name: str,
     description: str,
-    default: hikari.UndefinedNoneOr[D] = hikari.UNDEFINED,
+    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
 ) -> bool:
     return t.cast(
         bool,
@@ -205,7 +217,7 @@ def boolean(
 def number(
     name: str,
     description: str,
-    default: hikari.UndefinedNoneOr[D] = hikari.UNDEFINED,
+    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
     choices: t.Any = hikari.UNDEFINED,  # TODO
     min_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
     max_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
@@ -225,5 +237,102 @@ def number(
                 autocomplete=autocomplete,
             ),
             0.0,
+        ),
+    )
+
+
+def user(
+    name: str,
+    description: str,
+    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
+) -> hikari.User:
+    return t.cast(
+        hikari.User,
+        Option(
+            OptionData(
+                type=hikari.OptionType.USER,
+                name=name,
+                description=description,
+                default=default,
+            ),
+            utils.EMPTY_USER,
+        ),
+    )
+
+
+def channel(
+    name: str,
+    description: str,
+    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
+    channel_types: hikari.UndefinedOr[t.Sequence[hikari.ChannelType]] = hikari.UNDEFINED,
+) -> hikari.PartialChannel:
+    return t.cast(
+        hikari.PartialChannel,
+        Option(
+            OptionData(
+                type=hikari.OptionType.CHANNEL,
+                name=name,
+                description=description,
+                default=default,
+                channel_types=channel_types,
+            ),
+            default_when_not_bound=utils.EMPTY_CHANNEL,
+        ),
+    )
+
+
+def role(
+    name: str,
+    description: str,
+    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
+) -> hikari.Role:
+    return t.cast(
+        hikari.Role,
+        Option(
+            OptionData(
+                type=hikari.OptionType.ROLE,
+                name=name,
+                description=description,
+                default=default,
+            ),
+            utils.EMPTY_ROLE,
+        ),
+    )
+
+
+def mentionable(
+    name: str,
+    description: str,
+    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
+) -> hikari.Snowflake:
+    return t.cast(
+        hikari.Snowflake,
+        Option(
+            OptionData(
+                type=hikari.OptionType.MENTIONABLE,
+                name=name,
+                description=description,
+                default=default,
+            ),
+            hikari.Snowflake(0),
+        ),
+    )
+
+
+def attachment(
+    name: str,
+    description: str,
+    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
+) -> hikari.Attachment:
+    return t.cast(
+        hikari.Attachment,
+        Option(
+            OptionData(
+                type=hikari.OptionType.MENTIONABLE,
+                name=name,
+                description=description,
+                default=default,
+            ),
+            utils.EMPTY_ATTACHMENT,
         ),
     )

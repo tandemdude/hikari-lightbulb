@@ -38,4 +38,9 @@ __all__ = [
     "integer",
     "boolean",
     "number",
+    "user",
+    "channel",
+    "role",
+    "mentionable",
+    "attachment",
 ]

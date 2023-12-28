@@ -34,6 +34,11 @@ __all__ = [
     "integer",
     "boolean",
     "number",
+    "user",
+    "channel",
+    "role",
+    "mentionable",
+    "attachment",
 ]
 
 __version__ = "3.0.0"

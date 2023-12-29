@@ -165,12 +165,12 @@ class GatewayEnabledClient(Client):
             functools.partial(
                 wrap_listener,
                 func=self.handle_application_command_interaction,
-                arg_resolver=lambda e: [t.cast(hikari.InteractionCreateEvent, e).interaction],
+                arg_resolver=lambda e: (t.cast(hikari.InteractionCreateEvent, e).interaction,),
             ),
         )
         app.event_manager.subscribe(
             hikari.StartedEvent,
-            functools.partial(wrap_listener, func=self.sync_application_commands, arg_resolver=lambda _: []),
+            functools.partial(wrap_listener, func=self.sync_application_commands, arg_resolver=lambda _: ()),
         )
 
 

@@ -22,9 +22,8 @@
 
 from __future__ import annotations
 
+import dataclasses
 import typing as t
-
-import attr
 
 if t.TYPE_CHECKING:
     import hikari
@@ -33,7 +32,7 @@ if t.TYPE_CHECKING:
     from lightbulb import commands
 
 
-@attr.define(frozen=True, kw_only=True, slots=True)
+@dataclasses.dataclass(slots=True, kw_only=True)
 class Context:
     client: client_.Client
 

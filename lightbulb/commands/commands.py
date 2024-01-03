@@ -22,10 +22,10 @@
 
 from __future__ import annotations
 
+import dataclasses
 import logging
 import typing as t
 
-import attr
 import hikari
 
 from lightbulb.commands import hooks as hooks_
@@ -34,6 +34,7 @@ from lightbulb.commands.hooks import _HOOK_TYPE_ATTR
 
 if t.TYPE_CHECKING:
     from lightbulb import context as context_
+    from lightbulb.commands import groups
 
 __all__ = ["CommandData", "CommandMeta", "CommandBase", "CommandUtils", "UserCommand", "MessageCommand", "SlashCommand"]
 
@@ -51,17 +52,18 @@ _PRIMITIVE_OPTION_TYPES = (
 )
 
 
-@attr.define(frozen=True, kw_only=True, slots=True)
+@dataclasses.dataclass(slots=True, kw_only=True)
 class CommandData:
     type: hikari.CommandType
     name: str
     description: str
     nsfw: bool
     localizations: t.Any  # TODO
-    parent: t.Any  # TODO
 
     options: t.Mapping[str, options_.OptionData[t.Any]]
     hooks: t.Mapping[hooks_.HookType, str]
+
+    parent: t.Optional[t.Union[groups.Group, groups.SubGroup]] = dataclasses.field(init=False, default=None)
 
     def as_command_builder(self) -> hikari.api.CommandBuilder:
         if self.type is hikari.CommandType.SLASH:
@@ -71,6 +73,15 @@ class CommandData:
             return bld
 
         return hikari.impl.ContextMenuCommandBuilder(type=self.type, name=self.name)
+
+    def to_command_option(self) -> hikari.CommandOption:
+        return hikari.CommandOption(
+            type=hikari.OptionType.SUB_COMMAND,
+            name=self.name,
+            description=self.description,
+            # TODO - localisations
+            options=[option.to_command_option() for option in self.options.values()],
+        )
 
 
 class CommandMeta(type):
@@ -111,7 +122,6 @@ class CommandMeta(type):
 
         nsfw: bool = kwargs.pop("nsfw", False)
         localizations: t.Any = kwargs.pop("localizations", None)
-        parent: t.Any = kwargs.pop("parent", None)
 
         options: t.Dict[str, options_.OptionData[t.Any]] = {}
         hooks: t.Dict[hooks_.HookType, str] = {}
@@ -135,7 +145,6 @@ class CommandMeta(type):
                 description=description,
                 nsfw=nsfw,
                 localizations=localizations,
-                parent=parent,
                 options=options,
                 hooks=hooks,
             )
@@ -144,7 +153,7 @@ class CommandMeta(type):
         return super().__new__(cls, cls_name, bases, attrs, **kwargs)
 
 
-@attr.define(kw_only=True, slots=True)
+@dataclasses.dataclass(slots=True, kw_only=True)
 class CommandUtils:
     command_data: CommandData
 

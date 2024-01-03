@@ -22,9 +22,9 @@
 
 from __future__ import annotations
 
+import dataclasses
 import typing as t
 
-import attr
 import hikari
 
 from lightbulb import utils
@@ -55,7 +55,7 @@ def _non_undefined_or(item: hikari.UndefinedOr[T], default: D) -> t.Union[T, D]:
     return item if item is not hikari.UNDEFINED else default
 
 
-@attr.define(frozen=True, kw_only=True, slots=True)
+@dataclasses.dataclass(slots=True, kw_only=True)
 class OptionData(t.Generic[D]):
     type: hikari.OptionType
     name: str

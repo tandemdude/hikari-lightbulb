@@ -18,14 +18,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+from __future__ import annotations
 
 import enum
 import typing as t
 
-__all__ = ["HookType", "pre_invoke", "on_invoke", "post_invoke"]
+from lightbulb.internal import di
 
-HookFunctionT = t.TypeVar("HookFunctionT", bound=t.Callable[..., t.Any])
+if t.TYPE_CHECKING:
+    from lightbulb import context
+
+__all__ = ["HookType", "pre_invoke", "on_invoke", "post_invoke"]
 
 
 class HookType(enum.Enum):
@@ -34,19 +37,19 @@ class HookType(enum.Enum):
     POST_INVOKE = enum.auto()
 
 
-_HOOK_TYPE_ATTR = "__command_hook_type__"
+def pre_invoke(func: t.Callable[..., t.Awaitable[t.Any]]) -> t.Callable[[context.Context], t.Awaitable[t.Any]]:
+    replacement = di.LazyInjecting(func)
+    setattr(replacement, "__command_hook_type__", HookType.PRE_INVOKE)
+    return replacement
 
 
-def pre_invoke(func: HookFunctionT) -> HookFunctionT:
-    setattr(func, _HOOK_TYPE_ATTR, HookType.PRE_INVOKE)
-    return func
+def on_invoke(func: t.Callable[..., t.Awaitable[t.Any]]) -> t.Callable[[context.Context], t.Awaitable[t.Any]]:
+    replacement = di.LazyInjecting(func)
+    setattr(replacement, "__command_hook_type__", HookType.ON_INVOKE)
+    return replacement
 
 
-def on_invoke(func: HookFunctionT) -> HookFunctionT:
-    setattr(func, _HOOK_TYPE_ATTR, HookType.ON_INVOKE)
-    return func
-
-
-def post_invoke(func: HookFunctionT) -> HookFunctionT:
-    setattr(func, _HOOK_TYPE_ATTR, HookType.POST_INVOKE)
-    return func
+def post_invoke(func: t.Callable[..., t.Awaitable[t.Any]]) -> t.Callable[[context.Context], t.Awaitable[t.Any]]:
+    replacement = di.LazyInjecting(func)
+    setattr(replacement, "__command_hook_type__", HookType.POST_INVOKE)
+    return replacement

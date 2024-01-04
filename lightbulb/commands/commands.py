@@ -30,11 +30,12 @@ import hikari
 
 from lightbulb.commands import hooks as hooks_
 from lightbulb.commands import options as options_
-from lightbulb.commands.hooks import _HOOK_TYPE_ATTR
+from lightbulb.internal import di
 
 if t.TYPE_CHECKING:
     from lightbulb import context as context_
     from lightbulb.commands import groups
+    from lightbulb import client as client_
 
 __all__ = ["CommandData", "CommandMeta", "CommandBase", "CommandUtils", "UserCommand", "MessageCommand", "SlashCommand"]
 
@@ -93,7 +94,7 @@ class CommandMeta(type):
 
     @staticmethod
     def _is_hook(item: t.Any) -> bool:
-        return (ht := getattr(item, _HOOK_TYPE_ATTR, None)) is not None and isinstance(ht, hooks_.HookType)
+        return (ht := getattr(item, "__command_hook_type__", None)) is not None and isinstance(ht, hooks_.HookType)
 
     def __new__(cls, cls_name: str, bases: t.Tuple[type, ...], attrs: t.Dict[str, t.Any], **kwargs: t.Any) -> type:
         cmd_type: hikari.CommandType
@@ -129,7 +130,7 @@ class CommandMeta(type):
             if cls._is_option(item):
                 options[name] = item._data
             elif cls._is_hook(item):
-                hook_type = getattr(item, _HOOK_TYPE_ATTR)
+                hook_type = getattr(item, "__command_hook_type__")
                 if hook_type in hooks:
                     LOGGER.warning("Duplicate hook found for type %s in command %r - ignoring", hook_type, cls_name)
                 else:
@@ -214,6 +215,20 @@ class CommandBase:
         new._current_context = None
         new._resolved_option_cache = {}
         return new
+
+    @classmethod
+    def _populate_client_for_hooks(cls, client: client_.Client) -> None:
+        for hook_name in cls._.command_data.hooks.values():
+            if isinstance(hook := getattr(cls, hook_name), di.LazyInjecting):
+                hook._client = client
+
+    @classmethod
+    def as_command_builder(cls) -> hikari.api.CommandBuilder:
+        return cls._.command_data.as_command_builder()
+
+    @classmethod
+    def to_command_option(cls) -> hikari.CommandOption:
+        return cls._.command_data.to_command_option()
 
 
 class SlashCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.SLASH):

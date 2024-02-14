@@ -97,13 +97,9 @@ class ExecutionPipeline:
         return None
 
     async def _run(self) -> None:
-        print(self._hooks)
-
         self._current_step = self._next_step()
-        print(self._current_step)
         while self._current_step is not None and not self.aborted:
             step_hooks = list(self._hooks.get(self._current_step, []))
-            print(step_hooks)
             while step_hooks and not self.aborted:
                 self._current_hook = step_hooks.pop(0)
                 try:
@@ -142,9 +138,11 @@ class ExecutionPipeline:
         self._failures[self._current_step].append(hook_exc)
 
 
-# TODO - add di to hook functions
 def hook(step: ExecutionStep) -> t.Callable[[ExecutionHookFuncT], ExecutionHook]:
     def inner(func: ExecutionHookFuncT) -> ExecutionHook:
+        if not isinstance(func, di.LazyInjecting):
+            func = di.LazyInjecting(func)
+
         return ExecutionHook(step, func)
 
     return inner

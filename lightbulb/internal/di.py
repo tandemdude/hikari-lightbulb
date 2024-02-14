@@ -17,13 +17,14 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+import contextvars
 import inspect
 import typing as t
 
-if t.TYPE_CHECKING:
-    from lightbulb import client as client_
+import svcs
 
 AnyCallableT = t.TypeVar("AnyCallableT", bound=t.Callable[..., t.Any])
+_di_container = contextvars.ContextVar("_di_container")
 
 
 def find_injectable_kwargs(
@@ -50,34 +51,33 @@ def find_injectable_kwargs(
 
 
 class LazyInjecting:
-    __slots__ = ("_func", "_processed", "_client", "_self", "__lb_cmd_invoke_method__")
+    __slots__ = ("_func", "_processed", "_self", "__lb_cmd_invoke_method__")
 
     def __init__(
         self,
         func: t.Callable[..., t.Awaitable[t.Any]],
         self_: t.Any = None,
-        client: t.Optional[client_.Client] = None,
     ) -> None:
         self._func = func
         self._self: t.Any = self_
-        self._client: t.Optional[client_.Client] = client
 
     def __get__(self, instance: t.Any, owner: t.Type[t.Any]) -> LazyInjecting:
         if instance is not None:
-            return LazyInjecting(self._func, instance, self._client)
+            return LazyInjecting(self._func, instance)
         return self
 
     async def __call__(self, *args: t.Any, **kwargs: t.Any) -> t.Any:
         new_kwargs: t.Dict[str, t.Any] = {}
         new_kwargs.update(kwargs)
 
-        if self._client is None:
+        di_container: t.Optional[svcs.Container] = _di_container.get(None)
+        if di_container is None:
             raise RuntimeError("cannot prepare dependency injection as client not yet populated")
 
         injectables = find_injectable_kwargs(self._func, len(args) + (self._self is not None), set(kwargs.keys()))
 
         for name, type in injectables.items():
-            new_kwargs[name] = await self._client._di_container.aget(type)
+            new_kwargs[name] = await di_container.aget(type)
 
         if self._self is not None:
             return await self._func(self._self, *args, **new_kwargs)

@@ -31,10 +31,8 @@ import hikari
 
 from lightbulb.commands import execution
 from lightbulb.commands import options as options_
-from lightbulb.internal import di
 
 if t.TYPE_CHECKING:
-    from lightbulb import client as client_
     from lightbulb import context as context_
     from lightbulb.commands import groups
 
@@ -127,7 +125,7 @@ class CommandMeta(type):
             raise TypeError("'hooks' must be an iterable")
 
         hooks: t.Set[t.Any] = set(t.cast(t.Iterable[t.Any], raw_hooks) if raw_hooks is not None else [])
-        if not any((isinstance(h, execution.ExecutionHook) for h in hooks)):
+        if hooks and not any((isinstance(h, execution.ExecutionHook) for h in hooks)):
             raise TypeError("all hooks must be an instance of ExecutionHook")
 
         options: t.Dict[str, options_.OptionData[t.Any]] = {}
@@ -218,12 +216,6 @@ class CommandBase:
         new._current_context = None
         new._resolved_option_cache = {}
         return new
-
-    @classmethod
-    def _populate_client_for_hooks(cls, client: client_.Client) -> None:
-        for hook_name in [cls._.command_data.invoke_method]:
-            if isinstance(hook := getattr(cls, hook_name), di.LazyInjecting):
-                hook._client = client
 
     @classmethod
     def as_command_builder(cls) -> hikari.api.CommandBuilder:

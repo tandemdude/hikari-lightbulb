@@ -27,7 +27,6 @@ import typing as t
 import hikari
 
 if t.TYPE_CHECKING:
-    from lightbulb import client as client_
     from lightbulb.commands import commands
 
 CommandT = t.TypeVar("CommandT", bound=t.Type["commands.CommandBase"])
@@ -77,10 +76,6 @@ class SubGroup(GroupMixin):
     parent: Group
     _commands: SubGroupCommandMappingT = dataclasses.field(init=False, default_factory=dict)
 
-    def _populate_client_for_hooks(self, client: client_.Client) -> None:
-        for subcommand in self._commands.values():
-            subcommand._populate_client_for_hooks(client)
-
     def to_command_option(self) -> hikari.CommandOption:
         # TODO - localisations
         return hikari.CommandOption(
@@ -102,10 +97,6 @@ class Group(GroupMixin):
         new = SubGroup(name=name, description=description, parent=self)
         self._commands[name] = new
         return new
-
-    def _populate_client_for_hooks(self, client: client_.Client) -> None:
-        for subcommand in self._commands.values():
-            subcommand._populate_client_for_hooks(client)
 
     def as_command_builder(self) -> hikari.api.CommandBuilder:
         # TODO - localisations

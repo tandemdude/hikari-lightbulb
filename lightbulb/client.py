@@ -30,6 +30,7 @@ from lightbulb.commands import commands
 from lightbulb.commands import execution
 from lightbulb.commands import groups
 from lightbulb.internal import utils
+from lightbulb.internal import di
 
 __all__ = ["Client", "GatewayEnabledClient", "RestEnabledClient", "client_from_app"]
 
@@ -129,9 +130,6 @@ class Client(abc.ABC):
 
             for guild_id in register_in:
                 self._commands[guild_id][name].put(command_or_group)
-
-            # Ensure that dependency injection will function properly
-            command_or_group._populate_client_for_hooks(self)
 
             LOGGER.debug("command %s registered successfully", name)
             return command_or_group
@@ -235,7 +233,15 @@ class Client(abc.ABC):
         command_instance._resolved_option_cache = {}
 
         LOGGER.debug("%s - invoking command", command_data.name)
-        await execution.ExecutionPipeline(context, self._execution_step_order)._run()
+
+        token = di._di_container.set(self._di_container)
+        try:
+            await execution.ExecutionPipeline(context, self._execution_step_order)._run()
+        except Exception as e:
+            # TODO - dispatch to error handler
+            ...
+        finally:
+            di._di_container.reset(token)
 
 
 class GatewayEnabledClient(Client):

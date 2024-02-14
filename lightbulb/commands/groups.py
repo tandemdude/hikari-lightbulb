@@ -26,11 +26,9 @@ import typing as t
 
 import hikari
 
-from lightbulb.internal import di
-
 if t.TYPE_CHECKING:
-    from lightbulb.commands import commands
     from lightbulb import client as client_
+    from lightbulb.commands import commands
 
 CommandT = t.TypeVar("CommandT", bound=t.Type["commands.CommandBase"])
 SubGroupCommandMappingT = t.Dict[str, t.Type["commands.CommandBase"]]

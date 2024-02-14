@@ -21,7 +21,7 @@
 
 
 from lightbulb.commands.commands import *
-from lightbulb.commands.hooks import *
+from lightbulb.commands.execution import *
 from lightbulb.commands.options import *
 
 __all__ = [
@@ -32,10 +32,12 @@ __all__ = [
     "UserCommand",
     "MessageCommand",
     "SlashCommand",
-    "HookType",
-    "pre_invoke",
-    "on_invoke",
-    "post_invoke",
+    "ExecutionStep",
+    "ExecutionSteps",
+    "ExecutionHook",
+    "ExecutionPipeline",
+    "hook",
+    "invoke",
     "OptionData",
     "Option",
     "string",

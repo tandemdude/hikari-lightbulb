@@ -27,8 +27,8 @@ import svcs
 
 from lightbulb import context as context_
 from lightbulb.commands import commands
+from lightbulb.commands import execution
 from lightbulb.commands import groups
-from lightbulb.commands import hooks
 from lightbulb.internal import utils
 
 __all__ = ["Client", "GatewayEnabledClient", "RestEnabledClient", "client_from_app"]
@@ -52,11 +52,29 @@ class RestClientAppT(hikari.InteractionServerAware, hikari.RESTAware, t.Protocol
 
 
 class Client(abc.ABC):
-    __slots__ = ("_commands", "_rest", "_default_enabled_guilds", "_application", "_di_registry", "__di_container")
+    __slots__ = (
+        "_commands",
+        "_rest",
+        "_default_enabled_guilds",
+        "_execution_step_order",
+        "_application",
+        "_di_registry",
+        "__di_container",
+    )
 
-    def __init__(self, rest: hikari.api.RESTClient, default_enabled_guilds: t.Sequence[hikari.Snowflakeish]) -> None:
+    def __init__(
+        self,
+        rest: hikari.api.RESTClient,
+        default_enabled_guilds: t.Sequence[hikari.Snowflakeish],
+        execution_step_order: t.Sequence[execution.ExecutionStep] = (
+            execution.ExecutionSteps.MAX_CONCURRENCY,
+            execution.ExecutionSteps.CHECKS,
+            execution.ExecutionSteps.COOLDOWNS,
+        ),
+    ) -> None:
         self._rest: hikari.api.RESTClient = rest
         self._default_enabled_guilds = default_enabled_guilds
+        self._execution_step_order = execution_step_order
 
         self._commands: CommandMapT = collections.defaultdict(lambda: collections.defaultdict(utils.CommandCollection))
         self._application: t.Optional[hikari.PartialApplication] = None
@@ -73,15 +91,25 @@ class Client(abc.ABC):
     def register_dependency(self, type: t.Type[T], factory: t.Callable[[], t.Union[t.Awaitable[T], T]]) -> None:
         self._di_registry.register_factory(type, factory)  # type: ignore[reportUnknownMemberType]
 
+    @t.overload
     def register(
-        self, guilds: hikari.UndefinedOr[t.Sequence[hikari.Snowflakeish]] = hikari.UNDEFINED
+        self, guilds: t.Optional[t.Sequence[hikari.Snowflakeish]] = None
     ) -> t.Callable[[CommandOrGroupT], CommandOrGroupT]:
-        # Convenience check to prevent people from accidentally using this method as a first order decorator
-        if type(guilds) is commands.CommandMeta or isinstance(guilds, groups.Group):
-            raise TypeError("Client#register must be used as a second order decorator")
+        ...
 
+    @t.overload
+    def register(
+        self, guilds: t.Optional[t.Sequence[hikari.Snowflakeish]], command_or_group: CommandOrGroupT
+    ) -> CommandOrGroupT:
+        ...
+
+    def register(
+        self,
+        guilds: t.Optional[t.Sequence[hikari.Snowflakeish]] = None,
+        command_or_group: t.Optional[CommandOrGroupT] = None,
+    ) -> t.Union[CommandOrGroupT, t.Callable[[CommandOrGroupT], CommandOrGroupT]]:
         register_in: t.Sequence[hikari.Snowflakeish]
-        if not guilds and guilds is not hikari.UNDEFINED:
+        if not guilds and guilds is not None:
             # commands should ignore default guilds and be global
             register_in = (GLOBAL_COMMAND_KEY,)
         else:
@@ -91,7 +119,8 @@ class Client(abc.ABC):
             # so added the below just to remove the error
             register_in = maybe_guilds if maybe_guilds is not hikari.UNDEFINED else ()
 
-        def _inner(command_or_group: CommandOrGroupT) -> CommandOrGroupT:
+        # Used as a function
+        if command_or_group is not None:
             name = (
                 command_or_group.name
                 if isinstance(command_or_group, groups.Group)
@@ -106,6 +135,10 @@ class Client(abc.ABC):
 
             LOGGER.debug("command %s registered successfully", name)
             return command_or_group
+
+        # Used as a decorator
+        def _inner(command_or_group_: CommandOrGroupT) -> CommandOrGroupT:
+            return self.register(guilds, command_or_group_)
 
         return _inner
 
@@ -194,21 +227,15 @@ class Client(abc.ABC):
         command_data = command._.command_data
 
         command_instance = command()
-        # TODO
+        # TODO - resolve options for subcommands
         context = self.build_context(
             interaction, getattr("TODO", "options", interaction.options) or [], command_instance
         )
         command_instance._current_context = context
         command_instance._resolved_option_cache = {}
 
-        if hook_name := command_data.hooks.get(hooks.HookType.PRE_INVOKE):
-            LOGGER.debug("%s - invoking pre-invoke hook", command_data.name)
-            await getattr(command, hook_name)(command_instance, context)
         LOGGER.debug("%s - invoking command", command_data.name)
-        await getattr(command, command_data.hooks[hooks.HookType.ON_INVOKE])(command_instance, context)
-        if hook_name := command_data.hooks.get(hooks.HookType.POST_INVOKE):
-            LOGGER.debug("%s - invoking post-invoke hook", command_data.name)
-            await getattr(command, hook_name)(command_instance, context)
+        await execution.ExecutionPipeline(context, self._execution_step_order)._run()
 
 
 class GatewayEnabledClient(Client):

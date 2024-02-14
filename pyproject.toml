@@ -10,6 +10,8 @@ include         = ".*py$"
 [tool.ruff]
 line-length = 120
 target-version = "py38"
+
+[tool.ruff.lint]
 select = [
     "E",     # pycodestyle errors
     "W",     # pycodestyle warnings
@@ -44,17 +46,17 @@ ignore = [
     "D205",   # 1 blank line required between summary line and description
 ]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 force-single-line = true
 
-[tool.ruff.lint.pydocstyle]
-convention = "google"
-
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 # F401 (Unused import) - init files don't use their imports
 # F403 (Star import used) - hopefully we're sensible enough to know what objects modules contain
 # F405 (Import via star) - everything is imported to top-level
 "__init__.py" = ["F401", "F403", "F405"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.slotscheck]
 strict-imports = true

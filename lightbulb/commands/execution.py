@@ -141,7 +141,7 @@ class ExecutionPipeline:
 def hook(step: ExecutionStep) -> t.Callable[[ExecutionHookFuncT], ExecutionHook]:
     def inner(func: ExecutionHookFuncT) -> ExecutionHook:
         if not isinstance(func, di.LazyInjecting):
-            func = di.LazyInjecting(func)
+            func = di.LazyInjecting(func)  # type: ignore[reportArgumentType]
 
         return ExecutionHook(step, func)
 

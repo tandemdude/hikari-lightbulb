@@ -22,6 +22,7 @@
 
 from lightbulb.commands.commands import *
 from lightbulb.commands.execution import *
+from lightbulb.commands.groups import *
 from lightbulb.commands.options import *
 
 __all__ = [
@@ -38,6 +39,8 @@ __all__ = [
     "ExecutionPipeline",
     "hook",
     "invoke",
+    "SubGroup",
+    "Group",
     "OptionData",
     "Option",
     "string",

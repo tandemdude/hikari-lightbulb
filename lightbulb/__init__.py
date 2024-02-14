@@ -21,11 +21,14 @@
 
 
 from lightbulb import exceptions
+from lightbulb import utils
 from lightbulb.client import *
 from lightbulb.commands import *
 from lightbulb.context import *
 
 __all__ = [
+    "exceptions",
+    "utils",
     "Client",
     "GatewayEnabledClient",
     "RestEnabledClient",
@@ -39,6 +42,10 @@ __all__ = [
     "ExecutionPipeline",
     "hook",
     "invoke",
+    "SubGroup",
+    "Group",
+    "OptionData",
+    "Option",
     "string",
     "integer",
     "boolean",
@@ -49,7 +56,6 @@ __all__ = [
     "mentionable",
     "attachment",
     "Context",
-    "exceptions",
 ]
 
 __version__ = "3.0.0"

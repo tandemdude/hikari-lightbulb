@@ -20,6 +20,8 @@
 # SOFTWARE.
 from __future__ import annotations
 
+__all__ = ["SubGroup", "Group"]
+
 import abc
 import dataclasses
 import typing as t

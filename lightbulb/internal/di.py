@@ -20,58 +20,51 @@ from __future__ import annotations
 import inspect
 import typing as t
 
-import typing_extensions as t_ex
-
-from lightbulb import context
-
 if t.TYPE_CHECKING:
     from lightbulb import client as client_
 
 AnyCallableT = t.TypeVar("AnyCallableT", bound=t.Callable[..., t.Any])
 
 
-def find_injectable_kwargs(func: t.Callable[..., t.Any]) -> t.Dict[str, t.Any]:
+def find_injectable_kwargs(
+    func: t.Callable[..., t.Any], passed_args: int, passed_kwargs: t.Collection[str]
+) -> t.Dict[str, t.Any]:
     parameters = inspect.signature(func, eval_str=True).parameters
 
-    injectable_parameters: t.List[inspect.Parameter] = []
-    for parameter in parameters.values():
+    injectable_parameters: t.Dict[str, t.Any] = {}
+    for parameter in [*parameters.values()][passed_args:]:
+        # Injectable parameters MUST have an annotation and no default
         if (
             parameter.annotation is inspect.Parameter.empty
-            and parameter.default is inspect.Parameter.empty
-            and parameter.kind is not inspect.Parameter.POSITIONAL_ONLY
+            or parameter.default is not inspect.Parameter.empty
+            # Injecting positional only parameters is far too annoying
+            or parameter.kind is inspect.Parameter.POSITIONAL_ONLY
+            # If a kwarg has been passed then we don't want to replace it
+            or parameter.name in passed_kwargs
         ):
             continue
 
-        if issubclass(parameter.annotation, context.Context) or parameter.annotation is t_ex.Self:  # type: ignore[reportUnknownMemberType]
-            continue
+        injectable_parameters[parameter.name] = parameter.annotation
 
-        injectable_parameters.append(parameter)
-
-    injectable: t.Dict[str, t.Any] = {}
-    for parameter in injectable_parameters:
-        injectable[parameter.name] = parameter.annotation
-
-    return injectable
+    return injectable_parameters
 
 
 class LazyInjecting:
-    __slots__ = ("_func", "_processed", "_client", "_injectables", "_self", "__command_hook_type__")
+    __slots__ = ("_func", "_processed", "_client", "_self", "__lb_cmd_invoke_method__")
 
     def __init__(
         self,
         func: t.Callable[..., t.Awaitable[t.Any]],
-        injectables: t.Optional[t.Dict[str, t.Any]] = None,
         self_: t.Any = None,
         client: t.Optional[client_.Client] = None,
     ) -> None:
         self._func = func
-        self._injectables: t.Optional[t.Dict[str, t.Any]] = injectables
         self._self: t.Any = self_
         self._client: t.Optional[client_.Client] = client
 
     def __get__(self, instance: t.Any, owner: t.Type[t.Any]) -> LazyInjecting:
         if instance is not None:
-            return LazyInjecting(self._func, self._injectables, instance, self._client)
+            return LazyInjecting(self._func, instance, self._client)
         return self
 
     async def __call__(self, *args: t.Any, **kwargs: t.Any) -> t.Any:
@@ -81,10 +74,9 @@ class LazyInjecting:
         if self._client is None:
             raise RuntimeError("cannot prepare dependency injection as client not yet populated")
 
-        if self._injectables is None:
-            self._injectables = find_injectable_kwargs(self._func)
+        injectables = find_injectable_kwargs(self._func, len(args) + (self._self is not None), set(kwargs.keys()))
 
-        for name, type in self._injectables.items():
+        for name, type in injectables.items():
             new_kwargs[name] = await self._client._di_container.aget(type)
 
         if self._self is not None:

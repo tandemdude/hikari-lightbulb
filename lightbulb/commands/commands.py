@@ -22,20 +22,21 @@
 
 from __future__ import annotations
 
+import collections.abc
 import dataclasses
 import logging
 import typing as t
 
 import hikari
 
-from lightbulb.commands import hooks as hooks_
+from lightbulb.commands import execution
 from lightbulb.commands import options as options_
 from lightbulb.internal import di
 
 if t.TYPE_CHECKING:
+    from lightbulb import client as client_
     from lightbulb import context as context_
     from lightbulb.commands import groups
-    from lightbulb import client as client_
 
 __all__ = ["CommandData", "CommandMeta", "CommandBase", "CommandUtils", "UserCommand", "MessageCommand", "SlashCommand"]
 
@@ -53,16 +54,17 @@ _PRIMITIVE_OPTION_TYPES = (
 )
 
 
-@dataclasses.dataclass(slots=True, kw_only=True)
+@dataclasses.dataclass(slots=True)
 class CommandData:
     type: hikari.CommandType
     name: str
     description: str
     nsfw: bool
     localizations: t.Any  # TODO
+    hooks: t.Set[execution.ExecutionHook]
 
     options: t.Mapping[str, options_.OptionData[t.Any]]
-    hooks: t.Mapping[hooks_.HookType, str]
+    invoke_method: str
 
     parent: t.Optional[t.Union[groups.Group, groups.SubGroup]] = dataclasses.field(init=False, default=None)
 
@@ -92,10 +94,6 @@ class CommandMeta(type):
     def _is_option(item: t.Any) -> bool:
         return isinstance(item, options_.Option)
 
-    @staticmethod
-    def _is_hook(item: t.Any) -> bool:
-        return (ht := getattr(item, "__command_hook_type__", None)) is not None and isinstance(ht, hooks_.HookType)
-
     def __new__(cls, cls_name: str, bases: t.Tuple[type, ...], attrs: t.Dict[str, t.Any], **kwargs: t.Any) -> type:
         cmd_type: hikari.CommandType
         # Bodge because I cannot figure out how to avoid initialising all the kwargs in our
@@ -124,20 +122,24 @@ class CommandMeta(type):
         nsfw: bool = kwargs.pop("nsfw", False)
         localizations: t.Any = kwargs.pop("localizations", None)
 
+        raw_hooks: t.Any = kwargs.pop("hooks", None)
+        if raw_hooks is not None and not isinstance(raw_hooks, collections.abc.Iterable):
+            raise TypeError("'hooks' must be an iterable")
+
+        hooks: t.Set[t.Any] = set(t.cast(t.Iterable[t.Any], raw_hooks) if raw_hooks is not None else [])
+        if not any((isinstance(h, execution.ExecutionHook) for h in hooks)):
+            raise TypeError("all hooks must be an instance of ExecutionHook")
+
         options: t.Dict[str, options_.OptionData[t.Any]] = {}
-        hooks: t.Dict[hooks_.HookType, str] = {}
+        invoke_method: t.Optional[str] = None
         for name, item in attrs.items():
             if cls._is_option(item):
                 options[name] = item._data
-            elif cls._is_hook(item):
-                hook_type = getattr(item, "__command_hook_type__")
-                if hook_type in hooks:
-                    LOGGER.warning("Duplicate hook found for type %s in command %r - ignoring", hook_type, cls_name)
-                else:
-                    hooks[hook_type] = name
+            elif hasattr(item, "__lb_cmd_invoke_method__"):
+                invoke_method = name
 
-        if hooks_.HookType.ON_INVOKE not in hooks:
-            raise TypeError("'on_invoke' hook is required but could not be found")
+        if invoke_method is None:
+            raise TypeError("'invoke' registered method is required but could not be found")
 
         attrs["_"] = CommandUtils(
             command_data=CommandData(
@@ -146,8 +148,9 @@ class CommandMeta(type):
                 description=description,
                 nsfw=nsfw,
                 localizations=localizations,
-                options=options,
                 hooks=hooks,
+                options=options,
+                invoke_method=invoke_method,
             )
         )
 
@@ -218,7 +221,7 @@ class CommandBase:
 
     @classmethod
     def _populate_client_for_hooks(cls, client: client_.Client) -> None:
-        for hook_name in cls._.command_data.hooks.values():
+        for hook_name in [cls._.command_data.invoke_method]:
             if isinstance(hook := getattr(cls, hook_name), di.LazyInjecting):
                 hook._client = client
 

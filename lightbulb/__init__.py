@@ -22,6 +22,8 @@
 
 from lightbulb.client import *
 from lightbulb.commands import *
+from lightbulb.context import *
+from lightbulb import exceptions
 
 __all__ = [
     "Client",
@@ -31,9 +33,12 @@ __all__ = [
     "SlashCommand",
     "MessageCommand",
     "UserCommand",
-    "pre_invoke",
-    "on_invoke",
-    "post_invoke",
+    "ExecutionStep",
+    "ExecutionSteps",
+    "ExecutionHook",
+    "ExecutionPipeline",
+    "hook",
+    "invoke",
     "string",
     "integer",
     "boolean",
@@ -43,6 +48,8 @@ __all__ = [
     "role",
     "mentionable",
     "attachment",
+    "Context",
+    "exceptions",
 ]
 
 __version__ = "3.0.0"

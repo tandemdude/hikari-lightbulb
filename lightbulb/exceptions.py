@@ -18,47 +18,45 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-
 from __future__ import annotations
 
-__all__ = ["Context"]
-
-import dataclasses
 import typing as t
 
 if t.TYPE_CHECKING:
-    import hikari
-
-    from lightbulb import client as client_
-    from lightbulb import commands
+    from lightbulb.commands import execution
 
 
-@dataclasses.dataclass(slots=True)
-class Context:
-    client: client_.Client
+class LightbulbException(Exception):
+    ...
 
-    interaction: hikari.CommandInteraction
-    options: t.Sequence[hikari.CommandInteractionOption]
 
-    command: commands.CommandBase
+class ExecutionException(LightbulbException):
+    ...
 
-    @property
-    def guild_id(self) -> t.Optional[hikari.Snowflake]:
-        return self.interaction.guild_id
 
-    @property
-    def channel_id(self) -> hikari.Snowflake:
-        return self.interaction.channel_id
+class ExecutionHookFailedException(ExecutionException):
+    def __init__(self, hook: execution.ExecutionHook, cause: Exception) -> None:
+        super().__init__(f"exception encountered during execution of hook {hook}")
+        self.hook = hook
+        self.__cause__ = cause
 
-    @property
-    def user(self) -> hikari.User:
-        return self.interaction.user
 
-    @property
-    def member(self) -> t.Optional[hikari.InteractionMember]:
-        return self.interaction.member
+class ExecutionFailedException(ExecutionException):
+    def __init__(self, causes: t.Sequence[Exception], aborted: bool, step: execution.ExecutionStep) -> None:
+        super().__init__(f"{'multiple exceptions ' if len(causes) > 1 else 'exception '}encountered during command execution")
+
+        if len(causes) == 1:
+            self.__cause__ = causes[0]
+
+        self.causes = causes
+        self.aborted = aborted
+        self.step = step
 
     @property
-    def command_data(self) -> commands.CommandData:
-        return self.command._.command_data
+    def hook_exceptions(self) -> t.Sequence[ExecutionHookFailedException]:
+        return [e for e in self.causes if isinstance(e, ExecutionHookFailedException)]
+
+    @property
+    def invocation_exception(self) -> t.Optional[Exception]:
+        maybe_exc = [e for e in self.causes if not isinstance(e, ExecutionHookFailedException)]
+        return maybe_exc[0] if maybe_exc else None

@@ -20,10 +20,10 @@
 # SOFTWARE.
 
 
+from lightbulb import exceptions
 from lightbulb.client import *
 from lightbulb.commands import *
 from lightbulb.context import *
-from lightbulb import exceptions
 
 __all__ = [
     "Client",

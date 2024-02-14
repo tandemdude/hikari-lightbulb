@@ -43,7 +43,9 @@ class ExecutionHookFailedException(ExecutionException):
 
 class ExecutionFailedException(ExecutionException):
     def __init__(self, causes: t.Sequence[Exception], aborted: bool, step: execution.ExecutionStep) -> None:
-        super().__init__(f"{'multiple exceptions ' if len(causes) > 1 else 'exception '}encountered during command execution")
+        super().__init__(
+            f"{'multiple exceptions ' if len(causes) > 1 else 'exception '}encountered during command execution"
+        )
 
         if len(causes) == 1:
             self.__cause__ = causes[0]

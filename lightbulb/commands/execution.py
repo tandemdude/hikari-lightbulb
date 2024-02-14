@@ -121,6 +121,7 @@ class ExecutionPipeline:
             if self._abort is not None:
                 causes.append(self._abort)
 
+            assert self._current_step is not None
             raise exceptions.ExecutionFailedException(causes, self._abort is not None, self._current_step)
 
         await getattr(self._context.command, self._context.command_data.invoke_method)(self._context)

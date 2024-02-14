@@ -17,6 +17,8 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+__all__ = ["CommandCollection"]
+
 import dataclasses
 import typing as t
 

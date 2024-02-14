@@ -17,14 +17,17 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+__all__ = ["LazyInjecting"]
+
 import contextvars
 import inspect
 import typing as t
 
-import svcs
+if t.TYPE_CHECKING:
+    import svcs
 
 AnyCallableT = t.TypeVar("AnyCallableT", bound=t.Callable[..., t.Any])
-_di_container = contextvars.ContextVar("_di_container")
+_di_container: contextvars.ContextVar[svcs.Container] = contextvars.ContextVar("_di_container")
 
 
 def find_injectable_kwargs(

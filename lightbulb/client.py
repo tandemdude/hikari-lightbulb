@@ -29,8 +29,8 @@ from lightbulb import context as context_
 from lightbulb.commands import commands
 from lightbulb.commands import execution
 from lightbulb.commands import groups
-from lightbulb.internal import utils
 from lightbulb.internal import di
+from lightbulb.internal import utils
 
 __all__ = ["Client", "GatewayEnabledClient", "RestEnabledClient", "client_from_app"]
 
@@ -239,7 +239,7 @@ class Client(abc.ABC):
             await execution.ExecutionPipeline(context, self._execution_step_order)._run()
         except Exception as e:
             # TODO - dispatch to error handler
-            ...
+            LOGGER.error("Error during command invocation", exc_info=(type(e), e, e.__traceback__))
         finally:
             di._di_container.reset(token)
 

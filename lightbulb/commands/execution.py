@@ -151,6 +151,8 @@ def hook(step: ExecutionStep) -> t.Callable[[ExecutionHookFuncT], ExecutionHook]
 
 
 def invoke(func: t.Callable[..., t.Awaitable[t.Any]]) -> t.Callable[[context_.Context], t.Awaitable[t.Any]]:
-    replacement = di.LazyInjecting(func)
-    setattr(replacement, "__lb_cmd_invoke_method__", "_")
-    return replacement
+    if not isinstance(func, di.LazyInjecting):
+        func = di.LazyInjecting(func)
+
+    setattr(func, "__lb_cmd_invoke_method__", "_")
+    return func

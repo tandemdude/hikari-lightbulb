@@ -39,6 +39,11 @@ CommandOrGroupT = t.TypeVar("CommandOrGroupT", bound=t.Union[groups.Group, t.Typ
 CommandMapT = t.MutableMapping[hikari.Snowflakeish, t.MutableMapping[str, utils.CommandCollection]]
 
 GLOBAL_COMMAND_KEY = 0
+DEFAULT_EXECUTION_STEP_ORDER = (
+    execution.ExecutionSteps.MAX_CONCURRENCY,
+    execution.ExecutionSteps.CHECKS,
+    execution.ExecutionSteps.COOLDOWNS,
+)
 LOGGER = logging.getLogger("lightbulb.client")
 
 
@@ -67,11 +72,7 @@ class Client(abc.ABC):
         self,
         rest: hikari.api.RESTClient,
         default_enabled_guilds: t.Sequence[hikari.Snowflakeish],
-        execution_step_order: t.Sequence[execution.ExecutionStep] = (
-            execution.ExecutionSteps.MAX_CONCURRENCY,
-            execution.ExecutionSteps.CHECKS,
-            execution.ExecutionSteps.COOLDOWNS,
-        ),
+        execution_step_order: t.Sequence[execution.ExecutionStep],
     ) -> None:
         self._rest: hikari.api.RESTClient = rest
         self._default_enabled_guilds = default_enabled_guilds
@@ -222,17 +223,11 @@ class Client(abc.ABC):
         else:
             command = root_command
 
-        command_data = command._.command_data
-
         command_instance = command()
-        # TODO - resolve options for subcommands
-        context = self.build_context(
-            interaction, getattr("TODO", "options", interaction.options) or [], command_instance
-        )
-        command_instance._current_context = context
-        command_instance._resolved_option_cache = {}
+        context = self.build_context(interaction, options or [], command_instance)
+        command_instance._set_context(context)
 
-        LOGGER.debug("%s - invoking command", command_data.name)
+        LOGGER.debug("%s - invoking command", command._.command_data.name)
 
         token = di._di_container.set(self._di_container)
         try:
@@ -247,8 +242,8 @@ class Client(abc.ABC):
 class GatewayEnabledClient(Client):
     __slots__ = ("_app",)
 
-    def __init__(self, app: GatewayClientAppT, default_enabled_guilds: t.Sequence[hikari.Snowflakeish]) -> None:
-        super().__init__(app.rest, default_enabled_guilds)
+    def __init__(self, app: GatewayClientAppT, *args: t.Any, **kwargs: t.Any) -> None:
+        super().__init__(app.rest, *args, **kwargs)
         self._app = app
 
         async def wrap_listener(
@@ -276,8 +271,8 @@ class GatewayEnabledClient(Client):
 class RestEnabledClient(Client):
     __slots__ = ("_app",)
 
-    def __init__(self, app: RestClientAppT, default_enabled_guilds: t.Sequence[hikari.Snowflakeish]) -> None:
-        super().__init__(app.rest, default_enabled_guilds)
+    def __init__(self, app: RestClientAppT, *args: t.Any, **kwargs: t.Any) -> None:
+        super().__init__(app.rest, *args, **kwargs)
         self._app = app
 
         app.interaction_server.set_listener(hikari.CommandInteraction, self.handle_rest_application_command_interaction)
@@ -292,10 +287,11 @@ class RestEnabledClient(Client):
 def client_from_app(
     app: t.Union[GatewayClientAppT, RestClientAppT],
     default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (GLOBAL_COMMAND_KEY,),
+    execution_step_order: t.Sequence[execution.ExecutionStep] = DEFAULT_EXECUTION_STEP_ORDER,
 ) -> Client:
     if isinstance(app, GatewayClientAppT):
         LOGGER.debug("building gateway client from app")
-        return GatewayEnabledClient(app, default_enabled_guilds)
+        return GatewayEnabledClient(app, default_enabled_guilds, execution_step_order)
 
     LOGGER.debug("building REST client from app")
-    return RestEnabledClient(app, default_enabled_guilds)
+    return RestEnabledClient(app, default_enabled_guilds, execution_step_order)

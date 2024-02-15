@@ -95,20 +95,21 @@ class Client(abc.ABC):
 
     @t.overload
     def register(
-        self, guilds: t.Optional[t.Sequence[hikari.Snowflakeish]] = None
+        self, *, guilds: t.Optional[t.Sequence[hikari.Snowflakeish]] = None
     ) -> t.Callable[[CommandOrGroupT], CommandOrGroupT]:
         ...
 
     @t.overload
     def register(
-        self, guilds: t.Optional[t.Sequence[hikari.Snowflakeish]], command_or_group: CommandOrGroupT
+        self, command: CommandOrGroupT, *, guilds: t.Optional[t.Sequence[hikari.Snowflakeish]] = None
     ) -> CommandOrGroupT:
         ...
 
     def register(
         self,
+        command: t.Optional[CommandOrGroupT] = None,
+        *,
         guilds: t.Optional[t.Sequence[hikari.Snowflakeish]] = None,
-        command_or_group: t.Optional[CommandOrGroupT] = None,
     ) -> t.Union[CommandOrGroupT, t.Callable[[CommandOrGroupT], CommandOrGroupT]]:
         register_in: t.Sequence[hikari.Snowflakeish]
         if not guilds and guilds is not None:
@@ -122,22 +123,22 @@ class Client(abc.ABC):
             register_in = maybe_guilds if maybe_guilds is not hikari.UNDEFINED else ()
 
         # Used as a function
-        if command_or_group is not None:
+        if command is not None:
             name = (
-                command_or_group.name
-                if isinstance(command_or_group, groups.Group)
-                else command_or_group._.command_data.name
+                command.name
+                if isinstance(command, groups.Group)
+                else command._.command_data.name
             )
 
             for guild_id in register_in:
-                self._commands[guild_id][name].put(command_or_group)
+                self._commands[guild_id][name].put(command)
 
             LOGGER.debug("command %s registered successfully", name)
-            return command_or_group
+            return command
 
         # Used as a decorator
-        def _inner(command_or_group_: CommandOrGroupT) -> CommandOrGroupT:
-            return self.register(guilds, command_or_group_)
+        def _inner(command_: CommandOrGroupT) -> CommandOrGroupT:
+            return self.register(command_, guilds=register_in)
 
         return _inner
 

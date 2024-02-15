@@ -163,12 +163,7 @@ class CommandUtils:
         if option._data.name in context.command._resolved_option_cache:
             return t.cast(T, context.command._resolved_option_cache[option._data.name])
 
-        # TODO - groups
-        options = context.interaction.options
-        if options is None:
-            raise ValueError("options is None ??")
-
-        found = [opt for opt in options if opt.name == option._data.name]
+        found = [opt for opt in context.options if opt.name == option._data.name]
 
         if not found or (option._data.type not in _PRIMITIVE_OPTION_TYPES and context.interaction.resolved is None):
             if option._data.default is hikari.UNDEFINED:
@@ -216,6 +211,10 @@ class CommandBase:
         new._current_context = None
         new._resolved_option_cache = {}
         return new
+
+    def _set_context(self, context: context_.Context) -> None:
+        self._current_context = context
+        self._resolved_option_cache = {}
 
     @classmethod
     def as_command_builder(cls) -> hikari.api.CommandBuilder:

@@ -71,7 +71,7 @@ class GroupMixin(abc.ABC):
         return maybe_command
 
 
-@dataclasses.dataclass(slots=True, kw_only=True, frozen=True)
+@dataclasses.dataclass(slots=True, frozen=True)
 class SubGroup(GroupMixin):
     name: str
     description: str
@@ -88,11 +88,11 @@ class SubGroup(GroupMixin):
         )
 
 
-@dataclasses.dataclass(slots=True, kw_only=True, frozen=True)
+@dataclasses.dataclass(slots=True, frozen=True)
 class Group(GroupMixin):
     name: str
     description: str
-    nsfw: bool
+    nsfw: bool = False
     _commands: GroupCommandMappingT = dataclasses.field(init=False, default_factory=dict)
 
     def subgroup(self, name: str, description: str) -> SubGroup:

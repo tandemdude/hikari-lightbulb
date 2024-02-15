@@ -55,7 +55,7 @@ def _non_undefined_or(item: hikari.UndefinedOr[T], default: D) -> t.Union[T, D]:
     return item if item is not hikari.UNDEFINED else default
 
 
-@dataclasses.dataclass(slots=True, kw_only=True)
+@dataclasses.dataclass(slots=True)
 class OptionData(t.Generic[D]):
     type: hikari.OptionType
     name: str

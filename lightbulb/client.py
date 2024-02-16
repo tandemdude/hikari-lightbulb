@@ -134,6 +134,41 @@ class Client(abc.ABC):
         *,
         guilds: t.Optional[t.Sequence[hikari.Snowflakeish]] = None,
     ) -> t.Union[CommandOrGroupT, t.Callable[[CommandOrGroupT], CommandOrGroupT]]:
+        """
+        Register a command or group with this client instance. Optionally, a sequence of guild ids can
+        be provided to make the commands created in specific guilds only - overriding the value for
+        default enabled guilds.
+
+        This method can be used as a function or a second order decorator.
+
+        Args:
+            command (:obj:`~typing.Union` [ :obj:`~typing.Type` [ :obj:`~lightbulb.commands.commands.CommandBase ], :obj:`~lightbulb.commands.groups.Group` ]): The
+                command class or command group to register with the client.
+            guilds (:obj:`~typing.Optional` [ :obj:`~typing.Sequence` [ :obj:`~hikari.Snowflakeish` ]]): The guilds
+                to create the command or group in. If set to :obj:`None`, then this will fall back to the default
+                enabled guilds. To override default enabled guilds and make the command or group global, this should
+                be set to an empty sequence.
+
+        Returns:
+            The registered command or group, unchanged.
+
+        Example:
+
+            .. code-block:: python
+
+                client = lightbulb.client_from_app(...)
+
+                # valid
+                @client.register(guilds=[...])
+                class Example(
+                    lightbulb.SlashCommand,
+                    ...
+                ):
+                    ...
+
+                # also valid
+                client.register(Example, guilds=[...])
+        """  # noqa: E501
         register_in: t.Sequence[hikari.Snowflakeish]
         if not guilds and guilds is not None:
             # commands should ignore default guilds and be global
@@ -169,6 +204,12 @@ class Client(abc.ABC):
         return self._application
 
     async def sync_application_commands(self) -> None:
+        """
+        Sync all application commands registered to the bot with discord.
+
+        Returns:
+            :obj:`None`
+        """
         # TODO - implement syncing logic - for now just do create
         LOGGER.info("syncing commands with discord")
         application = await self._ensure_application()
@@ -204,6 +245,19 @@ class Client(abc.ABC):
         options: t.Sequence[hikari.CommandInteractionOption],
         command_cls: t.Type[commands.CommandBase],
     ) -> context_.Context:
+        """
+        Build a context object from the given parameters.
+
+        Args:
+            interaction (:obj:`~hikari.CommandInteraction`): The interaction for the command invocation.
+            options (:obj:`~typing.Sequence` [ :obj:`hikari.CommandInteractionOption` ]): The options to use to
+                invoke the command with.
+            command_cls (:obj:`~typing.Type` [ :obj:`~lightbulb.commands.commands.CommandBase` ]): The command class
+                that represents the command that should be invoked for the interaction.
+
+        Returns:
+            :obj:`~lightbulb.context.Context`: The built context.
+        """
         return context_.Context(
             client=self,
             interaction=interaction,
@@ -212,6 +266,18 @@ class Client(abc.ABC):
         )
 
     async def handle_application_command_interaction(self, interaction: hikari.CommandInteraction) -> None:
+        """
+        Handle the given command interaction - invoking the correct command.
+
+        Args:
+            interaction (:obj:`~hikari.CommandInteraction`): The command interaction to handle.
+
+        Returns:
+            :obj:`None`
+        """
+        if not isinstance(interaction, hikari.CommandInteraction):  # type: ignore[reportUnnecessaryIsInstance]
+            return
+
         command_path = [interaction.command_name]
 
         subcommand: t.Optional[hikari.CommandInteractionOption]
@@ -258,6 +324,13 @@ class Client(abc.ABC):
 
 
 class GatewayEnabledClient(Client):
+    """
+    Client implementation for applications that support gateway events.
+
+    Warning:
+        This client should not be instantiated manually. Use :func:`~client_from_app` instead.
+    """
+
     __slots__ = ("_app",)
 
     def __init__(self, app: GatewayClientAppT, *args: t.Any, **kwargs: t.Any) -> None:
@@ -287,6 +360,13 @@ class GatewayEnabledClient(Client):
 
 
 class RestEnabledClient(Client):
+    """
+    Client implementation for applications that support an interaction server.
+
+    Warning:
+        This client should not be instantiated manually. Use :func:`~client_from_app` instead.
+    """
+
     __slots__ = ("_app",)
 
     def __init__(self, app: RestClientAppT, *args: t.Any, **kwargs: t.Any) -> None:
@@ -307,6 +387,19 @@ def client_from_app(
     default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (GLOBAL_COMMAND_KEY,),
     execution_step_order: t.Sequence[execution.ExecutionStep] = DEFAULT_EXECUTION_STEP_ORDER,
 ) -> Client:
+    """
+    Create and return the appropriate client implementation from the given application.
+
+    Args:
+        app: Application that either supports gateway events, or an interaction server.
+        default_enabled_guilds (:obj:`~typing.Sequence` [ :obj:`~hikari.Snowflakeish` ]): The guilds that application
+            commands should be created in by default.
+        execution_step_order (:obj:`~typing.Sequence` [ :obj:`~lightbulb.commands.execution.ExecutionStep` ]): The
+            order that execution steps will be run in upon command processing.
+
+    Returns:
+        :obj:`~Client`: The created client instance.
+    """
     if isinstance(app, GatewayClientAppT):
         LOGGER.debug("building gateway client from app")
         return GatewayEnabledClient(app, default_enabled_guilds, execution_step_order)

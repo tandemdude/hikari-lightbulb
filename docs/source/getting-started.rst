@@ -4,7 +4,7 @@
 Getting Started
 ===============
 
-Lightbulb can be installed using Python's pip:
+Lightbulb can be installed using pip:
 
 ``$ pip install hikari-lightbulb``
 
@@ -19,23 +19,29 @@ Creating Your First Bot
 Your first bot can be written in just a few lines of code:
 ::
 
-    # Import the command handler
+    # Import the libraries
+    import hikari
     import lightbulb
 
-    # Instantiate a Bot instance
-    bot = lightbulb.BotApp(token="your_token_here", prefix="your_prefix_here")
+    # Create a GatewayBot instance
+    bot = hikari.GatewayBot("your_token_here")
+    client = lightbulb.client_from_app(bot)
 
-    # Register the command to the bot
-    @bot.command
-    # Use the command decorator to convert the function into a command
-    @lightbulb.command("ping", "checks the bot is alive")
-    # Define the command type(s) that this command implements
-    @lightbulb.implements(lightbulb.PrefixCommand)
-    # Define the command's callback. The callback should take a single argument which will be
-    # an instance of a subclass of lightbulb.Context when passed in
-    async def ping(ctx: lightbulb.Context) -> None:
-        # Send a message to the channel the command was used in
-        await ctx.respond("Pong!")
+    # Register the command with the client
+    @client.register()
+    class Ping(
+        # Command type - builtins include SlashCommand, UserCommand, and MessageCommand
+        lightbulb.SlashCommand,
+        # Command declaration parameters
+        name="ping",
+        description="checks the bot is alive",
+    ):
+        # Define the command's invocation method. This method must take the context as the first
+        # argument (excluding self) which contains information about the command invocation.
+        @lightbulb.invoke
+        async def invoke(self, ctx: lightbulb.Context) -> None:
+            # Send a message to the channel the command was used in
+            await ctx.respond("Pong!")
 
     # Run the bot
     # Note that this is blocking meaning no code after this line will run
@@ -45,18 +51,12 @@ Your first bot can be written in just a few lines of code:
 When this code is run, you will get some logging information and a Hikari banner printed across your
 terminal. The bot will be online and you can test out the command!
 
-.. note::
-    You should note that the order that the decorators are applied is rather important. The ``lightbulb.implements``
-    decorator should **always** be on the bottom of the stack, followed by the ``lightbulb.command`` decorator on top
-    of it. The ``bot.command`` decorator **must** always be on the top of the stack if you are using it.
-
 Optional: Setting up logging
 ============================
 
-Lightbulb uses the ``logging`` library for the logging of useful information for debugging and testing purposes. For
-example, if the logging level is set to debug, messages will be displayed every time a command, plugin or extension
-is added or removed. This can be changed by using the ``logs`` argument if you want to keep the customization that
-``hikari`` does by default. Alternatively, you can use ``logging`` directly.
+Lightbulb uses the ``logging`` library for the logging of useful information for debugging and testing purposes.
+This can be changed by using the ``logs`` argument of the ``GatewayBot`` constructor. Alternatively, you can use
+``logging`` directly.
 
 Changing the logging level with using the ``logs`` argument:
 ::
@@ -65,7 +65,8 @@ Changing the logging level with using the ``logs`` argument:
     import lightbulb
 
     # Set to debug for both lightbulb and hikari
-    bot = lightbulb.BotApp(..., logs="DEBUG")
+    bot = hikari.GatewayBot(..., logs="DEBUG")
+    ...
 
     bot.run()
 
@@ -76,7 +77,7 @@ Using different logging levels for both ``hikari`` and ``lightbulb``:
     import lightbulb
 
     # Set different logging levels for both lightbulb and hikari
-    bot = lightbulb.BotApp(
+    bot = hikari.GatewayBot(
         ...,
         logs={
             "version": 1,
@@ -88,6 +89,7 @@ Using different logging levels for both ``hikari`` and ``lightbulb``:
             },
         },
     )
+    ...
 
     bot.run()
 

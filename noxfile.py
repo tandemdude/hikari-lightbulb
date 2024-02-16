@@ -43,14 +43,14 @@ def format_fix(session):
 
 
 @nox.session()
-def format_check(session):
+def format_check(session: nox.Session):
     session.install("-Ur", "dev-requirements/formatting.txt")
     session.run("python", "-m", "ruff", "format", *SCRIPT_PATHS, "--check")
     session.run("python", "-m", "ruff", "--output-format", "github", *SCRIPT_PATHS)
 
 
 @nox.session()
-def typecheck(session):
+def typecheck(session: nox.Session):
     session.install("-Ur", "requirements.txt")
     session.install("-Ur", "crontrigger_requirements.txt")
     session.install("-Ur", "dev-requirements/pyright.txt")
@@ -58,7 +58,7 @@ def typecheck(session):
 
 
 @nox.session()
-def slotscheck(session):
+def slotscheck(session: nox.Session):
     session.install("-Ur", "requirements.txt")
     session.install("-Ur", "crontrigger_requirements.txt")
     session.install("-Ur", "dev-requirements/slotscheck.txt")
@@ -66,7 +66,7 @@ def slotscheck(session):
 
 
 @nox.session(reuse_venv=True)
-def sphinx(session):
+def sphinx(session: nox.Session):
     session.install("-Ur", "dev-requirements/docs.txt")
     session.install("-Ur", "crontrigger_requirements.txt")
     session.install("-Ur", "requirements.txt")

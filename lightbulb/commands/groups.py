@@ -51,8 +51,8 @@ class GroupMixin(abc.ABC):
 
     def register(self, command: t.Optional[CommandT] = None) -> t.Union[CommandT, t.Callable[[CommandT], CommandT]]:
         if command is not None:
-            self._commands[command._.command_data.name] = command
-            command._.command_data.parent = self  # type: ignore[reportGeneralTypeIssues]
+            self._commands[command._command_data.name] = command
+            command._command_data.parent = self  # type: ignore[reportGeneralTypeIssues]
             return command
 
         def _inner(_command: CommandT) -> CommandT:

@@ -20,29 +20,56 @@
 # SOFTWARE.
 from __future__ import annotations
 
+__all__ = [
+    "LightbulbException",
+    "ExecutionException",
+    "HookFailedException",
+    "InvocationFailedException",
+    "PipelineFailedException",
+]
+
 import typing as t
 
 if t.TYPE_CHECKING:
+    from lightbulb import context as context_
     from lightbulb.commands import execution
 
 
 class LightbulbException(Exception):
-    ...
+    """Base class for all exceptions used by lightbulb."""
 
 
 class ExecutionException(LightbulbException):
-    ...
+    """Base class for exceptions that can be encountered during a command execution pipeline."""
 
 
-class ExecutionHookFailedException(ExecutionException):
-    def __init__(self, hook: execution.ExecutionHook, cause: Exception) -> None:
+class HookFailedException(ExecutionException):
+    """Exception raised when a command execution hook triggered a failure."""
+
+    def __init__(self, cause: Exception, hook: execution.ExecutionHook, abort: bool) -> None:
         super().__init__(f"exception encountered during execution of hook {hook}")
-        self.hook = hook
         self.__cause__ = cause
+        self.hook = hook
+        """The hook that triggered the failure."""
+        self.abort = abort
+        """Whether the failure caused the pipeline to be aborted."""
 
 
-class ExecutionFailedException(ExecutionException):
-    def __init__(self, causes: t.Sequence[Exception], aborted: bool, step: execution.ExecutionStep) -> None:
+class InvocationFailedException(ExecutionException):
+    """Exception raised when a command invocation function raised an error during execution."""
+
+    def __init__(self, cause: Exception, context: context_.Context) -> None:
+        super().__init__("exception encountered during command invocation")
+
+        self.__cause__ = cause
+        self.context = context
+        """The context that caused the command invocation to fail."""
+
+
+class PipelineFailedException(ExecutionException):
+    """Exception raised when an :obj:`~lightbulb.commands.execution.ExecutionPipeline` run failed."""
+
+    def __init__(self, causes: t.Sequence[Exception], pipeline: execution.ExecutionPipeline) -> None:
         super().__init__(
             f"{'multiple exceptions ' if len(causes) > 1 else 'exception '}encountered during command execution"
         )
@@ -51,14 +78,19 @@ class ExecutionFailedException(ExecutionException):
             self.__cause__ = causes[0]
 
         self.causes = causes
-        self.aborted = aborted
-        self.step = step
+        """The causes of the pipeline failure. If there is only one, the ``__cause__`` attribute will also be set."""
+        self.pipeline = pipeline
+        """The pipeline that failed - causing this exception to be thrown."""
 
     @property
-    def hook_exceptions(self) -> t.Sequence[ExecutionHookFailedException]:
-        return [e for e in self.causes if isinstance(e, ExecutionHookFailedException)]
+    def step(self) -> t.Optional[execution.ExecutionStep]:
+        """
+        The execution step that the pipeline failed on. Will be :obj:`None` if all execution
+        steps passed and the failure was instead caused by an exception raised by the command
+        invocation function.
 
-    @property
-    def invocation_exception(self) -> t.Optional[Exception]:
-        maybe_exc = [e for e in self.causes if not isinstance(e, ExecutionHookFailedException)]
-        return maybe_exc[0] if maybe_exc else None
+        Returns:
+            :obj:`~typing.Optional` [ :obj:`~lightbulb.commands.execution.ExecutionStep` ]: The step that
+                caused the failure, or :obj:`None` if caused by command invocation function.
+        """
+        return self.pipeline._current_step

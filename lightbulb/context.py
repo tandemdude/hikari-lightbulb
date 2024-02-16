@@ -18,8 +18,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-
 from __future__ import annotations
 
 __all__ = ["Context"]
@@ -43,6 +41,9 @@ class Context:
 
     command: commands.CommandBase
 
+    def __post_init__(self) -> None:
+        self.command._set_context(self)
+
     @property
     def guild_id(self) -> t.Optional[hikari.Snowflake]:
         return self.interaction.guild_id
@@ -61,4 +62,4 @@ class Context:
 
     @property
     def command_data(self) -> commands.CommandData:
-        return self.command._.command_data
+        return self.command._command_data

@@ -18,8 +18,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-
 from __future__ import annotations
 
 import dataclasses
@@ -97,7 +95,7 @@ class Option(t.Generic[T, D]):
         if instance is None or instance._current_context is None:
             return self._unbound_default
 
-        return instance._.resolve_option(instance._current_context, self)
+        return instance._resolve_option(self)
 
 
 class ContextMenuOption(Option[CtxMenuOptionReturnT, CtxMenuOptionReturnT]):

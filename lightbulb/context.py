@@ -34,32 +34,43 @@ if t.TYPE_CHECKING:
 
 @dataclasses.dataclass(slots=True)
 class Context:
+    """Dataclass representing the context for a single command invocation."""
+
     client: client_.Client
+    """The client that created the context."""
 
     interaction: hikari.CommandInteraction
+    """The interaction for the command invocation."""
     options: t.Sequence[hikari.CommandInteractionOption]
+    """The options to use for the command invocation."""
 
     command: commands.CommandBase
+    """Command instance for the command invocation."""
 
     def __post_init__(self) -> None:
         self.command._set_context(self)
 
     @property
     def guild_id(self) -> t.Optional[hikari.Snowflake]:
+        """The ID of the guild that the command was invoked in. :obj:`None` if the invocation occurred in DM."""
         return self.interaction.guild_id
 
     @property
     def channel_id(self) -> hikari.Snowflake:
+        """The ID of the channel that the command was invoked in."""
         return self.interaction.channel_id
 
     @property
     def user(self) -> hikari.User:
+        """The user that invoked the command."""
         return self.interaction.user
 
     @property
     def member(self) -> t.Optional[hikari.InteractionMember]:
+        """The member that invoked the command, if it was invoked in a guild."""
         return self.interaction.member
 
     @property
     def command_data(self) -> commands.CommandData:
+        """The metadata for the invoked command."""
         return self.command._command_data

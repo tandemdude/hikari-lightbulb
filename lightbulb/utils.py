@@ -43,6 +43,7 @@ class _EmptyUser(hikari.User):
 
 
 EMPTY_USER = _EmptyUser()
+"""Placeholder for a user. Used when attempting to get value for an option on a class instead of instance."""
 EMPTY_MESSAGE = hikari.Message(
     app=None,  # type: ignore[reportGeneralTypeIssues]
     id=hikari.Snowflake(0),
@@ -75,6 +76,7 @@ EMPTY_MESSAGE = hikari.Message(
     role_mention_ids=hikari.UNDEFINED,
     mentions_everyone=hikari.UNDEFINED,
 )
+"""Placeholder for a message. Used when attempting to get value for an option on a class instead of instance."""
 EMPTY_CHANNEL = hikari.PartialChannel(
     app=None,  # type: ignore[reportGeneralTypeIssues]
     id=hikari.Snowflake(0),
@@ -101,6 +103,7 @@ EMPTY_ROLE = hikari.Role(
     is_available_for_purchase=False,
     is_guild_linked_role=False,
 )
+"""Placeholder for a role. Used when attempting to get value for an option on a class instead of instance."""
 EMPTY_ATTACHMENT = hikari.Attachment(
     id=hikari.Snowflake(0),
     url="",
@@ -114,3 +117,4 @@ EMPTY_ATTACHMENT = hikari.Attachment(
     duration=None,
     waveform=None,
 )
+"""Placeholder for an attachment. Used when attempting to get value for an option on a class instead of instance."""

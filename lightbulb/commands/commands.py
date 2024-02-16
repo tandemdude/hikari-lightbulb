@@ -18,8 +18,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-
 from __future__ import annotations
 
 import collections.abc
@@ -36,7 +34,7 @@ if t.TYPE_CHECKING:
     from lightbulb import context as context_
     from lightbulb.commands import groups
 
-__all__ = ["CommandData", "CommandMeta", "CommandBase", "CommandUtils", "UserCommand", "MessageCommand", "SlashCommand"]
+__all__ = ["CommandData", "CommandMeta", "CommandBase", "UserCommand", "MessageCommand", "SlashCommand"]
 
 T = t.TypeVar("T")
 D = t.TypeVar("D")
@@ -54,19 +52,39 @@ _PRIMITIVE_OPTION_TYPES = (
 
 @dataclasses.dataclass(slots=True)
 class CommandData:
+    """
+    Dataclass for storing generic information about the command relevant
+    for its creation and execution.
+    """
+
     type: hikari.CommandType
+    """The type of the command."""
     name: str
+    """The name of the command."""
     description: str
+    """The description of the command."""
     nsfw: bool
+    """Whether the command is marked as nsfw."""
     localizations: t.Any  # TODO
+    """Not yet implemented"""
     hooks: t.Set[execution.ExecutionHook]
+    """Hooks to run prior to the invoke method being executed."""
 
     options: t.Mapping[str, options_.OptionData[t.Any]]
+    """Map of option name to option data for the command options."""
     invoke_method: str
+    """The attribute name of the invoke method for the command."""
 
     parent: t.Optional[t.Union[groups.Group, groups.SubGroup]] = dataclasses.field(init=False, default=None)
+    """The group that the command belongs to, or :obj:`None` if not applicable."""
 
     def as_command_builder(self) -> hikari.api.CommandBuilder:
+        """
+        Convert the command data into a hikari command builder object.
+
+        Returns:
+            :obj:`hikari.api.CommandBuilder`: The builder object for this command data.
+        """
         if self.type is hikari.CommandType.SLASH:
             bld = hikari.impl.SlashCommandBuilder(name=self.name, description=self.description)
             for option in self.options.values():
@@ -76,6 +94,12 @@ class CommandData:
         return hikari.impl.ContextMenuCommandBuilder(type=self.type, name=self.name)
 
     def to_command_option(self) -> hikari.CommandOption:
+        """
+        Convert the command data into a sub-command command option.
+
+        Returns:
+            :obj:`hikari.CommandOption`: The sub-command option for this command data.
+        """
         return hikari.CommandOption(
             type=hikari.OptionType.SUB_COMMAND,
             name=self.name,
@@ -86,6 +110,26 @@ class CommandData:
 
 
 class CommandMeta(type):
+    """
+    Metaclass for defining application commands.
+
+    This metaclass handles the creation of your own application command implementation using
+    the class parameters passed upon class declaration. It is not recommended that you
+    use this metaclass directly - your commands should instead inherit from one of the built-in
+    implementations (:obj:`~SlashCommand`, :obj:`~UserCommand`, :obj:`~MessageCommand`).
+
+    Parameters:
+        type (:obj:`hikari.CommandType`): The type of the command that the class implements. This should not
+            be passed manually - it is filled automatically depending on the command implementation class that
+            is subclassed. I.e. subclassing :obj:`SlashCommand` sets this parameter to :obj:`hikari.CommandType.SLASH`.
+        name (:obj:`str`, required): The name of the command.
+        description (:obj:`str`, optional): The description of the command. Only required for slash commands.
+        nsfw (:obj:`bool`, optional): Whether the command should be marked as nsfw. Defaults to :obj:`False`.
+        localizations (TODO, optional): Not yet implemented
+        hooks (:obj:`~typing.Sequence` [ :obj:`~lightbulb.commands.execution.ExecutionHook` ], optional): The hooks to
+            run before the command invocation function is executed. Defaults to an empty set.
+    """
+
     __command_types: t.ClassVar[t.Dict[type, hikari.CommandType]] = {}
 
     @staticmethod
@@ -113,7 +157,7 @@ class CommandMeta(type):
 
         cmd_name: str = kwargs.pop("name")
         description: str = kwargs.pop("description", "")
-        # Only slash commands have descriptions
+        # Descriptions are only required for slash commands
         if not description and cmd_type is hikari.CommandType.SLASH:
             raise TypeError("'description' is required for slash commands")
 
@@ -130,36 +174,78 @@ class CommandMeta(type):
 
         options: t.Dict[str, options_.OptionData[t.Any]] = {}
         invoke_method: t.Optional[str] = None
+        # Iterate through new class attributes to find options and invoke method
         for name, item in attrs.items():
             if cls._is_option(item):
                 options[name] = item._data
             elif hasattr(item, "__lb_cmd_invoke_method__"):
                 invoke_method = name
 
+        # Prevent command creation if no invoke method was found
         if invoke_method is None:
             raise TypeError("'invoke' registered method is required but could not be found")
 
-        attrs["_"] = CommandUtils(
-            command_data=CommandData(
-                type=cmd_type,
-                name=cmd_name,
-                description=description,
-                nsfw=nsfw,
-                localizations=localizations,
-                hooks=hooks,
-                options=options,
-                invoke_method=invoke_method,
-            )
+        attrs["_command_data"] = CommandData(
+            type=cmd_type,
+            name=cmd_name,
+            description=description,
+            nsfw=nsfw,
+            localizations=localizations,
+            hooks=hooks,
+            options=options,
+            invoke_method=invoke_method,
         )
 
         return super().__new__(cls, cls_name, bases, attrs, **kwargs)
 
 
-@dataclasses.dataclass(slots=True, kw_only=True)
-class CommandUtils:
-    command_data: CommandData
+class CommandBase:
+    """
+    Base class that all commands should inherit from. Contains meta information about the
+    command, execution information for each created instance, and various utility methods.
+    """
 
-    def resolve_option(self, context: context_.Context, option: options_.Option[T, D]) -> t.Union[T, D]:
+    __slots__ = ("_current_context", "_resolved_option_cache")
+
+    _command_data: t.ClassVar[CommandData]
+    _current_context: t.Optional[context_.Context]
+    _resolved_option_cache: t.MutableMapping[str, t.Any]
+
+    def __new__(cls, *args: t.Any, **kwargs: t.Any) -> CommandBase:
+        new = super().__new__(cls, *args, **kwargs)
+        new._current_context = None
+        new._resolved_option_cache = {}
+        return new
+
+    def _set_context(self, context: context_.Context) -> None:
+        """
+        Convenience method to set the current execution context and clear the resolved option cache.
+
+        Args:
+            context (:obj:`~lightbulb.context.Context`): The context being used for the current execution.
+
+        Returns:
+            :obj:`None`
+        """
+        self._current_context = context
+        self._resolved_option_cache = {}
+
+    def _resolve_option(self, option: options_.Option[T, D]) -> t.Union[T, D]:
+        """
+        Resolves the actual value for the given option from the command's current
+        execution context. If the value has been resolved before and is available in the cache then
+        the cached value is returned instead.
+
+        Args:
+            option (:obj:`~lightbulb.commands.options.Option`): The option to resolve the value for.
+
+        Returns:
+            :obj:`~typing.Union` [ ``T``, ``D`` ]: The resolved value for the given option.
+        """
+        context = self._current_context
+        if context is None:
+            raise RuntimeError("cannot resolve option if no context is available")
+
         if option._data.name in context.command._resolved_option_cache:
             return t.cast(T, context.command._resolved_option_cache[option._data.name])
 
@@ -198,44 +284,125 @@ class CommandUtils:
         context.command._resolved_option_cache[option._data.name] = resolved_option
         return t.cast(T, resolved_option)
 
-
-class CommandBase:
-    __slots__ = ("_current_context", "_resolved_option_cache")
-
-    _: t.ClassVar[CommandUtils]  # TODO - rename this to something that makes sense
-    _current_context: t.Optional[context_.Context]
-    _resolved_option_cache: t.MutableMapping[str, t.Any]
-
-    def __new__(cls, *args: t.Any, **kwargs: t.Any) -> CommandBase:
-        new = super().__new__(cls, *args, **kwargs)
-        new._current_context = None
-        new._resolved_option_cache = {}
-        return new
-
-    def _set_context(self, context: context_.Context) -> None:
-        self._current_context = context
-        self._resolved_option_cache = {}
-
     @classmethod
     def as_command_builder(cls) -> hikari.api.CommandBuilder:
-        return cls._.command_data.as_command_builder()
+        """
+        Convert the command into a hikari command builder object.
+
+        Returns:
+            :obj:`hikari.api.CommandBuilder`: The builder object for this command.
+        """
+        return cls._command_data.as_command_builder()
 
     @classmethod
     def to_command_option(cls) -> hikari.CommandOption:
-        return cls._.command_data.to_command_option()
+        """
+        Convert the command into a sub-command command option.
+
+        Returns:
+            :obj:`hikari.CommandOption`: The sub-command option for this command.
+        """
+        return cls._command_data.to_command_option()
 
 
 class SlashCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.SLASH):
+    """
+    Base implementation of a slash command. This should be subclassed in order to create your own
+    slash command.
+
+    All subclasses **must** contain a method marked with the :obj:`lightbulb.commands.execution.invoke` decorator.
+
+    Parameters:
+        name (:obj:`str`, required): The name of the command.
+        description (:obj:`str`, required): The description of the command.
+        nsfw (:obj:`bool`, optional): Whether the command should be marked as nsfw. Defaults to :obj:`False`.
+        localizations (TODO, optional): Not yet implemented
+        hooks (:obj:`~typing.Sequence` [ :obj:`~lightbulb.commands.execution.ExecutionHook` ], optional): The hooks to
+            run before the command invocation function is executed. Defaults to an empty set.
+
+    Example:
+
+        .. code-block:: python
+
+            class Hello(
+                lightbulb.SlashCommand,
+                name="hello",
+                description="makes the bot say hello",
+                ...  # additional parameters
+            ):
+                @lightbulb.invoke
+                async def invoke(self, ctx: lightbulb.Context):
+                    await ctx.respond("Hello!")
+    """
+
     __slots__ = ()
 
 
 class UserCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.USER):
+    """
+    Base implementation of a slash command. This should be subclassed in order to create your own
+    user command.
+
+    All subclasses **must** contain a method marked with the :obj:`lightbulb.commands.execution.invoke` decorator.
+
+    Parameters:
+        name (:obj:`str`, required): The name of the command.
+        nsfw (:obj:`bool`, optional): Whether the command should be marked as nsfw. Defaults to :obj:`False`.
+        localizations (TODO, optional): Not yet implemented
+        hooks (:obj:`~typing.Sequence` [ :obj:`~lightbulb.commands.execution.ExecutionHook` ], optional): The hooks to
+            run before the command invocation function is executed. Defaults to an empty set.
+
+    Example:
+
+        .. code-block:: python
+
+            class UserId(
+                lightbulb.SlashCommand,
+                name="userid",
+                description="gets the ID of the user",
+                ...  # additional parameters
+            ):
+                @lightbulb.invoke
+                async def invoke(self, ctx: lightbulb.Context):
+                    await ctx.respond(f"ID is {int(self.target.id)}")
+    """
+
     __slots__ = ()
 
     target: hikari.User = t.cast(hikari.User, options_.ContextMenuOption(hikari.User))
+    """The target user that the context menu command was executed on."""
 
 
 class MessageCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.MESSAGE):
+    """
+    Base implementation of a slash command. This should be subclassed in order to create your own
+    message command.
+
+    All subclasses **must** contain a method marked with the :obj:`lightbulb.commands.execution.invoke` decorator.
+
+    Parameters:
+        name (:obj:`str`, required): The name of the command.
+        nsfw (:obj:`bool`, optional): Whether the command should be marked as nsfw. Defaults to :obj:`False`.
+        localizations (TODO, optional): Not yet implemented
+        hooks (:obj:`~typing.Sequence` [ :obj:`~lightbulb.commands.execution.ExecutionHook` ], optional): The hooks to
+            run before the command invocation function is executed. Defaults to an empty set.
+
+    Example:
+
+        .. code-block:: python
+
+            class WordCount(
+                lightbulb.MessageCommand,
+                name="wordcount",
+                description="counts the words in the message",
+                ...  # additional parameters
+            ):
+                @lightbulb.invoke
+                async def invoke(self, ctx: lightbulb.Context):
+                    await ctx.respond(f"Message has {len(self.target.content.split()} words")
+    """
+
     __slots__ = ()
 
     target: hikari.Message = t.cast(hikari.Message, options_.ContextMenuOption(hikari.Message))
+    """The target message that the context menu command was executed on."""

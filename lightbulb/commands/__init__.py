@@ -18,8 +18,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-
 from lightbulb.commands.commands import *
 from lightbulb.commands.execution import *
 from lightbulb.commands.groups import *
@@ -29,7 +27,6 @@ __all__ = [
     "CommandData",
     "CommandMeta",
     "CommandBase",
-    "CommandUtils",
     "UserCommand",
     "MessageCommand",
     "SlashCommand",

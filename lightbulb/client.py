@@ -49,15 +49,26 @@ LOGGER = logging.getLogger("lightbulb.client")
 
 @t.runtime_checkable
 class GatewayClientAppT(hikari.EventManagerAware, hikari.RESTAware, t.Protocol):
-    ...
+    """Protocol indicating an application supports gateway events."""
 
 
 @t.runtime_checkable
 class RestClientAppT(hikari.InteractionServerAware, hikari.RESTAware, t.Protocol):
-    ...
+    """Protocol indicating an application supports an interaction server."""
 
 
 class Client(abc.ABC):
+    """
+    Base client implementation supporting generic application command handling.
+
+    Args:
+        rest (:obj:`~hikari.api.RESTClient`): The rest client to use.
+        default_enabled_guilds (:obj:`~typing.Sequence` [ :obj:`~hikari.Snowflakeish` ]): The guilds that application
+            commands should be created in by default. Can be overridden on a per-command basis.
+        execution_step_order (:obj:`~typing.Sequence` [ :obj:`~lightbulb.commands.execution.ExecutionStep` ]): The
+            order that execution steps will be run in upon command processing.
+    """
+
     __slots__ = (
         "_commands",
         "_rest",
@@ -86,11 +97,23 @@ class Client(abc.ABC):
 
     @property
     def _di_container(self) -> svcs.Container:
+        """The dependency injection container to use for this instance. Lazily instantiated."""
         if self.__di_container is None:
             self.__di_container = svcs.Container(self._di_registry)
         return self.__di_container
 
     def register_dependency(self, type: t.Type[T], factory: t.Callable[[], t.Union[t.Awaitable[T], T]]) -> None:
+        """
+        Register a dependency as usable by dependency injection. All dependencies are considered to be
+        singletons, meaning the factory will always be called at most once.
+
+        Args:
+            type (:obj:`~typing.Type` [ ``T`` ]): The type of the dependency to register.
+            factory: The factory function to use to provide the dependency value.
+
+        Returns:
+            :obj:`None`
+        """
         self._di_registry.register_factory(type, factory)  # type: ignore[reportUnknownMemberType]
 
     @t.overload
@@ -124,11 +147,7 @@ class Client(abc.ABC):
 
         # Used as a function
         if command is not None:
-            name = (
-                command.name
-                if isinstance(command, groups.Group)
-                else command._.command_data.name
-            )
+            name = command.name if isinstance(command, groups.Group) else command._command_data.name
 
             for guild_id in register_in:
                 self._commands[guild_id][name].put(command)
@@ -183,13 +202,13 @@ class Client(abc.ABC):
         self,
         interaction: hikari.CommandInteraction,
         options: t.Sequence[hikari.CommandInteractionOption],
-        command: commands.CommandBase,
+        command_cls: t.Type[commands.CommandBase],
     ) -> context_.Context:
         return context_.Context(
             client=self,
             interaction=interaction,
             options=options,
-            command=command,
+            command=command_cls(),
         )
 
     async def handle_application_command_interaction(self, interaction: hikari.CommandInteraction) -> None:
@@ -224,18 +243,16 @@ class Client(abc.ABC):
         else:
             command = root_command
 
-        command_instance = command()
-        context = self.build_context(interaction, options or [], command_instance)
-        command_instance._set_context(context)
+        context = self.build_context(interaction, options or [], command)
 
-        LOGGER.debug("%s - invoking command", command._.command_data.name)
+        LOGGER.debug("%s - invoking command", command._command_data.name)
 
         token = di._di_container.set(self._di_container)
         try:
             await execution.ExecutionPipeline(context, self._execution_step_order)._run()
         except Exception as e:
             # TODO - dispatch to error handler
-            LOGGER.error("Error during command invocation", exc_info=(type(e), e, e.__traceback__))
+            LOGGER.error("Error encountered during command processing", exc_info=(type(e), e, e.__traceback__))
         finally:
             di._di_container.reset(token)
 

@@ -187,7 +187,7 @@ class Client(abc.ABC):
             for guild_id in register_in:
                 self._commands[guild_id][name].put(command)
 
-            LOGGER.debug("command %s registered successfully", name)
+            LOGGER.debug("command %r (%r) registered successfully", name, command)
             return command
 
         # Used as a decorator
@@ -275,6 +275,7 @@ class Client(abc.ABC):
         Returns:
             :obj:`None`
         """
+        # Just to double-check
         if not isinstance(interaction, hikari.CommandInteraction):  # type: ignore[reportUnnecessaryIsInstance]
             return
 
@@ -311,14 +312,18 @@ class Client(abc.ABC):
 
         context = self.build_context(interaction, options or [], command)
 
-        LOGGER.debug("%s - invoking command", command._command_data.name)
+        LOGGER.debug("%r - invoking command", " ".join(command_path))
 
         token = di._di_container.set(self._di_container)
         try:
             await execution.ExecutionPipeline(context, self._execution_step_order)._run()
         except Exception as e:
             # TODO - dispatch to error handler
-            LOGGER.error("Error encountered during command processing", exc_info=(type(e), e, e.__traceback__))
+            LOGGER.error(
+                "Error encountered during invocation of command %r",
+                " ".join(command_path),
+                exc_info=(type(e), e, e.__traceback__),
+            )
         finally:
             di._di_container.reset(token)
 

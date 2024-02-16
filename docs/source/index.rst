@@ -40,46 +40,26 @@ you should submit an issue on the GitHub repository `here <https://github.com/ta
 Before doing so you should make sure you are on the latest version of the library and check to see if an issue
 already exists for your bug or feature.
 
-Also see `Tanjun <https://fasterspeeding.github.io/Tanjun/master/>`_ if you would prefer different command handler
-syntax. I recommend taking a look at both Lightbulb and Tanjun before choosing which one you wish to use for your bot.
-
-`View Tanjun on GitHub <https://github.com/FasterSpeeding/Tanjun>`_
-
 Helpful Resources:
 ------------------
 
 - `Hikari Documentation <https://www.hikari-py.dev/>`_
 
-- `Lightbulb Tutorial <https://novanai.readthedocs.io/en/latest/lightbulb/index.html>`_ (Thanks to Nova)
-
 - :ref:`guides`
 
-- :ref:`extension-libs`
+Maintainers:
+------------
 
-Contributors:
--------------
-
-- `thomm.o#8637 (creator) <https://github.com/tandemdude>`_
-
-- `davfsa#7026 <https://github.com/davfsa>`_
-
-- `nekoka#8788 <https://gitlab.com/nekokatt>`_
-
-- `Forbidden#0001 <https://github.com/Forbidden-A>`_
-
-- `Dec0Ded#2693 <https://github.com/Dec0Dedd>`_
-
-- `Yoda#0660 <https://github.com/YodaPY>`_
-
-- `M.A#4999 <https://gitlab.com/MonAaraj>`_
-
-- `norizon#2612 <https://github.com/norinorin>`_
-
-- `benn#1953 <https://github.com/ben2224>`_
-
-- `Parafoxia#1911 <https://github.com/parafoxia>`_
+- `thomm.o (creator) <https://github.com/tandemdude>`_
 
 - `nulldomain <https://github.com/null-domain>`_
+
+Special Thanks:
+---------------
+
+- `nekokatt <https://gitlab.com/nekokatt>`_ for helping with the early stages of lightbulb and teaching me much of what I know.
+
+- `davfsa <https://github.com/davfsa>`_ for maintaining Hikari for all this time. Without which lightbulb could not exist.
 
 Index:
 ------
@@ -91,7 +71,6 @@ Index:
     guide
     api-reference
     changelog
-    extension-libs
     hikari-basics
 
 * :ref:`genindex`

@@ -7,7 +7,7 @@ Hikari Basics
 Here you will find an index of all the Hikari Basics pages to help with common issues developers encounter while using Hikari.
 
 If you feel like any Hikari feature is unclear or hard to use then either make a pull request to add a section for it yourself, or
-contact thomm.o#8637 on discord.
+contact thomm.o on discord.
 
 **Index:**
 

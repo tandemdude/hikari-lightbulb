@@ -37,6 +37,8 @@ GroupCommandMappingT = t.Dict[str, t.Union["SubGroup", t.Type["commands.CommandB
 
 
 class GroupMixin(abc.ABC):
+    """Base class for application command groups."""
+
     __slots__ = ()
 
     _commands: t.Union[SubGroupCommandMappingT, GroupCommandMappingT]
@@ -50,6 +52,34 @@ class GroupMixin(abc.ABC):
         ...
 
     def register(self, command: t.Optional[CommandT] = None) -> t.Union[CommandT, t.Callable[[CommandT], CommandT]]:
+        """
+        Register a command as a subcommand for this group. Can be used as a first or second order decorator,
+        or called with the command to register.
+
+        Args:
+            command (:obj:`~typing.Type` [ :obj:`~lightbulb.commands.commands.CommandBase` ]): The command to register
+                to the group as a subcommand.
+
+        Returns:
+            The passed command, with the parent set.
+
+        Example:
+
+            .. code-block:: python
+
+                group = lightbulb.Group("name", "description")
+
+                # valid
+                @group.register  # or @group.register()
+                class Example(
+                    lightbulb.SlashCommand,
+                    ...
+                ):
+                    ...
+
+                # also valid
+                group.register(Example)
+        """
         if command is not None:
             self._commands[command._command_data.name] = command
             command._command_data.parent = self  # type: ignore[reportGeneralTypeIssues]
@@ -61,6 +91,18 @@ class GroupMixin(abc.ABC):
         return _inner
 
     def resolve_subcommand(self, path: t.List[str]) -> t.Optional[t.Type[commands.CommandBase]]:
+        """
+        Resolve the subcommand for the given path - fully qualified command name.
+
+        Args:
+            path (:obj:`~typing.List` [ :obj:`str` ]): The path of the subcommand to resolve.
+
+        Returns:
+            The resolved command class, or :obj:`None` if one was not found.
+        """
+        if not path:
+            return None
+
         maybe_command = self._commands.get(path.pop(0))
         if maybe_command is None:
             return None
@@ -73,12 +115,28 @@ class GroupMixin(abc.ABC):
 
 @dataclasses.dataclass(slots=True, frozen=True)
 class SubGroup(GroupMixin):
+    """
+    Dataclass representing a slash command subgroup.
+
+    Warning:
+        This **should not** be instantiated manually - you should instead create one using :meth:`Group.subgroup`.
+    """
+
     name: str
+    """The name of the subgroup."""
     description: str
+    """The description of the subgroup."""
     parent: Group
+    """The parent group of the subgroup."""
     _commands: SubGroupCommandMappingT = dataclasses.field(init=False, default_factory=dict)
 
     def to_command_option(self) -> hikari.CommandOption:
+        """
+        Convert the subgroup into a subgroup command option.
+
+        Returns:
+            :obj:`hikari.CommandOption`: The subgroup option for this subgroup.
+        """
         # TODO - localisations
         return hikari.CommandOption(
             type=hikari.OptionType.SUB_COMMAND_GROUP,
@@ -90,17 +148,38 @@ class SubGroup(GroupMixin):
 
 @dataclasses.dataclass(slots=True, frozen=True)
 class Group(GroupMixin):
+    """Dataclass representing a slash command group."""
+
     name: str
+    """The name of the group."""
     description: str
+    """The description of the group."""
     nsfw: bool = False
+    """Whether the group should be marked as nsfw. Defaults to :obj:`False`."""
     _commands: GroupCommandMappingT = dataclasses.field(init=False, default_factory=dict)
 
     def subgroup(self, name: str, description: str) -> SubGroup:
+        """
+        Create a new subgroup as a child of this group.
+
+        Args:
+            name (:obj:`str`): The name of the subgroup.
+            description (:obj:`str`): The description of the subgroup.
+
+        Returns:
+            :obj:`~SubGroup`: The created subgroup.
+        """
         new = SubGroup(name=name, description=description, parent=self)
         self._commands[name] = new
         return new
 
     def as_command_builder(self) -> hikari.api.CommandBuilder:
+        """
+        Convert the group into a hikari command builder object.
+
+        Returns:
+            :obj:`hikari.api.CommandBuilder`: The builder object for this group.
+        """
         # TODO - localisations
         bld = hikari.impl.SlashCommandBuilder(name=self.name, description=self.description)
         bld.set_is_nsfw(self.nsfw)

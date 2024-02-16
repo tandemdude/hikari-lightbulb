@@ -81,6 +81,7 @@ class LazyInjecting:
     You should generally never have to instantiate this yourself - you should instead use one of the
     decorators that applies this to the target automatically.
     """
+
     __slots__ = ("_func", "_processed", "_self", "__lb_cmd_invoke_method__")
 
     def __init__(

@@ -17,8 +17,6 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__ = ["CommandCollection"]
-
 import dataclasses
 import typing as t
 
@@ -26,7 +24,7 @@ from lightbulb.commands import commands
 from lightbulb.commands import groups
 
 
-@dataclasses.dataclass(kw_only=True, slots=True)
+@dataclasses.dataclass(slots=True)
 class CommandCollection:
     slash: t.Optional[t.Union[groups.Group, t.Type[commands.SlashCommand]]] = None
     user: t.Optional[t.Type[commands.UserCommand]] = None

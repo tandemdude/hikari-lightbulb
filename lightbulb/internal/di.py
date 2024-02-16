@@ -17,10 +17,9 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__ = ["LazyInjecting"]
-
 import contextvars
 import inspect
+import os
 import typing as t
 
 if t.TYPE_CHECKING:
@@ -33,6 +32,27 @@ _di_container: contextvars.ContextVar[svcs.Container] = contextvars.ContextVar("
 def find_injectable_kwargs(
     func: t.Callable[..., t.Any], passed_args: int, passed_kwargs: t.Collection[str]
 ) -> t.Dict[str, t.Any]:
+    """
+    Given a function, parse the signature to discover which parameters are suitable for dependency injection.
+
+    A parameter is suitable for dependency injection if:
+
+    - It has a type annotation
+
+    - It has no default value
+
+    - It is not positional-only (injected parameters are always passed as a keyword argument)
+
+    Args:
+        func: The function to discover the dependency injection suitable parameters for.
+        passed_args (:obj:`int`): The number of positional arguments passed to the function in this invocation.
+        passed_kwargs (:obj:`~typing.Collection` [ :obj:`str` ]): The names of all the keyword arguments passed
+            to the function in this invocation.
+
+    Returns:
+        :obj:`~typing.Dict` [ :obj:`str`, :obj:`~typing.Any` ]: Mapping of parameter name to parameter annotation
+            value for parameters that are suitable for dependency injection.
+    """
     parameters = inspect.signature(func, eval_str=True).parameters
 
     injectable_parameters: t.Dict[str, t.Any] = {}
@@ -54,6 +74,13 @@ def find_injectable_kwargs(
 
 
 class LazyInjecting:
+    """
+    Wrapper for a callable that implements dependency injection. When called, resolves the required
+    dependencies and calls the original callable. Only supports asynchronous functions.
+
+    You should generally never have to instantiate this yourself - you should instead use one of the
+    decorators that applies this to the target automatically.
+    """
     __slots__ = ("_func", "_processed", "_self", "__lb_cmd_invoke_method__")
 
     def __init__(
@@ -85,3 +112,16 @@ class LazyInjecting:
         if self._self is not None:
             return await self._func(self._self, *args, **new_kwargs)
         return await self._func(*args, **new_kwargs)
+
+
+if os.environ.get("LIGHTBULB_DI_DISABLED", "false").lower() == "true":
+
+    class FakeLazyInjecting:
+        __slots__ = ()
+
+        # To disable DI we just replace the LazyInjecting class with one that does nothing
+        # TODO - maybe look into doing this a different way in the future
+        def __new__(cls, func: AnyCallableT, *args: t.Any, **kwargs: t.Any) -> AnyCallableT:
+            return func
+
+    LazyInjecting = FakeLazyInjecting  # type: ignore[reportAssignmentType]

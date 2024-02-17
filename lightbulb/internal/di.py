@@ -17,6 +17,7 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+import contextlib
 import contextvars
 import inspect
 import os
@@ -25,8 +26,39 @@ import typing as t
 if t.TYPE_CHECKING:
     import svcs
 
-AnyCallableT = t.TypeVar("AnyCallableT", bound=t.Callable[..., t.Any])
-_di_container: contextvars.ContextVar[svcs.Container] = contextvars.ContextVar("_di_container")
+    from lightbulb import client as client_
+
+AnyAsyncCallableT = t.TypeVar("AnyAsyncCallableT", bound=t.Callable[..., t.Awaitable[t.Any]])
+
+
+DI_ENABLED: t.Final[bool] = os.environ.get("LIGHTBULB_DI_DISABLED", "false").lower() == "true"
+DI_CONTAINER: contextvars.ContextVar[svcs.Container] = contextvars.ContextVar("_di_container")
+
+
+@contextlib.contextmanager
+def ensure_di_context(client: client_.Client) -> t.Generator[None, t.Any, t.Any]:
+    """
+    Context manager that ensures a dependency injection context is available for the nested operations.
+
+    Args:
+        client (:obj:`~lightbulb.client.Client`): The client that "hosts" the dependency injection context.
+            I.e. knows about the dependencies that will be needed.
+
+    Example:
+
+        .. code-block:: python
+
+            with lightbulb.ensure_di_context(client):
+                await some_function_that_needs_dependencies()
+    """
+    if DI_ENABLED:
+        token = DI_CONTAINER.set(client._di_container)
+        try:
+            yield
+        finally:
+            DI_CONTAINER.reset(token)
+    else:
+        yield
 
 
 def find_injectable_kwargs(
@@ -80,9 +112,14 @@ class LazyInjecting:
 
     You should generally never have to instantiate this yourself - you should instead use one of the
     decorators that applies this to the target automatically.
+
+    See Also:
+        :obj:`~with_di`
+        :obj:`~lightbulb.commands.execcution.hook`
+        :obj:`~lightbulb.commands.execution.invoke`
     """
 
-    __slots__ = ("_func", "_processed", "_self", "__lb_cmd_invoke_method__")
+    __slots__ = ("_func", "_processed", "_self")
 
     def __init__(
         self,
@@ -97,11 +134,17 @@ class LazyInjecting:
             return LazyInjecting(self._func, instance)
         return self
 
+    def __getattr__(self, item: str) -> t.Any:
+        return getattr(self._func, item)
+
+    def __setattr__(self, key: str, value: t.Any) -> None:
+        setattr(self._func, key, value)
+
     async def __call__(self, *args: t.Any, **kwargs: t.Any) -> t.Any:
         new_kwargs: t.Dict[str, t.Any] = {}
         new_kwargs.update(kwargs)
 
-        di_container: t.Optional[svcs.Container] = _di_container.get(None)
+        di_container: t.Optional[svcs.Container] = DI_CONTAINER.get(None)
         if di_container is None:
             raise RuntimeError("cannot prepare dependency injection as client not yet populated")
 
@@ -115,14 +158,23 @@ class LazyInjecting:
         return await self._func(*args, **new_kwargs)
 
 
-if os.environ.get("LIGHTBULB_DI_DISABLED", "false").lower() == "true":
+def with_di(func: AnyAsyncCallableT) -> AnyAsyncCallableT:
+    """
+    Enables dependency injection on the decorated asynchronous function. If dependency injection
+    has been disabled globally then this function does nothing and simply returns the object that was passed in.
 
-    class FakeLazyInjecting:
-        __slots__ = ()
+    Args:
+        func: The asynchronous function to enable dependency injection for
 
-        # To disable DI we just replace the LazyInjecting class with one that does nothing
-        # TODO - maybe look into doing this a different way in the future
-        def __new__(cls, func: AnyCallableT, *args: t.Any, **kwargs: t.Any) -> AnyCallableT:
-            return func
+    Returns:
+        The function with dependency injection enabled, or the same function if DI has been disabled globally.
 
-    LazyInjecting = FakeLazyInjecting  # type: ignore[reportAssignmentType]
+    Warning:
+        Dependency injection relies on a context (note: not a lightbulb :obj:`~lightbulb.context.Context`) being
+        available when the function is called. If the function is called during a lightbulb-controlled flow
+        (such as command invocation or error handling), then one will be available automatically. Otherwise,
+        you will have to set up the context yourself using the helper context manager :obj:`~setup_di_context`.
+    """
+    if DI_ENABLED:
+        return LazyInjecting(func)  # type: ignore[reportReturnType]
+    return func

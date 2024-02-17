@@ -13,6 +13,9 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
+  jobs:
+    pre_build:
+      - python ./scripts/docs/api_reference_generator.py
 
 # Optionally set the version of Python and requirements required to build your docs
 python:

@@ -17,17 +17,16 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+import abc
 import contextlib
 import contextvars
 import inspect
 import os
 import typing as t
 
-if t.TYPE_CHECKING:
-    import svcs
+import svcs
 
-    from lightbulb import client as client_
-
+T = t.TypeVar("T")
 AnyAsyncCallableT = t.TypeVar("AnyAsyncCallableT", bound=t.Callable[..., t.Awaitable[t.Any]])
 
 
@@ -35,14 +34,53 @@ DI_ENABLED: t.Final[bool] = os.environ.get("LIGHTBULB_DI_DISABLED", "false").low
 DI_CONTAINER: contextvars.ContextVar[svcs.Container] = contextvars.ContextVar("_di_container")
 
 
+class DependencySupplier(abc.ABC):
+    """
+    Mixin class which enables an inheritor to be used as a supplier for dependencies during the
+    dependency injection process.
+    """
+
+    __slots__ = ("__di_registry", "__di_container")
+
+    def __init__(self) -> None:
+        self.__di_registry: svcs.Registry = svcs.Registry()
+        self.__di_container: t.Optional[svcs.Container] = None
+
+    @property
+    def di_registry(self) -> svcs.Registry:
+        """The dependency injection registry containing dependencies available for this instance."""
+        return self.__di_registry
+
+    @property
+    def di_container(self) -> svcs.Container:
+        """The dependency injection container used for this instance. Lazily instantiated."""
+        if self.__di_container is None:
+            self.__di_container = svcs.Container(self.di_registry)
+        return self.__di_container
+
+    def register_dependency(self, type: t.Type[T], factory: t.Callable[[], t.Union[t.Awaitable[T], T]]) -> None:
+        """
+        Register a dependency as usable by dependency injection. All dependencies are considered to be
+        singletons, meaning the factory will always be called at most once.
+
+        Args:
+            type (:obj:`~typing.Type` [ ``T`` ]): The type of the dependency to register.
+            factory: The factory function to use to provide the dependency value.
+
+        Returns:
+            :obj:`None`
+        """
+        self.di_registry.register_factory(type, factory)  # type: ignore[reportUnknownMemberType]
+
+
 @contextlib.contextmanager
-def ensure_di_context(client: client_.Client) -> t.Generator[None, t.Any, t.Any]:
+def ensure_di_context(client: DependencySupplier) -> t.Generator[None, t.Any, t.Any]:
     """
     Context manager that ensures a dependency injection context is available for the nested operations.
 
     Args:
-        client (:obj:`~lightbulb.client.Client`): The client that "hosts" the dependency injection context.
-            I.e. knows about the dependencies that will be needed.
+        client (:obj:`~DependencyInjectionAware`): The client that is aware of the required information to be
+            able to supply dependencies for injection.
 
     Example:
 
@@ -52,7 +90,7 @@ def ensure_di_context(client: client_.Client) -> t.Generator[None, t.Any, t.Any]
                 await some_function_that_needs_dependencies()
     """
     if DI_ENABLED:
-        token = DI_CONTAINER.set(client._di_container)
+        token = DI_CONTAINER.set(client.di_container)
         try:
             yield
         finally:

@@ -24,9 +24,9 @@ import os
 import nox
 from nox import options
 
-PATH_TO_PROJECT = os.path.join(".", "lightbulb")
 SCRIPT_PATHS = [
-    PATH_TO_PROJECT,
+    os.path.join(".", "lightbulb"),
+    os.path.join(".", "scripts"),
     "noxfile.py",
     "release_helpers.py",
     "docs/source/conf.py",
@@ -70,4 +70,5 @@ def sphinx(session: nox.Session):
     session.install("-Ur", "dev-requirements/docs.txt")
     session.install("-Ur", "crontrigger_requirements.txt")
     session.install("-Ur", "requirements.txt")
+    session.run("python", "./scripts/docs/api_reference_generator.py")
     session.run("python", "-m", "sphinx.cmd.build", "docs/source", "docs/build", "-b", "html")

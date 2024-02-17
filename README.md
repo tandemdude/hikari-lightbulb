@@ -16,23 +16,29 @@ pip install hikari-lightbulb
 
 ## Usage
 ```python
-# Import the command handler
+# Import the libraries
+import hikari
 import lightbulb
 
-# Instantiate a Bot instance
-bot = lightbulb.BotApp(token="your_token_here", prefix="your_prefix_here")
+# Create a GatewayBot instance
+bot = hikari.GatewayBot("your_token_here")
+client = lightbulb.client_from_app(bot)
 
-# Register the command to the bot
-@bot.command
-# Use the command decorator to convert the function into a command
-@lightbulb.command("ping", "checks the bot is alive")
-# Define the command type(s) that this command implements
-@lightbulb.implements(lightbulb.PrefixCommand)
-# Define the command's callback. The callback should take a single argument which will be
-# an instance of a subclass of lightbulb.context.Context when passed in
-async def ping(ctx: lightbulb.Context) -> None:
-    # Send a message to the channel the command was used in
-    await ctx.respond("Pong!")
+# Register the command with the client
+@client.register()
+class Ping(
+    # Command type - builtins include SlashCommand, UserCommand, and MessageCommand
+    lightbulb.SlashCommand,
+    # Command declaration parameters
+    name="ping",
+    description="checks the bot is alive",
+):
+    # Define the command's invocation method. This method must take the context as the first
+    # argument (excluding self) which contains information about the command invocation.
+    @lightbulb.invoke
+    async def invoke(self, ctx: lightbulb.Context) -> None:
+        # Send a message to the channel the command was used in
+        await ctx.respond("Pong!")
 
 # Run the bot
 # Note that this is blocking meaning no code after this line will run
@@ -55,6 +61,6 @@ If you use this library and like it, feel free to sign up to GitHub and star the
 it is greatly appreciated and lets me know that I'm going in the right direction!
 
 ## Links
-- **License:** [LGPLv3](https://choosealicense.com/licenses/lgpl-3.0/)
+- **License:** [MIT](https://choosealicense.com/licenses/mit/)
 - **Repository:** [GitHub](https://github.com/tandemdude/hikari-lightbulb)
 - **Documentation:** [ReadTheDocs](https://hikari-lightbulb.readthedocs.io/en/latest/)

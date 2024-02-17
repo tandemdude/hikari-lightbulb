@@ -30,7 +30,9 @@ pip-wheel-metadata/
 *.pyd
 
 # Documentation
-.docs/build/
+docs/build/
+docs/source/api-references/
+docs/source/api-reference.rst
 
 # Test files
 bot_test.py

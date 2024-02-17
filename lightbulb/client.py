@@ -15,7 +15,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-
 import abc
 import collections
 import functools
@@ -23,7 +22,6 @@ import logging
 import typing as t
 
 import hikari
-import svcs
 
 from lightbulb import context as context_
 from lightbulb.commands import commands
@@ -57,7 +55,7 @@ class RestClientAppT(hikari.InteractionServerAware, hikari.RESTAware, t.Protocol
     """Protocol indicating an application supports an interaction server."""
 
 
-class Client(abc.ABC):
+class Client(di.DependencySupplier, abc.ABC):
     """
     Base client implementation supporting generic application command handling.
 
@@ -71,12 +69,10 @@ class Client(abc.ABC):
 
     __slots__ = (
         "_commands",
-        "_rest",
-        "_default_enabled_guilds",
-        "_execution_step_order",
+        "rest",
+        "default_enabled_guilds",
+        "execution_step_order",
         "_application",
-        "_di_registry",
-        "__di_container",
     )
 
     def __init__(
@@ -85,36 +81,14 @@ class Client(abc.ABC):
         default_enabled_guilds: t.Sequence[hikari.Snowflakeish],
         execution_step_order: t.Sequence[execution.ExecutionStep],
     ) -> None:
-        self._rest: hikari.api.RESTClient = rest
-        self._default_enabled_guilds = default_enabled_guilds
-        self._execution_step_order = execution_step_order
+        super().__init__()
+
+        self.rest = rest
+        self.default_enabled_guilds = default_enabled_guilds
+        self.execution_step_order = execution_step_order
 
         self._commands: CommandMapT = collections.defaultdict(lambda: collections.defaultdict(utils.CommandCollection))
         self._application: t.Optional[hikari.PartialApplication] = None
-
-        self._di_registry: svcs.Registry = svcs.Registry()
-        self.__di_container: t.Optional[svcs.Container] = None
-
-    @property
-    def _di_container(self) -> svcs.Container:
-        """The dependency injection container to use for this instance. Lazily instantiated."""
-        if self.__di_container is None:
-            self.__di_container = svcs.Container(self._di_registry)
-        return self.__di_container
-
-    def register_dependency(self, type: t.Type[T], factory: t.Callable[[], t.Union[t.Awaitable[T], T]]) -> None:
-        """
-        Register a dependency as usable by dependency injection. All dependencies are considered to be
-        singletons, meaning the factory will always be called at most once.
-
-        Args:
-            type (:obj:`~typing.Type` [ ``T`` ]): The type of the dependency to register.
-            factory: The factory function to use to provide the dependency value.
-
-        Returns:
-            :obj:`None`
-        """
-        self._di_registry.register_factory(type, factory)  # type: ignore[reportUnknownMemberType]
 
     @t.overload
     def register(
@@ -175,7 +149,7 @@ class Client(abc.ABC):
             register_in = (GLOBAL_COMMAND_KEY,)
         else:
             # commands should either use the passed guilds, or if none passed, use default guilds
-            maybe_guilds = guilds or self._default_enabled_guilds
+            maybe_guilds = guilds or self.default_enabled_guilds
             # pyright isn't happy about just using the above line even though it should be fine,
             # so added the below just to remove the error
             register_in = maybe_guilds if maybe_guilds is not hikari.UNDEFINED else ()
@@ -200,7 +174,7 @@ class Client(abc.ABC):
         if self._application is not None:
             return self._application
 
-        self._application = await self._rest.fetch_application()
+        self._application = await self.rest.fetch_application()
         return self._application
 
     async def sync_application_commands(self) -> None:
@@ -226,7 +200,7 @@ class Client(abc.ABC):
             for cmds in guild_commands.values():
                 builders.extend(c.as_command_builder() for c in [cmds.slash, cmds.user, cmds.message] if c is not None)
 
-            await self._rest.set_application_commands(application, builders, guild_id)
+            await self.rest.set_application_commands(application, builders, guild_id)
 
         LOGGER.info("finished syncing commands with discord")
 
@@ -316,7 +290,7 @@ class Client(abc.ABC):
 
         with di.ensure_di_context(self):
             try:
-                await execution.ExecutionPipeline(context, self._execution_step_order)._run()
+                await execution.ExecutionPipeline(context, self.execution_step_order)._run()
             except Exception as e:
                 # TODO - dispatch to error handler
                 LOGGER.error(

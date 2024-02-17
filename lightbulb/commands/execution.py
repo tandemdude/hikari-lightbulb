@@ -105,7 +105,7 @@ class ExecutionPipeline:
     all hooks succeed.
     """
 
-    __slots__ = ("_context", "_remaining", "_hooks", "_current_step", "_current_hook", "_failures", "_abort")
+    __slots__ = ("_context", "_remaining", "_hooks", "_current_step", "_current_hook", "_failure")
 
     def __init__(self, context: context_.Context, order: t.Sequence[ExecutionStep]) -> None:
         self._context = context
@@ -118,23 +118,16 @@ class ExecutionPipeline:
         self._current_step: t.Optional[ExecutionStep] = None
         self._current_hook: t.Optional[ExecutionHook] = None
 
-        self._failures: t.Dict[ExecutionStep, t.List[exceptions.HookFailedException]] = collections.defaultdict(list)
-        self._abort: t.Optional[exceptions.HookFailedException] = None
+        self._failure: t.Optional[exceptions.HookFailedException] = None
 
     @property
     def failed(self) -> bool:
         """
         Whether this pipeline has failed.
 
-        A pipeline is considered failed if any single hook execution failed, or
-        a hook caused the pipeline to be aborted.
+        A pipeline is considered failed if any single hook execution failed.
         """
-        return bool(self._failures) or self.aborted
-
-    @property
-    def aborted(self) -> bool:
-        """Whether this pipeline was aborted."""
-        return self._abort is not None
+        return self._failure is not None
 
     def _next_step(self) -> t.Optional[ExecutionStep]:
         """
@@ -158,13 +151,14 @@ class ExecutionPipeline:
             :obj:`None`
 
         Raises:
-            :obj:`~lightbulb.exceptions.PipelineFailedException`: If the pipeline failed due to hook failures, or
-                the command invocation function raised an exception.
+            :obj:`~lightbulb.exceptions.HookFailedException`: If an execution hook failed.
+            :obj:`~lightbulb.exceptions.InvocationFailedException`: If the command execution function raised
+                an exception.
         """
         self._current_step = self._next_step()
-        while self._current_step is not None and not self.aborted:
+        while self._current_step is not None:
             step_hooks = list(self._hooks.get(self._current_step, []))
-            while step_hooks and not self.aborted:
+            while step_hooks and not self.failed:
                 self._current_hook = step_hooks.pop(0)
                 try:
                     await self._current_hook(self, self._context)
@@ -177,35 +171,24 @@ class ExecutionPipeline:
             self._current_step = self._next_step()
 
         if self.failed:
-            causes = [failure for step_failures in self._failures.values() for failure in step_failures]
-            if self._abort is not None:
-                causes.append(self._abort)
-
-            assert self._current_step is not None
-            raise exceptions.PipelineFailedException(causes, self)
+            assert self._failure is not None
+            raise self._failure
 
         try:
             await getattr(self._context.command, self._context.command_data.invoke_method)(self._context)
         except Exception as e:
-            raise exceptions.PipelineFailedException([exceptions.InvocationFailedException(e, self._context)], self)
+            raise exceptions.InvocationFailedException(e, self._context)
 
-    def fail(self, exc: t.Union[str, Exception], abort: bool = False) -> None:
+    def fail(self, exc: t.Union[str, Exception]) -> None:
         """
-        Notify the pipeline of a failure in an execution hook. Optionally, the failure can cause
-        the pipeline to be aborted causing no further hooks in the current step to be run.
+        Notify the pipeline of a failure in an execution hook.
 
         Args:
             exc (:obj:`~typing.Union` [ :obj:`str`, :obj:`Exception` ]): Message or exception to include
                 with the failure.
-            abort (:obj:`bool`): Whether this failure should abort the pipeline. If :obj:`True`, no further hooks
-                will be run in the current step and an exception will be propagated.
 
         Returns:
             :obj:`None`
-
-        Note:
-            If ``abort`` is :obj:`False` (the default) then remaining hooks in the current step will still be run.
-            All failures will be collected and propagated once the current step has been completed.
         """
         if not isinstance(exc, Exception):
             exc = RuntimeError(exc)
@@ -213,13 +196,9 @@ class ExecutionPipeline:
         assert self._current_step is not None
         assert self._current_hook is not None
 
-        hook_exc = exceptions.HookFailedException(exc, self._current_hook, abort)
+        hook_exc = exceptions.HookFailedException(exc, self._current_hook)
 
-        if abort:
-            self._abort = hook_exc
-            return
-
-        self._failures[self._current_step].append(hook_exc)
+        self._failure = hook_exc
 
 
 def hook(step: ExecutionStep) -> t.Callable[[ExecutionHookFuncT], ExecutionHook]:

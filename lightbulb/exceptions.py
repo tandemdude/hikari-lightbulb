@@ -25,7 +25,6 @@ __all__ = [
     "ExecutionException",
     "HookFailedException",
     "InvocationFailedException",
-    "PipelineFailedException",
 ]
 
 import typing as t
@@ -46,13 +45,11 @@ class ExecutionException(LightbulbException):
 class HookFailedException(ExecutionException):
     """Exception raised when a command execution hook triggered a failure."""
 
-    def __init__(self, cause: Exception, hook: execution.ExecutionHook, abort: bool) -> None:
+    def __init__(self, cause: Exception, hook: execution.ExecutionHook) -> None:
         super().__init__(f"exception encountered during execution of hook {hook}")
         self.__cause__ = cause
         self.hook = hook
         """The hook that triggered the failure."""
-        self.abort = abort
-        """Whether the failure caused the pipeline to be aborted."""
 
 
 class InvocationFailedException(ExecutionException):
@@ -64,33 +61,3 @@ class InvocationFailedException(ExecutionException):
         self.__cause__ = cause
         self.context = context
         """The context that caused the command invocation to fail."""
-
-
-class PipelineFailedException(ExecutionException):
-    """Exception raised when an :obj:`~lightbulb.commands.execution.ExecutionPipeline` run failed."""
-
-    def __init__(self, causes: t.Sequence[Exception], pipeline: execution.ExecutionPipeline) -> None:
-        super().__init__(
-            f"{'multiple exceptions ' if len(causes) > 1 else 'exception '}encountered during command execution"
-        )
-
-        if len(causes) == 1:
-            self.__cause__ = causes[0]
-
-        self.causes = causes
-        """The causes of the pipeline failure. If there is only one, the ``__cause__`` attribute will also be set."""
-        self.pipeline = pipeline
-        """The pipeline that failed - causing this exception to be thrown."""
-
-    @property
-    def step(self) -> t.Optional[execution.ExecutionStep]:
-        """
-        The execution step that the pipeline failed on. Will be :obj:`None` if all execution
-        steps passed and the failure was instead caused by an exception raised by the command
-        invocation function.
-
-        Returns:
-            :obj:`~typing.Optional` [ :obj:`~lightbulb.commands.execution.ExecutionStep` ]: The step that
-                caused the failure, or :obj:`None` if caused by command invocation function.
-        """
-        return self.pipeline._current_step

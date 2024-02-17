@@ -258,10 +258,7 @@ def hook(step: ExecutionStep) -> t.Callable[[ExecutionHookFuncT], ExecutionHook]
     """
 
     def inner(func: ExecutionHookFuncT) -> ExecutionHook:
-        if not isinstance(func, di.LazyInjecting):
-            func = di.LazyInjecting(func)  # type: ignore[reportArgumentType]
-
-        return ExecutionHook(step, func)
+        return ExecutionHook(step, di.with_di(func))  # type: ignore[reportArgumentType]
 
     return inner
 
@@ -292,8 +289,7 @@ def invoke(func: t.Callable[..., t.Awaitable[t.Any]]) -> t.Callable[[context_.Co
                 async def invoke(self, ctx: lightbulb.Context) -> None:
                     await ctx.respond("example")
     """
-    if not isinstance(func, di.LazyInjecting):
-        func = di.LazyInjecting(func)
+    func = di.with_di(func)
 
     setattr(func, "__lb_cmd_invoke_method__", "_")
     return func

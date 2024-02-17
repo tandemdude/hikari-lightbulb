@@ -314,18 +314,16 @@ class Client(abc.ABC):
 
         LOGGER.debug("%r - invoking command", " ".join(command_path))
 
-        token = di._di_container.set(self._di_container)
-        try:
-            await execution.ExecutionPipeline(context, self._execution_step_order)._run()
-        except Exception as e:
-            # TODO - dispatch to error handler
-            LOGGER.error(
-                "Error encountered during invocation of command %r",
-                " ".join(command_path),
-                exc_info=(type(e), e, e.__traceback__),
-            )
-        finally:
-            di._di_container.reset(token)
+        with di.ensure_di_context(self):
+            try:
+                await execution.ExecutionPipeline(context, self._execution_step_order)._run()
+            except Exception as e:
+                # TODO - dispatch to error handler
+                LOGGER.error(
+                    "Error encountered during invocation of command %r",
+                    " ".join(command_path),
+                    exc_info=(type(e), e, e.__traceback__),
+                )
 
 
 class GatewayEnabledClient(Client):

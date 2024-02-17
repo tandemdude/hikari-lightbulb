@@ -23,6 +23,7 @@ from lightbulb import utils
 from lightbulb.client import *
 from lightbulb.commands import *
 from lightbulb.context import *
+from lightbulb.internal import *
 
 __all__ = [
     "exceptions",
@@ -54,6 +55,8 @@ __all__ = [
     "mentionable",
     "attachment",
     "Context",
+    "ensure_di_context",
+    "with_di",
 ]
 
 __version__ = "3.0.0"

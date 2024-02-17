@@ -15,3 +15,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
+from lightbulb.internal.di import ensure_di_context
+from lightbulb.internal.di import with_di
+
+__all__ = ["ensure_di_context", "with_di"]

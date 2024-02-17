@@ -49,9 +49,10 @@ class Module:
 
 
 class Package:
-    def __init__(self, path: pathlib.Path, header_override: t.Optional[str] = None) -> None:
+    def __init__(self, path: pathlib.Path, header_override: t.Optional[str] = None, child_prefix: t.Optional[str] = None) -> None:
         self.path = path
         self.header_override = header_override
+        self.child_prefix = [child_prefix] if child_prefix else []
 
         self.packages = []
         self.modules = []
@@ -83,11 +84,11 @@ class Package:
             package_name = self.header_override or ".".join(parts)
 
             package_lines = [
-                f"    {API_REFERENCES_DIRECTORY[-1]}/{'/'.join([*parts, package.path.name])}"
+                f"    {'/'.join([*self.child_prefix, self.path.name, *package.path.relative_to(self.path).parts])}"
                 for package in self.packages
             ]
             module_lines = [
-                f"    {API_REFERENCES_DIRECTORY[-1]}/{'/'.join([*parts, module.path.name[:-3]])}"
+                f"    {'/'.join([*self.child_prefix, self.path.name, *module.path.relative_to(self.path).parts])}"[:-3]
                 for module in self.modules
             ]
 
@@ -111,7 +112,7 @@ def is_package(path: pathlib.Path) -> bool:
 
 
 def run() -> None:
-    Package(pathlib.Path("lightbulb"), header_override="API Reference").write()
+    Package(pathlib.Path("lightbulb"), header_override="API Reference", child_prefix=API_REFERENCES_DIRECTORY[-1]).write()
     os.rename(
         os.path.join(*API_REFERENCES_DIRECTORY, "lightbulb.rst"),
         os.path.join(*API_REFERENCES_DIRECTORY[:-1], "api-reference.rst"),

@@ -49,7 +49,9 @@ class Module:
 
 
 class Package:
-    def __init__(self, path: pathlib.Path, header_override: t.Optional[str] = None, child_prefix: t.Optional[str] = None) -> None:
+    def __init__(
+        self, path: pathlib.Path, header_override: t.Optional[str] = None, child_prefix: t.Optional[str] = None
+    ) -> None:
         self.path = path
         self.header_override = header_override
         self.child_prefix = [child_prefix] if child_prefix else []
@@ -112,7 +114,9 @@ def is_package(path: pathlib.Path) -> bool:
 
 
 def run() -> None:
-    Package(pathlib.Path("lightbulb"), header_override="API Reference", child_prefix=API_REFERENCES_DIRECTORY[-1]).write()
+    Package(
+        pathlib.Path("lightbulb"), header_override="API Reference", child_prefix=API_REFERENCES_DIRECTORY[-1]
+    ).write()
     os.rename(
         os.path.join(*API_REFERENCES_DIRECTORY, "lightbulb.rst"),
         os.path.join(*API_REFERENCES_DIRECTORY[:-1], "api-reference.rst"),

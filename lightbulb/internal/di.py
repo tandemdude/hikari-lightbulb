@@ -184,7 +184,7 @@ class LazyInjecting:
 
         di_container: t.Optional[svcs.Container] = DI_CONTAINER.get(None)
         if di_container is None:
-            raise RuntimeError("cannot prepare dependency injection as client not yet populated")
+            raise RuntimeError("cannot prepare dependency injection as no DI context is available")
 
         injectables = find_injectable_kwargs(self._func, len(args) + (self._self is not None), set(kwargs.keys()))
 

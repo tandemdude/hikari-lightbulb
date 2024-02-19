@@ -35,6 +35,9 @@ if t.TYPE_CHECKING:
     from lightbulb import commands
 
 
+INITIAL_RESPONSE_IDENTIFIER: t.Final[int] = -1
+
+
 @dataclasses.dataclass(slots=True)
 class Context:
     """Dataclass representing the context for a single command invocation."""
@@ -102,7 +105,33 @@ class Context:
             t.Union[hikari.SnowflakeishSequence[hikari.PartialRole], bool]
         ] = hikari.UNDEFINED,
     ) -> hikari.Message:
-        if response_id == -1:
+        """
+        Edit the response with the given identifier.
+
+        Args:
+            response_id (:obj:`hikari.snowflakes.Snowflakeish`): The identifier of the response to delete - as
+                returned by :meth:`~Context.respond`.
+            content: The message contents.
+            attachment: The message attachment.
+            attachments: The message attachments.
+            component: The builder object of the component to include in this message.
+            components: The sequence of the component builder objects to include in this message.
+            embed: The message embed.
+            embeds: The message embeds.
+            mentions_everyone: Whether the message should parse @everyone/@here mentions.
+            user_mentions: The user mentions to include in the message.
+            role_mentions: The role mentions to include in the message.
+
+        Returns:
+            :obj:`~hikari.messages.Message`: The updated message object for the response with the given identifier.
+
+        Note:
+            This documentation does not contain a full description of the parameters as they would just
+            be copy-pasted from the hikari documentation. See
+            :obj:`~hikari.interactions.base_interactions.MessageResponseMixin.edit_initial_response` for a more
+            detailed description.
+        """
+        if response_id == INITIAL_RESPONSE_IDENTIFIER:
             return await self.interaction.edit_initial_response(
                 content,
                 attachment=attachment,
@@ -140,7 +169,7 @@ class Context:
         Returns:
             :obj:`None`
         """
-        if response_id == -1:
+        if response_id == INITIAL_RESPONSE_IDENTIFIER:
             return await self.interaction.delete_initial_response()
         return await self.interaction.delete_message(response_id)
 
@@ -155,7 +184,7 @@ class Context:
         Returns:
             :obj:`~hikari.messages.Message`: The message for the response with the given identifier.
         """
-        if response_id == -1:
+        if response_id == INITIAL_RESPONSE_IDENTIFIER:
             return await self.interaction.fetch_initial_response()
         return await self.interaction.fetch_message(response_id)
 
@@ -278,7 +307,7 @@ class Context:
                     role_mentions=role_mentions,
                 )
                 self._initial_response_sent = True
-                return -1
+                return INITIAL_RESPONSE_IDENTIFIER
             else:
                 # This will automatically cause a response if the initial response was deferred previously.
                 # I am not sure if this is intentional by discord however so, we may want to look into changing

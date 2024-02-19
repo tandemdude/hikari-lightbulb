@@ -55,18 +55,37 @@ def _non_undefined_or(item: hikari.UndefinedOr[T], default: D) -> t.Union[T, D]:
 
 @dataclasses.dataclass(slots=True)
 class OptionData(t.Generic[D]):
+    """
+    Dataclass for storing information about an option necessary for command creation.
+
+    This should generally not be instantiated manually. An appropriate one will be generated when defining
+    an option within a command class.
+    """
+
     type: hikari.OptionType
+    """The type of the option."""
     name: str
+    """The name of the option."""
     description: str
+    """The description of the option."""
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED
+    """The default value for the option."""
     choices: hikari.UndefinedOr[t.Any] = hikari.UNDEFINED  # TODO
+    """The choices for the option."""
     channel_types: hikari.UndefinedOr[t.Sequence[hikari.ChannelType]] = hikari.UNDEFINED
+    """The channel types for the option."""
     min_value: hikari.UndefinedOr[t.Union[int, float]] = hikari.UNDEFINED
+    """The minimum value for the option."""
     max_value: hikari.UndefinedOr[t.Union[int, float]] = hikari.UNDEFINED
+    """The maximum value for the option."""
     min_length: hikari.UndefinedOr[int] = hikari.UNDEFINED
+    """The minimum length for the option."""
     max_length: hikari.UndefinedOr[int] = hikari.UNDEFINED
+    """The maximum length for the option."""
     autocomplete: hikari.UndefinedOr[t.Any] = hikari.UNDEFINED  # TODO
+    """TODO"""
     localizations: t.Any = hikari.UNDEFINED  # TODO
+    """TODO"""
 
     def to_command_option(self) -> hikari.CommandOption:
         return hikari.CommandOption(
@@ -85,6 +104,29 @@ class OptionData(t.Generic[D]):
 
 
 class Option(t.Generic[T, D]):
+    """
+    Descriptor class representing a command option.
+
+    This class should generally not be instantiated manually and instead be created through the
+    use of one of the helper functions.
+
+    Args:
+        data (:obj:`~OptionData` [ ``D`` ]): The dataclass describing this instance.
+        default_when_not_bound (``T``): The value to return from the descriptor if accessed through the class
+            instead of through an instance
+
+    See Also:
+        :meth:`~string`
+        :meth:`~integer`
+        :meth:`~boolean`
+        :meth:`~number`
+        :meth:`~user`
+        :meth:`~channel`
+        :meth:`~role`
+        :meth:`~mentionable`
+        :meth:`~attachment`
+    """
+
     __slots__ = ("_data", "_unbound_default")
 
     def __init__(self, data: OptionData[D], default_when_not_bound: T) -> None:
@@ -92,13 +134,26 @@ class Option(t.Generic[T, D]):
         self._unbound_default = default_when_not_bound
 
     def __get__(self, instance: t.Optional[commands.CommandBase], owner: t.Type[commands.CommandBase]) -> t.Union[T, D]:
-        if instance is None or instance._current_context is None:
+        if instance is None or getattr(instance, "_current_context", None) is None:
             return self._unbound_default
 
         return instance._resolve_option(self)
 
 
 class ContextMenuOption(Option[CtxMenuOptionReturnT, CtxMenuOptionReturnT]):
+    """
+    Special implementation of :obj:`~Option` to handle context menu command targets given that
+    they do not count as an "option" and the ID is instead given through the ``target`` field on the
+    interaction.
+
+    Args:
+        type: The type of the context menu command. Either ``hikari.User`` or ``hikari.Message``.
+
+    Warning:
+        You should never have to instantiate this yourself. When subclassing one of the context menu command
+        classes, a ``target`` option will be inherited automatically.
+    """
+
     __slots__ = ("_type",)
 
     def __init__(self, type: t.Type[CtxMenuOptionReturnT]) -> None:
@@ -125,9 +180,10 @@ class ContextMenuOption(Option[CtxMenuOptionReturnT, CtxMenuOptionReturnT]):
     def __get__(
         self, instance: t.Optional[commands.CommandBase], owner: t.Type[commands.CommandBase]
     ) -> CtxMenuOptionReturnT:
-        if instance is None or instance._current_context is None:
+        if instance is None or getattr(instance, "_current_context", None) is None:
             return self._unbound_default
 
+        assert instance._current_context is not None
         interaction = instance._current_context.interaction
         resolved = interaction.resolved
 
@@ -152,6 +208,21 @@ def string(
     max_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     autocomplete: t.Any = hikari.UNDEFINED,  # TODO
 ) -> str:
+    """
+    A string option.
+
+    Args:
+        name (:obj:`str`): The name of the option.
+        description (:obj:`str`): The description of the option.
+        default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
+        choices: TODO
+        min_length (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`int` ]): The minimum length for the option.
+        max_length (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`int` ]): The maximum length for the option.
+        autocomplete: TODO
+
+    Returns:
+        Descriptor allowing access to the option value from within a command invocation.
+    """
     return t.cast(
         str,
         Option(
@@ -179,6 +250,21 @@ def integer(
     max_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     autocomplete: t.Any = hikari.UNDEFINED,  # TODO
 ) -> int:
+    """
+    An integer option.
+
+    Args:
+        name (:obj:`str`): The name of the option.
+        description (:obj:`str`): The description of the option.
+        default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
+        choices: TODO
+        min_value (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`int` ]): The minimum value for the option.
+        max_value (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`int` ]): The maximum value for the option.
+        autocomplete: TODO
+
+    Returns:
+        Descriptor allowing access to the option value from within a command invocation.
+    """
     return t.cast(
         int,
         Option(
@@ -202,6 +288,17 @@ def boolean(
     description: str,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
 ) -> bool:
+    """
+    A boolean option.
+
+    Args:
+        name (:obj:`str`): The name of the option.
+        description (:obj:`str`): The description of the option.
+        default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
+
+    Returns:
+        Descriptor allowing access to the option value from within a command invocation.
+    """
     return t.cast(
         bool,
         Option(
@@ -225,6 +322,21 @@ def number(
     max_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
     autocomplete: t.Any = hikari.UNDEFINED,  # TODO
 ) -> float:
+    """
+    A numeric (float) option.
+
+    Args:
+        name (:obj:`str`): The name of the option.
+        description (:obj:`str`): The description of the option.
+        default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
+        choices: TODO
+        min_value (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`float` ]): The minimum value for the option.
+        max_value (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`float` ]): The maximum value for the option.
+        autocomplete: TODO
+
+    Returns:
+        Descriptor allowing access to the option value from within a command invocation.
+    """
     return t.cast(
         float,
         Option(
@@ -248,6 +360,17 @@ def user(
     description: str,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
 ) -> hikari.User:
+    """
+    A user option.
+
+    Args:
+        name (:obj:`str`): The name of the option.
+        description (:obj:`str`): The description of the option.
+        default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
+
+    Returns:
+        Descriptor allowing access to the option value from within a command invocation.
+    """
     return t.cast(
         hikari.User,
         Option(
@@ -268,6 +391,19 @@ def channel(
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
     channel_types: hikari.UndefinedOr[t.Sequence[hikari.ChannelType]] = hikari.UNDEFINED,
 ) -> hikari.PartialChannel:
+    """
+    A channel option.
+
+    Args:
+        name (:obj:`str`): The name of the option.
+        description (:obj:`str`): The description of the option.
+        default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
+        channel_types (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`~typing.Sequence` [ :obj:`~hikari.channels.ChannelType` ]]): The
+            channel types permitted for the option.
+
+    Returns:
+        Descriptor allowing access to the option value from within a command invocation.
+    """  # noqa: E501
     return t.cast(
         hikari.PartialChannel,
         Option(
@@ -288,6 +424,17 @@ def role(
     description: str,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
 ) -> hikari.Role:
+    """
+    A role option.
+
+    Args:
+        name (:obj:`str`): The name of the option.
+        description (:obj:`str`): The description of the option.
+        default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
+
+    Returns:
+        Descriptor allowing access to the option value from within a command invocation.
+    """
     return t.cast(
         hikari.Role,
         Option(
@@ -307,6 +454,17 @@ def mentionable(
     description: str,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
 ) -> hikari.Snowflake:
+    """
+    A mentionable (snowflake) option.
+
+    Args:
+        name (:obj:`str`): The name of the option.
+        description (:obj:`str`): The description of the option.
+        default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
+
+    Returns:
+        Descriptor allowing access to the option value from within a command invocation.
+    """
     return t.cast(
         hikari.Snowflake,
         Option(
@@ -326,6 +484,17 @@ def attachment(
     description: str,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
 ) -> hikari.Attachment:
+    """
+    An attachment option.
+
+    Args:
+        name (:obj:`str`): The name of the option.
+        description (:obj:`str`): The description of the option.
+        default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
+
+    Returns:
+        Descriptor allowing access to the option value from within a command invocation.
+    """
     return t.cast(
         hikari.Attachment,
         Option(

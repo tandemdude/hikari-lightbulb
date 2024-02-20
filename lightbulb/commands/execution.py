@@ -26,6 +26,7 @@ import inspect
 import typing as t
 
 from lightbulb import exceptions
+from lightbulb.internal import constants
 from lightbulb.internal import di
 
 if t.TYPE_CHECKING:
@@ -269,6 +270,5 @@ def invoke(func: t.Callable[..., t.Awaitable[t.Any]]) -> t.Callable[[context_.Co
                     await ctx.respond("example")
     """
     func = di.with_di(func)
-
-    setattr(func, "__lb_cmd_invoke_method__", "_")
+    setattr(func, constants.COMMAND_INVOKE_METHOD_MARKER, "_")
     return func

@@ -18,11 +18,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from __future__ import annotations
+
+__all__ = ["EMPTY_USER", "EMPTY_MESSAGE", "EMPTY_CHANNEL", "EMPTY_ROLE", "get_command_data"]
+
 import datetime
+import typing as t
 
 import hikari
 
-__all__ = ["EMPTY_USER", "EMPTY_MESSAGE", "EMPTY_CHANNEL", "EMPTY_ROLE"]
+if t.TYPE_CHECKING:
+    from lightbulb.commands import commands
 
 
 class _EmptyUser(hikari.User):
@@ -118,3 +124,17 @@ EMPTY_ATTACHMENT = hikari.Attachment(
     waveform=None,
 )
 """Placeholder for an attachment. Used when attempting to get value for an option on a class instead of instance."""
+
+
+def get_command_data(command: t.Union[commands.CommandBase, t.Type[commands.CommandBase]]) -> commands.CommandData:
+    """
+    Utility method to get the command data dataclass for a command instance or command class.
+
+    Args:
+        command (:obj:`~typing.Union` [ :obj:`~lightbulb.commands.commands.CommandBase`, :obj:`~typing.Type` [ :obj:`~lightbulb.commands.commands.CommandBase` ]]): The
+            command instance or command class to get the command data for.
+
+    Returns:
+        :obj:`~lightbulb.commands.commands.CommandData`: Command data dataclass for the given command.
+    """  # noqa: E501
+    return command._command_data

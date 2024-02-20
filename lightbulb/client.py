@@ -35,6 +35,7 @@ __all__ = ["Client", "GatewayEnabledClient", "RestEnabledClient", "client_from_a
 T = t.TypeVar("T")
 CommandOrGroupT = t.TypeVar("CommandOrGroupT", bound=t.Union[groups.Group, t.Type[commands.CommandBase]])
 CommandMapT = t.MutableMapping[hikari.Snowflakeish, t.MutableMapping[str, utils.CommandCollection]]
+OptionT = t.TypeVar("OptionT", bound=hikari.CommandInteractionOption)
 
 GLOBAL_COMMAND_KEY = 0
 DEFAULT_EXECUTION_STEP_ORDER = (
@@ -206,14 +207,111 @@ class Client(di.DependencySupplier, abc.ABC):
 
     @staticmethod
     def _get_subcommand(
-        options: t.Sequence[hikari.CommandInteractionOption],
-    ) -> t.Optional[hikari.CommandInteractionOption]:
+        options: t.Sequence[OptionT],
+    ) -> t.Optional[OptionT]:
         subcommand = filter(
             lambda o: o.type in (hikari.OptionType.SUB_COMMAND, hikari.OptionType.SUB_COMMAND_GROUP), options
         )
         return next(subcommand, None)
 
-    def build_context(
+    @t.overload
+    def _resolve_options_and_command(
+        self, interaction: hikari.AutocompleteInteraction
+    ) -> t.Optional[t.Tuple[t.Sequence[hikari.AutocompleteInteractionOption], t.Type[commands.CommandBase]]]:
+        ...
+
+    @t.overload
+    def _resolve_options_and_command(
+        self, interaction: hikari.CommandInteraction
+    ) -> t.Optional[t.Tuple[t.Sequence[hikari.CommandInteractionOption], t.Type[commands.CommandBase]]]:
+        ...
+
+    def _resolve_options_and_command(
+        self, interaction: t.Union[hikari.AutocompleteInteraction, hikari.CommandInteraction]
+    ) -> t.Optional[
+        t.Tuple[
+            t.Union[t.Sequence[hikari.AutocompleteInteractionOption], t.Sequence[hikari.CommandInteractionOption]],
+            t.Type[commands.CommandBase],
+        ]
+    ]:
+        command_path = [interaction.command_name]
+
+        subcommand: t.Union[hikari.CommandInteractionOption, hikari.AutocompleteInteractionOption, None]
+        options = interaction.options
+        while (subcommand := self._get_subcommand(options or [])) is not None:
+            command_path.append(subcommand.name)
+            options = subcommand.options
+
+        root_commands = self._commands.get(interaction.guild_id or GLOBAL_COMMAND_KEY, {}).get(interaction.command_name)
+        if root_commands is None:
+            LOGGER.debug(
+                "ignoring autocomplete interaction received for unknown command - %r", interaction.command_name
+            )
+            return
+
+        root_command = {
+            int(hikari.CommandType.SLASH): root_commands.slash,
+            int(hikari.CommandType.USER): root_commands.user,
+            int(hikari.CommandType.MESSAGE): root_commands.message,
+        }[int(interaction.command_type)]
+
+        if root_command is None:
+            LOGGER.debug("ignoring autocomplete interaction received for unknown command - %r", " ".join(command_path))
+            return
+
+        if isinstance(root_command, groups.Group):
+            command = root_command.resolve_subcommand(command_path[1:])
+            if command is None:
+                LOGGER.debug(
+                    "ignoring autocomplete interaction received for unknown command - %r", " ".join(command_path)
+                )
+                return
+        else:
+            command = root_command
+
+        assert options is not None
+        return options, command
+
+    def build_autocomplete_context(
+        self,
+        interaction: hikari.AutocompleteInteraction,
+        options: t.Sequence[hikari.AutocompleteInteractionOption],
+        command_cls: t.Type[commands.CommandBase],
+    ) -> context_.AutocompleteContext:
+        return context_.AutocompleteContext(self, interaction, options, command_cls)
+
+    async def handle_autocomplete_interaction(self, interaction: hikari.AutocompleteInteraction) -> None:
+        out = self._resolve_options_and_command(interaction)
+        if out is None:
+            return
+
+        options, command = out
+
+        if not options:
+            LOGGER.debug("no options resolved from autocomplete interaction - ignoring")
+            return
+
+        context = self.build_autocomplete_context(interaction, options, command)
+
+        option = command._command_data.options.get(context.focused.name, None)
+        if option is None or not option.autocomplete:
+            LOGGER.debug("interaction appears to refer to option that has autocomplete disabled - ignoring")
+            return
+
+        LOGGER.debug("%r - invoking autocomplete", command._command_data.name)
+
+        with di.ensure_di_context(self):
+            try:
+                assert option.autocomplete_provider is not hikari.UNDEFINED
+                await option.autocomplete_provider(context)
+            except Exception as e:
+                LOGGER.error(
+                    "Error encountered during invocation of autocomplete for command %r",
+                    command._command_data.name,
+                    exc_info=(type(e), e, e.__traceback__),
+                )
+
+    def build_command_context(
         self,
         interaction: hikari.CommandInteraction,
         options: t.Sequence[hikari.CommandInteractionOption],
@@ -249,44 +347,15 @@ class Client(di.DependencySupplier, abc.ABC):
         Returns:
             :obj:`None`
         """
-        # Just to double-check
-        if not isinstance(interaction, hikari.CommandInteraction):  # type: ignore[reportUnnecessaryIsInstance]
+        out = self._resolve_options_and_command(interaction)
+        if out is None:
             return
 
-        command_path = [interaction.command_name]
+        options, command = out
 
-        subcommand: t.Optional[hikari.CommandInteractionOption]
-        options = interaction.options
-        while (subcommand := self._get_subcommand(options or [])) is not None:
-            command_path.append(subcommand.name)
-            options = subcommand.options
+        context = self.build_command_context(interaction, options or [], command)
 
-        root_commands = self._commands.get(interaction.guild_id or GLOBAL_COMMAND_KEY, {}).get(interaction.command_name)
-        if root_commands is None:
-            LOGGER.debug("ignoring interaction create received for unknown command - %s", interaction.command_name)
-            return
-
-        root_command = {
-            int(hikari.CommandType.SLASH): root_commands.slash,
-            int(hikari.CommandType.USER): root_commands.user,
-            int(hikari.CommandType.MESSAGE): root_commands.message,
-        }[int(interaction.command_type)]
-
-        if root_command is None:
-            LOGGER.debug("ignoring interaction create received for unknown command - %s", " ".join(command_path))
-            return
-
-        if isinstance(root_command, groups.Group):
-            command = root_command.resolve_subcommand(command_path[1:])
-            if command is None:
-                LOGGER.debug("ignoring interaction create received for unknown command - %s", " ".join(command_path))
-                return
-        else:
-            command = root_command
-
-        context = self.build_context(interaction, options or [], command)
-
-        LOGGER.debug("%r - invoking command", " ".join(command_path))
+        LOGGER.debug("invoking command - %r", command._command_data.name)
 
         with di.ensure_di_context(self):
             try:
@@ -295,9 +364,15 @@ class Client(di.DependencySupplier, abc.ABC):
                 # TODO - dispatch to error handler
                 LOGGER.error(
                     "Error encountered during invocation of command %r",
-                    " ".join(command_path),
+                    command._command_data.name,
                     exc_info=(type(e), e, e.__traceback__),
                 )
+
+    async def handle_interaction_create(self, interaction: hikari.PartialInteraction) -> None:
+        if isinstance(interaction, hikari.AutocompleteInteraction):
+            await self.handle_autocomplete_interaction(interaction)
+        elif isinstance(interaction, hikari.CommandInteraction):
+            await self.handle_application_command_interaction(interaction)
 
 
 class GatewayEnabledClient(Client):
@@ -326,7 +401,7 @@ class GatewayEnabledClient(Client):
             hikari.InteractionCreateEvent,
             functools.partial(
                 wrap_listener,
-                func=self.handle_application_command_interaction,
+                func=self.handle_interaction_create,
                 arg_resolver=lambda e: (t.cast(hikari.InteractionCreateEvent, e).interaction,),
             ),
         )
@@ -350,7 +425,14 @@ class RestEnabledClient(Client):
         super().__init__(app.rest, *args, **kwargs)
         self._app = app
 
+        app.interaction_server.set_listener(hikari.AutocompleteInteraction, self.handle_rest_autocomplete_interaction)
         app.interaction_server.set_listener(hikari.CommandInteraction, self.handle_rest_application_command_interaction)
+
+    async def handle_rest_autocomplete_interaction(
+        self, interaction: hikari.AutocompleteInteraction
+    ) -> hikari.api.InteractionAutocompleteBuilder:  # type: ignore[reportGeneralTypeIssues]
+        await super().handle_autocomplete_interaction(interaction)
+        # TODO - intercept respond calls
 
     async def handle_rest_application_command_interaction(
         self, interaction: hikari.CommandInteraction

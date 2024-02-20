@@ -36,15 +36,15 @@ if t.TYPE_CHECKING:
 
 AutocompleteResponseT = t.Union[
     t.Sequence[special_endpoints.AutocompleteChoiceBuilder],
-    t.Sequence[t.Tuple[str, str]],
-    t.Sequence[t.Tuple[str, int]],
-    t.Sequence[t.Tuple[str, float]],
     t.Sequence[str],
-    t.Sequence[int],
-    t.Sequence[float],
     t.Mapping[str, str],
+    t.Sequence[t.Tuple[str, str]],
+    t.Sequence[int],
     t.Mapping[str, int],
+    t.Sequence[t.Tuple[str, int]],
+    t.Sequence[float],
     t.Mapping[str, float],
+    t.Sequence[t.Tuple[str, float]],
 ]
 
 INITIAL_RESPONSE_IDENTIFIER: t.Final[int] = -1

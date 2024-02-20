@@ -244,9 +244,7 @@ class Client(di.DependencySupplier, abc.ABC):
 
         root_commands = self._commands.get(interaction.guild_id or GLOBAL_COMMAND_KEY, {}).get(interaction.command_name)
         if root_commands is None:
-            LOGGER.debug(
-                "ignoring autocomplete interaction received for unknown command - %r", interaction.command_name
-            )
+            LOGGER.debug("ignoring interaction received for unknown command - %r", interaction.command_name)
             return
 
         root_command = {
@@ -256,15 +254,13 @@ class Client(di.DependencySupplier, abc.ABC):
         }[int(interaction.command_type)]
 
         if root_command is None:
-            LOGGER.debug("ignoring autocomplete interaction received for unknown command - %r", " ".join(command_path))
+            LOGGER.debug("ignoring interaction received for unknown command - %r", " ".join(command_path))
             return
 
         if isinstance(root_command, groups.Group):
             command = root_command.resolve_subcommand(command_path[1:])
             if command is None:
-                LOGGER.debug(
-                    "ignoring autocomplete interaction received for unknown command - %r", " ".join(command_path)
-                )
+                LOGGER.debug("ignoring interaction received for unknown command - %r", " ".join(command_path))
                 return
         else:
             command = root_command
@@ -298,7 +294,7 @@ class Client(di.DependencySupplier, abc.ABC):
             LOGGER.debug("interaction appears to refer to option that has autocomplete disabled - ignoring")
             return
 
-        LOGGER.debug("%r - invoking autocomplete", command._command_data.name)
+        LOGGER.debug("%r - invoking autocomplete", command._command_data.qualified_name)
 
         with di.ensure_di_context(self):
             try:
@@ -355,7 +351,7 @@ class Client(di.DependencySupplier, abc.ABC):
 
         context = self.build_command_context(interaction, options or [], command)
 
-        LOGGER.debug("invoking command - %r", command._command_data.name)
+        LOGGER.debug("invoking command - %r", command._command_data.qualified_name)
 
         with di.ensure_di_context(self):
             try:

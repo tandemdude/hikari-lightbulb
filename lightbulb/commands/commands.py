@@ -79,6 +79,18 @@ class CommandData:
     parent: t.Optional[t.Union[groups.Group, groups.SubGroup]] = dataclasses.field(init=False, default=None)
     """The group that the command belongs to, or :obj:`None` if not applicable."""
 
+    @property
+    def qualified_name(self) -> str:
+        """The fully qualified name of the command, including the name of any command groups."""
+        names = [self.name]
+
+        parent = self.parent
+        while parent is not None:
+            names.append(parent.name)
+            parent = getattr(parent, "parent", None)
+
+        return " ".join(names[::-1])
+
     def as_command_builder(self) -> hikari.api.CommandBuilder:
         """
         Convert the command data into a hikari command builder object.

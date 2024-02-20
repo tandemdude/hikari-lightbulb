@@ -114,7 +114,7 @@ class Client(di.DependencySupplier, abc.ABC):
         be provided to make the commands created in specific guilds only - overriding the value for
         default enabled guilds.
 
-        This method can be used as a function or a second order decorator.
+        This method can be used as a function, or a first or second order decorator.
 
         Args:
             command (:obj:`~typing.Union` [ :obj:`~typing.Type` [ :obj:`~lightbulb.commands.commands.CommandBase ], :obj:`~lightbulb.commands.groups.Group` ]): The
@@ -134,6 +134,8 @@ class Client(di.DependencySupplier, abc.ABC):
                 client = lightbulb.client_from_app(...)
 
                 # valid
+                @client.register
+                # also valid
                 @client.register(guilds=[...])
                 class Example(
                     lightbulb.SlashCommand,

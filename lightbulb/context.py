@@ -23,18 +23,27 @@ from __future__ import annotations
 __all__ = ["AutocompleteContext", "Context"]
 
 import asyncio
+import collections.abc
 import dataclasses
 import functools
 import typing as t
 
 import hikari
+from hikari.api import special_endpoints
 
 if t.TYPE_CHECKING:
-    from hikari.api import special_endpoints
-
     from lightbulb import client as client_
     from lightbulb import commands
 
+AutocompleteResponseT = t.Union[
+    t.Sequence[special_endpoints.AutocompleteChoiceBuilder],
+    t.Sequence[t.Tuple[str, str]],
+    t.Sequence[t.Tuple[str, int]],
+    t.Sequence[t.Tuple[str, float]],
+    t.Mapping[str, str],
+    t.Mapping[str, int],
+    t.Mapping[str, float],
+]
 
 INITIAL_RESPONSE_IDENTIFIER: t.Final[int] = -1
 
@@ -64,6 +73,34 @@ class AutocompleteContext:
 
         self._focused = found
         return self._focused
+
+    @staticmethod
+    def _normalise_choices(choices: AutocompleteResponseT) -> t.Sequence[special_endpoints.AutocompleteChoiceBuilder]:
+        if isinstance(choices, dict):
+            return [hikari.impl.AutocompleteChoiceBuilder(name=k, value=v) for k, v in choices.items()]
+
+        def _to_command_choice(
+            item: t.Union[special_endpoints.AutocompleteChoiceBuilder, t.Tuple[str, t.Union[str, int, float]]],
+        ) -> special_endpoints.AutocompleteChoiceBuilder:
+            if isinstance(item, special_endpoints.AutocompleteChoiceBuilder):
+                return item
+            return hikari.impl.AutocompleteChoiceBuilder(name=item[0], value=item[1])
+
+        assert not isinstance(choices, collections.abc.Mapping)
+        return list(map(_to_command_choice, choices))
+
+    async def respond(self, choices: AutocompleteResponseT) -> None:
+        """
+        Create a response for the autocomplete interaction this context represents.
+
+        Args:
+            choices: The choices to respond to the interaction with.
+
+        Returns:
+            :obj:`None`
+        """
+        normalised_choices = self._normalise_choices(choices)
+        await self.interaction.create_response(normalised_choices)
 
 
 @dataclasses.dataclass(slots=True)

@@ -67,7 +67,12 @@ class AutocompleteContext:
 
     @property
     def focused(self) -> hikari.AutocompleteInteractionOption:
-        """The focused option for the autocomplete interaction."""
+        """
+        The focused option for the autocomplete interaction - the option currently being autocompleted.
+
+        See Also:
+            :meth:`~AutocompleteContext.get_option`
+        """
         if self._focused is not None:
             return self._focused
 
@@ -75,6 +80,22 @@ class AutocompleteContext:
 
         self._focused = found
         return self._focused
+
+    def get_option(self, name: str) -> t.Optional[hikari.AutocompleteInteractionOption]:
+        """
+        Get the option with the given name if available.
+        
+        Args:
+            name (:obj:`str`): The name of the option to get.
+
+        Returns:
+            :obj:`~typing.Optional` [ :obj:`hikari.interactions.command_interactions.AutocompleteInteractionOption` ]: The
+                option, or :obj:`None` if not available from the interaction.
+        
+        See Also:
+            :obj:`~AutocompleteContext.focused`
+        """  # noqa: E501
+        return next(filter(lambda opt: opt.name == name, self.options), None)
 
     @staticmethod
     def _normalise_choices(choices: AutocompleteResponseT) -> t.Sequence[special_endpoints.AutocompleteChoiceBuilder]:

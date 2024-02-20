@@ -25,7 +25,6 @@ __all__ = ["AutocompleteContext", "Context"]
 import asyncio
 import collections.abc
 import dataclasses
-import functools
 import typing as t
 
 import hikari

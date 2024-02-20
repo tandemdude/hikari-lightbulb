@@ -20,16 +20,6 @@
 # SOFTWARE.
 from __future__ import annotations
 
-import dataclasses
-import typing as t
-
-import hikari
-
-from lightbulb import utils
-
-if t.TYPE_CHECKING:
-    from lightbulb import commands
-
 __all__ = [
     "OptionData",
     "Option",
@@ -43,6 +33,19 @@ __all__ = [
     "mentionable",
     "attachment",
 ]
+
+import dataclasses
+import typing as t
+
+import hikari
+
+from lightbulb import utils
+
+if t.TYPE_CHECKING:
+    from lightbulb import commands
+    from lightbulb import context
+
+    AutocompleteProviderT = t.Callable[[context.AutocompleteContext], t.Awaitable[t.Any]]  # TODO
 
 T = t.TypeVar("T")
 D = t.TypeVar("D")
@@ -68,22 +71,28 @@ class OptionData(t.Generic[D]):
     """The name of the option."""
     description: str
     """The description of the option."""
+
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED
     """The default value for the option."""
     choices: hikari.UndefinedOr[t.Any] = hikari.UNDEFINED  # TODO
     """The choices for the option."""
     channel_types: hikari.UndefinedOr[t.Sequence[hikari.ChannelType]] = hikari.UNDEFINED
     """The channel types for the option."""
+
     min_value: hikari.UndefinedOr[t.Union[int, float]] = hikari.UNDEFINED
     """The minimum value for the option."""
     max_value: hikari.UndefinedOr[t.Union[int, float]] = hikari.UNDEFINED
     """The maximum value for the option."""
+
     min_length: hikari.UndefinedOr[int] = hikari.UNDEFINED
     """The minimum length for the option."""
     max_length: hikari.UndefinedOr[int] = hikari.UNDEFINED
     """The maximum length for the option."""
-    autocomplete: hikari.UndefinedOr[t.Any] = hikari.UNDEFINED  # TODO
-    """TODO"""
+
+    autocomplete: bool = False
+    """Whether autocomplete is enabled for the option."""
+    autocomplete_provider: hikari.UndefinedOr[AutocompleteProviderT] = hikari.UNDEFINED
+
     localizations: t.Any = hikari.UNDEFINED  # TODO
     """TODO"""
 
@@ -99,7 +108,7 @@ class OptionData(t.Generic[D]):
             max_value=_non_undefined_or(self.max_value, None),
             min_length=_non_undefined_or(self.min_length, None),
             max_length=_non_undefined_or(self.max_length, None),
-            autocomplete=self.autocomplete is not hikari.UNDEFINED,
+            autocomplete=self.autocomplete,
         )
 
 
@@ -127,7 +136,7 @@ class Option(t.Generic[T, D]):
         :meth:`~attachment`
     """
 
-    __slots__ = ("_data", "_unbound_default")
+    __slots__ = ("_data", "_unbound_default", "_supports_autocomplete")
 
     def __init__(self, data: OptionData[D], default_when_not_bound: T) -> None:
         self._data = data
@@ -206,7 +215,7 @@ def string(
     choices: t.Any = hikari.UNDEFINED,  # TODO
     min_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     max_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
-    autocomplete: t.Any = hikari.UNDEFINED,  # TODO
+    autocomplete: hikari.UndefinedOr[AutocompleteProviderT] = hikari.UNDEFINED,
 ) -> str:
     """
     A string option.
@@ -218,7 +227,7 @@ def string(
         choices: TODO
         min_length (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`int` ]): The minimum length for the option.
         max_length (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`int` ]): The maximum length for the option.
-        autocomplete: TODO
+        autocomplete: The autocomplete provider function to use for the option.
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
@@ -234,7 +243,8 @@ def string(
                 choices=choices,
                 min_length=min_length,
                 max_length=max_length,
-                autocomplete=autocomplete,
+                autocomplete=autocomplete is not hikari.UNDEFINED,
+                autocomplete_provider=autocomplete,
             ),
             "",
         ),
@@ -248,7 +258,7 @@ def integer(
     choices: t.Any = hikari.UNDEFINED,  # TODO
     min_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     max_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
-    autocomplete: t.Any = hikari.UNDEFINED,  # TODO
+    autocomplete: hikari.UndefinedOr[AutocompleteProviderT] = hikari.UNDEFINED,
 ) -> int:
     """
     An integer option.
@@ -260,7 +270,7 @@ def integer(
         choices: TODO
         min_value (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`int` ]): The minimum value for the option.
         max_value (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`int` ]): The maximum value for the option.
-        autocomplete: TODO
+        autocomplete: The autocomplete provider function to use for the option.
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
@@ -276,7 +286,8 @@ def integer(
                 choices=choices,
                 min_value=min_value,
                 max_value=max_value,
-                autocomplete=autocomplete,
+                autocomplete=autocomplete is not hikari.UNDEFINED,
+                autocomplete_provider=autocomplete,
             ),
             0,
         ),
@@ -320,7 +331,7 @@ def number(
     choices: t.Any = hikari.UNDEFINED,  # TODO
     min_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
     max_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
-    autocomplete: t.Any = hikari.UNDEFINED,  # TODO
+    autocomplete: hikari.UndefinedOr[AutocompleteProviderT] = hikari.UNDEFINED,
 ) -> float:
     """
     A numeric (float) option.
@@ -332,7 +343,7 @@ def number(
         choices: TODO
         min_value (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`float` ]): The minimum value for the option.
         max_value (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`float` ]): The maximum value for the option.
-        autocomplete: TODO
+        autocomplete: The autocomplete provider function to use for the option.
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
@@ -348,7 +359,8 @@ def number(
                 choices=choices,
                 min_value=min_value,
                 max_value=max_value,
-                autocomplete=autocomplete,
+                autocomplete=autocomplete is not hikari.UNDEFINED,
+                autocomplete_provider=autocomplete,
             ),
             0.0,
         ),

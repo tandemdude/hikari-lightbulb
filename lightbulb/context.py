@@ -20,10 +20,11 @@
 # SOFTWARE.
 from __future__ import annotations
 
-__all__ = ["Context"]
+__all__ = ["AutocompleteContext", "Context"]
 
 import asyncio
 import dataclasses
+import functools
 import typing as t
 
 import hikari
@@ -36,6 +37,33 @@ if t.TYPE_CHECKING:
 
 
 INITIAL_RESPONSE_IDENTIFIER: t.Final[int] = -1
+
+
+@dataclasses.dataclass(slots=True)
+class AutocompleteContext:
+    client: client_.Client
+    """The client that created the context."""
+
+    interaction: hikari.AutocompleteInteraction
+    """The interaction for the autocomplete invocation."""
+    options: t.Sequence[hikari.AutocompleteInteractionOption]
+    """The options provided with the autocomplete interaction."""
+
+    command: t.Type[commands.CommandBase]
+    """Command class for the autocomplete invocation."""
+
+    _focused: t.Optional[hikari.AutocompleteInteractionOption] = dataclasses.field(init=False, default=None)
+
+    @functools.cached_property
+    def focused(self) -> hikari.AutocompleteInteractionOption:
+        """The focused option for the autocomplete interaction."""
+        if self._focused is not None:
+            return self._focused
+
+        found = next(filter(lambda opt: opt.is_focused, self.options))
+
+        self._focused = found
+        return self._focused
 
 
 @dataclasses.dataclass(slots=True)

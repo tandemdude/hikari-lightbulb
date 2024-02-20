@@ -29,6 +29,7 @@ import hikari
 
 from lightbulb.commands import execution
 from lightbulb.commands import options as options_
+from lightbulb.internal import constants
 
 if t.TYPE_CHECKING:
     from lightbulb import context as context_
@@ -178,7 +179,7 @@ class CommandMeta(type):
         for name, item in attrs.items():
             if cls._is_option(item):
                 options[name] = item._data
-            elif hasattr(item, "__lb_cmd_invoke_method__"):
+            elif hasattr(item, constants.COMMAND_INVOKE_METHOD_MARKER):
                 invoke_method = name
 
         # Prevent command creation if no invoke method was found
@@ -246,8 +247,8 @@ class CommandBase:
         if context is None:
             raise RuntimeError("cannot resolve option if no context is available")
 
-        if option._data.name in context.command._resolved_option_cache:
-            return t.cast(T, context.command._resolved_option_cache[option._data.name])
+        if option._data.name in self._resolved_option_cache:
+            return t.cast(T, self._resolved_option_cache[option._data.name])
 
         found = [opt for opt in context.options if opt.name == option._data.name]
 
@@ -259,7 +260,7 @@ class CommandBase:
             return option._data.default
 
         if option._data.type in _PRIMITIVE_OPTION_TYPES:
-            context.command._resolved_option_cache[option._data.name] = found[0].value
+            self._resolved_option_cache[option._data.name] = found[0].value
             return t.cast(T, found[0].value)
 
         snowflake = found[0].value
@@ -281,7 +282,7 @@ class CommandBase:
         else:
             raise TypeError("unsupported option type passed")
 
-        context.command._resolved_option_cache[option._data.name] = resolved_option
+        self._resolved_option_cache[option._data.name] = resolved_option
         return t.cast(T, resolved_option)
 
     @classmethod

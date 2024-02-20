@@ -40,6 +40,9 @@ AutocompleteResponseT = t.Union[
     t.Sequence[t.Tuple[str, str]],
     t.Sequence[t.Tuple[str, int]],
     t.Sequence[t.Tuple[str, float]],
+    t.Sequence[str],
+    t.Sequence[int],
+    t.Sequence[float],
     t.Mapping[str, str],
     t.Mapping[str, int],
     t.Mapping[str, float],
@@ -63,7 +66,7 @@ class AutocompleteContext:
 
     _focused: t.Optional[hikari.AutocompleteInteractionOption] = dataclasses.field(init=False, default=None)
 
-    @functools.cached_property
+    @property
     def focused(self) -> hikari.AutocompleteInteractionOption:
         """The focused option for the autocomplete interaction."""
         if self._focused is not None:
@@ -80,10 +83,22 @@ class AutocompleteContext:
             return [hikari.impl.AutocompleteChoiceBuilder(name=k, value=v) for k, v in choices.items()]
 
         def _to_command_choice(
-            item: t.Union[special_endpoints.AutocompleteChoiceBuilder, t.Tuple[str, t.Union[str, int, float]]],
+            item: t.Union[
+                special_endpoints.AutocompleteChoiceBuilder,
+                t.Tuple[str, str],
+                t.Tuple[str, int],
+                t.Tuple[str, float],
+                str,
+                int,
+                float,
+            ],
         ) -> special_endpoints.AutocompleteChoiceBuilder:
             if isinstance(item, special_endpoints.AutocompleteChoiceBuilder):
                 return item
+
+            if isinstance(item, (str, int, float)):
+                return hikari.impl.AutocompleteChoiceBuilder(name=str(item), value=item)
+
             return hikari.impl.AutocompleteChoiceBuilder(name=item[0], value=item[1])
 
         assert not isinstance(choices, collections.abc.Mapping)

@@ -178,7 +178,7 @@ class CommandMeta(type):
         # Iterate through new class attributes to find options and invoke method
         for name, item in attrs.items():
             if cls._is_option(item):
-                options[name] = item._data
+                options[item._data.name] = item._data
             elif hasattr(item, constants.COMMAND_INVOKE_METHOD_MARKER):
                 invoke_method = name
 

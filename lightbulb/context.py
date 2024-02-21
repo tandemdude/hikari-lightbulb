@@ -84,14 +84,14 @@ class AutocompleteContext:
     def get_option(self, name: str) -> t.Optional[hikari.AutocompleteInteractionOption]:
         """
         Get the option with the given name if available.
-        
+
         Args:
             name (:obj:`str`): The name of the option to get.
 
         Returns:
             :obj:`~typing.Optional` [ :obj:`hikari.interactions.command_interactions.AutocompleteInteractionOption` ]: The
                 option, or :obj:`None` if not available from the interaction.
-        
+
         See Also:
             :obj:`~AutocompleteContext.focused`
         """  # noqa: E501
@@ -99,7 +99,7 @@ class AutocompleteContext:
 
     @staticmethod
     def _normalise_choices(choices: AutocompleteResponseT) -> t.Sequence[special_endpoints.AutocompleteChoiceBuilder]:
-        if isinstance(choices, dict):
+        if isinstance(choices, collections.abc.Mapping):
             return [hikari.impl.AutocompleteChoiceBuilder(name=k, value=v) for k, v in choices.items()]
 
         def _to_command_choice(
@@ -121,7 +121,6 @@ class AutocompleteContext:
 
             return hikari.impl.AutocompleteChoiceBuilder(name=item[0], value=item[1])
 
-        assert not isinstance(choices, collections.abc.Mapping)
         return list(map(_to_command_choice, choices))
 
     async def respond(self, choices: AutocompleteResponseT) -> None:

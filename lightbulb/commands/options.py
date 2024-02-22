@@ -34,6 +34,7 @@ __all__ = [
     "attachment",
 ]
 
+import collections.abc
 import dataclasses
 import typing as t
 
@@ -74,7 +75,7 @@ class OptionData(t.Generic[D]):
 
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED
     """The default value for the option."""
-    choices: hikari.UndefinedOr[t.Any] = hikari.UNDEFINED  # TODO
+    choices: hikari.UndefinedOr[t.Sequence[hikari.CommandChoice]] = hikari.UNDEFINED
     """The choices for the option."""
     channel_types: hikari.UndefinedOr[t.Sequence[hikari.ChannelType]] = hikari.UNDEFINED
     """The channel types for the option."""
@@ -208,11 +209,70 @@ class ContextMenuOption(Option[CtxMenuOptionReturnT, CtxMenuOptionReturnT]):
         return message
 
 
+# TODO - consider how to implement choice localisation
+def _normalise_choices(
+    choices: t.Union[
+        t.Sequence[hikari.CommandChoice],
+        t.Mapping[str, t.Union[str, int, float]],
+        t.Sequence[t.Tuple[str, t.Union[str, int, float]]],
+        t.Sequence[t.Union[str, int, float]],
+    ],
+) -> t.Sequence[hikari.CommandChoice]:
+    if isinstance(choices, collections.abc.Mapping):
+        return [hikari.CommandChoice(name=k, value=v) for k, v in choices.items()]
+
+    def _to_command_choice(
+        item: t.Union[
+            hikari.CommandChoice,
+            t.Tuple[str, t.Union[str, int, float]],
+            str,
+            int,
+            float,
+        ],
+    ) -> hikari.CommandChoice:
+        if isinstance(item, hikari.CommandChoice):
+            return item
+
+        if isinstance(item, (str, int, float)):
+            return hikari.CommandChoice(name=str(item), value=item)
+
+        return hikari.CommandChoice(name=item[0], value=item[1])
+
+    return list(map(_to_command_choice, choices))
+
+
+def _validate_name_and_description(name: str, description: str) -> None:
+    if len(name) < 1 or len(name) > 32:
+        raise ValueError("'name' - must be 1-32 characters")
+    if len(description) < 1 or len(description) > 100:
+        raise ValueError("'description' - must be 1-100 characters")
+
+
+def _validate_choices(choices: t.Sequence[hikari.CommandChoice]) -> None:
+    if len(choices) > 25:
+        raise ValueError("'choices' - there cannot be more than 25 choices")
+
+    for i, choice in enumerate(choices):
+        if len(choice.name) < 1 or len(choice.name) > 100:
+            raise ValueError(f"'choices[{i}]' - name must be 1-100 characters")
+        if isinstance(choice.value, str) and len(choice.value) > 100:
+            raise ValueError(f"'choices[{i}]' - value must be <= 100 characters")
+
+
+def _validate_min_and_max_length(min_length: hikari.UndefinedOr[int], max_length: hikari.UndefinedOr[int]) -> None:
+    if min_length is not hikari.UNDEFINED and (min_length < 0 or min_length > 6000):
+        raise ValueError("'min_length' - must be between 0 and 6000 (inclusive)")
+    if max_length is not hikari.UNDEFINED and (max_length < 1 or max_length > 6000):
+        raise ValueError("'max_length' - must be between 1 and 6000 (inclusive)")
+
+
 def string(
     name: str,
     description: str,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
-    choices: t.Any = hikari.UNDEFINED,  # TODO
+    choices: hikari.UndefinedOr[
+        t.Union[t.Sequence[hikari.CommandChoice], t.Mapping[str, str], t.Sequence[t.Tuple[str, str]], t.Sequence[str]]
+    ] = hikari.UNDEFINED,
     min_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     max_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     autocomplete: hikari.UndefinedOr[AutocompleteProviderT] = hikari.UNDEFINED,
@@ -224,7 +284,7 @@ def string(
         name (:obj:`str`): The name of the option.
         description (:obj:`str`): The description of the option.
         default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
-        choices: TODO
+        choices (:obj:`~hikari.undefined.UndefinedOr` [ ``ChoicesT`` ]): TODO
         min_length (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`int` ]): The minimum length for the option.
         max_length (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`int` ]): The maximum length for the option.
         autocomplete: The autocomplete provider function to use for the option.
@@ -232,6 +292,13 @@ def string(
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
     """
+    if choices is not hikari.UNDEFINED:
+        choices = _normalise_choices(choices)
+        _validate_choices(choices)
+
+    _validate_name_and_description(name, description)
+    _validate_min_and_max_length(min_length, max_length)
+
     return t.cast(
         str,
         Option(
@@ -255,7 +322,9 @@ def integer(
     name: str,
     description: str,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
-    choices: t.Any = hikari.UNDEFINED,  # TODO
+    choices: hikari.UndefinedOr[
+        t.Union[t.Sequence[hikari.CommandChoice], t.Mapping[str, int], t.Sequence[t.Tuple[str, int]], t.Sequence[int]]
+    ] = hikari.UNDEFINED,
     min_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     max_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     autocomplete: hikari.UndefinedOr[AutocompleteProviderT] = hikari.UNDEFINED,
@@ -267,7 +336,7 @@ def integer(
         name (:obj:`str`): The name of the option.
         description (:obj:`str`): The description of the option.
         default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
-        choices: TODO
+        choices (:obj:`~hikari.undefined.UndefinedOr` [ ``ChoicesT`` ]): TODO
         min_value (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`int` ]): The minimum value for the option.
         max_value (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`int` ]): The maximum value for the option.
         autocomplete: The autocomplete provider function to use for the option.
@@ -275,6 +344,12 @@ def integer(
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
     """
+    if choices is not hikari.UNDEFINED:
+        choices = _normalise_choices(choices)
+        _validate_choices(choices)
+
+    _validate_name_and_description(name, description)
+
     return t.cast(
         int,
         Option(
@@ -310,6 +385,8 @@ def boolean(
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
     """
+    _validate_name_and_description(name, description)
+
     return t.cast(
         bool,
         Option(
@@ -328,7 +405,11 @@ def number(
     name: str,
     description: str,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
-    choices: t.Any = hikari.UNDEFINED,  # TODO
+    choices: hikari.UndefinedOr[
+        t.Union[
+            t.Sequence[hikari.CommandChoice], t.Mapping[str, float], t.Sequence[t.Tuple[str, float]], t.Sequence[float]
+        ]
+    ] = hikari.UNDEFINED,
     min_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
     max_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
     autocomplete: hikari.UndefinedOr[AutocompleteProviderT] = hikari.UNDEFINED,
@@ -340,7 +421,7 @@ def number(
         name (:obj:`str`): The name of the option.
         description (:obj:`str`): The description of the option.
         default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
-        choices: TODO
+        choices (:obj:`~hikari.undefined.UndefinedOr` [ ``ChoicesT`` ]): TODO
         min_value (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`float` ]): The minimum value for the option.
         max_value (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`float` ]): The maximum value for the option.
         autocomplete: The autocomplete provider function to use for the option.
@@ -348,6 +429,12 @@ def number(
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
     """
+    if choices is not hikari.UNDEFINED:
+        choices = _normalise_choices(choices)
+        _validate_choices(choices)
+
+    _validate_name_and_description(name, description)
+
     return t.cast(
         float,
         Option(
@@ -383,6 +470,8 @@ def user(
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
     """
+    _validate_name_and_description(name, description)
+
     return t.cast(
         hikari.User,
         Option(
@@ -416,6 +505,8 @@ def channel(
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
     """  # noqa: E501
+    _validate_name_and_description(name, description)
+
     return t.cast(
         hikari.PartialChannel,
         Option(
@@ -447,6 +538,8 @@ def role(
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
     """
+    _validate_name_and_description(name, description)
+
     return t.cast(
         hikari.Role,
         Option(
@@ -477,6 +570,8 @@ def mentionable(
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
     """
+    _validate_name_and_description(name, description)
+
     return t.cast(
         hikari.Snowflake,
         Option(
@@ -507,6 +602,8 @@ def attachment(
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
     """
+    _validate_name_and_description(name, description)
+
     return t.cast(
         hikari.Attachment,
         Option(

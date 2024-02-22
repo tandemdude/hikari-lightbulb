@@ -87,3 +87,9 @@ reportPrivateUsage = "none" # Too annoying
 reportUnknownMemberType = "warning"
 reportUntypedFunctionDecorator = "warning"
 reportOptionalMemberAccess = "warning"
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    'ignore:.*"@coroutine" decorator is deprecated.*:DeprecationWarning',
+    "ignore:.*The loop argument is deprecated.*:DeprecationWarning"
+]

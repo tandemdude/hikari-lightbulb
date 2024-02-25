@@ -62,4 +62,5 @@ __all__ = [
     "with_di",
 ]
 
-__version__ = "3.0.0"
+# Do not change the below field manually. It is updated by CI upon release.
+__version__ = "3.0.0.dev0"

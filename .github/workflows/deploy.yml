@@ -44,7 +44,6 @@ jobs:
 
       - name: Upload to PyPI
         env:
-          RELEASE_WEBHOOK: ${{ secrets.RELEASE_WEBHOOK }}
           FLIT_USERNAME: ${{ secrets.FLIT_USERNAME }}
           FLIT_PASSWORD: ${{ secrets.FLIT_PASSWORD }}
         run: |

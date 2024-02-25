@@ -37,38 +37,32 @@ options.sessions = ["format_fix", "typecheck", "slotscheck"]
 
 @nox.session()
 def format_fix(session):
-    session.install("-Ur", "dev-requirements/formatting.txt")
+    session.install(".[crontrigger,dev.format]")
     session.run("python", "-m", "ruff", "format", *SCRIPT_PATHS)
     session.run("python", "-m", "ruff", "--fix", *SCRIPT_PATHS)
 
 
 @nox.session()
 def format_check(session: nox.Session):
-    session.install("-Ur", "dev-requirements/formatting.txt")
+    session.install(".[crontrigger,dev.format]")
     session.run("python", "-m", "ruff", "format", *SCRIPT_PATHS, "--check")
     session.run("python", "-m", "ruff", "--output-format", "github", *SCRIPT_PATHS)
 
 
 @nox.session()
 def typecheck(session: nox.Session):
-    session.install("-Ur", "requirements.txt")
-    session.install("-Ur", "crontrigger_requirements.txt")
-    session.install("-Ur", "dev-requirements/pyright.txt")
+    session.install(".[crontrigger,dev.typecheck]")
     session.run("python", "-m", "pyright")
 
 
 @nox.session()
 def slotscheck(session: nox.Session):
-    session.install("-Ur", "requirements.txt")
-    session.install("-Ur", "crontrigger_requirements.txt")
-    session.install("-Ur", "dev-requirements/slotscheck.txt")
+    session.install(".[crontrigger,dev.slotscheck]")
     session.run("python", "-m", "slotscheck", "-m", "lightbulb")
 
 
 @nox.session(reuse_venv=True)
 def sphinx(session: nox.Session):
-    session.install("-Ur", "dev-requirements/docs.txt")
-    session.install("-Ur", "crontrigger_requirements.txt")
-    session.install("-Ur", "requirements.txt")
+    session.install(".[crontrigger,dev.docs]")
     session.run("python", "./scripts/docs/api_reference_generator.py")
     session.run("python", "-m", "sphinx.cmd.build", "docs/source", "docs/build", "-b", "html")

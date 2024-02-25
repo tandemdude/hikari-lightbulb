@@ -28,7 +28,6 @@ SCRIPT_PATHS = [
     os.path.join(".", "lightbulb"),
     os.path.join(".", "scripts"),
     "noxfile.py",
-    "release_helpers.py",
     "docs/source/conf.py",
 ]
 

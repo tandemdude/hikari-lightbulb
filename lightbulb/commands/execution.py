@@ -30,13 +30,11 @@ from lightbulb.internal import constants
 from lightbulb.internal import di
 
 if t.TYPE_CHECKING:
-    import typing_extensions as t_ex
-
     from lightbulb import context as context_
 
 __all__ = ["ExecutionStep", "ExecutionSteps", "ExecutionHook", "ExecutionPipeline", "hook", "invoke"]
 
-ExecutionHookFuncT: t_ex.TypeAlias = t.Callable[
+ExecutionHookFuncT: t.TypeAlias = t.Callable[
     ["ExecutionPipeline", "context_.Context"], t.Union[t.Awaitable[None], None]
 ]
 

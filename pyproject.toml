@@ -6,7 +6,6 @@ build-backend = "flit_core.buildapi"
 name = "hikari-lightbulb"
 readme = "README.md"
 requires-python = ">=3.10.0,<3.13"
-license = {file = "LICENSE"}
 authors = [{name = "tandemdude", email = "tandemdude1@gmail.com"}]
 keywords = ["hikari"]
 classifiers = [

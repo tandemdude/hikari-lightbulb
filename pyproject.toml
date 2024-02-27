@@ -25,7 +25,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
-dependencies = ["hikari>=2.0.0.dev122, <3", "typing-extensions>=4.9.0, <5", "svcs>=23.21.0, <24"]
+dependencies = ["hikari>=2.0.0.dev122, <3", "svcs>=23.21.0, <24"]
 dynamic = ["version", "description"]
 
 [project.urls]

@@ -68,9 +68,13 @@ class CommandData:
     """Whether the command is marked as nsfw."""
     localizations: t.Any  # TODO
     """Not yet implemented"""
+    dm_enabled: bool
+    """Whether the command is enabled in direct messages. This field is ignored for subcommands."""
+    default_member_permissions: hikari.UndefinedOr[hikari.Permissions]
+    """The default permissions required to use the command in a guild. This field is ignored for subcommands."""
+
     hooks: t.Set[execution.ExecutionHook]
     """Hooks to run prior to the invoke method being executed."""
-
     options: t.Mapping[str, options_.OptionData[t.Any]]
     """Map of option name to option data for the command options."""
     invoke_method: str
@@ -102,9 +106,17 @@ class CommandData:
             bld = hikari.impl.SlashCommandBuilder(name=self.name, description=self.description)
             for option in self.options.values():
                 bld.add_option(option.to_command_option())
+
+            bld.set_is_dm_enabled(self.dm_enabled)
+            bld.set_default_member_permissions(self.default_member_permissions)
+
             return bld
 
-        return hikari.impl.ContextMenuCommandBuilder(type=self.type, name=self.name)
+        return (
+            hikari.impl.ContextMenuCommandBuilder(type=self.type, name=self.name)
+            .set_is_dm_enabled(self.dm_enabled)
+            .set_default_member_permissions(self.default_member_permissions)
+        )
 
     def to_command_option(self) -> hikari.CommandOption:
         """
@@ -139,6 +151,10 @@ class CommandMeta(type):
         description (:obj:`str`, optional): The description of the command. Only required for slash commands.
         nsfw (:obj:`bool`, optional): Whether the command should be marked as nsfw. Defaults to :obj:`False`.
         localizations (TODO, optional): Not yet implemented
+        dm_enabled (:obj:`bool`, optional): Whether the command can be used in direct messages. Defaults to :obj:`True`.
+        default_member_permissions (:obj:`hikari.Permissions`, optional): The default permissions required for a
+            guild member to use the command. If unspecified, all users can use the command by default. Set to
+            ``hikari.Permissions.NONE`` to disable for everyone apart from admins.
         hooks (:obj:`~typing.Sequence` [ :obj:`~lightbulb.commands.execution.ExecutionHook` ], optional): The hooks to
             run before the command invocation function is executed. Defaults to an empty set.
     """
@@ -176,6 +192,10 @@ class CommandMeta(type):
 
         nsfw: bool = kwargs.pop("nsfw", False)
         localizations: t.Any = kwargs.pop("localizations", None)
+        dm_enabled: bool = kwargs.pop("dm_enabled", True)
+        default_member_permissions: hikari.UndefinedOr[hikari.Permissions] = kwargs.pop(
+            "default_member_permissions", hikari.UNDEFINED
+        )
 
         raw_hooks: t.Any = kwargs.pop("hooks", None)
         if raw_hooks is not None and not isinstance(raw_hooks, collections.abc.Iterable):
@@ -204,6 +224,8 @@ class CommandMeta(type):
             description=description,
             nsfw=nsfw,
             localizations=localizations,
+            dm_enabled=dm_enabled,
+            default_member_permissions=default_member_permissions,
             hooks=hooks,
             options=options,
             invoke_method=invoke_method,

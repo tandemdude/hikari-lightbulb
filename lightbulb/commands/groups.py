@@ -156,6 +156,11 @@ class Group(GroupMixin):
     """The description of the group."""
     nsfw: bool = False
     """Whether the group should be marked as nsfw. Defaults to :obj:`False`."""
+    dm_enabled: bool = True
+    """Whether the group is enabled in direct messages."""
+    default_member_permissions: hikari.UndefinedOr[hikari.Permissions] = hikari.UNDEFINED
+    """The default permissions required to use the group in a guild."""
+
     _commands: GroupCommandMappingT = dataclasses.field(init=False, default_factory=dict)
 
     def subgroup(self, name: str, description: str) -> SubGroup:
@@ -186,5 +191,8 @@ class Group(GroupMixin):
 
         for command_or_group in self._commands.values():
             bld.add_option(command_or_group.to_command_option())
+
+        bld.set_is_dm_enabled(self.dm_enabled)
+        bld.set_default_member_permissions(self.default_member_permissions)
 
         return bld

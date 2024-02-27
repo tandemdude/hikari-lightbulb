@@ -83,6 +83,15 @@ class CommandData:
     parent: t.Optional[t.Union[groups.Group, groups.SubGroup]] = dataclasses.field(init=False, default=None)
     """The group that the command belongs to, or :obj:`None` if not applicable."""
 
+    def __post_init__(self) -> None:
+        if len(self.name) < 1 or len(self.name) > 32:
+            raise ValueError("'name' - must be 1-32 characters")
+        if self.type is hikari.CommandType.SLASH and (len(self.description) < 1 or len(self.description) > 100):
+            raise ValueError("'description' - must be 1-100 characters")
+
+        if len(self.options) > 25:
+            raise ValueError("'options' - there cannot be more than 25 options")
+
     @property
     def qualified_name(self) -> str:
         """The fully qualified name of the command, including the name of any command groups."""

@@ -1,7 +1,5 @@
 graft lightbulb
-include requirements.txt
-include crontrigger_requirements.txt
-include setup.py
-include README.md
+include LICENSE
 include pyproject.toml
+include README.md
 global-exclude *.py[cod]

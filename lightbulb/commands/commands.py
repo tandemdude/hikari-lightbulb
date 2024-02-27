@@ -358,6 +358,10 @@ class SlashCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.S
         description (:obj:`str`, required): The description of the command.
         nsfw (:obj:`bool`, optional): Whether the command should be marked as nsfw. Defaults to :obj:`False`.
         localizations (TODO, optional): Not yet implemented
+        dm_enabled (:obj:`bool`, optional): Whether the command can be used in direct messages. Defaults to :obj:`True`.
+        default_member_permissions (:obj:`hikari.Permissions`, optional): The default permissions required for a
+            guild member to use the command. If unspecified, all users can use the command by default. Set to
+            ``hikari.Permissions.NONE`` to disable for everyone apart from admins.
         hooks (:obj:`~typing.Sequence` [ :obj:`~lightbulb.commands.execution.ExecutionHook` ], optional): The hooks to
             run before the command invocation function is executed. Defaults to an empty set.
 
@@ -390,6 +394,10 @@ class UserCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.US
         name (:obj:`str`, required): The name of the command.
         nsfw (:obj:`bool`, optional): Whether the command should be marked as nsfw. Defaults to :obj:`False`.
         localizations (TODO, optional): Not yet implemented
+        dm_enabled (:obj:`bool`, optional): Whether the command can be used in direct messages. Defaults to :obj:`True`.
+        default_member_permissions (:obj:`hikari.Permissions`, optional): The default permissions required for a
+            guild member to use the command. If unspecified, all users can use the command by default. Set to
+            ``hikari.Permissions.NONE`` to disable for everyone apart from admins.
         hooks (:obj:`~typing.Sequence` [ :obj:`~lightbulb.commands.execution.ExecutionHook` ], optional): The hooks to
             run before the command invocation function is executed. Defaults to an empty set.
 
@@ -425,6 +433,10 @@ class MessageCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType
         name (:obj:`str`, required): The name of the command.
         nsfw (:obj:`bool`, optional): Whether the command should be marked as nsfw. Defaults to :obj:`False`.
         localizations (TODO, optional): Not yet implemented
+        dm_enabled (:obj:`bool`, optional): Whether the command can be used in direct messages. Defaults to :obj:`True`.
+        default_member_permissions (:obj:`hikari.Permissions`, optional): The default permissions required for a
+            guild member to use the command. If unspecified, all users can use the command by default. Set to
+            ``hikari.Permissions.NONE`` to disable for everyone apart from admins.
         hooks (:obj:`~typing.Sequence` [ :obj:`~lightbulb.commands.execution.ExecutionHook` ], optional): The hooks to
             run before the command invocation function is executed. Defaults to an empty set.
 

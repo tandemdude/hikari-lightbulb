@@ -195,9 +195,6 @@ class CommandMeta(type):
 
         cmd_name: str = kwargs.pop("name")
         description: str = kwargs.pop("description", "")
-        # Descriptions are only required for slash commands
-        if not description and cmd_type is hikari.CommandType.SLASH:
-            raise TypeError("'description' is required for slash commands")
 
         nsfw: bool = kwargs.pop("nsfw", False)
         localizations: t.Any = kwargs.pop("localizations", None)

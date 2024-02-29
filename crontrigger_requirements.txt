@@ -1,2 +1,2 @@
-croniter~=2.0.1
+croniter~=2.0.2
 types-croniter~=2.0.0

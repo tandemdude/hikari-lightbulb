@@ -28,8 +28,11 @@ import typing as t
 
 import hikari
 
+from lightbulb.commands import utils
+
 if t.TYPE_CHECKING:
     from lightbulb.commands import commands
+    from lightbulb.localization import localization
 
 CommandT = t.TypeVar("CommandT", bound=t.Type["commands.CommandBase"])
 SubGroupCommandMappingT = t.Dict[str, t.Type["commands.CommandBase"]]
@@ -44,12 +47,10 @@ class GroupMixin(abc.ABC):
     _commands: t.Union[SubGroupCommandMappingT, GroupCommandMappingT]
 
     @t.overload
-    def register(self) -> t.Callable[[CommandT], CommandT]:
-        ...
+    def register(self) -> t.Callable[[CommandT], CommandT]: ...
 
     @t.overload
-    def register(self, command: CommandT) -> CommandT:
-        ...
+    def register(self, command: CommandT) -> CommandT: ...
 
     def register(self, command: t.Optional[CommandT] = None) -> t.Union[CommandT, t.Callable[[CommandT], CommandT]]:
         """
@@ -126,34 +127,54 @@ class SubGroup(GroupMixin):
     """The name of the subgroup."""
     description: str
     """The description of the subgroup."""
+    localize: bool
+    """Whether the group name and description should be localized."""
     parent: Group
     """The parent group of the subgroup."""
     _commands: SubGroupCommandMappingT = dataclasses.field(init=False, default_factory=dict)
 
-    def to_command_option(self) -> hikari.CommandOption:
+    def to_command_option(self, localization_manager: localization.LocalizationManager) -> hikari.CommandOption:
         """
         Convert the subgroup into a subgroup command option.
 
         Returns:
             :obj:`hikari.CommandOption`: The subgroup option for this subgroup.
         """
-        # TODO - localisations
+        name, description = self.name, self.description
+        name_localizations: utils.LocalizationMappingT = {}
+        description_localizations: utils.LocalizationMappingT = {}
+
+        if self.localize:
+            name, description, name_localizations, description_localizations = utils.localize_name_and_description(
+                name, description, localization_manager
+            )
+
         return hikari.CommandOption(
             type=hikari.OptionType.SUB_COMMAND_GROUP,
-            name=self.name,
-            description=self.description,
-            options=[command.to_command_option() for command in self._commands.values()],
+            name=name,
+            name_localizations=name_localizations,
+            description=description,
+            description_localizations=description_localizations,
+            options=[command.to_command_option(localization_manager) for command in self._commands.values()],
         )
 
 
 @dataclasses.dataclass(slots=True, frozen=True)
 class Group(GroupMixin):
-    """Dataclass representing a slash command group."""
+    """
+    Dataclass representing a slash command group.
+
+    Note:
+        If ``localize`` is :obj:`True`, then ``name`` and ``description`` will instead be
+        interpreted as localization keys from which the actual name and description will be retrieved from.
+    """
 
     name: str
     """The name of the group."""
     description: str
     """The description of the group."""
+    localize: bool = False
+    """Whether the group name and description should be localized."""
     nsfw: bool = False
     """Whether the group should be marked as nsfw. Defaults to :obj:`False`."""
     dm_enabled: bool = True
@@ -163,36 +184,50 @@ class Group(GroupMixin):
 
     _commands: GroupCommandMappingT = dataclasses.field(init=False, default_factory=dict)
 
-    def subgroup(self, name: str, description: str) -> SubGroup:
+    def subgroup(self, name: str, description: str, *, localize: bool = False) -> SubGroup:
         """
         Create a new subgroup as a child of this group.
 
         Args:
             name (:obj:`str`): The name of the subgroup.
             description (:obj:`str`): The description of the subgroup.
+            localize (:obj:`bool`, optional): Whether to localize the group's name and description. If :obj:`true`,
+                then the ``name`` and ``description`` arguments will instead be interpreted as localization keys from
+                which the actual name and description will be retrieved from. Defaults to :obj:`False`.
 
         Returns:
             :obj:`~SubGroup`: The created subgroup.
         """
-        new = SubGroup(name=name, description=description, parent=self)
+        new = SubGroup(name=name, description=description, localize=localize, parent=self)
         self._commands[name] = new
         return new
 
-    def as_command_builder(self) -> hikari.api.CommandBuilder:
+    def as_command_builder(self, localization_manager: localization.LocalizationManager) -> hikari.api.CommandBuilder:
         """
         Convert the group into a hikari command builder object.
 
         Returns:
             :obj:`hikari.api.CommandBuilder`: The builder object for this group.
         """
-        # TODO - localisations
-        bld = hikari.impl.SlashCommandBuilder(name=self.name, description=self.description)
-        bld.set_is_nsfw(self.nsfw)
+        name, description = self.name, self.description
+        name_localizations: utils.LocalizationMappingT = {}
+        description_localizations: utils.LocalizationMappingT = {}
+
+        if self.localize:
+            name, description, name_localizations, description_localizations = utils.localize_name_and_description(
+                name, description, localization_manager
+            )
+
+        bld = (
+            hikari.impl.SlashCommandBuilder(name=name, description=description)
+            .set_name_localizations(name_localizations)
+            .set_description_localizations(description_localizations)
+            .set_is_nsfw(self.nsfw)
+            .set_is_dm_enabled(self.dm_enabled)
+            .set_default_member_permissions(self.default_member_permissions)
+        )
 
         for command_or_group in self._commands.values():
-            bld.add_option(command_or_group.to_command_option())
-
-        bld.set_is_dm_enabled(self.dm_enabled)
-        bld.set_default_member_permissions(self.default_member_permissions)
+            bld.add_option(command_or_group.to_command_option(localization_manager))
 
         return bld

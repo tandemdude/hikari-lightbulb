@@ -18,52 +18,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""A simple-to-use command handler for Hikari."""
+from lightbulb.localization.localization import *
 
-from lightbulb import exceptions
-from lightbulb import utils
-from lightbulb.client import *
-from lightbulb.commands import *
-from lightbulb.context import *
-from lightbulb.internal import *
-from lightbulb.localization import *
-
-__all__ = [
-    "exceptions",
-    "utils",
-    "Client",
-    "GatewayEnabledClient",
-    "RestEnabledClient",
-    "client_from_app",
-    "SlashCommand",
-    "MessageCommand",
-    "UserCommand",
-    "ExecutionStep",
-    "ExecutionSteps",
-    "ExecutionHook",
-    "ExecutionPipeline",
-    "hook",
-    "invoke",
-    "SubGroup",
-    "Group",
-    "OptionData",
-    "Option",
-    "string",
-    "integer",
-    "boolean",
-    "number",
-    "user",
-    "channel",
-    "role",
-    "mentionable",
-    "attachment",
-    "AutocompleteContext",
-    "Context",
-    "ensure_di_context",
-    "with_di",
-    "Localization",
-    "LocalizationManager",
-]
-
-# Do not change the below field manually. It is updated by CI upon release.
-__version__ = "3.0.0.dev0"
+__all__ = ["Localization", "LocalizationManager"]

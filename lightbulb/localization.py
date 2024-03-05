@@ -46,12 +46,20 @@ def _(string: str) -> str:
 
 
 def localization_unsupported(_: str) -> t.NoReturn:
+    """
+    Default localization provider. Functions to disable the ability to localize commands and options. If
+    you want to use localized commands in your application you should specify a different built-in or custom
+    localization provider.
+    """
     raise exceptions.LocalizationFailedException("no localization provider available - localization is not supported")
 
 
 @dataclasses.dataclass(slots=True, frozen=True)
 class DictLocalizationProvider:
+    """Basic localization provider that supplies localizations from a single dictionary."""
+
     localizations: t.Mapping[hikari.Locale, t.Mapping[str, str]]
+    """Mapping containing the localizations that can be provided."""
 
     def __call__(self, key: str) -> LocalizationMappingT:
         out: t.Dict[hikari.Locale, str] = {}
@@ -64,11 +72,21 @@ class DictLocalizationProvider:
 
 @dataclasses.dataclass(slots=True)
 class GnuLocalizationProvider:
-    filename: str
-    directory: str = "translations"
-    category: str = "LC_MESSAGES"
+    """
+    Localization provider that parses localizations from gnu gettext compatible '.po' or '.mo' file paths. This
+    provider expects localizations to be available from the file structure expected by gettext.
 
-    _dict_provider: DictLocalizationProvider = dataclasses.field(init=False)
+    I.e. ``{directory}/{locale}/{category}/{file}.[po|mo]`` (``translations/en-GB/LC_MESSAGES/commands.po``)
+    """
+
+    filename: str
+    """The name of the file containing command translations."""
+    directory: str = "translations"
+    """The base directory where the locale directories can be found."""
+    category: str = "LC_MESSAGES"
+    """The category that the translation file can be found in. Defaults to 'LC_MESSAGES'."""
+
+    _dict_provider: DictLocalizationProvider = dataclasses.field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         try:

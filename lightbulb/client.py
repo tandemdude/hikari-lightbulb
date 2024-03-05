@@ -23,12 +23,12 @@ import typing as t
 import hikari
 
 from lightbulb import context as context_
+from lightbulb import localization
 from lightbulb.commands import commands
 from lightbulb.commands import execution
 from lightbulb.commands import groups
 from lightbulb.internal import di as di_
 from lightbulb.internal import utils
-from lightbulb.localization import localization as localization_
 
 __all__ = ["Client", "GatewayEnabledClient", "RestEnabledClient", "client_from_app"]
 
@@ -68,12 +68,19 @@ class Client:
             order that execution steps will be run in upon command processing.
         default_locale: (:obj:`~hikari.locales.Locale`): The default locale to use for command names and descriptions,
             as well as option names and descriptions. If you are not using localizations then this will do nothing.
-    """
+        localization_provider (:obj:`~typing.Callable` [ [ :obj:`str` ], :obj:`~typing.Mapping` [ :obj:`~hikari.locales.Locale`, :obj:`str` ] ]): The
+            localization provider function to use. This will be called whenever the client needs to get the
+            localizations for a key. Defaults to :obj:`~lightbulb.localization.localization_unsupported` - the client
+            does not support localizing commands and will instead raise an error. **Must** be passed if you intend
+            to support localizations.
+    """  # noqa: E501
 
     __slots__ = (
         "rest",
         "default_enabled_guilds",
         "execution_step_order",
+        "default_locale",
+        "localization_provider",
         "_di",
         "_localization",
         "_commands",
@@ -86,15 +93,17 @@ class Client:
         default_enabled_guilds: t.Sequence[hikari.Snowflakeish],
         execution_step_order: t.Sequence[execution.ExecutionStep],
         default_locale: hikari.Locale,
+        localization_provider: localization.LocalizationProviderT,
     ) -> None:
         super().__init__()
 
         self.rest = rest
         self.default_enabled_guilds = default_enabled_guilds
         self.execution_step_order = execution_step_order
+        self.default_locale = default_locale
+        self.localization_provider = localization_provider
 
         self._di = di_.DependencyInjectionManager()
-        self._localization = localization_.LocalizationManager(default_locale)
 
         self._commands: CommandMapT = collections.defaultdict(lambda: collections.defaultdict(utils.CommandCollection))
         self._application: t.Optional[hikari.PartialApplication] = None
@@ -102,10 +111,6 @@ class Client:
     @property
     def di(self) -> di_.DependencyInjectionManager:
         return self._di
-
-    @property
-    def localization(self) -> localization_.LocalizationManager:
-        return self._localization
 
     @t.overload
     def register(
@@ -216,7 +221,7 @@ class Client:
             builders: t.List[hikari.api.CommandBuilder] = []
             for cmds in guild_commands.values():
                 builders.extend(
-                    c.as_command_builder(self.localization)
+                    c.as_command_builder(self.default_locale, self.localization_provider)
                     for c in [cmds.slash, cmds.user, cmds.message]
                     if c is not None
                 )
@@ -460,6 +465,7 @@ def client_from_app(
     default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (GLOBAL_COMMAND_KEY,),
     execution_step_order: t.Sequence[execution.ExecutionStep] = DEFAULT_EXECUTION_STEP_ORDER,
     default_locale: hikari.Locale = hikari.Locale.EN_US,
+    localization_provider: localization.LocalizationProviderT = localization.localization_unsupported,
 ) -> Client:
     """
     Create and return the appropriate client implementation from the given application.
@@ -473,13 +479,20 @@ def client_from_app(
         default_locale: (:obj:`~hikari.locales.Locale`): The default locale to use for command names and descriptions,
             as well as option names and descriptions. If you are not using localizations then this will do nothing.
             Defaults to :obj:`hikari.locales.Locale.EN_US`.
+        localization_provider (:obj:`~typing.Callable` [ [ :obj:`str` ], :obj:`~typing.Mapping` [ :obj:`~hikari.locales.Locale`, :obj:`str` ] ]): The
+            localization provider function to use. This will be called whenever the client needs to get the
+            localizations for a key. Defaults to :obj:`~lightbulb.localization.localization_unsupported` - the client
+            does not support localizing commands and will instead raise an error. **Must** be passed if you intend
+            to support localizations.
 
     Returns:
         :obj:`~Client`: The created client instance.
-    """
+    """  # noqa: E501
     if isinstance(app, GatewayClientAppT):
         LOGGER.debug("building gateway client from app")
-        return GatewayEnabledClient(app, default_enabled_guilds, execution_step_order, default_locale)
+        cls = GatewayEnabledClient
+    else:
+        LOGGER.debug("building REST client from app")
+        cls = RestEnabledClient
 
-    LOGGER.debug("building REST client from app")
-    return RestEnabledClient(app, default_enabled_guilds, execution_step_order, default_locale)
+    return cls(app, default_enabled_guilds, execution_step_order, default_locale, localization_provider)  # type: ignore[reportArgumentType]

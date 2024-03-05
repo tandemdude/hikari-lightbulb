@@ -31,8 +31,8 @@ import hikari
 from lightbulb.commands import utils
 
 if t.TYPE_CHECKING:
+    from lightbulb import localization
     from lightbulb.commands import commands
-    from lightbulb.localization import localization
 
 CommandT = t.TypeVar("CommandT", bound=t.Type["commands.CommandBase"])
 SubGroupCommandMappingT = t.Dict[str, t.Type["commands.CommandBase"]]
@@ -133,7 +133,9 @@ class SubGroup(GroupMixin):
     """The parent group of the subgroup."""
     _commands: SubGroupCommandMappingT = dataclasses.field(init=False, default_factory=dict)
 
-    def to_command_option(self, localization_manager: localization.LocalizationManager) -> hikari.CommandOption:
+    def to_command_option(
+        self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
+    ) -> hikari.CommandOption:
         """
         Convert the subgroup into a subgroup command option.
 
@@ -141,21 +143,23 @@ class SubGroup(GroupMixin):
             :obj:`hikari.CommandOption`: The subgroup option for this subgroup.
         """
         name, description = self.name, self.description
-        name_localizations: utils.LocalizationMappingT = {}
-        description_localizations: utils.LocalizationMappingT = {}
+        name_localizations: t.Mapping[hikari.Locale, str] = {}
+        description_localizations: t.Mapping[hikari.Locale, str] = {}
 
         if self.localize:
             name, description, name_localizations, description_localizations = utils.localize_name_and_description(
-                name, description, localization_manager
+                name, description, default_locale, localization_provider
             )
 
         return hikari.CommandOption(
             type=hikari.OptionType.SUB_COMMAND_GROUP,
             name=name,
-            name_localizations=name_localizations,
+            name_localizations=name_localizations,  # type: ignore[reportArgumentType]
             description=description,
-            description_localizations=description_localizations,
-            options=[command.to_command_option(localization_manager) for command in self._commands.values()],
+            description_localizations=description_localizations,  # type: ignore[reportArgumentType]
+            options=[
+                command.to_command_option(default_locale, localization_provider) for command in self._commands.values()
+            ],
         )
 
 
@@ -202,7 +206,9 @@ class Group(GroupMixin):
         self._commands[name] = new
         return new
 
-    def as_command_builder(self, localization_manager: localization.LocalizationManager) -> hikari.api.CommandBuilder:
+    def as_command_builder(
+        self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
+    ) -> hikari.api.CommandBuilder:
         """
         Convert the group into a hikari command builder object.
 
@@ -210,24 +216,24 @@ class Group(GroupMixin):
             :obj:`hikari.api.CommandBuilder`: The builder object for this group.
         """
         name, description = self.name, self.description
-        name_localizations: utils.LocalizationMappingT = {}
-        description_localizations: utils.LocalizationMappingT = {}
+        name_localizations: t.Mapping[hikari.Locale, str] = {}
+        description_localizations: t.Mapping[hikari.Locale, str] = {}
 
         if self.localize:
             name, description, name_localizations, description_localizations = utils.localize_name_and_description(
-                name, description, localization_manager
+                name, description, default_locale, localization_provider
             )
 
         bld = (
             hikari.impl.SlashCommandBuilder(name=name, description=description)
-            .set_name_localizations(name_localizations)
-            .set_description_localizations(description_localizations)
+            .set_name_localizations(name_localizations)  # type: ignore[reportArgumentType]
+            .set_description_localizations(description_localizations)  # type: ignore[reportArgumentType]
             .set_is_nsfw(self.nsfw)
             .set_is_dm_enabled(self.dm_enabled)
             .set_default_member_permissions(self.default_member_permissions)
         )
 
         for command_or_group in self._commands.values():
-            bld.add_option(command_or_group.to_command_option(localization_manager))
+            bld.add_option(command_or_group.to_command_option(default_locale, localization_provider))
 
         return bld

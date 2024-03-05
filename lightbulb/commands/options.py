@@ -46,7 +46,7 @@ from lightbulb.commands import utils as cmd_utils
 if t.TYPE_CHECKING:
     from lightbulb import commands
     from lightbulb import context
-    from lightbulb.localization import localization
+    from lightbulb import localization
 
     AutocompleteProviderT = t.Callable[[context.AutocompleteContext], t.Awaitable[t.Any]]  # TODO
 
@@ -120,22 +120,24 @@ class OptionData(t.Generic[D]):
             if self.max_length is not hikari.UNDEFINED and (self.max_length < 1 or self.max_length > 6000):
                 raise ValueError("'max_length' - must be between 1 and 6000 (inclusive)")
 
-    def to_command_option(self, localization_manager: localization.LocalizationManager) -> hikari.CommandOption:
+    def to_command_option(
+        self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
+    ) -> hikari.CommandOption:
         name, description = self.name, self.description
-        name_localizations: cmd_utils.LocalizationMappingT = {}
-        description_localizations: cmd_utils.LocalizationMappingT = {}
+        name_localizations: t.Mapping[hikari.Locale, str] = {}
+        description_localizations: t.Mapping[hikari.Locale, str] = {}
 
         if self.localize:
             name, description, name_localizations, description_localizations = cmd_utils.localize_name_and_description(
-                name, description, localization_manager
+                name, description, default_locale, localization_provider
             )
 
         return hikari.CommandOption(
             type=self.type,
             name=name,
-            name_localizations=name_localizations,
+            name_localizations=name_localizations,  # type: ignore[reportArgumentType]
             description=description,
-            description_localizations=description_localizations,
+            description_localizations=description_localizations,  # type: ignore[reportArgumentType]
             is_required=self.default is not hikari.UNDEFINED,
             choices=_non_undefined_or(self.choices, None),
             channel_types=_non_undefined_or(self.channel_types, None),

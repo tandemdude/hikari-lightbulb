@@ -61,8 +61,9 @@ __all__ = [
     "Context",
     "ensure_di_context",
     "with_di",
-    "Localization",
-    "LocalizationManager",
+    "localization_unsupported",
+    "DictLocalizationProvider",
+    "GnuLocalizationProvider",
 ]
 
 # Do not change the below field manually. It is updated by CI upon release.

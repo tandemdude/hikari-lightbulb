@@ -34,8 +34,8 @@ from lightbulb.internal import constants
 
 if t.TYPE_CHECKING:
     from lightbulb import context as context_
+    from lightbulb import localization
     from lightbulb.commands import groups
-    from lightbulb.localization import localization
 
 __all__ = ["CommandData", "CommandMeta", "CommandBase", "UserCommand", "MessageCommand", "SlashCommand"]
 
@@ -106,7 +106,9 @@ class CommandData:
 
         return " ".join(names[::-1])
 
-    def as_command_builder(self, localization_manager: localization.LocalizationManager) -> hikari.api.CommandBuilder:
+    def as_command_builder(
+        self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
+    ) -> hikari.api.CommandBuilder:
         """
         Convert the command data into a hikari command builder object.
 
@@ -114,35 +116,37 @@ class CommandData:
             :obj:`hikari.api.CommandBuilder`: The builder object for this command data.
         """
         name, description = self.name, self.description
-        name_localizations: utils.LocalizationMappingT = {}
-        description_localizations: utils.LocalizationMappingT = {}
+        name_localizations: t.Mapping[hikari.Locale, str] = {}
+        description_localizations: t.Mapping[hikari.Locale, str] = {}
 
         if self.localize:
             name, description, name_localizations, description_localizations = utils.localize_name_and_description(
-                name, description or None, localization_manager
+                name, description or None, default_locale, localization_provider
             )
 
         if self.type is hikari.CommandType.SLASH:
             bld = (
                 hikari.impl.SlashCommandBuilder(name=name, description=description)
-                .set_name_localizations(name_localizations)
-                .set_description_localizations(description_localizations)
+                .set_name_localizations(name_localizations)  # type: ignore[reportArgumentType]
+                .set_description_localizations(description_localizations)  # type: ignore[reportArgumentType]
                 .set_is_dm_enabled(self.dm_enabled)
                 .set_default_member_permissions(self.default_member_permissions)
             )
             for option in self.options.values():
-                bld.add_option(option.to_command_option(localization_manager))
+                bld.add_option(option.to_command_option(default_locale, localization_provider))
 
             return bld
 
         return (
             hikari.impl.ContextMenuCommandBuilder(type=self.type, name=self.name)
-            .set_name_localizations(name_localizations)
+            .set_name_localizations(name_localizations)  # type: ignore[reportArgumentType]
             .set_is_dm_enabled(self.dm_enabled)
             .set_default_member_permissions(self.default_member_permissions)
         )
 
-    def to_command_option(self, localization_manager: localization.LocalizationManager) -> hikari.CommandOption:
+    def to_command_option(
+        self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
+    ) -> hikari.CommandOption:
         """
         Convert the command data into a sub-command command option.
 
@@ -150,21 +154,23 @@ class CommandData:
             :obj:`hikari.CommandOption`: The sub-command option for this command data.
         """
         name, description = self.name, self.description
-        name_localizations: utils.LocalizationMappingT = {}
-        description_localizations: utils.LocalizationMappingT = {}
+        name_localizations: t.Mapping[hikari.Locale, str] = {}
+        description_localizations: t.Mapping[hikari.Locale, str] = {}
 
         if self.localize:
             name, description, name_localizations, description_localizations = utils.localize_name_and_description(
-                name, description, localization_manager
+                name, description, default_locale, localization_provider
             )
 
         return hikari.CommandOption(
             type=hikari.OptionType.SUB_COMMAND,
             name=name,
-            name_localizations=name_localizations,
+            name_localizations=name_localizations,  # type: ignore[reportArgumentType]
             description=description,
-            description_localizations=description_localizations,
-            options=[option.to_command_option(localization_manager) for option in self.options.values()],
+            description_localizations=description_localizations,  # type: ignore[reportArgumentType]
+            options=[
+                option.to_command_option(default_locale, localization_provider) for option in self.options.values()
+            ],
         )
 
 
@@ -353,24 +359,28 @@ class CommandBase:
         return t.cast(T, resolved_option)
 
     @classmethod
-    def as_command_builder(cls, localization_manager: localization.LocalizationManager) -> hikari.api.CommandBuilder:
+    def as_command_builder(
+        cls, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
+    ) -> hikari.api.CommandBuilder:
         """
         Convert the command into a hikari command builder object.
 
         Returns:
             :obj:`hikari.api.CommandBuilder`: The builder object for this command.
         """
-        return cls._command_data.as_command_builder(localization_manager)
+        return cls._command_data.as_command_builder(default_locale, localization_provider)
 
     @classmethod
-    def to_command_option(cls, localization_manager: localization.LocalizationManager) -> hikari.CommandOption:
+    def to_command_option(
+        cls, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
+    ) -> hikari.CommandOption:
         """
         Convert the command into a sub-command command option.
 
         Returns:
             :obj:`hikari.CommandOption`: The sub-command option for this command.
         """
-        return cls._command_data.to_command_option(localization_manager)
+        return cls._command_data.to_command_option(default_locale, localization_provider)
 
 
 class SlashCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.SLASH):

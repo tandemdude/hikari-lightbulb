@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# api_reference_gen::ignore
 # Copyright © tandemdude 2023-present
 #
 # This file is part of Lightbulb.
@@ -17,36 +18,38 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-__all__ = ["LocalizationMappingT", "localize_name_and_description"]
+__all__ = ["localize_name_and_description"]
 
 import typing as t
-
-import hikari
 
 from lightbulb import exceptions
 
 if t.TYPE_CHECKING:
-    from lightbulb.localization import localization
+    import hikari
 
-LocalizationMappingT: t.TypeAlias = t.Mapping[t.Union[hikari.Locale, str], str]
+    from lightbulb import localization
 
 
 def localize_name_and_description(
-    name: str, description: t.Optional[str], localization_manager: localization.LocalizationManager
-) -> t.Tuple[str, str, LocalizationMappingT, LocalizationMappingT]:
-    localized_name = localization_manager.get_default(name)
+    name: str,
+    description: t.Optional[str],
+    default_locale: hikari.Locale,
+    localization_provider: localization.LocalizationProviderT,
+) -> t.Tuple[str, str, t.Mapping[hikari.Locale, str], t.Mapping[hikari.Locale, str]]:
+    name_localizations: t.Mapping[hikari.Locale, str] = localization_provider(name)
+    localized_name: t.Optional[str] = name_localizations.get(default_locale, None)
     if localized_name is None:
         raise exceptions.LocalizationFailedException(f"failed to resolve key {name!r} for default locale")
 
-    localized_description = "" if description is None else localization_manager.get_default(description)
+    description_localizations: t.Mapping[hikari.Locale, str] = (
+        {} if description is None else localization_provider(description)
+    )
+    localized_description: t.Optional[str] = (
+        "" if description is None else description_localizations.get(default_locale, None)
+    )
 
     if description is not None and localized_description is None:
         raise exceptions.LocalizationFailedException(f"failed to resolve key {description!r} for default locale")
-
-    name_localizations = t.cast(LocalizationMappingT, localization_manager.get_non_default(name))
-    description_localizations = t.cast(
-        LocalizationMappingT, {} if description is None else localization_manager.get_non_default(description)
-    )
 
     assert localized_description is not None
     return localized_name, localized_description, name_localizations, description_localizations

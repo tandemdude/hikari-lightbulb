@@ -191,7 +191,7 @@ class CommandMeta(type):
         description (:obj:`str`, optional): The description of the command. Only required for slash commands.
         localize (:obj:`bool`, optional): Whether to localize the command's name and description. If :obj:`true`,
             then the ``name`` and ``description`` arguments will instead be interpreted as localization keys from
-            which the actual name and description will be retrieved from. Defaults to :obj:`False`.
+            which the actual name and description will be retrieved. Defaults to :obj:`False`.
         nsfw (:obj:`bool`, optional): Whether the command should be marked as nsfw. Defaults to :obj:`False`.
         dm_enabled (:obj:`bool`, optional): Whether the command can be used in direct messages. Defaults to :obj:`True`.
         default_member_permissions (:obj:`hikari.Permissions`, optional): The default permissions required for a
@@ -395,7 +395,7 @@ class SlashCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.S
         description (:obj:`str`, required): The description of the command.
         localize (:obj:`bool`, optional): Whether to localize the command's name and description. If :obj:`true`,
             then the ``name`` and ``description`` arguments will instead be interpreted as localization keys from
-            which the actual name and description will be retrieved from. Defaults to :obj:`False`.
+            which the actual name and description will be retrieved. Defaults to :obj:`False`.
         nsfw (:obj:`bool`, optional): Whether the command should be marked as nsfw. Defaults to :obj:`False`.
         dm_enabled (:obj:`bool`, optional): Whether the command can be used in direct messages. Defaults to :obj:`True`.
         default_member_permissions (:obj:`hikari.Permissions`, optional): The default permissions required for a
@@ -432,8 +432,8 @@ class UserCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.US
     Parameters:
         name (:obj:`str`, required): The name of the command.
         localize (:obj:`bool`, optional): Whether to localize the command's name and description. If :obj:`true`,
-            then the ``name`` and ``description`` arguments will instead be interpreted as localization keys from
-            which the actual name and description will be retrieved from. Defaults to :obj:`False`.
+            then the ``name`` argument will instead be interpreted as a localization key from
+            which the actual name will be retrieved. Defaults to :obj:`False`.
         nsfw (:obj:`bool`, optional): Whether the command should be marked as nsfw. Defaults to :obj:`False`.
         dm_enabled (:obj:`bool`, optional): Whether the command can be used in direct messages. Defaults to :obj:`True`.
         default_member_permissions (:obj:`hikari.Permissions`, optional): The default permissions required for a
@@ -473,8 +473,8 @@ class MessageCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType
     Parameters:
         name (:obj:`str`, required): The name of the command.
         localize (:obj:`bool`, optional): Whether to localize the command's name and description. If :obj:`true`,
-            then the ``name`` and ``description`` arguments will instead be interpreted as localization keys from
-            which the actual name and description will be retrieved from. Defaults to :obj:`False`.
+            then the ``name`` argument will instead be interpreted as a localization key from
+            which the actual name will be retrieved. Defaults to :obj:`False`.
         nsfw (:obj:`bool`, optional): Whether the command should be marked as nsfw. Defaults to :obj:`False`.
         dm_enabled (:obj:`bool`, optional): Whether the command can be used in direct messages. Defaults to :obj:`True`.
         default_member_permissions (:obj:`hikari.Permissions`, optional): The default permissions required for a

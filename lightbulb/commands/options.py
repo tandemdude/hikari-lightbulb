@@ -75,7 +75,7 @@ class OptionData(t.Generic[D]):
     description: str
     """The description of the option."""
     localize: bool = False
-    """Whether the name and description of the option will be localized."""
+    """Whether the name and description of the option should be interpreted as localization keys."""
 
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED
     """The default value for the option."""
@@ -106,7 +106,7 @@ class OptionData(t.Generic[D]):
 
         if self.choices is not hikari.UNDEFINED:
             if len(self.choices) > 25:
-                raise ValueError("'choices' - there cannot be more than 25 choices")
+                raise ValueError("'choices' - cannot have more than 25 choices")
 
             for i, choice in enumerate(self.choices):
                 if len(choice.name) < 1 or len(choice.name) > 100:
@@ -299,7 +299,7 @@ def string(
         description (:obj:`str`): The description of the option.
         localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
-            actual name and description will be retrieved from. Defaults to :obj:`False`.
+            actual name and description will be retrieved. Defaults to :obj:`False`.
         default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
         choices (:obj:`~hikari.undefined.UndefinedOr` [ ``ChoicesT`` ]): The choices for the option. Any of the
             following can be interpreted as a choice: a sequence of :obj:`~hikari.commands.CommandChoice`, a mapping
@@ -358,7 +358,7 @@ def integer(
         description (:obj:`str`): The description of the option.
         localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
-            actual name and description will be retrieved from. Defaults to :obj:`False`.
+            actual name and description will be retrieved. Defaults to :obj:`False`.
         default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
         choices (:obj:`~hikari.undefined.UndefinedOr` [ ``ChoicesT`` ]): The choices for the option. Any of the
             following can be interpreted as a choice: a sequence of :obj:`~hikari.commands.CommandChoice`, a mapping
@@ -411,7 +411,7 @@ def boolean(
         description (:obj:`str`): The description of the option.
         localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
-            actual name and description will be retrieved from. Defaults to :obj:`False`.
+            actual name and description will be retrieved. Defaults to :obj:`False`.
         default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
 
     Returns:
@@ -456,7 +456,7 @@ def number(
         description (:obj:`str`): The description of the option.
         localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
-            actual name and description will be retrieved from. Defaults to :obj:`False`.
+            actual name and description will be retrieved. Defaults to :obj:`False`.
         default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
         choices (:obj:`~hikari.undefined.UndefinedOr` [ ``ChoicesT`` ]): The choices for the option. Any of the
             following can be interpreted as a choice: a sequence of :obj:`~hikari.commands.CommandChoice`, a mapping
@@ -509,7 +509,7 @@ def user(
         description (:obj:`str`): The description of the option.
         localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
-            actual name and description will be retrieved from. Defaults to :obj:`False`.
+            actual name and description will be retrieved. Defaults to :obj:`False`.
         default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
 
     Returns:
@@ -547,7 +547,7 @@ def channel(
         description (:obj:`str`): The description of the option.
         localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
-            actual name and description will be retrieved from. Defaults to :obj:`False`.
+            actual name and description will be retrieved. Defaults to :obj:`False`.
         default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
         channel_types (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`~typing.Sequence` [ :obj:`~hikari.channels.ChannelType` ]]): The
             channel types permitted for the option.
@@ -587,7 +587,7 @@ def role(
         description (:obj:`str`): The description of the option.
         localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
-            actual name and description will be retrieved from. Defaults to :obj:`False`.
+            actual name and description will be retrieved. Defaults to :obj:`False`.
         default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
 
     Returns:
@@ -624,7 +624,7 @@ def mentionable(
         description (:obj:`str`): The description of the option.
         localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
-            actual name and description will be retrieved from. Defaults to :obj:`False`.
+            actual name and description will be retrieved. Defaults to :obj:`False`.
         default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
 
     Returns:
@@ -661,7 +661,7 @@ def attachment(
         description (:obj:`str`): The description of the option.
         localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
-            actual name and description will be retrieved from. Defaults to :obj:`False`.
+            actual name and description will be retrieved. Defaults to :obj:`False`.
         default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
 
     Returns:

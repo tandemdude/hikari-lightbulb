@@ -50,6 +50,11 @@ def localization_unsupported(_: str) -> t.NoReturn:
     Default localization provider. Functions to disable the ability to localize commands and options. If
     you want to use localized commands in your application you should specify a different built-in or custom
     localization provider.
+
+    Raises:
+        :obj:`~lightbulb.exceptions.LocalizationFailedException`: Whenever called. This means that
+            when the client attempts to register commands with discord it will cause this error to be thrown if
+            any of the commands (or options) are marked as requiring localization.
     """
     raise exceptions.LocalizationFailedException("no localization provider available - localization is not supported")
 

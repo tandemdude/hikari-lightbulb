@@ -67,11 +67,11 @@ class Client:
         execution_step_order (:obj:`~typing.Sequence` [ :obj:`~lightbulb.commands.execution.ExecutionStep` ]): The
             order that execution steps will be run in upon command processing.
         default_locale: (:obj:`~hikari.locales.Locale`): The default locale to use for command names and descriptions,
-            as well as option names and descriptions. If you are not using localizations then this will do nothing.
+            as well as option names and descriptions. Has no effect if localizations are not being used.
         localization_provider (:obj:`~typing.Callable` [ [ :obj:`str` ], :obj:`~typing.Mapping` [ :obj:`~hikari.locales.Locale`, :obj:`str` ] ]): The
             localization provider function to use. This will be called whenever the client needs to get the
             localizations for a key. Defaults to :obj:`~lightbulb.localization.localization_unsupported` - the client
-            does not support localizing commands and will instead raise an error. **Must** be passed if you intend
+            does not support localizing commands. **Must** be passed if you intend
             to support localizations.
     """  # noqa: E501
 
@@ -477,12 +477,12 @@ def client_from_app(
         execution_step_order (:obj:`~typing.Sequence` [ :obj:`~lightbulb.commands.execution.ExecutionStep` ]): The
             order that execution steps will be run in upon command processing.
         default_locale: (:obj:`~hikari.locales.Locale`): The default locale to use for command names and descriptions,
-            as well as option names and descriptions. If you are not using localizations then this will do nothing.
+            as well as option names and descriptions. Has no effect if localizations are not being used.
             Defaults to :obj:`hikari.locales.Locale.EN_US`.
         localization_provider (:obj:`~typing.Callable` [ [ :obj:`str` ], :obj:`~typing.Mapping` [ :obj:`~hikari.locales.Locale`, :obj:`str` ] ]): The
             localization provider function to use. This will be called whenever the client needs to get the
             localizations for a key. Defaults to :obj:`~lightbulb.localization.localization_unsupported` - the client
-            does not support localizing commands and will instead raise an error. **Must** be passed if you intend
+            does not support localizing commands. **Must** be passed if you intend
             to support localizations.
 
     Returns:

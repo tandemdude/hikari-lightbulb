@@ -26,6 +26,7 @@ from lightbulb.client import *
 from lightbulb.commands import *
 from lightbulb.context import *
 from lightbulb.internal import *
+from lightbulb.localization import *
 
 __all__ = [
     "exceptions",
@@ -60,6 +61,9 @@ __all__ = [
     "Context",
     "ensure_di_context",
     "with_di",
+    "localization_unsupported",
+    "DictLocalizationProvider",
+    "GnuLocalizationProvider",
 ]
 
 # Do not change the below field manually. It is updated by CI upon release.

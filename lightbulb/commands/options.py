@@ -41,10 +41,12 @@ import typing as t
 import hikari
 
 from lightbulb import utils
+from lightbulb.commands import utils as cmd_utils
 
 if t.TYPE_CHECKING:
     from lightbulb import commands
     from lightbulb import context
+    from lightbulb import localization
 
     AutocompleteProviderT = t.Callable[[context.AutocompleteContext], t.Awaitable[t.Any]]  # TODO
 
@@ -72,6 +74,8 @@ class OptionData(t.Generic[D]):
     """The name of the option."""
     description: str
     """The description of the option."""
+    localize: bool = False
+    """Whether the name and description of the option should be interpreted as localization keys."""
 
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED
     """The default value for the option."""
@@ -94,14 +98,46 @@ class OptionData(t.Generic[D]):
     """Whether autocomplete is enabled for the option."""
     autocomplete_provider: hikari.UndefinedOr[AutocompleteProviderT] = hikari.UNDEFINED
 
-    localizations: t.Any = hikari.UNDEFINED  # TODO
-    """TODO"""
+    def __post_init__(self) -> None:
+        if len(self.name) < 1 or len(self.name) > 32:
+            raise ValueError("'name' - must be 1-32 characters")
+        if len(self.description) < 1 or len(self.description) > 100:
+            raise ValueError("'description' - must be 1-100 characters")
 
-    def to_command_option(self) -> hikari.CommandOption:
+        if self.choices is not hikari.UNDEFINED:
+            if len(self.choices) > 25:
+                raise ValueError("'choices' - cannot have more than 25 choices")
+
+            for i, choice in enumerate(self.choices):
+                if len(choice.name) < 1 or len(choice.name) > 100:
+                    raise ValueError(f"'choices[{i}]' - name must be 1-100 characters")
+                if isinstance(choice.value, str) and len(choice.value) > 100:
+                    raise ValueError(f"'choices[{i}]' - value must be <= 100 characters")
+
+        if self.type is hikari.OptionType.STRING:
+            if self.min_length is not hikari.UNDEFINED and (self.min_length < 0 or self.min_length > 6000):
+                raise ValueError("'min_length' - must be between 0 and 6000 (inclusive)")
+            if self.max_length is not hikari.UNDEFINED and (self.max_length < 1 or self.max_length > 6000):
+                raise ValueError("'max_length' - must be between 1 and 6000 (inclusive)")
+
+    def to_command_option(
+        self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
+    ) -> hikari.CommandOption:
+        name, description = self.name, self.description
+        name_localizations: t.Mapping[hikari.Locale, str] = {}
+        description_localizations: t.Mapping[hikari.Locale, str] = {}
+
+        if self.localize:
+            name, description, name_localizations, description_localizations = cmd_utils.localize_name_and_description(
+                name, description, default_locale, localization_provider
+            )
+
         return hikari.CommandOption(
             type=self.type,
-            name=self.name,
-            description=self.description,
+            name=name,
+            name_localizations=name_localizations,  # type: ignore[reportArgumentType]
+            description=description,
+            description_localizations=description_localizations,  # type: ignore[reportArgumentType]
             is_required=self.default is not hikari.UNDEFINED,
             choices=_non_undefined_or(self.choices, None),
             channel_types=_non_undefined_or(self.channel_types, None),
@@ -178,14 +214,14 @@ class ContextMenuOption(Option[CtxMenuOptionReturnT, CtxMenuOptionReturnT]):
         )
 
     @t.overload
-    def __get__(self, instance: t.Optional[commands.UserCommand], owner: t.Type[commands.UserCommand]) -> hikari.User:
-        ...
+    def __get__(
+        self, instance: t.Optional[commands.UserCommand], owner: t.Type[commands.UserCommand]
+    ) -> hikari.User: ...
 
     @t.overload
     def __get__(
         self, instance: t.Optional[commands.MessageCommand], owner: t.Type[commands.MessageCommand]
-    ) -> hikari.Message:
-        ...
+    ) -> hikari.Message: ...
 
     def __get__(
         self, instance: t.Optional[commands.CommandBase], owner: t.Type[commands.CommandBase]
@@ -241,34 +277,12 @@ def _normalise_choices(
     return list(map(_to_command_choice, choices))
 
 
-def _validate_name_and_description(name: str, description: str) -> None:
-    if len(name) < 1 or len(name) > 32:
-        raise ValueError("'name' - must be 1-32 characters")
-    if len(description) < 1 or len(description) > 100:
-        raise ValueError("'description' - must be 1-100 characters")
-
-
-def _validate_choices(choices: t.Sequence[hikari.CommandChoice]) -> None:
-    if len(choices) > 25:
-        raise ValueError("'choices' - there cannot be more than 25 choices")
-
-    for i, choice in enumerate(choices):
-        if len(choice.name) < 1 or len(choice.name) > 100:
-            raise ValueError(f"'choices[{i}]' - name must be 1-100 characters")
-        if isinstance(choice.value, str) and len(choice.value) > 100:
-            raise ValueError(f"'choices[{i}]' - value must be <= 100 characters")
-
-
-def _validate_min_and_max_length(min_length: hikari.UndefinedOr[int], max_length: hikari.UndefinedOr[int]) -> None:
-    if min_length is not hikari.UNDEFINED and (min_length < 0 or min_length > 6000):
-        raise ValueError("'min_length' - must be between 0 and 6000 (inclusive)")
-    if max_length is not hikari.UNDEFINED and (max_length < 1 or max_length > 6000):
-        raise ValueError("'max_length' - must be between 1 and 6000 (inclusive)")
-
-
 def string(
     name: str,
     description: str,
+    /,
+    *,
+    localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
     choices: hikari.UndefinedOr[
         t.Union[t.Sequence[hikari.CommandChoice], t.Mapping[str, str], t.Sequence[t.Tuple[str, str]], t.Sequence[str]]
@@ -283,8 +297,15 @@ def string(
     Args:
         name (:obj:`str`): The name of the option.
         description (:obj:`str`): The description of the option.
+        localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
+            ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
+            actual name and description will be retrieved. Defaults to :obj:`False`.
         default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
-        choices (:obj:`~hikari.undefined.UndefinedOr` [ ``ChoicesT`` ]): TODO
+        choices (:obj:`~hikari.undefined.UndefinedOr` [ ``ChoicesT`` ]): The choices for the option. Any of the
+            following can be interpreted as a choice: a sequence of :obj:`~hikari.commands.CommandChoice`, a mapping
+            of choice name to choice value, a sequence of 2-tuples where the first element is the name
+            and the second element is the value, or a sequence of :obj:`str` where the choice name and value will
+            be the same.
         min_length (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`int` ]): The minimum length for the option.
         max_length (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`int` ]): The maximum length for the option.
         autocomplete: The autocomplete provider function to use for the option.
@@ -294,10 +315,6 @@ def string(
     """
     if choices is not hikari.UNDEFINED:
         choices = _normalise_choices(choices)
-        _validate_choices(choices)
-
-    _validate_name_and_description(name, description)
-    _validate_min_and_max_length(min_length, max_length)
 
     return t.cast(
         str,
@@ -306,6 +323,7 @@ def string(
                 type=hikari.OptionType.STRING,
                 name=name,
                 description=description,
+                localize=localize,
                 default=default,
                 choices=choices,
                 min_length=min_length,
@@ -321,6 +339,9 @@ def string(
 def integer(
     name: str,
     description: str,
+    /,
+    *,
+    localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
     choices: hikari.UndefinedOr[
         t.Union[t.Sequence[hikari.CommandChoice], t.Mapping[str, int], t.Sequence[t.Tuple[str, int]], t.Sequence[int]]
@@ -335,8 +356,15 @@ def integer(
     Args:
         name (:obj:`str`): The name of the option.
         description (:obj:`str`): The description of the option.
+        localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
+            ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
+            actual name and description will be retrieved. Defaults to :obj:`False`.
         default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
-        choices (:obj:`~hikari.undefined.UndefinedOr` [ ``ChoicesT`` ]): TODO
+        choices (:obj:`~hikari.undefined.UndefinedOr` [ ``ChoicesT`` ]): The choices for the option. Any of the
+            following can be interpreted as a choice: a sequence of :obj:`~hikari.commands.CommandChoice`, a mapping
+            of choice name to choice value, a sequence of 2-tuples where the first element is the name
+            and the second element is the value, or a sequence of :obj:`int` where the choice name and value will
+            be the same.
         min_value (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`int` ]): The minimum value for the option.
         max_value (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`int` ]): The maximum value for the option.
         autocomplete: The autocomplete provider function to use for the option.
@@ -346,9 +374,6 @@ def integer(
     """
     if choices is not hikari.UNDEFINED:
         choices = _normalise_choices(choices)
-        _validate_choices(choices)
-
-    _validate_name_and_description(name, description)
 
     return t.cast(
         int,
@@ -357,6 +382,7 @@ def integer(
                 type=hikari.OptionType.INTEGER,
                 name=name,
                 description=description,
+                localize=localize,
                 default=default,
                 choices=choices,
                 min_value=min_value,
@@ -372,6 +398,9 @@ def integer(
 def boolean(
     name: str,
     description: str,
+    /,
+    *,
+    localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
 ) -> bool:
     """
@@ -380,13 +409,14 @@ def boolean(
     Args:
         name (:obj:`str`): The name of the option.
         description (:obj:`str`): The description of the option.
+        localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
+            ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
+            actual name and description will be retrieved. Defaults to :obj:`False`.
         default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
     """
-    _validate_name_and_description(name, description)
-
     return t.cast(
         bool,
         Option(
@@ -394,6 +424,7 @@ def boolean(
                 type=hikari.OptionType.BOOLEAN,
                 name=name,
                 description=description,
+                localize=localize,
                 default=default,
             ),
             False,
@@ -404,6 +435,9 @@ def boolean(
 def number(
     name: str,
     description: str,
+    /,
+    *,
+    localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
     choices: hikari.UndefinedOr[
         t.Union[
@@ -420,8 +454,15 @@ def number(
     Args:
         name (:obj:`str`): The name of the option.
         description (:obj:`str`): The description of the option.
+        localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
+            ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
+            actual name and description will be retrieved. Defaults to :obj:`False`.
         default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
-        choices (:obj:`~hikari.undefined.UndefinedOr` [ ``ChoicesT`` ]): TODO
+        choices (:obj:`~hikari.undefined.UndefinedOr` [ ``ChoicesT`` ]): The choices for the option. Any of the
+            following can be interpreted as a choice: a sequence of :obj:`~hikari.commands.CommandChoice`, a mapping
+            of choice name to choice value, a sequence of 2-tuples where the first element is the name
+            and the second element is the value, or a sequence of :obj:`float` where the choice name and value will
+            be the same.
         min_value (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`float` ]): The minimum value for the option.
         max_value (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`float` ]): The maximum value for the option.
         autocomplete: The autocomplete provider function to use for the option.
@@ -431,9 +472,6 @@ def number(
     """
     if choices is not hikari.UNDEFINED:
         choices = _normalise_choices(choices)
-        _validate_choices(choices)
-
-    _validate_name_and_description(name, description)
 
     return t.cast(
         float,
@@ -442,6 +480,7 @@ def number(
                 type=hikari.OptionType.FLOAT,
                 name=name,
                 description=description,
+                localize=localize,
                 default=default,
                 choices=choices,
                 min_value=min_value,
@@ -457,6 +496,9 @@ def number(
 def user(
     name: str,
     description: str,
+    /,
+    *,
+    localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
 ) -> hikari.User:
     """
@@ -465,13 +507,14 @@ def user(
     Args:
         name (:obj:`str`): The name of the option.
         description (:obj:`str`): The description of the option.
+        localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
+            ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
+            actual name and description will be retrieved. Defaults to :obj:`False`.
         default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
     """
-    _validate_name_and_description(name, description)
-
     return t.cast(
         hikari.User,
         Option(
@@ -479,6 +522,7 @@ def user(
                 type=hikari.OptionType.USER,
                 name=name,
                 description=description,
+                localize=localize,
                 default=default,
             ),
             utils.EMPTY_USER,
@@ -489,6 +533,9 @@ def user(
 def channel(
     name: str,
     description: str,
+    /,
+    *,
+    localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
     channel_types: hikari.UndefinedOr[t.Sequence[hikari.ChannelType]] = hikari.UNDEFINED,
 ) -> hikari.PartialChannel:
@@ -498,6 +545,9 @@ def channel(
     Args:
         name (:obj:`str`): The name of the option.
         description (:obj:`str`): The description of the option.
+        localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
+            ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
+            actual name and description will be retrieved. Defaults to :obj:`False`.
         default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
         channel_types (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`~typing.Sequence` [ :obj:`~hikari.channels.ChannelType` ]]): The
             channel types permitted for the option.
@@ -505,8 +555,6 @@ def channel(
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
     """  # noqa: E501
-    _validate_name_and_description(name, description)
-
     return t.cast(
         hikari.PartialChannel,
         Option(
@@ -514,6 +562,7 @@ def channel(
                 type=hikari.OptionType.CHANNEL,
                 name=name,
                 description=description,
+                localize=localize,
                 default=default,
                 channel_types=channel_types,
             ),
@@ -525,6 +574,9 @@ def channel(
 def role(
     name: str,
     description: str,
+    /,
+    *,
+    localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
 ) -> hikari.Role:
     """
@@ -533,13 +585,14 @@ def role(
     Args:
         name (:obj:`str`): The name of the option.
         description (:obj:`str`): The description of the option.
+        localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
+            ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
+            actual name and description will be retrieved. Defaults to :obj:`False`.
         default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
     """
-    _validate_name_and_description(name, description)
-
     return t.cast(
         hikari.Role,
         Option(
@@ -547,6 +600,7 @@ def role(
                 type=hikari.OptionType.ROLE,
                 name=name,
                 description=description,
+                localize=localize,
                 default=default,
             ),
             utils.EMPTY_ROLE,
@@ -557,6 +611,9 @@ def role(
 def mentionable(
     name: str,
     description: str,
+    /,
+    *,
+    localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
 ) -> hikari.Snowflake:
     """
@@ -565,13 +622,14 @@ def mentionable(
     Args:
         name (:obj:`str`): The name of the option.
         description (:obj:`str`): The description of the option.
+        localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
+            ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
+            actual name and description will be retrieved. Defaults to :obj:`False`.
         default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
     """
-    _validate_name_and_description(name, description)
-
     return t.cast(
         hikari.Snowflake,
         Option(
@@ -579,6 +637,7 @@ def mentionable(
                 type=hikari.OptionType.MENTIONABLE,
                 name=name,
                 description=description,
+                localize=localize,
                 default=default,
             ),
             hikari.Snowflake(0),
@@ -589,6 +648,9 @@ def mentionable(
 def attachment(
     name: str,
     description: str,
+    /,
+    *,
+    localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
 ) -> hikari.Attachment:
     """
@@ -597,13 +659,14 @@ def attachment(
     Args:
         name (:obj:`str`): The name of the option.
         description (:obj:`str`): The description of the option.
+        localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
+            ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
+            actual name and description will be retrieved. Defaults to :obj:`False`.
         default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
     """
-    _validate_name_and_description(name, description)
-
     return t.cast(
         hikari.Attachment,
         Option(
@@ -611,6 +674,7 @@ def attachment(
                 type=hikari.OptionType.MENTIONABLE,
                 name=name,
                 description=description,
+                localize=localize,
                 default=default,
             ),
             utils.EMPTY_ATTACHMENT,

@@ -15,7 +15,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
-import abc
 import collections
 import functools
 import logging
@@ -24,10 +23,11 @@ import typing as t
 import hikari
 
 from lightbulb import context as context_
+from lightbulb import localization
 from lightbulb.commands import commands
 from lightbulb.commands import execution
 from lightbulb.commands import groups
-from lightbulb.internal import di
+from lightbulb.internal import di as di_
 from lightbulb.internal import utils
 
 __all__ = ["Client", "GatewayEnabledClient", "RestEnabledClient", "client_from_app"]
@@ -56,7 +56,7 @@ class RestClientAppT(hikari.InteractionServerAware, hikari.RESTAware, t.Protocol
     """Protocol indicating an application supports an interaction server."""
 
 
-class Client(di.DependencySupplier, abc.ABC):
+class Client:
     """
     Base client implementation supporting generic application command handling.
 
@@ -66,13 +66,24 @@ class Client(di.DependencySupplier, abc.ABC):
             commands should be created in by default. Can be overridden on a per-command basis.
         execution_step_order (:obj:`~typing.Sequence` [ :obj:`~lightbulb.commands.execution.ExecutionStep` ]): The
             order that execution steps will be run in upon command processing.
-    """
+        default_locale: (:obj:`~hikari.locales.Locale`): The default locale to use for command names and descriptions,
+            as well as option names and descriptions. Has no effect if localizations are not being used.
+        localization_provider (:obj:`~typing.Callable` [ [ :obj:`str` ], :obj:`~typing.Mapping` [ :obj:`~hikari.locales.Locale`, :obj:`str` ] ]): The
+            localization provider function to use. This will be called whenever the client needs to get the
+            localizations for a key. Defaults to :obj:`~lightbulb.localization.localization_unsupported` - the client
+            does not support localizing commands. **Must** be passed if you intend
+            to support localizations.
+    """  # noqa: E501
 
     __slots__ = (
-        "_commands",
         "rest",
         "default_enabled_guilds",
         "execution_step_order",
+        "default_locale",
+        "localization_provider",
+        "_di",
+        "_localization",
+        "_commands",
         "_application",
     )
 
@@ -81,27 +92,35 @@ class Client(di.DependencySupplier, abc.ABC):
         rest: hikari.api.RESTClient,
         default_enabled_guilds: t.Sequence[hikari.Snowflakeish],
         execution_step_order: t.Sequence[execution.ExecutionStep],
+        default_locale: hikari.Locale,
+        localization_provider: localization.LocalizationProviderT,
     ) -> None:
         super().__init__()
 
         self.rest = rest
         self.default_enabled_guilds = default_enabled_guilds
         self.execution_step_order = execution_step_order
+        self.default_locale = default_locale
+        self.localization_provider = localization_provider
+
+        self._di = di_.DependencyInjectionManager()
 
         self._commands: CommandMapT = collections.defaultdict(lambda: collections.defaultdict(utils.CommandCollection))
         self._application: t.Optional[hikari.PartialApplication] = None
 
+    @property
+    def di(self) -> di_.DependencyInjectionManager:
+        return self._di
+
     @t.overload
     def register(
         self, *, guilds: t.Optional[t.Sequence[hikari.Snowflakeish]] = None
-    ) -> t.Callable[[CommandOrGroupT], CommandOrGroupT]:
-        ...
+    ) -> t.Callable[[CommandOrGroupT], CommandOrGroupT]: ...
 
     @t.overload
     def register(
         self, command: CommandOrGroupT, *, guilds: t.Optional[t.Sequence[hikari.Snowflakeish]] = None
-    ) -> CommandOrGroupT:
-        ...
+    ) -> CommandOrGroupT: ...
 
     def register(
         self,
@@ -201,7 +220,11 @@ class Client(di.DependencySupplier, abc.ABC):
 
             builders: t.List[hikari.api.CommandBuilder] = []
             for cmds in guild_commands.values():
-                builders.extend(c.as_command_builder() for c in [cmds.slash, cmds.user, cmds.message] if c is not None)
+                builders.extend(
+                    c.as_command_builder(self.default_locale, self.localization_provider)
+                    for c in [cmds.slash, cmds.user, cmds.message]
+                    if c is not None
+                )
 
             await self.rest.set_application_commands(application, builders, guild_id)
 
@@ -219,14 +242,12 @@ class Client(di.DependencySupplier, abc.ABC):
     @t.overload
     def _resolve_options_and_command(
         self, interaction: hikari.AutocompleteInteraction
-    ) -> t.Optional[t.Tuple[t.Sequence[hikari.AutocompleteInteractionOption], t.Type[commands.CommandBase]]]:
-        ...
+    ) -> t.Optional[t.Tuple[t.Sequence[hikari.AutocompleteInteractionOption], t.Type[commands.CommandBase]]]: ...
 
     @t.overload
     def _resolve_options_and_command(
         self, interaction: hikari.CommandInteraction
-    ) -> t.Optional[t.Tuple[t.Sequence[hikari.CommandInteractionOption], t.Type[commands.CommandBase]]]:
-        ...
+    ) -> t.Optional[t.Tuple[t.Sequence[hikari.CommandInteractionOption], t.Type[commands.CommandBase]]]: ...
 
     def _resolve_options_and_command(
         self, interaction: t.Union[hikari.AutocompleteInteraction, hikari.CommandInteraction]
@@ -298,7 +319,7 @@ class Client(di.DependencySupplier, abc.ABC):
 
         LOGGER.debug("%r - invoking autocomplete", command._command_data.qualified_name)
 
-        with di.ensure_di_context(self):
+        with di_.ensure_di_context(self.di):
             try:
                 assert option.autocomplete_provider is not hikari.UNDEFINED
                 await option.autocomplete_provider(context)
@@ -355,7 +376,7 @@ class Client(di.DependencySupplier, abc.ABC):
 
         LOGGER.debug("invoking command - %r", command._command_data.qualified_name)
 
-        with di.ensure_di_context(self):
+        with di_.ensure_di_context(self.di):
             try:
                 await execution.ExecutionPipeline(context, self.execution_step_order)._run()
             except Exception as e:
@@ -443,6 +464,8 @@ def client_from_app(
     app: t.Union[GatewayClientAppT, RestClientAppT],
     default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (GLOBAL_COMMAND_KEY,),
     execution_step_order: t.Sequence[execution.ExecutionStep] = DEFAULT_EXECUTION_STEP_ORDER,
+    default_locale: hikari.Locale = hikari.Locale.EN_US,
+    localization_provider: localization.LocalizationProviderT = localization.localization_unsupported,
 ) -> Client:
     """
     Create and return the appropriate client implementation from the given application.
@@ -453,13 +476,23 @@ def client_from_app(
             commands should be created in by default.
         execution_step_order (:obj:`~typing.Sequence` [ :obj:`~lightbulb.commands.execution.ExecutionStep` ]): The
             order that execution steps will be run in upon command processing.
+        default_locale: (:obj:`~hikari.locales.Locale`): The default locale to use for command names and descriptions,
+            as well as option names and descriptions. Has no effect if localizations are not being used.
+            Defaults to :obj:`hikari.locales.Locale.EN_US`.
+        localization_provider (:obj:`~typing.Callable` [ [ :obj:`str` ], :obj:`~typing.Mapping` [ :obj:`~hikari.locales.Locale`, :obj:`str` ] ]): The
+            localization provider function to use. This will be called whenever the client needs to get the
+            localizations for a key. Defaults to :obj:`~lightbulb.localization.localization_unsupported` - the client
+            does not support localizing commands. **Must** be passed if you intend
+            to support localizations.
 
     Returns:
         :obj:`~Client`: The created client instance.
-    """
+    """  # noqa: E501
     if isinstance(app, GatewayClientAppT):
         LOGGER.debug("building gateway client from app")
-        return GatewayEnabledClient(app, default_enabled_guilds, execution_step_order)
+        cls = GatewayEnabledClient
+    else:
+        LOGGER.debug("building REST client from app")
+        cls = RestEnabledClient
 
-    LOGGER.debug("building REST client from app")
-    return RestEnabledClient(app, default_enabled_guilds, execution_step_order)
+    return cls(app, default_enabled_guilds, execution_step_order, default_locale, localization_provider)  # type: ignore[reportArgumentType]

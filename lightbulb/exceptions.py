@@ -22,6 +22,7 @@ from __future__ import annotations
 
 __all__ = [
     "LightbulbException",
+    "LocalizationFailedException",
     "ExecutionException",
     "HookFailedException",
     "InvocationFailedException",
@@ -36,6 +37,13 @@ if t.TYPE_CHECKING:
 
 class LightbulbException(Exception):
     """Base class for all exceptions used by lightbulb."""
+
+
+class LocalizationFailedException(LightbulbException):
+    """
+    Exception raised when a command or option is marked as being localized, but a value for the name or description
+    could not be resolved.
+    """
 
 
 class ExecutionException(LightbulbException):

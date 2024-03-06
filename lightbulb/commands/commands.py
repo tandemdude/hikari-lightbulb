@@ -29,10 +29,12 @@ import hikari
 
 from lightbulb.commands import execution
 from lightbulb.commands import options as options_
+from lightbulb.commands import utils
 from lightbulb.internal import constants
 
 if t.TYPE_CHECKING:
     from lightbulb import context as context_
+    from lightbulb import localization
     from lightbulb.commands import groups
 
 __all__ = ["CommandData", "CommandMeta", "CommandBase", "UserCommand", "MessageCommand", "SlashCommand"]
@@ -64,10 +66,10 @@ class CommandData:
     """The name of the command."""
     description: str
     """The description of the command."""
+    localize: bool
+    """Whether the command name and description should be localized."""
     nsfw: bool
     """Whether the command is marked as nsfw."""
-    localizations: t.Any  # TODO
-    """Not yet implemented"""
     dm_enabled: bool
     """Whether the command is enabled in direct messages. This field is ignored for subcommands."""
     default_member_permissions: hikari.UndefinedOr[hikari.Permissions]
@@ -104,42 +106,71 @@ class CommandData:
 
         return " ".join(names[::-1])
 
-    def as_command_builder(self) -> hikari.api.CommandBuilder:
+    def as_command_builder(
+        self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
+    ) -> hikari.api.CommandBuilder:
         """
         Convert the command data into a hikari command builder object.
 
         Returns:
             :obj:`hikari.api.CommandBuilder`: The builder object for this command data.
         """
-        if self.type is hikari.CommandType.SLASH:
-            bld = hikari.impl.SlashCommandBuilder(name=self.name, description=self.description)
-            for option in self.options.values():
-                bld.add_option(option.to_command_option())
+        name, description = self.name, self.description
+        name_localizations: t.Mapping[hikari.Locale, str] = {}
+        description_localizations: t.Mapping[hikari.Locale, str] = {}
 
-            bld.set_is_dm_enabled(self.dm_enabled)
-            bld.set_default_member_permissions(self.default_member_permissions)
+        if self.localize:
+            name, description, name_localizations, description_localizations = utils.localize_name_and_description(
+                name, description or None, default_locale, localization_provider
+            )
+
+        if self.type is hikari.CommandType.SLASH:
+            bld = (
+                hikari.impl.SlashCommandBuilder(name=name, description=description)
+                .set_name_localizations(name_localizations)  # type: ignore[reportArgumentType]
+                .set_description_localizations(description_localizations)  # type: ignore[reportArgumentType]
+                .set_is_dm_enabled(self.dm_enabled)
+                .set_default_member_permissions(self.default_member_permissions)
+            )
+            for option in self.options.values():
+                bld.add_option(option.to_command_option(default_locale, localization_provider))
 
             return bld
 
         return (
             hikari.impl.ContextMenuCommandBuilder(type=self.type, name=self.name)
+            .set_name_localizations(name_localizations)  # type: ignore[reportArgumentType]
             .set_is_dm_enabled(self.dm_enabled)
             .set_default_member_permissions(self.default_member_permissions)
         )
 
-    def to_command_option(self) -> hikari.CommandOption:
+    def to_command_option(
+        self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
+    ) -> hikari.CommandOption:
         """
         Convert the command data into a sub-command command option.
 
         Returns:
             :obj:`hikari.CommandOption`: The sub-command option for this command data.
         """
+        name, description = self.name, self.description
+        name_localizations: t.Mapping[hikari.Locale, str] = {}
+        description_localizations: t.Mapping[hikari.Locale, str] = {}
+
+        if self.localize:
+            name, description, name_localizations, description_localizations = utils.localize_name_and_description(
+                name, description, default_locale, localization_provider
+            )
+
         return hikari.CommandOption(
             type=hikari.OptionType.SUB_COMMAND,
-            name=self.name,
-            description=self.description,
-            # TODO - localisations
-            options=[option.to_command_option() for option in self.options.values()],
+            name=name,
+            name_localizations=name_localizations,  # type: ignore[reportArgumentType]
+            description=description,
+            description_localizations=description_localizations,  # type: ignore[reportArgumentType]
+            options=[
+                option.to_command_option(default_locale, localization_provider) for option in self.options.values()
+            ],
         )
 
 
@@ -158,8 +189,10 @@ class CommandMeta(type):
             is subclassed. I.e. subclassing :obj:`SlashCommand` sets this parameter to :obj:`hikari.CommandType.SLASH`.
         name (:obj:`str`, required): The name of the command.
         description (:obj:`str`, optional): The description of the command. Only required for slash commands.
+        localize (:obj:`bool`, optional): Whether to localize the command's name and description. If :obj:`true`,
+            then the ``name`` and ``description`` arguments will instead be interpreted as localization keys from
+            which the actual name and description will be retrieved. Defaults to :obj:`False`.
         nsfw (:obj:`bool`, optional): Whether the command should be marked as nsfw. Defaults to :obj:`False`.
-        localizations (TODO, optional): Not yet implemented
         dm_enabled (:obj:`bool`, optional): Whether the command can be used in direct messages. Defaults to :obj:`True`.
         default_member_permissions (:obj:`hikari.Permissions`, optional): The default permissions required for a
             guild member to use the command. If unspecified, all users can use the command by default. Set to
@@ -196,8 +229,8 @@ class CommandMeta(type):
         cmd_name: str = kwargs.pop("name")
         description: str = kwargs.pop("description", "")
 
+        localize: bool = kwargs.pop("localize", False)
         nsfw: bool = kwargs.pop("nsfw", False)
-        localizations: t.Any = kwargs.pop("localizations", None)
         dm_enabled: bool = kwargs.pop("dm_enabled", True)
         default_member_permissions: hikari.UndefinedOr[hikari.Permissions] = kwargs.pop(
             "default_member_permissions", hikari.UNDEFINED
@@ -228,8 +261,8 @@ class CommandMeta(type):
             type=cmd_type,
             name=cmd_name,
             description=description,
+            localize=localize,
             nsfw=nsfw,
-            localizations=localizations,
             dm_enabled=dm_enabled,
             default_member_permissions=default_member_permissions,
             hooks=hooks,
@@ -326,24 +359,28 @@ class CommandBase:
         return t.cast(T, resolved_option)
 
     @classmethod
-    def as_command_builder(cls) -> hikari.api.CommandBuilder:
+    def as_command_builder(
+        cls, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
+    ) -> hikari.api.CommandBuilder:
         """
         Convert the command into a hikari command builder object.
 
         Returns:
             :obj:`hikari.api.CommandBuilder`: The builder object for this command.
         """
-        return cls._command_data.as_command_builder()
+        return cls._command_data.as_command_builder(default_locale, localization_provider)
 
     @classmethod
-    def to_command_option(cls) -> hikari.CommandOption:
+    def to_command_option(
+        cls, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
+    ) -> hikari.CommandOption:
         """
         Convert the command into a sub-command command option.
 
         Returns:
             :obj:`hikari.CommandOption`: The sub-command option for this command.
         """
-        return cls._command_data.to_command_option()
+        return cls._command_data.to_command_option(default_locale, localization_provider)
 
 
 class SlashCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.SLASH):
@@ -356,8 +393,10 @@ class SlashCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.S
     Parameters:
         name (:obj:`str`, required): The name of the command.
         description (:obj:`str`, required): The description of the command.
+        localize (:obj:`bool`, optional): Whether to localize the command's name and description. If :obj:`true`,
+            then the ``name`` and ``description`` arguments will instead be interpreted as localization keys from
+            which the actual name and description will be retrieved. Defaults to :obj:`False`.
         nsfw (:obj:`bool`, optional): Whether the command should be marked as nsfw. Defaults to :obj:`False`.
-        localizations (TODO, optional): Not yet implemented
         dm_enabled (:obj:`bool`, optional): Whether the command can be used in direct messages. Defaults to :obj:`True`.
         default_member_permissions (:obj:`hikari.Permissions`, optional): The default permissions required for a
             guild member to use the command. If unspecified, all users can use the command by default. Set to
@@ -392,8 +431,10 @@ class UserCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.US
 
     Parameters:
         name (:obj:`str`, required): The name of the command.
+        localize (:obj:`bool`, optional): Whether to localize the command's name and description. If :obj:`true`,
+            then the ``name`` argument will instead be interpreted as a localization key from
+            which the actual name will be retrieved. Defaults to :obj:`False`.
         nsfw (:obj:`bool`, optional): Whether the command should be marked as nsfw. Defaults to :obj:`False`.
-        localizations (TODO, optional): Not yet implemented
         dm_enabled (:obj:`bool`, optional): Whether the command can be used in direct messages. Defaults to :obj:`True`.
         default_member_permissions (:obj:`hikari.Permissions`, optional): The default permissions required for a
             guild member to use the command. If unspecified, all users can use the command by default. Set to
@@ -431,8 +472,10 @@ class MessageCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType
 
     Parameters:
         name (:obj:`str`, required): The name of the command.
+        localize (:obj:`bool`, optional): Whether to localize the command's name and description. If :obj:`true`,
+            then the ``name`` argument will instead be interpreted as a localization key from
+            which the actual name will be retrieved. Defaults to :obj:`False`.
         nsfw (:obj:`bool`, optional): Whether the command should be marked as nsfw. Defaults to :obj:`False`.
-        localizations (TODO, optional): Not yet implemented
         dm_enabled (:obj:`bool`, optional): Whether the command can be used in direct messages. Defaults to :obj:`True`.
         default_member_permissions (:obj:`hikari.Permissions`, optional): The default permissions required for a
             guild member to use the command. If unspecified, all users can use the command by default. Set to

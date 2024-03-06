@@ -17,7 +17,6 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-import abc
 import contextlib
 import contextvars
 import inspect
@@ -34,29 +33,26 @@ DI_ENABLED: t.Final[bool] = os.environ.get("LIGHTBULB_DI_DISABLED", "false").low
 DI_CONTAINER: contextvars.ContextVar[svcs.Container] = contextvars.ContextVar("_di_container")
 
 
-class DependencySupplier(abc.ABC):
-    """
-    Mixin class which enables an inheritor to be used as a supplier for dependencies during the
-    dependency injection process.
-    """
+class DependencyInjectionManager:
+    """Class which contains dependency injection functionality - intended to be used with composition."""
 
-    __slots__ = ("__di_registry", "__di_container")
+    __slots__ = ("_di_registry", "_di_container")
 
     def __init__(self) -> None:
-        self.__di_registry: svcs.Registry = svcs.Registry()
-        self.__di_container: t.Optional[svcs.Container] = None
+        self._di_registry: svcs.Registry = svcs.Registry()
+        self._di_container: t.Optional[svcs.Container] = None
 
     @property
     def di_registry(self) -> svcs.Registry:
         """The dependency injection registry containing dependencies available for this instance."""
-        return self.__di_registry
+        return self._di_registry
 
     @property
     def di_container(self) -> svcs.Container:
         """The dependency injection container used for this instance. Lazily instantiated."""
-        if self.__di_container is None:
-            self.__di_container = svcs.Container(self.di_registry)
-        return self.__di_container
+        if self._di_container is None:
+            self._di_container = svcs.Container(self.di_registry)
+        return self._di_container
 
     def register_dependency(self, type: t.Type[T], factory: t.Callable[[], t.Union[t.Awaitable[T], T]]) -> None:
         """
@@ -74,7 +70,7 @@ class DependencySupplier(abc.ABC):
 
 
 @contextlib.contextmanager
-def ensure_di_context(client: DependencySupplier) -> t.Generator[None, t.Any, t.Any]:
+def ensure_di_context(client: DependencyInjectionManager) -> t.Generator[None, t.Any, t.Any]:
     """
     Context manager that ensures a dependency injection context is available for the nested operations.
 

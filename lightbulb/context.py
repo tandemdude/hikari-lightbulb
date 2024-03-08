@@ -20,15 +20,18 @@
 # SOFTWARE.
 from __future__ import annotations
 
-__all__ = ["AutocompleteContext", "Context"]
+__all__ = ["AutocompleteContext", "Context", "RestContext"]
 
 import asyncio
 import collections.abc
 import dataclasses
+import os
 import typing as t
 
 import hikari
+from hikari import files
 from hikari.api import special_endpoints
+from hikari.impl import special_endpoints as special_endpoints_impl
 
 if t.TYPE_CHECKING:
     from lightbulb import client as client_
@@ -135,6 +138,18 @@ class AutocompleteContext:
         """
         normalised_choices = self._normalise_choices(choices)
         await self.interaction.create_response(normalised_choices)
+
+
+@dataclasses.dataclass(slots=True)
+class RestAutocompleteContext(AutocompleteContext):
+    _initial_response_callback: t.Callable[
+        [hikari.api.InteractionAutocompleteBuilder],
+        None,
+    ]
+
+    async def respond(self, choices: AutocompleteResponseT) -> None:
+        normalised_choices = self._normalise_choices(choices)
+        self._initial_response_callback(special_endpoints_impl.InteractionAutocompleteBuilder(normalised_choices))
 
 
 @dataclasses.dataclass(slots=True)
@@ -287,6 +302,44 @@ class Context:
             return await self.interaction.fetch_initial_response()
         return await self.interaction.fetch_message(response_id)
 
+    async def _create_initial_response(
+        self,
+        response_type: t.Literal[hikari.ResponseType.MESSAGE_CREATE, hikari.ResponseType.DEFERRED_MESSAGE_CREATE],
+        content: hikari.UndefinedOr[t.Any] = hikari.UNDEFINED,
+        *,
+        flags: t.Union[int, hikari.MessageFlag, hikari.UndefinedType] = hikari.UNDEFINED,
+        tts: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
+        attachment: hikari.UndefinedOr[hikari.Resourceish] = hikari.UNDEFINED,
+        attachments: hikari.UndefinedOr[t.Sequence[hikari.Resourceish]] = hikari.UNDEFINED,
+        component: hikari.UndefinedOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
+        components: hikari.UndefinedOr[t.Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
+        embed: hikari.UndefinedOr[hikari.Embed] = hikari.UNDEFINED,
+        embeds: hikari.UndefinedOr[t.Sequence[hikari.Embed]] = hikari.UNDEFINED,
+        mentions_everyone: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
+        user_mentions: hikari.UndefinedOr[
+            t.Union[hikari.SnowflakeishSequence[hikari.PartialUser], bool]
+        ] = hikari.UNDEFINED,
+        role_mentions: hikari.UndefinedOr[
+            t.Union[hikari.SnowflakeishSequence[hikari.PartialRole], bool]
+        ] = hikari.UNDEFINED,
+    ) -> hikari.Snowflakeish:
+        await self.interaction.create_initial_response(
+            response_type,
+            content,
+            flags=flags,
+            tts=tts,
+            attachment=attachment,
+            attachments=attachments,
+            component=component,
+            components=components,
+            embed=embed,
+            embeds=embeds,
+            mentions_everyone=mentions_everyone,
+            user_mentions=user_mentions,
+            role_mentions=role_mentions,
+        )
+        return INITIAL_RESPONSE_IDENTIFIER
+
     async def defer(self, ephemeral: bool = False) -> None:
         """
         Defer the creation of a response for the interaction that this context represents.
@@ -302,7 +355,7 @@ class Context:
             if self._initial_response_sent:
                 return
 
-            await self.interaction.create_initial_response(
+            await self._create_initial_response(
                 hikari.ResponseType.DEFERRED_MESSAGE_CREATE,
                 flags=hikari.MessageFlag.EPHEMERAL if ephemeral else hikari.MessageFlag.NONE,
             )
@@ -390,7 +443,7 @@ class Context:
         """
         async with self._response_lock:
             if not self._initial_response_sent:
-                await self.interaction.create_initial_response(
+                await self._create_initial_response(
                     hikari.ResponseType.MESSAGE_CREATE,
                     content,
                     flags=flags,
@@ -414,6 +467,7 @@ class Context:
                 return (
                     await self.interaction.execute(
                         content,
+                        flags=flags,
                         tts=tts,
                         attachment=attachment,
                         attachments=attachments,
@@ -424,6 +478,96 @@ class Context:
                         mentions_everyone=mentions_everyone,
                         user_mentions=user_mentions,
                         role_mentions=role_mentions,
-                        flags=flags,
                     )
                 ).id
+
+
+@dataclasses.dataclass(slots=True)
+class RestContext(Context):
+    _initial_response_callback: t.Callable[
+        [hikari.api.InteractionResponseBuilder],
+        None,
+    ]
+
+    async def respond_with_modal(
+        self,
+        title: str,
+        custom_id: str,
+        component: hikari.UndefinedOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
+        components: hikari.UndefinedOr[t.Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
+    ) -> None:
+        if component is hikari.UNDEFINED and components is hikari.UNDEFINED:
+            raise ValueError("either 'component' or 'components' must be provided")
+
+        components = components or ([component] if component is not hikari.UNDEFINED else hikari.UNDEFINED)
+        assert components is not hikari.UNDEFINED
+
+        async with self._response_lock:
+            if self._initial_response_sent:
+                return
+
+            self._initial_response_callback(
+                special_endpoints_impl.InteractionModalBuilder(title, custom_id, list(components))
+            )
+            self._initial_response_sent = True
+
+    async def _create_initial_response(
+        self,
+        response_type: hikari.ResponseType,
+        content: hikari.UndefinedOr[t.Any] = hikari.UNDEFINED,
+        *,
+        flags: t.Union[int, hikari.MessageFlag, hikari.UndefinedType] = hikari.UNDEFINED,
+        tts: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
+        attachment: hikari.UndefinedOr[hikari.Resourceish] = hikari.UNDEFINED,
+        attachments: hikari.UndefinedOr[t.Sequence[hikari.Resourceish]] = hikari.UNDEFINED,
+        component: hikari.UndefinedOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
+        components: hikari.UndefinedOr[t.Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
+        embed: hikari.UndefinedOr[hikari.Embed] = hikari.UNDEFINED,
+        embeds: hikari.UndefinedOr[t.Sequence[hikari.Embed]] = hikari.UNDEFINED,
+        mentions_everyone: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
+        user_mentions: hikari.UndefinedOr[
+            t.Union[hikari.SnowflakeishSequence[hikari.PartialUser], bool]
+        ] = hikari.UNDEFINED,
+        role_mentions: hikari.UndefinedOr[
+            t.Union[hikari.SnowflakeishSequence[hikari.PartialRole], bool]
+        ] = hikari.UNDEFINED,
+    ) -> hikari.Snowflakeish:
+        if attachment and attachments:
+            raise ValueError("You may only specify one of 'attachment' or 'attachments', not both")
+        if component and components:
+            raise ValueError("You may only specify one of 'component' or 'components', not both")
+        if embed and embeds:
+            raise ValueError("You may only specify one of 'embed' or 'embeds', not both")
+
+        if not (embed or embeds) and isinstance(content, hikari.Embed):
+            embed = content
+            content = hikari.UNDEFINED
+        elif not (attachment or attachments) and isinstance(content, (files.Resource, files.RAWISH_TYPES, os.PathLike)):
+            attachment = content
+            content = hikari.UNDEFINED
+
+        attachments_ = [*(attachments or []), *([attachment] if attachment else [])]
+        components_ = [*(components or []), *([component] if component else [])]
+        embeds_ = [*(embeds or []), *([embed] if embed else [])]
+
+        bld: t.Union[hikari.api.InteractionDeferredBuilder, hikari.api.InteractionMessageBuilder]
+        if response_type is hikari.ResponseType.MESSAGE_CREATE:
+            bld = special_endpoints_impl.InteractionMessageBuilder(
+                response_type,
+                str(content),
+                flags=flags,
+                is_tts=tts,
+                mentions_everyone=mentions_everyone,
+                role_mentions=role_mentions,
+                user_mentions=user_mentions,
+                attachments=attachments_,
+                components=components_,
+                embeds=embeds_,
+            )
+        elif response_type is hikari.ResponseType.DEFERRED_MESSAGE_CREATE:
+            bld = special_endpoints_impl.InteractionDeferredBuilder(response_type, flags=flags)
+        else:
+            raise TypeError("unexpected response_type passed")
+
+        self._initial_response_callback(bld)
+        return INITIAL_RESPONSE_IDENTIFIER

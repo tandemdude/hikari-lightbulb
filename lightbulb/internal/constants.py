@@ -22,3 +22,4 @@ __all__ = ["COMMAND_INVOKE_METHOD_MARKER"]
 
 COMMAND_INVOKE_METHOD_MARKER = "__lb_command_invoke_method__"
 """Name of the marker attribute set to mark a method as the invocation method for a command."""
+GLOBAL_COMMAND_KEY = 0

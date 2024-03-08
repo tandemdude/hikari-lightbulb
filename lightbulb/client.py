@@ -15,6 +15,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
+__all__ = ["Client", "GatewayEnabledClient", "RestEnabledClient", "client_from_app"]
+
+import asyncio
 import collections
 import functools
 import logging
@@ -27,17 +32,18 @@ from lightbulb import localization
 from lightbulb.commands import commands
 from lightbulb.commands import execution
 from lightbulb.commands import groups
+from lightbulb.internal import constants
 from lightbulb.internal import di as di_
 from lightbulb.internal import utils
 
-__all__ = ["Client", "GatewayEnabledClient", "RestEnabledClient", "client_from_app"]
+if t.TYPE_CHECKING:
+    from lightbulb.commands import options
 
 T = t.TypeVar("T")
 CommandOrGroupT = t.TypeVar("CommandOrGroupT", bound=t.Union[groups.Group, t.Type[commands.CommandBase]])
 CommandMapT = t.MutableMapping[hikari.Snowflakeish, t.MutableMapping[str, utils.CommandCollection]]
 OptionT = t.TypeVar("OptionT", bound=hikari.CommandInteractionOption)
 
-GLOBAL_COMMAND_KEY = 0
 DEFAULT_EXECUTION_STEP_ORDER = (
     execution.ExecutionSteps.MAX_CONCURRENCY,
     execution.ExecutionSteps.CHECKS,
@@ -168,7 +174,7 @@ class Client:
         register_in: t.Sequence[hikari.Snowflakeish]
         if not guilds and guilds is not None:
             # commands should ignore default guilds and be global
-            register_in = (GLOBAL_COMMAND_KEY,)
+            register_in = (constants.GLOBAL_COMMAND_KEY,)
         else:
             # commands should either use the passed guilds, or if none passed, use default guilds
             maybe_guilds = guilds or self.default_enabled_guilds
@@ -211,7 +217,7 @@ class Client:
         application = await self._ensure_application()
 
         for guild_id, guild_commands in self._commands.items():
-            if guild_id == GLOBAL_COMMAND_KEY:
+            if guild_id == constants.GLOBAL_COMMAND_KEY:
                 LOGGER.debug("processing global commands")
                 # TODO - Do global command syncing
                 continue
@@ -260,12 +266,14 @@ class Client:
         command_path = [interaction.command_name]
 
         subcommand: t.Union[hikari.CommandInteractionOption, hikari.AutocompleteInteractionOption, None]
-        options = interaction.options
+        options = interaction.options or []  # TODO - check if this is hikari bug with interaction server
         while (subcommand := self._get_subcommand(options or [])) is not None:
             command_path.append(subcommand.name)
             options = subcommand.options
 
-        root_commands = self._commands.get(interaction.guild_id or GLOBAL_COMMAND_KEY, {}).get(interaction.command_name)
+        root_commands = self._commands.get(interaction.guild_id or constants.GLOBAL_COMMAND_KEY, {}).get(
+            interaction.command_name
+        )
         if root_commands is None:
             LOGGER.debug("ignoring interaction received for unknown command - %r", interaction.command_name)
             return
@@ -299,6 +307,19 @@ class Client:
     ) -> context_.AutocompleteContext:
         return context_.AutocompleteContext(self, interaction, options, command_cls)
 
+    async def _execute_autocomplete_context(
+        self, context: context_.AutocompleteContext, autocomplete_provider: options.AutocompleteProviderT
+    ) -> None:
+        with di_.ensure_di_context(self.di):
+            try:
+                await autocomplete_provider(context)
+            except Exception as e:
+                LOGGER.error(
+                    "Error encountered during invocation of autocomplete for command %r",
+                    context.command._command_data.qualified_name,
+                    exc_info=(type(e), e, e.__traceback__),
+                )
+
     async def handle_autocomplete_interaction(self, interaction: hikari.AutocompleteInteraction) -> None:
         out = self._resolve_options_and_command(interaction)
         if out is None:
@@ -319,16 +340,8 @@ class Client:
 
         LOGGER.debug("%r - invoking autocomplete", command._command_data.qualified_name)
 
-        with di_.ensure_di_context(self.di):
-            try:
-                assert option.autocomplete_provider is not hikari.UNDEFINED
-                await option.autocomplete_provider(context)
-            except Exception as e:
-                LOGGER.error(
-                    "Error encountered during invocation of autocomplete for command %r",
-                    command._command_data.name,
-                    exc_info=(type(e), e, e.__traceback__),
-                )
+        assert option.autocomplete_provider is not hikari.UNDEFINED
+        await self._execute_autocomplete_context(context, option.autocomplete_provider)
 
     def build_command_context(
         self,
@@ -356,6 +369,18 @@ class Client:
             command=command_cls(),
         )
 
+    async def _execute_command_context(self, context: context_.Context) -> None:
+        with di_.ensure_di_context(self.di):
+            try:
+                await execution.ExecutionPipeline(context, self.execution_step_order)._run()
+            except Exception as e:
+                # TODO - dispatch to error handler
+                LOGGER.error(
+                    "Error encountered during invocation of command %r",
+                    context.command._command_data.qualified_name,
+                    exc_info=(type(e), e, e.__traceback__),
+                )
+
     async def handle_application_command_interaction(self, interaction: hikari.CommandInteraction) -> None:
         """
         Handle the given command interaction - invoking the correct command.
@@ -376,16 +401,7 @@ class Client:
 
         LOGGER.debug("invoking command - %r", command._command_data.qualified_name)
 
-        with di_.ensure_di_context(self.di):
-            try:
-                await execution.ExecutionPipeline(context, self.execution_step_order)._run()
-            except Exception as e:
-                # TODO - dispatch to error handler
-                LOGGER.error(
-                    "Error encountered during invocation of command %r",
-                    command._command_data.name,
-                    exc_info=(type(e), e, e.__traceback__),
-                )
+        await self._execute_command_context(context)
 
     async def handle_interaction_create(self, interaction: hikari.PartialInteraction) -> None:
         if isinstance(interaction, hikari.AutocompleteInteraction):
@@ -447,22 +463,121 @@ class RestEnabledClient(Client):
         app.interaction_server.set_listener(hikari.AutocompleteInteraction, self.handle_rest_autocomplete_interaction)
         app.interaction_server.set_listener(hikari.CommandInteraction, self.handle_rest_application_command_interaction)
 
+        if isinstance(app, hikari.RESTBot):
+            app.add_startup_callback(lambda _: self.sync_application_commands())
+
+    def build_rest_autocomplete_context(
+        self,
+        interaction: hikari.AutocompleteInteraction,
+        options: t.Sequence[hikari.AutocompleteInteractionOption],
+        command_cls: t.Type[commands.CommandBase],
+        response_callback: t.Callable[[hikari.api.InteractionResponseBuilder], None],
+    ) -> context_.AutocompleteContext:
+        return context_.RestAutocompleteContext(self, interaction, options, command_cls, response_callback)
+
     async def handle_rest_autocomplete_interaction(
         self, interaction: hikari.AutocompleteInteraction
-    ) -> hikari.api.InteractionAutocompleteBuilder:  # type: ignore[reportGeneralTypeIssues]
-        await super().handle_autocomplete_interaction(interaction)
-        # TODO - intercept respond calls
+    ) -> t.AsyncGenerator[hikari.api.InteractionAutocompleteBuilder, t.Any]:
+        out = self._resolve_options_and_command(interaction)
+        if out is None:
+            return
+
+        options, command = out
+
+        if not options:
+            LOGGER.debug("no options resolved from autocomplete interaction - ignoring")
+            return
+
+        initial_response_ready = asyncio.Event()
+        initial_response: t.Optional[hikari.api.InteractionResponseBuilder] = None
+
+        def set_response(response: hikari.api.InteractionResponseBuilder) -> None:
+            nonlocal initial_response, initial_response_ready
+            initial_response = response
+            initial_response_ready.set()
+
+        context = self.build_rest_autocomplete_context(interaction, options, command, set_response)
+
+        option = command._command_data.options.get(context.focused.name, None)
+        if option is None or not option.autocomplete:
+            LOGGER.debug("interaction appears to refer to option that has autocomplete disabled - ignoring")
+            return
+
+        LOGGER.debug("%r - invoking autocomplete", command._command_data.qualified_name)
+
+        assert option.autocomplete_provider is not hikari.UNDEFINED
+        task = asyncio.create_task(self._execute_autocomplete_context(context, option.autocomplete_provider))
+        try:
+            await asyncio.wait_for(initial_response_ready.wait(), timeout=5)
+
+            if initial_response is not None:
+                yield initial_response
+        except asyncio.TimeoutError:
+            LOGGER.warning(
+                "Autocomplete for command %r took too long to create initial response",
+                command._command_data.qualified_name,
+            )
+
+        # Ensure the autocomplete provider completes
+        await task
+
+    def build_rest_command_context(
+        self,
+        interaction: hikari.CommandInteraction,
+        options: t.Sequence[hikari.CommandInteractionOption],
+        command_cls: t.Type[commands.CommandBase],
+        response_callback: t.Callable[[hikari.api.InteractionResponseBuilder], None],
+    ) -> context_.Context:
+        return context_.RestContext(self, interaction, options, command_cls(), response_callback)
 
     async def handle_rest_application_command_interaction(
         self, interaction: hikari.CommandInteraction
-    ) -> t.Union[hikari.api.InteractionDeferredBuilder, hikari.api.InteractionMessageBuilder]:  # type: ignore[reportGeneralTypeIssues]
-        await super().handle_application_command_interaction(interaction)
-        # TODO - intercept context respond calls
+    ) -> t.AsyncGenerator[
+        t.Union[
+            hikari.api.InteractionDeferredBuilder,
+            hikari.api.InteractionMessageBuilder,
+            hikari.api.InteractionModalBuilder,
+        ],
+        t.Any,
+    ]:
+        out = self._resolve_options_and_command(interaction)
+        if out is None:
+            return
+
+        options, command = out
+
+        initial_response_ready = asyncio.Event()
+        initial_response: t.Optional[hikari.api.InteractionResponseBuilder] = None
+
+        def set_response(response: hikari.api.InteractionResponseBuilder) -> None:
+            nonlocal initial_response, initial_response_ready
+
+            initial_response = response
+            initial_response_ready.set()
+
+        context = self.build_rest_command_context(interaction, options or [], command, set_response)
+        LOGGER.debug("invoking command - %r", command._command_data.qualified_name)
+
+        task = asyncio.create_task(self._execute_command_context(context))
+        try:
+            await asyncio.wait_for(initial_response_ready.wait(), timeout=5)
+
+            if initial_response is not None:
+                yield initial_response
+        except asyncio.TimeoutError as e:
+            LOGGER.warning(
+                "Command %r took too long to create initial response",
+                command._command_data.qualified_name,
+                exc_info=(type(e), e, e.__traceback__),
+            )
+
+        # Ensure the command completes
+        await task
 
 
 def client_from_app(
     app: t.Union[GatewayClientAppT, RestClientAppT],
-    default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (GLOBAL_COMMAND_KEY,),
+    default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (constants.GLOBAL_COMMAND_KEY,),
     execution_step_order: t.Sequence[execution.ExecutionStep] = DEFAULT_EXECUTION_STEP_ORDER,
     default_locale: hikari.Locale = hikari.Locale.EN_US,
     localization_provider: localization.LocalizationProviderT = localization.localization_unsupported,

@@ -59,6 +59,7 @@ __all__ = [
     "attachment",
     "AutocompleteContext",
     "Context",
+    "RestContext",
     "ensure_di_context",
     "with_di",
     "localization_unsupported",

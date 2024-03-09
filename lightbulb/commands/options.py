@@ -42,6 +42,7 @@ import hikari
 
 from lightbulb import utils
 from lightbulb.commands import utils as cmd_utils
+from lightbulb.internal.utils import non_undefined_or
 
 if t.TYPE_CHECKING:
     from lightbulb import commands
@@ -53,10 +54,6 @@ if t.TYPE_CHECKING:
 T = t.TypeVar("T")
 D = t.TypeVar("D")
 CtxMenuOptionReturnT = t.Union[hikari.User, hikari.Message]
-
-
-def _non_undefined_or(item: hikari.UndefinedOr[T], default: D) -> t.Union[T, D]:
-    return item if item is not hikari.UNDEFINED else default
 
 
 @dataclasses.dataclass(slots=True)
@@ -139,12 +136,12 @@ class OptionData(t.Generic[D]):
             description=description,
             description_localizations=description_localizations,  # type: ignore[reportArgumentType]
             is_required=self.default is not hikari.UNDEFINED,
-            choices=_non_undefined_or(self.choices, None),
-            channel_types=_non_undefined_or(self.channel_types, None),
-            min_value=_non_undefined_or(self.min_value, None),
-            max_value=_non_undefined_or(self.max_value, None),
-            min_length=_non_undefined_or(self.min_length, None),
-            max_length=_non_undefined_or(self.max_length, None),
+            choices=non_undefined_or(self.choices, None),
+            channel_types=non_undefined_or(self.channel_types, None),
+            min_value=non_undefined_or(self.min_value, None),
+            max_value=non_undefined_or(self.max_value, None),
+            min_length=non_undefined_or(self.min_length, None),
+            max_length=non_undefined_or(self.max_length, None),
             autocomplete=self.autocomplete,
         )
 

@@ -20,8 +20,13 @@ from __future__ import annotations
 import dataclasses
 import typing as t
 
+import hikari
+
 from lightbulb.commands import commands
 from lightbulb.commands import groups
+
+T = t.TypeVar("T")
+D = t.TypeVar("D")
 
 
 @dataclasses.dataclass(slots=True)
@@ -42,3 +47,7 @@ class CommandCollection:
             self.message = command
         else:
             raise TypeError("unsupported command passed")
+
+
+def non_undefined_or(item: hikari.UndefinedOr[T], default: D) -> t.Union[T, D]:
+    return item if item is not hikari.UNDEFINED else default

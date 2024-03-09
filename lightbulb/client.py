@@ -34,6 +34,7 @@ from lightbulb.commands import execution
 from lightbulb.commands import groups
 from lightbulb.internal import constants
 from lightbulb.internal import di as di_
+from lightbulb.internal import sync
 from lightbulb.internal import utils
 
 if t.TYPE_CHECKING:
@@ -212,29 +213,7 @@ class Client:
         Returns:
             :obj:`None`
         """
-        # TODO - implement syncing logic - for now just do create
-        LOGGER.info("syncing commands with discord")
-        application = await self._ensure_application()
-
-        for guild_id, guild_commands in self._commands.items():
-            if guild_id == constants.GLOBAL_COMMAND_KEY:
-                LOGGER.debug("processing global commands")
-                # TODO - Do global command syncing
-                continue
-
-            LOGGER.debug("processing guild - %s", guild_id)
-
-            builders: t.List[hikari.api.CommandBuilder] = []
-            for cmds in guild_commands.values():
-                builders.extend(
-                    c.as_command_builder(self.default_locale, self.localization_provider)
-                    for c in [cmds.slash, cmds.user, cmds.message]
-                    if c is not None
-                )
-
-            await self.rest.set_application_commands(application, builders, guild_id)
-
-        LOGGER.info("finished syncing commands with discord")
+        await sync.sync_application_commands(self)
 
     @staticmethod
     def _get_subcommand(

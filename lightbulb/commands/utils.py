@@ -32,19 +32,19 @@ if t.TYPE_CHECKING:
 
 def localize_name_and_description(
     name: str,
-    description: t.Optional[str],
+    description: str | None,
     default_locale: hikari.Locale,
     localization_provider: localization.LocalizationProviderT,
-) -> t.Tuple[str, str, t.Mapping[hikari.Locale, str], t.Mapping[hikari.Locale, str]]:
+) -> tuple[str, str, t.Mapping[hikari.Locale, str], t.Mapping[hikari.Locale, str]]:
     name_localizations: t.Mapping[hikari.Locale, str] = localization_provider(name)
-    localized_name: t.Optional[str] = name_localizations.get(default_locale, None)
+    localized_name: str | None = name_localizations.get(default_locale, None)
     if localized_name is None:
         raise exceptions.LocalizationFailedException(f"failed to resolve key {name!r} for default locale")
 
     description_localizations: t.Mapping[hikari.Locale, str] = (
         {} if description is None else localization_provider(description)
     )
-    localized_description: t.Optional[str] = (
+    localized_description: str | None = (
         "" if description is None else description_localizations.get(default_locale, None)
     )
 

@@ -82,7 +82,7 @@ class CommandData:
     invoke_method: str
     """The attribute name of the invoke method for the command."""
 
-    parent: t.Optional[t.Union[groups.Group, groups.SubGroup]] = dataclasses.field(init=False, default=None)
+    parent: groups.Group | groups.SubGroup | None = dataclasses.field(init=False, default=None)
     """The group that the command belongs to, or :obj:`None` if not applicable."""
 
     def __post_init__(self) -> None:
@@ -201,13 +201,13 @@ class CommandMeta(type):
             run before the command invocation function is executed. Defaults to an empty set.
     """
 
-    __command_types: t.ClassVar[t.Dict[type, hikari.CommandType]] = {}
+    __command_types: t.ClassVar[dict[type, hikari.CommandType]] = {}
 
     @staticmethod
     def _is_option(item: t.Any) -> bool:
         return isinstance(item, options_.Option)
 
-    def __new__(cls, cls_name: str, bases: t.Tuple[type, ...], attrs: t.Dict[str, t.Any], **kwargs: t.Any) -> type:
+    def __new__(cls, cls_name: str, bases: tuple[type, ...], attrs: dict[str, t.Any], **kwargs: t.Any) -> type:
         cmd_type: hikari.CommandType
         # Bodge because I cannot figure out how to avoid initialising all the kwargs in our
         # own convenience classes any other way
@@ -245,7 +245,7 @@ class CommandMeta(type):
             raise TypeError("all hooks must be an instance of ExecutionHook")
 
         options: t.Dict[str, options_.OptionData[t.Any]] = {}
-        invoke_method: t.Optional[str] = None
+        invoke_method: str | None = None
         # Iterate through new class attributes to find options and invoke method
         for name, item in attrs.items():
             if cls._is_option(item):
@@ -282,7 +282,7 @@ class CommandBase:
     __slots__ = ("_current_context", "_resolved_option_cache")
 
     _command_data: t.ClassVar[CommandData]
-    _current_context: t.Optional[context_.Context]
+    _current_context: context_.Context | None
     _resolved_option_cache: t.MutableMapping[str, t.Any]
 
     def __new__(cls, *args: t.Any, **kwargs: t.Any) -> CommandBase:
@@ -304,7 +304,7 @@ class CommandBase:
         self._current_context = context
         self._resolved_option_cache = {}
 
-    def _resolve_option(self, option: options_.Option[T, D]) -> t.Union[T, D]:
+    def _resolve_option(self, option: options_.Option[T, D]) -> T | D:
         """
         Resolves the actual value for the given option from the command's current
         execution context. If the value has been resolved before and is available in the cache then

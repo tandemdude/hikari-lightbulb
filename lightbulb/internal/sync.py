@@ -37,9 +37,9 @@ LOGGER = logging.getLogger("lightbulb.internal.sync")
 
 @dataclasses.dataclass(slots=True)
 class CommandBuilderCollection:
-    slash: t.Optional[hikari.api.SlashCommandBuilder] = None
-    user: t.Optional[hikari.api.ContextMenuCommandBuilder] = None
-    message: t.Optional[hikari.api.ContextMenuCommandBuilder] = None
+    slash: hikari.api.SlashCommandBuilder | None = None
+    user: hikari.api.ContextMenuCommandBuilder | None = None
+    message: hikari.api.ContextMenuCommandBuilder | None = None
 
     def put(self, bld: hikari.api.CommandBuilder) -> None:
         if isinstance(bld, hikari.api.SlashCommandBuilder):
@@ -55,8 +55,8 @@ class CommandBuilderCollection:
 
 def hikari_command_to_builder(
     cmd: hikari.PartialCommand,
-) -> t.Union[hikari.api.SlashCommandBuilder, hikari.api.ContextMenuCommandBuilder]:
-    bld: t.Union[hikari.api.SlashCommandBuilder, hikari.api.ContextMenuCommandBuilder]
+) -> hikari.api.SlashCommandBuilder | hikari.api.ContextMenuCommandBuilder:
+    bld: hikari.api.SlashCommandBuilder | hikari.api.ContextMenuCommandBuilder
     if desc := getattr(cmd, "description", None):
         bld = hikari.impl.SlashCommandBuilder(cmd.name, description=desc)
         for option in getattr(cmd, "options", []) or []:
@@ -75,9 +75,9 @@ def hikari_command_to_builder(
 
 async def get_existing_and_registered_commands(
     client: client_.Client, application: hikari.PartialApplication, guild: hikari.UndefinedOr[hikari.Snowflakeish]
-) -> t.Tuple[t.Dict[str, CommandBuilderCollection], t.Dict[str, CommandBuilderCollection]]:
-    existing: t.Dict[str, CommandBuilderCollection] = collections.defaultdict(CommandBuilderCollection)
-    registered: t.Dict[str, CommandBuilderCollection] = collections.defaultdict(CommandBuilderCollection)
+) -> tuple[dict[str, CommandBuilderCollection], dict[str, CommandBuilderCollection]]:
+    existing: dict[str, CommandBuilderCollection] = collections.defaultdict(CommandBuilderCollection)
+    registered: dict[str, CommandBuilderCollection] = collections.defaultdict(CommandBuilderCollection)
 
     for existing_command in await client.rest.fetch_application_commands(application, guild=guild):
         existing[existing_command.name].put(hikari_command_to_builder(existing_command))
@@ -93,8 +93,8 @@ async def get_existing_and_registered_commands(
     return existing, registered
 
 
-def serialize_builder(bld: hikari.api.CommandBuilder) -> t.Dict[str, t.Any]:
-    def serialize_option(opt: hikari.CommandOption) -> t.Dict[str, t.Any]:
+def serialize_builder(bld: hikari.api.CommandBuilder) -> dict[str, t.Any]:
+    def serialize_option(opt: hikari.CommandOption) -> dict[str, t.Any]:
         return {
             "type": opt.type,
             "name": opt.name,
@@ -112,7 +112,7 @@ def serialize_builder(bld: hikari.api.CommandBuilder) -> t.Dict[str, t.Any]:
             "max_length": opt.max_length,
         }
 
-    out: t.Dict[str, t.Any] = {
+    out: dict[str, t.Any] = {
         "name": bld.name,
         "is_dm_enabled": non_undefined_or(bld.is_dm_enabled, True),
         "is_nsfw": non_undefined_or(bld.is_nsfw, False),
@@ -128,13 +128,13 @@ def serialize_builder(bld: hikari.api.CommandBuilder) -> t.Dict[str, t.Any]:
 
 
 def get_commands_to_set(
-    existing: t.Dict[str, CommandBuilderCollection],
-    registered: t.Dict[str, CommandBuilderCollection],
+    existing: dict[str, CommandBuilderCollection],
+    registered: dict[str, CommandBuilderCollection],
     delete_unknown: bool,
-) -> t.Optional[t.Sequence[hikari.api.CommandBuilder]]:
+) -> t.Sequence[hikari.api.CommandBuilder] | None:
     created, deleted, updated, unchanged = 0, 0, 0, 0
 
-    commands_to_set: t.List[hikari.api.CommandBuilder] = []
+    commands_to_set: list[hikari.api.CommandBuilder] = []
     for name in {*existing.keys(), *registered.keys()}:
         existing_cmds, registered_cmds = existing[name], registered[name]
         for existing_bld, registered_bld in zip(

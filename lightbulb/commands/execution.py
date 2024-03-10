@@ -28,15 +28,14 @@ import typing as t
 from lightbulb import exceptions
 from lightbulb.internal import constants
 from lightbulb.internal import di
+from lightbulb.internal.types import MaybeAwaitable
 
 if t.TYPE_CHECKING:
     from lightbulb import context as context_
 
 __all__ = ["ExecutionStep", "ExecutionSteps", "ExecutionHook", "ExecutionPipeline", "hook", "invoke"]
 
-ExecutionHookFuncT: t.TypeAlias = t.Callable[
-    ["ExecutionPipeline", "context_.Context"], t.Union[t.Awaitable[None], None]
-]
+ExecutionHookFuncT: t.TypeAlias = t.Callable[["ExecutionPipeline", "context_.Context"], MaybeAwaitable[None]]
 
 
 @dataclasses.dataclass(frozen=True, slots=True, eq=True)
@@ -110,14 +109,14 @@ class ExecutionPipeline:
         self._context = context
         self._remaining = list(order)
 
-        self._hooks: t.Dict[ExecutionStep, t.List[ExecutionHook]] = collections.defaultdict(list)
+        self._hooks: dict[ExecutionStep, list[ExecutionHook]] = collections.defaultdict(list)
         for hook in context.command_data.hooks:
             self._hooks[hook.step].append(hook)
 
-        self._current_step: t.Optional[ExecutionStep] = None
-        self._current_hook: t.Optional[ExecutionHook] = None
+        self._current_step: ExecutionStep | None = None
+        self._current_hook: ExecutionHook | None = None
 
-        self._failure: t.Optional[exceptions.HookFailedException] = None
+        self._failure: exceptions.HookFailedException | None = None
 
     @property
     def failed(self) -> bool:
@@ -128,7 +127,7 @@ class ExecutionPipeline:
         """
         return self._failure is not None
 
-    def _next_step(self) -> t.Optional[ExecutionStep]:
+    def _next_step(self) -> ExecutionStep | None:
         """
         Return the next execution step to run, or :obj:`None` if the remaining execution steps
         have been exhausted.
@@ -178,7 +177,7 @@ class ExecutionPipeline:
         except Exception as e:
             raise exceptions.InvocationFailedException(e, self._context)
 
-    def fail(self, exc: t.Union[str, Exception]) -> None:
+    def fail(self, exc: str | Exception) -> None:
         """
         Notify the pipeline of a failure in an execution hook.
 

@@ -126,7 +126,7 @@ EMPTY_ATTACHMENT = hikari.Attachment(
 """Placeholder for an attachment. Used when attempting to get value for an option on a class instead of instance."""
 
 
-def get_command_data(command: t.Union[commands.CommandBase, t.Type[commands.CommandBase]]) -> commands.CommandData:
+def get_command_data(command: commands.CommandBase | type[commands.CommandBase]) -> commands.CommandData:
     """
     Utility method to get the command data dataclass for a command instance or command class.
 

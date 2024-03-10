@@ -37,17 +37,17 @@ if t.TYPE_CHECKING:
     from lightbulb import client as client_
     from lightbulb import commands
 
-AutocompleteResponseT = t.Union[
+AutocompleteResponse: t.TypeAlias = t.Union[
     t.Sequence[special_endpoints.AutocompleteChoiceBuilder],
     t.Sequence[str],
     t.Mapping[str, str],
-    t.Sequence[t.Tuple[str, str]],
+    t.Sequence[tuple[str, str]],
     t.Sequence[int],
     t.Mapping[str, int],
-    t.Sequence[t.Tuple[str, int]],
+    t.Sequence[tuple[str, int]],
     t.Sequence[float],
     t.Mapping[str, float],
-    t.Sequence[t.Tuple[str, float]],
+    t.Sequence[tuple[str, float]],
 ]
 
 INITIAL_RESPONSE_IDENTIFIER: t.Final[int] = -1
@@ -63,10 +63,10 @@ class AutocompleteContext:
     options: t.Sequence[hikari.AutocompleteInteractionOption]
     """The options provided with the autocomplete interaction."""
 
-    command: t.Type[commands.CommandBase]
+    command: type[commands.CommandBase]
     """Command class for the autocomplete invocation."""
 
-    _focused: t.Optional[hikari.AutocompleteInteractionOption] = dataclasses.field(init=False, default=None)
+    _focused: hikari.AutocompleteInteractionOption | None = dataclasses.field(init=False, default=None)
 
     @property
     def focused(self) -> hikari.AutocompleteInteractionOption:
@@ -84,7 +84,7 @@ class AutocompleteContext:
         self._focused = found
         return self._focused
 
-    def get_option(self, name: str) -> t.Optional[hikari.AutocompleteInteractionOption]:
+    def get_option(self, name: str) -> hikari.AutocompleteInteractionOption | None:
         """
         Get the option with the given name if available.
 
@@ -101,16 +101,16 @@ class AutocompleteContext:
         return next(filter(lambda opt: opt.name == name, self.options), None)
 
     @staticmethod
-    def _normalise_choices(choices: AutocompleteResponseT) -> t.Sequence[special_endpoints.AutocompleteChoiceBuilder]:
+    def _normalise_choices(choices: AutocompleteResponse) -> t.Sequence[special_endpoints.AutocompleteChoiceBuilder]:
         if isinstance(choices, collections.abc.Mapping):
             return [hikari.impl.AutocompleteChoiceBuilder(name=k, value=v) for k, v in choices.items()]
 
         def _to_command_choice(
             item: t.Union[
                 special_endpoints.AutocompleteChoiceBuilder,
-                t.Tuple[str, str],
-                t.Tuple[str, int],
-                t.Tuple[str, float],
+                tuple[str, str],
+                tuple[str, int],
+                tuple[str, float],
                 str,
                 int,
                 float,
@@ -126,7 +126,7 @@ class AutocompleteContext:
 
         return list(map(_to_command_choice, choices))
 
-    async def respond(self, choices: AutocompleteResponseT) -> None:
+    async def respond(self, choices: AutocompleteResponse) -> None:
         """
         Create a response for the autocomplete interaction this context represents.
 
@@ -147,7 +147,7 @@ class RestAutocompleteContext(AutocompleteContext):
         None,
     ]
 
-    async def respond(self, choices: AutocompleteResponseT) -> None:
+    async def respond(self, choices: AutocompleteResponse) -> None:
         normalised_choices = self._normalise_choices(choices)
         self._initial_response_callback(special_endpoints_impl.InteractionAutocompleteBuilder(normalised_choices))
 
@@ -174,7 +174,7 @@ class Context:
         self.command._set_context(self)
 
     @property
-    def guild_id(self) -> t.Optional[hikari.Snowflake]:
+    def guild_id(self) -> hikari.Snowflake | None:
         """The ID of the guild that the command was invoked in. :obj:`None` if the invocation occurred in DM."""
         return self.interaction.guild_id
 
@@ -189,7 +189,7 @@ class Context:
         return self.interaction.user
 
     @property
-    def member(self) -> t.Optional[hikari.InteractionMember]:
+    def member(self) -> hikari.InteractionMember | None:
         """The member that invoked the command, if it was invoked in a guild."""
         return self.interaction.member
 
@@ -203,21 +203,15 @@ class Context:
         response_id: hikari.Snowflakeish,
         content: hikari.UndefinedNoneOr[t.Any] = hikari.UNDEFINED,
         *,
-        attachment: hikari.UndefinedNoneOr[t.Union[hikari.Resourceish, hikari.Attachment]] = hikari.UNDEFINED,
-        attachments: hikari.UndefinedNoneOr[
-            t.Sequence[t.Union[hikari.Resourceish, hikari.Attachment]]
-        ] = hikari.UNDEFINED,
+        attachment: hikari.UndefinedNoneOr[hikari.Resourceish | hikari.Attachment] = hikari.UNDEFINED,
+        attachments: hikari.UndefinedNoneOr[t.Sequence[hikari.Resourceish | hikari.Attachment]] = hikari.UNDEFINED,
         component: hikari.UndefinedNoneOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
         components: hikari.UndefinedNoneOr[t.Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
         embed: hikari.UndefinedNoneOr[hikari.Embed] = hikari.UNDEFINED,
         embeds: hikari.UndefinedNoneOr[t.Sequence[hikari.Embed]] = hikari.UNDEFINED,
         mentions_everyone: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
-        user_mentions: hikari.UndefinedOr[
-            t.Union[hikari.SnowflakeishSequence[hikari.PartialUser], bool]
-        ] = hikari.UNDEFINED,
-        role_mentions: hikari.UndefinedOr[
-            t.Union[hikari.SnowflakeishSequence[hikari.PartialRole], bool]
-        ] = hikari.UNDEFINED,
+        user_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialUser] | bool] = hikari.UNDEFINED,
+        role_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialRole] | bool] = hikari.UNDEFINED,
     ) -> hikari.Message:
         """
         Edit the response with the given identifier.
@@ -307,7 +301,7 @@ class Context:
         response_type: t.Literal[hikari.ResponseType.MESSAGE_CREATE, hikari.ResponseType.DEFERRED_MESSAGE_CREATE],
         content: hikari.UndefinedOr[t.Any] = hikari.UNDEFINED,
         *,
-        flags: t.Union[int, hikari.MessageFlag, hikari.UndefinedType] = hikari.UNDEFINED,
+        flags: int | hikari.MessageFlag | hikari.UndefinedType = hikari.UNDEFINED,
         tts: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
         attachment: hikari.UndefinedOr[hikari.Resourceish] = hikari.UNDEFINED,
         attachments: hikari.UndefinedOr[t.Sequence[hikari.Resourceish]] = hikari.UNDEFINED,
@@ -316,12 +310,8 @@ class Context:
         embed: hikari.UndefinedOr[hikari.Embed] = hikari.UNDEFINED,
         embeds: hikari.UndefinedOr[t.Sequence[hikari.Embed]] = hikari.UNDEFINED,
         mentions_everyone: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
-        user_mentions: hikari.UndefinedOr[
-            t.Union[hikari.SnowflakeishSequence[hikari.PartialUser], bool]
-        ] = hikari.UNDEFINED,
-        role_mentions: hikari.UndefinedOr[
-            t.Union[hikari.SnowflakeishSequence[hikari.PartialRole], bool]
-        ] = hikari.UNDEFINED,
+        user_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialUser] | bool] = hikari.UNDEFINED,
+        role_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialRole] | bool] = hikari.UNDEFINED,
     ) -> hikari.Snowflakeish:
         await self.interaction.create_initial_response(
             response_type,
@@ -393,7 +383,7 @@ class Context:
         self,
         content: hikari.UndefinedOr[t.Any] = hikari.UNDEFINED,
         *,
-        flags: t.Union[int, hikari.MessageFlag, hikari.UndefinedType] = hikari.UNDEFINED,
+        flags: int | hikari.MessageFlag | hikari.UndefinedType = hikari.UNDEFINED,
         tts: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
         attachment: hikari.UndefinedOr[hikari.Resourceish] = hikari.UNDEFINED,
         attachments: hikari.UndefinedOr[t.Sequence[hikari.Resourceish]] = hikari.UNDEFINED,
@@ -402,12 +392,8 @@ class Context:
         embed: hikari.UndefinedOr[hikari.Embed] = hikari.UNDEFINED,
         embeds: hikari.UndefinedOr[t.Sequence[hikari.Embed]] = hikari.UNDEFINED,
         mentions_everyone: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
-        user_mentions: hikari.UndefinedOr[
-            t.Union[hikari.SnowflakeishSequence[hikari.PartialUser], bool]
-        ] = hikari.UNDEFINED,
-        role_mentions: hikari.UndefinedOr[
-            t.Union[hikari.SnowflakeishSequence[hikari.PartialRole], bool]
-        ] = hikari.UNDEFINED,
+        user_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialUser] | bool] = hikari.UNDEFINED,
+        role_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialRole] | bool] = hikari.UNDEFINED,
     ) -> hikari.Snowflakeish:
         """
         Create a response to the interaction that this context represents.
@@ -516,7 +502,7 @@ class RestContext(Context):
         response_type: hikari.ResponseType,
         content: hikari.UndefinedOr[t.Any] = hikari.UNDEFINED,
         *,
-        flags: t.Union[int, hikari.MessageFlag, hikari.UndefinedType] = hikari.UNDEFINED,
+        flags: int | hikari.MessageFlag | hikari.UndefinedType = hikari.UNDEFINED,
         tts: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
         attachment: hikari.UndefinedOr[hikari.Resourceish] = hikari.UNDEFINED,
         attachments: hikari.UndefinedOr[t.Sequence[hikari.Resourceish]] = hikari.UNDEFINED,
@@ -525,12 +511,8 @@ class RestContext(Context):
         embed: hikari.UndefinedOr[hikari.Embed] = hikari.UNDEFINED,
         embeds: hikari.UndefinedOr[t.Sequence[hikari.Embed]] = hikari.UNDEFINED,
         mentions_everyone: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
-        user_mentions: hikari.UndefinedOr[
-            t.Union[hikari.SnowflakeishSequence[hikari.PartialUser], bool]
-        ] = hikari.UNDEFINED,
-        role_mentions: hikari.UndefinedOr[
-            t.Union[hikari.SnowflakeishSequence[hikari.PartialRole], bool]
-        ] = hikari.UNDEFINED,
+        user_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialUser] | bool] = hikari.UNDEFINED,
+        role_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialRole] | bool] = hikari.UNDEFINED,
     ) -> hikari.Snowflakeish:
         if attachment and attachments:
             raise ValueError("You may only specify one of 'attachment' or 'attachments', not both")

@@ -67,7 +67,7 @@ class DictLocalizationProvider:
     """Mapping containing the localizations that can be provided."""
 
     def __call__(self, key: str) -> LocalizationMappingT:
-        out: t.Dict[hikari.Locale, str] = {}
+        out: dict[hikari.Locale, str] = {}
         for locale, translations in self.localizations.items():
             if key in translations:
                 out[locale] = translations[key]
@@ -102,7 +102,7 @@ class GnuLocalizationProvider:
         if not self.filename.endswith(".po") and not self.filename.endswith(".mo"):
             raise ValueError("'filename' - file must be of type '.po' or '.mo'")
 
-        localizations: t.Dict[hikari.Locale, t.Dict[str, str]] = collections.defaultdict(dict)
+        localizations: dict[hikari.Locale, dict[str, str]] = collections.defaultdict(dict)
 
         for directory in pathlib.Path(self.directory).iterdir():
             if not directory.is_dir():
@@ -116,7 +116,7 @@ class GnuLocalizationProvider:
             if not translations_file.is_file():
                 continue
 
-            parsed: t.Union[polib.POFile, polib.MOFile] = (
+            parsed: polib.POFile | polib.MOFile = (
                 polib.pofile(translations_file.as_posix())
                 if translations_file.name.endswith(".po")
                 else polib.mofile(translations_file.as_posix())

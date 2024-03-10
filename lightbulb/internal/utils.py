@@ -31,13 +31,13 @@ D = t.TypeVar("D")
 
 @dataclasses.dataclass(slots=True)
 class CommandCollection:
-    slash: t.Optional[t.Union[groups.Group, t.Type[commands.SlashCommand]]] = None
-    user: t.Optional[t.Type[commands.UserCommand]] = None
-    message: t.Optional[t.Type[commands.MessageCommand]] = None
+    slash: groups.Group | type[commands.SlashCommand] | None = None
+    user: type[commands.UserCommand] | None = None
+    message: type[commands.MessageCommand] | None = None
 
     def put(
         self,
-        command: t.Union[groups.Group, t.Type[commands.CommandBase]],
+        command: groups.Group | t.Type[commands.CommandBase],
     ) -> None:
         if isinstance(command, groups.Group) or issubclass(command, commands.SlashCommand):
             self.slash = command
@@ -49,5 +49,5 @@ class CommandCollection:
             raise TypeError("unsupported command passed")
 
 
-def non_undefined_or(item: hikari.UndefinedOr[T], default: D) -> t.Union[T, D]:
+def non_undefined_or(item: hikari.UndefinedOr[T], default: D) -> T | D:
     return item if item is not hikari.UNDEFINED else default

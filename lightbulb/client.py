@@ -80,6 +80,8 @@ class Client:
             localizations for a key. Defaults to :obj:`~lightbulb.localization.localization_unsupported` - the client
             does not support localizing commands. **Must** be passed if you intend
             to support localizations.
+        delete_unknown_commands (:obj:`bool`): Whether to delete existing commands that the client does not have
+            an implementation for during command syncing.
     """  # noqa: E501
 
     __slots__ = (
@@ -88,6 +90,7 @@ class Client:
         "execution_step_order",
         "default_locale",
         "localization_provider",
+        "delete_unknown_commands",
         "_di",
         "_localization",
         "_commands",
@@ -101,6 +104,7 @@ class Client:
         execution_step_order: t.Sequence[execution.ExecutionStep],
         default_locale: hikari.Locale,
         localization_provider: localization.LocalizationProviderT,
+        delete_unknown_commands: bool,
     ) -> None:
         super().__init__()
 
@@ -109,6 +113,7 @@ class Client:
         self.execution_step_order = execution_step_order
         self.default_locale = default_locale
         self.localization_provider = localization_provider
+        self.delete_unknown_commands = delete_unknown_commands
 
         self._di = di_.DependencyInjectionManager()
 
@@ -560,6 +565,7 @@ def client_from_app(
     execution_step_order: t.Sequence[execution.ExecutionStep] = DEFAULT_EXECUTION_STEP_ORDER,
     default_locale: hikari.Locale = hikari.Locale.EN_US,
     localization_provider: localization.LocalizationProviderT = localization.localization_unsupported,
+    delete_unknown_commands: bool = True,
 ) -> Client:
     """
     Create and return the appropriate client implementation from the given application.
@@ -578,6 +584,8 @@ def client_from_app(
             localizations for a key. Defaults to :obj:`~lightbulb.localization.localization_unsupported` - the client
             does not support localizing commands. **Must** be passed if you intend
             to support localizations.
+        delete_unknown_commands (:obj:`bool`): Whether to delete existing commands that the client does not have
+            an implementation for during command syncing. Defaults to :obj:`True`.
 
     Returns:
         :obj:`~Client`: The created client instance.
@@ -589,4 +597,11 @@ def client_from_app(
         LOGGER.debug("building REST client from app")
         cls = RestEnabledClient
 
-    return cls(app, default_enabled_guilds, execution_step_order, default_locale, localization_provider)  # type: ignore[reportArgumentType]
+    return cls(
+        app,  # type: ignore[reportArgumentType]
+        default_enabled_guilds,
+        execution_step_order,
+        default_locale,
+        localization_provider,
+        delete_unknown_commands,
+    )

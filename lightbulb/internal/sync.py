@@ -128,7 +128,9 @@ def serialize_builder(bld: hikari.api.CommandBuilder) -> t.Dict[str, t.Any]:
 
 
 def get_commands_to_set(
-    existing: t.Dict[str, CommandBuilderCollection], registered: t.Dict[str, CommandBuilderCollection]
+    existing: t.Dict[str, CommandBuilderCollection],
+    registered: t.Dict[str, CommandBuilderCollection],
+    delete_unknown: bool,
 ) -> t.Optional[t.Sequence[hikari.api.CommandBuilder]]:
     created, deleted, updated, unchanged = 0, 0, 0, 0
 
@@ -148,8 +150,10 @@ def get_commands_to_set(
                 commands_to_set.append(registered_bld)
                 created += 1
             elif registered_bld is None:
-                # TODO - Check if user wants to remove unknown commands
-                commands_to_set.append(existing_bld)
+                if delete_unknown:
+                    deleted += 1
+                else:
+                    commands_to_set.append(existing_bld)
             else:
                 if serialize_builder(existing_bld) != serialize_builder(registered_bld):
                     commands_to_set.append(registered_bld)
@@ -169,7 +173,9 @@ async def sync_application_commands(client: client_.Client) -> None:
     existing_global_commands, registered_global_commands = await get_existing_and_registered_commands(
         client, application, hikari.UNDEFINED
     )
-    global_commands_to_set = get_commands_to_set(existing_global_commands, registered_global_commands)
+    global_commands_to_set = get_commands_to_set(
+        existing_global_commands, registered_global_commands, client.delete_unknown_commands
+    )
     if global_commands_to_set is not None:
         await client.rest.set_application_commands(application, global_commands_to_set)
     LOGGER.info("finished syncing global commands")
@@ -182,7 +188,9 @@ async def sync_application_commands(client: client_.Client) -> None:
         existing_guild_commands, registered_guild_commands = await get_existing_and_registered_commands(
             client, application, guild
         )
-        guild_commands_to_set = get_commands_to_set(existing_guild_commands, registered_guild_commands)
+        guild_commands_to_set = get_commands_to_set(
+            existing_guild_commands, registered_guild_commands, client.delete_unknown_commands
+        )
         if guild_commands_to_set is not None:
-            await client.rest.set_application_commands(application, guild_commands_to_set)
+            await client.rest.set_application_commands(application, guild_commands_to_set, guild=guild)
         LOGGER.info("finished syncing commands for guild '%s'", guild)

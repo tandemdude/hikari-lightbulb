@@ -25,6 +25,9 @@ import typing as t
 
 import svcs
 
+if t.TYPE_CHECKING:
+    from lightbulb.internal.types import MaybeAwaitable
+
 T = t.TypeVar("T")
 AnyAsyncCallableT = t.TypeVar("AnyAsyncCallableT", bound=t.Callable[..., t.Awaitable[t.Any]])
 
@@ -40,7 +43,7 @@ class DependencyInjectionManager:
 
     def __init__(self) -> None:
         self._di_registry: svcs.Registry = svcs.Registry()
-        self._di_container: t.Optional[svcs.Container] = None
+        self._di_container: svcs.Container | None = None
 
     @property
     def di_registry(self) -> svcs.Registry:
@@ -54,19 +57,19 @@ class DependencyInjectionManager:
             self._di_container = svcs.Container(self.di_registry)
         return self._di_container
 
-    def register_dependency(self, type: t.Type[T], factory: t.Callable[[], t.Union[t.Awaitable[T], T]]) -> None:
+    def register_dependency(self, type_: type[T], factory: t.Callable[[], MaybeAwaitable[T]]) -> None:
         """
         Register a dependency as usable by dependency injection. All dependencies are considered to be
         singletons, meaning the factory will always be called at most once.
 
         Args:
-            type (:obj:`~typing.Type` [ ``T`` ]): The type of the dependency to register.
+            type_ (:obj:`~typing.Type` [ ``T`` ]): The type of the dependency to register.
             factory: The factory function to use to provide the dependency value.
 
         Returns:
             :obj:`None`
         """
-        self.di_registry.register_factory(type, factory)  # type: ignore[reportUnknownMemberType]
+        self.di_registry.register_factory(type_, factory)  # type: ignore[reportUnknownMemberType]
 
 
 @contextlib.contextmanager
@@ -97,7 +100,7 @@ def ensure_di_context(client: DependencyInjectionManager) -> t.Generator[None, t
 
 def find_injectable_kwargs(
     func: t.Callable[..., t.Any], passed_args: int, passed_kwargs: t.Collection[str]
-) -> t.Dict[str, t.Any]:
+) -> dict[str, t.Any]:
     """
     Given a function, parse the signature to discover which parameters are suitable for dependency injection.
 
@@ -121,7 +124,7 @@ def find_injectable_kwargs(
     """
     parameters = inspect.signature(func, eval_str=True).parameters
 
-    injectable_parameters: t.Dict[str, t.Any] = {}
+    injectable_parameters: dict[str, t.Any] = {}
     for parameter in [*parameters.values()][passed_args:]:
         # Injectable parameters MUST have an annotation and no default
         if (
@@ -163,7 +166,7 @@ class LazyInjecting:
         self._func = func
         self._self: t.Any = self_
 
-    def __get__(self, instance: t.Any, owner: t.Type[t.Any]) -> LazyInjecting:
+    def __get__(self, instance: t.Any, owner: type[t.Any]) -> LazyInjecting:
         if instance is not None:
             return LazyInjecting(self._func, instance)
         return self
@@ -175,7 +178,7 @@ class LazyInjecting:
         setattr(self._func, key, value)
 
     async def __call__(self, *args: t.Any, **kwargs: t.Any) -> t.Any:
-        new_kwargs: t.Dict[str, t.Any] = {}
+        new_kwargs: dict[str, t.Any] = {}
         new_kwargs.update(kwargs)
 
         di_container: t.Optional[svcs.Container] = DI_CONTAINER.get(None)

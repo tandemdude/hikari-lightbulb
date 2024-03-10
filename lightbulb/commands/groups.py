@@ -34,9 +34,9 @@ if t.TYPE_CHECKING:
     from lightbulb import localization
     from lightbulb.commands import commands
 
-CommandT = t.TypeVar("CommandT", bound=t.Type["commands.CommandBase"])
-SubGroupCommandMappingT = t.Dict[str, t.Type["commands.CommandBase"]]
-GroupCommandMappingT = t.Dict[str, t.Union["SubGroup", t.Type["commands.CommandBase"]]]
+CommandT = t.TypeVar("CommandT", bound=type["commands.CommandBase"])
+SubGroupCommandMappingT = dict[str, type["commands.CommandBase"]]
+GroupCommandMappingT = dict[str, t.Union["SubGroup", type["commands.CommandBase"]]]
 
 
 class GroupMixin(abc.ABC):
@@ -44,7 +44,7 @@ class GroupMixin(abc.ABC):
 
     __slots__ = ()
 
-    _commands: t.Union[SubGroupCommandMappingT, GroupCommandMappingT]
+    _commands: SubGroupCommandMappingT | GroupCommandMappingT
 
     @t.overload
     def register(self) -> t.Callable[[CommandT], CommandT]: ...
@@ -52,7 +52,7 @@ class GroupMixin(abc.ABC):
     @t.overload
     def register(self, command: CommandT) -> CommandT: ...
 
-    def register(self, command: t.Optional[CommandT] = None) -> t.Union[CommandT, t.Callable[[CommandT], CommandT]]:
+    def register(self, command: CommandT | None = None) -> CommandT | t.Callable[[CommandT], CommandT]:
         """
         Register a command as a subcommand for this group. Can be used as a first or second order decorator,
         or called with the command to register.
@@ -91,7 +91,7 @@ class GroupMixin(abc.ABC):
 
         return _inner
 
-    def resolve_subcommand(self, path: t.List[str]) -> t.Optional[t.Type[commands.CommandBase]]:
+    def resolve_subcommand(self, path: list[str]) -> type[commands.CommandBase] | None:
         """
         Resolve the subcommand for the given path - fully qualified command name.
 

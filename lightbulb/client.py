@@ -39,18 +39,20 @@ from lightbulb.internal import utils
 
 if t.TYPE_CHECKING:
     from lightbulb.commands import options
+    from lightbulb.internal.types import MaybeAwaitable
 
 T = t.TypeVar("T")
-CommandOrGroupT = t.TypeVar("CommandOrGroupT", bound=t.Union[groups.Group, t.Type[commands.CommandBase]])
+CommandOrGroup: t.TypeAlias = t.Union[groups.Group, type[commands.CommandBase]]
+CommandOrGroupT = t.TypeVar("CommandOrGroupT", bound=CommandOrGroup)
 CommandMapT = t.MutableMapping[hikari.Snowflakeish, t.MutableMapping[str, utils.CommandCollection]]
 OptionT = t.TypeVar("OptionT", bound=hikari.CommandInteractionOption)
 
+LOGGER = logging.getLogger("lightbulb.client")
 DEFAULT_EXECUTION_STEP_ORDER = (
     execution.ExecutionSteps.MAX_CONCURRENCY,
     execution.ExecutionSteps.CHECKS,
     execution.ExecutionSteps.COOLDOWNS,
 )
-LOGGER = logging.getLogger("lightbulb.client")
 
 
 @t.runtime_checkable
@@ -82,6 +84,7 @@ class Client:
             to support localizations.
         delete_unknown_commands (:obj:`bool`): Whether to delete existing commands that the client does not have
             an implementation for during command syncing.
+        deferred_registration_callback (:obj:`~typing.Optional` [ )
     """  # noqa: E501
 
     __slots__ = (
@@ -91,8 +94,10 @@ class Client:
         "default_locale",
         "localization_provider",
         "delete_unknown_commands",
+        "deferred_registration_callback",
         "_di",
         "_localization",
+        "_deferred_commands",
         "_commands",
         "_application",
     )
@@ -105,6 +110,10 @@ class Client:
         default_locale: hikari.Locale,
         localization_provider: localization.LocalizationProviderT,
         delete_unknown_commands: bool,
+        deferred_registration_callback: t.Callable[
+            [CommandOrGroup], MaybeAwaitable[t.Union[hikari.Snowflakeish, t.Sequence[hikari.Snowflakeish]]]
+        ]
+        | None,
     ) -> None:
         super().__init__()
 
@@ -114,9 +123,11 @@ class Client:
         self.default_locale = default_locale
         self.localization_provider = localization_provider
         self.delete_unknown_commands = delete_unknown_commands
+        self.deferred_registration_callback = deferred_registration_callback
 
         self._di = di_.DependencyInjectionManager()
 
+        self._deferred_commands: list[CommandOrGroup] = []
         self._commands: CommandMapT = collections.defaultdict(lambda: collections.defaultdict(utils.CommandCollection))
         self._application: t.Optional[hikari.PartialApplication] = None
 
@@ -126,20 +137,20 @@ class Client:
 
     @t.overload
     def register(
-        self, *, guilds: t.Optional[t.Sequence[hikari.Snowflakeish]] = None
+        self, *, guilds: t.Sequence[hikari.Snowflakeish] | None = None
     ) -> t.Callable[[CommandOrGroupT], CommandOrGroupT]: ...
 
     @t.overload
     def register(
-        self, command: CommandOrGroupT, *, guilds: t.Optional[t.Sequence[hikari.Snowflakeish]] = None
+        self, command: CommandOrGroupT, *, guilds: t.Sequence[hikari.Snowflakeish] | None = None
     ) -> CommandOrGroupT: ...
 
     def register(
         self,
-        command: t.Optional[CommandOrGroupT] = None,
+        command: CommandOrGroupT | None = None,
         *,
-        guilds: t.Optional[t.Sequence[hikari.Snowflakeish]] = None,
-    ) -> t.Union[CommandOrGroupT, t.Callable[[CommandOrGroupT], CommandOrGroupT]]:
+        guilds: t.Sequence[hikari.Snowflakeish] | None = None,
+    ) -> CommandOrGroupT | t.Callable[[CommandOrGroupT], CommandOrGroupT]:
         """
         Register a command or group with this client instance. Optionally, a sequence of guild ids can
         be provided to make the commands created in specific guilds only - overriding the value for
@@ -204,6 +215,10 @@ class Client:
 
         return _inner
 
+    def register_deferred(self, command: CommandOrGroupT) -> CommandOrGroupT:
+        self._deferred_commands.append(command)
+        return command
+
     async def _ensure_application(self) -> hikari.PartialApplication:
         if self._application is not None:
             return self._application
@@ -223,7 +238,7 @@ class Client:
     @staticmethod
     def _get_subcommand(
         options: t.Sequence[OptionT],
-    ) -> t.Optional[OptionT]:
+    ) -> OptionT | None:
         subcommand = filter(
             lambda o: o.type in (hikari.OptionType.SUB_COMMAND, hikari.OptionType.SUB_COMMAND_GROUP), options
         )
@@ -232,24 +247,25 @@ class Client:
     @t.overload
     def _resolve_options_and_command(
         self, interaction: hikari.AutocompleteInteraction
-    ) -> t.Optional[t.Tuple[t.Sequence[hikari.AutocompleteInteractionOption], t.Type[commands.CommandBase]]]: ...
+    ) -> tuple[t.Sequence[hikari.AutocompleteInteractionOption], type[commands.CommandBase]] | None: ...
 
     @t.overload
     def _resolve_options_and_command(
         self, interaction: hikari.CommandInteraction
-    ) -> t.Optional[t.Tuple[t.Sequence[hikari.CommandInteractionOption], t.Type[commands.CommandBase]]]: ...
+    ) -> tuple[t.Sequence[hikari.CommandInteractionOption], type[commands.CommandBase]] | None: ...
 
     def _resolve_options_and_command(
-        self, interaction: t.Union[hikari.AutocompleteInteraction, hikari.CommandInteraction]
-    ) -> t.Optional[
-        t.Tuple[
-            t.Union[t.Sequence[hikari.AutocompleteInteractionOption], t.Sequence[hikari.CommandInteractionOption]],
-            t.Type[commands.CommandBase],
+        self, interaction: hikari.AutocompleteInteraction | hikari.CommandInteraction
+    ) -> (
+        tuple[
+            t.Sequence[hikari.AutocompleteInteractionOption] | t.Sequence[hikari.CommandInteractionOption],
+            type[commands.CommandBase],
         ]
-    ]:
+        | None
+    ):
         command_path = [interaction.command_name]
 
-        subcommand: t.Union[hikari.CommandInteractionOption, hikari.AutocompleteInteractionOption, None]
+        subcommand: hikari.CommandInteractionOption | hikari.AutocompleteInteractionOption | None
         options = interaction.options or []  # TODO - check if this is hikari bug with interaction server
         while (subcommand := self._get_subcommand(options or [])) is not None:
             command_path.append(subcommand.name)
@@ -287,7 +303,7 @@ class Client:
         self,
         interaction: hikari.AutocompleteInteraction,
         options: t.Sequence[hikari.AutocompleteInteractionOption],
-        command_cls: t.Type[commands.CommandBase],
+        command_cls: type[commands.CommandBase],
     ) -> context_.AutocompleteContext:
         return context_.AutocompleteContext(self, interaction, options, command_cls)
 
@@ -331,7 +347,7 @@ class Client:
         self,
         interaction: hikari.CommandInteraction,
         options: t.Sequence[hikari.CommandInteractionOption],
-        command_cls: t.Type[commands.CommandBase],
+        command_cls: type[commands.CommandBase],
     ) -> context_.Context:
         """
         Build a context object from the given parameters.
@@ -454,7 +470,7 @@ class RestEnabledClient(Client):
         self,
         interaction: hikari.AutocompleteInteraction,
         options: t.Sequence[hikari.AutocompleteInteractionOption],
-        command_cls: t.Type[commands.CommandBase],
+        command_cls: type[commands.CommandBase],
         response_callback: t.Callable[[hikari.api.InteractionResponseBuilder], None],
     ) -> context_.AutocompleteContext:
         return context_.RestAutocompleteContext(self, interaction, options, command_cls, response_callback)
@@ -509,7 +525,7 @@ class RestEnabledClient(Client):
         self,
         interaction: hikari.CommandInteraction,
         options: t.Sequence[hikari.CommandInteractionOption],
-        command_cls: t.Type[commands.CommandBase],
+        command_cls: type[commands.CommandBase],
         response_callback: t.Callable[[hikari.api.InteractionResponseBuilder], None],
     ) -> context_.Context:
         return context_.RestContext(self, interaction, options, command_cls(), response_callback)
@@ -517,11 +533,9 @@ class RestEnabledClient(Client):
     async def handle_rest_application_command_interaction(
         self, interaction: hikari.CommandInteraction
     ) -> t.AsyncGenerator[
-        t.Union[
-            hikari.api.InteractionDeferredBuilder,
-            hikari.api.InteractionMessageBuilder,
-            hikari.api.InteractionModalBuilder,
-        ],
+        hikari.api.InteractionDeferredBuilder
+        | hikari.api.InteractionMessageBuilder
+        | hikari.api.InteractionModalBuilder,
         t.Any,
     ]:
         out = self._resolve_options_and_command(interaction)
@@ -560,7 +574,7 @@ class RestEnabledClient(Client):
 
 
 def client_from_app(
-    app: t.Union[GatewayClientAppT, RestClientAppT],
+    app: GatewayClientAppT | RestClientAppT,
     default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (constants.GLOBAL_COMMAND_KEY,),
     execution_step_order: t.Sequence[execution.ExecutionStep] = DEFAULT_EXECUTION_STEP_ORDER,
     default_locale: hikari.Locale = hikari.Locale.EN_US,

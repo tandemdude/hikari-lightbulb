@@ -81,9 +81,9 @@ class OptionData(t.Generic[D]):
     channel_types: hikari.UndefinedOr[t.Sequence[hikari.ChannelType]] = hikari.UNDEFINED
     """The channel types for the option."""
 
-    min_value: hikari.UndefinedOr[t.Union[int, float]] = hikari.UNDEFINED
+    min_value: hikari.UndefinedOr[int | float] = hikari.UNDEFINED
     """The minimum value for the option."""
-    max_value: hikari.UndefinedOr[t.Union[int, float]] = hikari.UNDEFINED
+    max_value: hikari.UndefinedOr[int | float] = hikari.UNDEFINED
     """The maximum value for the option."""
 
     min_length: hikari.UndefinedOr[int] = hikari.UNDEFINED
@@ -176,7 +176,7 @@ class Option(t.Generic[T, D]):
         self._data = data
         self._unbound_default = default_when_not_bound
 
-    def __get__(self, instance: t.Optional[commands.CommandBase], owner: t.Type[commands.CommandBase]) -> t.Union[T, D]:
+    def __get__(self, instance: commands.CommandBase | None, owner: type[commands.CommandBase]) -> T | D:
         if instance is None or getattr(instance, "_current_context", None) is None:
             return self._unbound_default
 
@@ -199,8 +199,8 @@ class ContextMenuOption(Option[CtxMenuOptionReturnT, CtxMenuOptionReturnT]):
 
     __slots__ = ("_type",)
 
-    def __init__(self, type: t.Type[CtxMenuOptionReturnT]) -> None:
-        self._type = type
+    def __init__(self, type_: type[CtxMenuOptionReturnT]) -> None:
+        self._type = type_
         super().__init__(
             OptionData(
                 type=hikari.OptionType.STRING,
@@ -211,18 +211,14 @@ class ContextMenuOption(Option[CtxMenuOptionReturnT, CtxMenuOptionReturnT]):
         )
 
     @t.overload
-    def __get__(
-        self, instance: t.Optional[commands.UserCommand], owner: t.Type[commands.UserCommand]
-    ) -> hikari.User: ...
+    def __get__(self, instance: commands.UserCommand | None, owner: type[commands.UserCommand]) -> hikari.User: ...
 
     @t.overload
     def __get__(
-        self, instance: t.Optional[commands.MessageCommand], owner: t.Type[commands.MessageCommand]
+        self, instance: commands.MessageCommand | None, owner: type[commands.MessageCommand]
     ) -> hikari.Message: ...
 
-    def __get__(
-        self, instance: t.Optional[commands.CommandBase], owner: t.Type[commands.CommandBase]
-    ) -> CtxMenuOptionReturnT:
+    def __get__(self, instance: commands.CommandBase | None, owner: type[commands.CommandBase]) -> CtxMenuOptionReturnT:
         if instance is None or getattr(instance, "_current_context", None) is None:
             return self._unbound_default
 
@@ -244,24 +240,16 @@ class ContextMenuOption(Option[CtxMenuOptionReturnT, CtxMenuOptionReturnT]):
 
 # TODO - consider how to implement choice localisation
 def _normalise_choices(
-    choices: t.Union[
-        t.Sequence[hikari.CommandChoice],
-        t.Mapping[str, t.Union[str, int, float]],
-        t.Sequence[t.Tuple[str, t.Union[str, int, float]]],
-        t.Sequence[t.Union[str, int, float]],
-    ],
+    choices: t.Sequence[hikari.CommandChoice]
+    | t.Mapping[str, str | int | float]
+    | t.Sequence[tuple[str, str | int | float]]
+    | t.Sequence[str | int | float],
 ) -> t.Sequence[hikari.CommandChoice]:
     if isinstance(choices, collections.abc.Mapping):
         return [hikari.CommandChoice(name=k, value=v) for k, v in choices.items()]
 
     def _to_command_choice(
-        item: t.Union[
-            hikari.CommandChoice,
-            t.Tuple[str, t.Union[str, int, float]],
-            str,
-            int,
-            float,
-        ],
+        item: hikari.CommandChoice | tuple[str, str | int | float] | str | int | float,
     ) -> hikari.CommandChoice:
         if isinstance(item, hikari.CommandChoice):
             return item
@@ -282,7 +270,7 @@ def string(
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
     choices: hikari.UndefinedOr[
-        t.Union[t.Sequence[hikari.CommandChoice], t.Mapping[str, str], t.Sequence[t.Tuple[str, str]], t.Sequence[str]]
+        t.Sequence[hikari.CommandChoice] | t.Mapping[str, str] | t.Sequence[tuple[str, str]] | t.Sequence[str]
     ] = hikari.UNDEFINED,
     min_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     max_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
@@ -341,7 +329,7 @@ def integer(
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
     choices: hikari.UndefinedOr[
-        t.Union[t.Sequence[hikari.CommandChoice], t.Mapping[str, int], t.Sequence[t.Tuple[str, int]], t.Sequence[int]]
+        t.Sequence[hikari.CommandChoice] | t.Mapping[str, int] | t.Sequence[t.Tuple[str, int]] | t.Sequence[int]
     ] = hikari.UNDEFINED,
     min_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     max_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
@@ -437,9 +425,7 @@ def number(
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
     choices: hikari.UndefinedOr[
-        t.Union[
-            t.Sequence[hikari.CommandChoice], t.Mapping[str, float], t.Sequence[t.Tuple[str, float]], t.Sequence[float]
-        ]
+        t.Sequence[hikari.CommandChoice] | t.Mapping[str, float] | t.Sequence[tuple[str, float]] | t.Sequence[float]
     ] = hikari.UNDEFINED,
     min_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
     max_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,

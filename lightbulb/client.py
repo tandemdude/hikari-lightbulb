@@ -1,20 +1,23 @@
 # -*- coding: utf-8 -*-
-# Copyright © tandemdude 2023-present
+# Copyright (c) 2023-present tandemdude
 #
-# This file is part of Lightbulb.
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-# Lightbulb is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
 #
-# Lightbulb is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 from __future__ import annotations
 
 __all__ = ["Client", "GatewayEnabledClient", "RestEnabledClient", "client_from_app"]
@@ -22,6 +25,7 @@ __all__ = ["Client", "GatewayEnabledClient", "RestEnabledClient", "client_from_a
 import asyncio
 import collections
 import functools
+import inspect
 import logging
 import typing as t
 
@@ -111,7 +115,7 @@ class Client:
         localization_provider: localization.LocalizationProviderT,
         delete_unknown_commands: bool,
         deferred_registration_callback: t.Callable[
-            [CommandOrGroup], MaybeAwaitable[t.Union[hikari.Snowflakeish, t.Sequence[hikari.Snowflakeish]]]
+            [CommandOrGroup], MaybeAwaitable[hikari.Snowflakeish | t.Sequence[hikari.Snowflakeish]]
         ]
         | None,
     ) -> None:
@@ -134,6 +138,34 @@ class Client:
     @property
     def di(self) -> di_.DependencyInjectionManager:
         return self._di
+
+    async def start(self) -> None:
+        """
+        Starts the client. Ensures that commands are registered properly with the client, and that
+        commands have been synced with discord.
+
+        Returns:
+            :obj:`None`
+        """
+        if self._deferred_commands and self.deferred_registration_callback is None:
+            raise RuntimeError("some commands have deferred registration but no callback is defined")
+
+        for command in self._deferred_commands:
+            name = command.name if isinstance(command, groups.Group) else command._command_data.name
+
+            assert self.deferred_registration_callback is not None
+            guilds = self.deferred_registration_callback(command)
+            if inspect.isawaitable(guilds):
+                guilds = await guilds
+
+            if isinstance(guilds, int):
+                self._commands[guilds][name].put(command)
+                continue
+
+            for guild in guilds:  # type: ignore[reportUnknownVariableType, reportGeneralTypeIssues]
+                self._commands[guild][name].put(command)
+
+        await self.sync_application_commands()
 
     @t.overload
     def register(
@@ -216,6 +248,9 @@ class Client:
         return _inner
 
     def register_deferred(self, command: CommandOrGroupT) -> CommandOrGroupT:
+        if self.deferred_registration_callback is None:
+            raise ValueError("cannot defer registration if no deferred registration callback was provided")
+
         self._deferred_commands.append(command)
         return command
 
@@ -305,6 +340,19 @@ class Client:
         options: t.Sequence[hikari.AutocompleteInteractionOption],
         command_cls: type[commands.CommandBase],
     ) -> context_.AutocompleteContext:
+        """
+        Build a context object from the given parameters.
+
+        Args:
+            interaction (:obj:`~hikari.AutocompleteInteraction`): The interaction for the autocomplete invocation.
+            options (:obj:`~typing.Sequence` [ :obj:`hikari.CommandInteractionOption` ]): The options supplied with
+                the interaction.
+            command_cls (:obj:`~typing.Type` [ :obj:`~lightbulb.commands.commands.CommandBase` ]): The command class
+                that represents the command that has the option being autocompleted.
+
+        Returns:
+            :obj:`~lightbulb.context.AutocompleteContext`: The built context.
+        """
         return context_.AutocompleteContext(self, interaction, options, command_cls)
 
     async def _execute_autocomplete_context(
@@ -382,25 +430,13 @@ class Client:
                 )
 
     async def handle_application_command_interaction(self, interaction: hikari.CommandInteraction) -> None:
-        """
-        Handle the given command interaction - invoking the correct command.
-
-        Args:
-            interaction (:obj:`~hikari.CommandInteraction`): The command interaction to handle.
-
-        Returns:
-            :obj:`None`
-        """
         out = self._resolve_options_and_command(interaction)
         if out is None:
             return
 
         options, command = out
-
         context = self.build_command_context(interaction, options or [], command)
-
         LOGGER.debug("invoking command - %r", command._command_data.qualified_name)
-
         await self._execute_command_context(context)
 
     async def handle_interaction_create(self, interaction: hikari.PartialInteraction) -> None:
@@ -442,7 +478,7 @@ class GatewayEnabledClient(Client):
         )
         app.event_manager.subscribe(
             hikari.StartedEvent,
-            functools.partial(wrap_listener, func=self.sync_application_commands, arg_resolver=lambda _: ()),
+            functools.partial(wrap_listener, func=self.start, arg_resolver=lambda _: ()),
         )
 
 
@@ -452,6 +488,11 @@ class RestEnabledClient(Client):
 
     Warning:
         This client should not be instantiated manually. Use :func:`~client_from_app` instead.
+
+    Warning:
+        Unless you are using :obj:`~hikari.impl.rest_bot.RESTBot`, the client **must** be manually
+        started (see :meth:`~Client.start`) to ensure that any commands with deferred registration are registered
+        correctly, and that commands have been synced with discord.
     """
 
     __slots__ = ("_app",)
@@ -464,7 +505,7 @@ class RestEnabledClient(Client):
         app.interaction_server.set_listener(hikari.CommandInteraction, self.handle_rest_application_command_interaction)
 
         if isinstance(app, hikari.RESTBot):
-            app.add_startup_callback(lambda _: self.sync_application_commands())
+            app.add_startup_callback(lambda _: self.start())
 
     def build_rest_autocomplete_context(
         self,

@@ -30,9 +30,10 @@ import typing as t
 import hikari
 
 from lightbulb import exceptions
+from lightbulb.internal import types
 
 LocalizationMappingT: t.TypeAlias = t.Mapping[hikari.Locale, str]
-LocalizationProviderT: t.TypeAlias = t.Callable[[str], LocalizationMappingT]
+LocalizationProviderT: t.TypeAlias = t.Callable[[str], types.MaybeAwaitable[LocalizationMappingT]]
 
 
 def _(string: str) -> str:

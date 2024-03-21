@@ -106,7 +106,7 @@ class CommandData:
 
         return " ".join(names[::-1])
 
-    def as_command_builder(
+    async def as_command_builder(
         self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
     ) -> hikari.api.CommandBuilder:
         """
@@ -120,7 +120,12 @@ class CommandData:
         description_localizations: t.Mapping[hikari.Locale, str] = {}
 
         if self.localize:
-            name, description, name_localizations, description_localizations = utils.localize_name_and_description(
+            (
+                name,
+                description,
+                name_localizations,
+                description_localizations,
+            ) = await utils.localize_name_and_description(
                 name, description or None, default_locale, localization_provider
             )
 
@@ -133,7 +138,7 @@ class CommandData:
                 .set_default_member_permissions(self.default_member_permissions)
             )
             for option in self.options.values():
-                bld.add_option(option.to_command_option(default_locale, localization_provider))
+                bld.add_option(await option.to_command_option(default_locale, localization_provider))
 
             return bld
 
@@ -144,7 +149,7 @@ class CommandData:
             .set_default_member_permissions(self.default_member_permissions)
         )
 
-    def to_command_option(
+    async def to_command_option(
         self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
     ) -> hikari.CommandOption:
         """
@@ -158,9 +163,12 @@ class CommandData:
         description_localizations: t.Mapping[hikari.Locale, str] = {}
 
         if self.localize:
-            name, description, name_localizations, description_localizations = utils.localize_name_and_description(
-                name, description, default_locale, localization_provider
-            )
+            (
+                name,
+                description,
+                name_localizations,
+                description_localizations,
+            ) = await utils.localize_name_and_description(name, description, default_locale, localization_provider)
 
         return hikari.CommandOption(
             type=hikari.OptionType.SUB_COMMAND,
@@ -169,7 +177,8 @@ class CommandData:
             description=description,
             description_localizations=description_localizations,  # type: ignore[reportArgumentType]
             options=[
-                option.to_command_option(default_locale, localization_provider) for option in self.options.values()
+                await option.to_command_option(default_locale, localization_provider)
+                for option in self.options.values()
             ],
         )
 
@@ -359,7 +368,7 @@ class CommandBase:
         return t.cast(T, resolved_option)
 
     @classmethod
-    def as_command_builder(
+    async def as_command_builder(
         cls, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
     ) -> hikari.api.CommandBuilder:
         """
@@ -368,10 +377,10 @@ class CommandBase:
         Returns:
             :obj:`hikari.api.CommandBuilder`: The builder object for this command.
         """
-        return cls._command_data.as_command_builder(default_locale, localization_provider)
+        return await cls._command_data.as_command_builder(default_locale, localization_provider)
 
     @classmethod
-    def to_command_option(
+    async def to_command_option(
         cls, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
     ) -> hikari.CommandOption:
         """
@@ -380,7 +389,7 @@ class CommandBase:
         Returns:
             :obj:`hikari.CommandOption`: The sub-command option for this command.
         """
-        return cls._command_data.to_command_option(default_locale, localization_provider)
+        return await cls._command_data.to_command_option(default_locale, localization_provider)
 
 
 class SlashCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.SLASH):

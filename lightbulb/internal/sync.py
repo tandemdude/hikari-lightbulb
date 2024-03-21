@@ -91,7 +91,7 @@ async def get_existing_and_registered_commands(
             if item is None:
                 continue
 
-            registered[name].put(item.as_command_builder(client.default_locale, client.localization_provider))
+            registered[name].put(await item.as_command_builder(client.default_locale, client.localization_provider))
 
     return existing, registered
 

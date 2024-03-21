@@ -25,7 +25,6 @@ __all__ = ["Client", "GatewayEnabledClient", "RestEnabledClient", "client_from_a
 import asyncio
 import collections
 import functools
-import inspect
 import logging
 import typing as t
 
@@ -79,17 +78,16 @@ class Client:
             commands should be created in by default. Can be overridden on a per-command basis.
         execution_step_order (:obj:`~typing.Sequence` [ :obj:`~lightbulb.commands.execution.ExecutionStep` ]): The
             order that execution steps will be run in upon command processing.
-        default_locale: (:obj:`~hikari.locales.Locale`): The default locale to use for command names and descriptions,
+        default_locale (:obj:`~hikari.locales.Locale`): The default locale to use for command names and descriptions,
             as well as option names and descriptions. Has no effect if localizations are not being used.
-        localization_provider (:obj:`~typing.Callable` [ [ :obj:`str` ], :obj:`~typing.Mapping` [ :obj:`~hikari.locales.Locale`, :obj:`str` ] ]): The
-            localization provider function to use. This will be called whenever the client needs to get the
-            localizations for a key. Defaults to :obj:`~lightbulb.localization.localization_unsupported` - the client
-            does not support localizing commands. **Must** be passed if you intend
-            to support localizations.
+        localization_provider: The localization provider function to use. This will be called whenever the client
+            needs to get the localizations for a key.
         delete_unknown_commands (:obj:`bool`): Whether to delete existing commands that the client does not have
             an implementation for during command syncing.
-        deferred_registration_callback (:obj:`~typing.Optional` [ )
-    """  # noqa: E501
+        deferred_registration_callback: The callback to use to resolve which guilds a command should be created in
+            if a command is registered using :meth:`~Client.register_deferred`. Allows for commands to be
+            dynamically created in guilds, for example enabled on a per-guild basis using feature flags.
+    """
 
     __slots__ = (
         "rest",
@@ -101,6 +99,7 @@ class Client:
         "deferred_registration_callback",
         "_di",
         "_localization",
+        "_localized_commands",
         "_deferred_commands",
         "_commands",
         "_application",
@@ -131,7 +130,9 @@ class Client:
 
         self._di = di_.DependencyInjectionManager()
 
+        self._localized_commands: list[tuple[t.Sequence[hikari.Snowflakeish], CommandOrGroup]] = []
         self._deferred_commands: list[CommandOrGroup] = []
+
         self._commands: CommandMapT = collections.defaultdict(lambda: collections.defaultdict(utils.CommandCollection))
         self._application: t.Optional[hikari.PartialApplication] = None
 
@@ -147,22 +148,29 @@ class Client:
         Returns:
             :obj:`None`
         """
+        if self._localized_commands and self.localization_provider is localization.localization_unsupported:
+            raise RuntimeError("some commands are marked as localized but no localization provider is available")
+
+        for guilds, command in self._localized_commands:
+            builder = await command.as_command_builder(self.default_locale, self.localization_provider)
+
+            for guild in guilds:
+                self._commands[guild][builder.name].put(command)
+
         if self._deferred_commands and self.deferred_registration_callback is None:
-            raise RuntimeError("some commands have deferred registration but no callback is defined")
+            raise RuntimeError("some commands have deferred registration but no callback is available")
 
         for command in self._deferred_commands:
             name = command.name if isinstance(command, groups.Group) else command._command_data.name
 
             assert self.deferred_registration_callback is not None
-            guilds = self.deferred_registration_callback(command)
-            if inspect.isawaitable(guilds):
-                guilds = await guilds
+            guilds = await utils.maybe_await(self.deferred_registration_callback(command))
 
             if isinstance(guilds, int):
                 self._commands[guilds][name].put(command)
                 continue
 
-            for guild in guilds:  # type: ignore[reportUnknownVariableType, reportGeneralTypeIssues]
+            for guild in guilds:
                 self._commands[guild][name].put(command)
 
         await self.sync_application_commands()
@@ -234,9 +242,15 @@ class Client:
         # Used as a function
         if command is not None:
             name = command.name if isinstance(command, groups.Group) else command._command_data.name
+            localize = command.localize if isinstance(command, groups.Group) else command._command_data.localize
 
-            for guild_id in register_in:
-                self._commands[guild_id][name].put(command)
+            if localize:
+                # We need to handle localized commands separately because we don't know what their
+                # name is until we resolve it using the callback
+                self._localized_commands.append((register_in, command))
+            else:
+                for guild_id in register_in:
+                    self._commands[guild_id][name].put(command)
 
             LOGGER.debug("command %r (%r) registered successfully", name, command)
             return command
@@ -621,6 +635,10 @@ def client_from_app(
     default_locale: hikari.Locale = hikari.Locale.EN_US,
     localization_provider: localization.LocalizationProviderT = localization.localization_unsupported,
     delete_unknown_commands: bool = True,
+    deferred_registration_callback: t.Callable[
+        [CommandOrGroup], MaybeAwaitable[hikari.Snowflakeish | t.Sequence[hikari.Snowflakeish]]
+    ]
+    | None = None,
 ) -> Client:
     """
     Create and return the appropriate client implementation from the given application.
@@ -641,6 +659,10 @@ def client_from_app(
             to support localizations.
         delete_unknown_commands (:obj:`bool`): Whether to delete existing commands that the client does not have
             an implementation for during command syncing. Defaults to :obj:`True`.
+        deferred_registration_callback: The callback to use to resolve which guilds a command should be created in
+            if a command is registered using :meth:`~Client.register_deferred`. Allows for commands to be
+            dynamically created in guilds, for example enabled on a per-guild basis using feature flags. Defaults
+            to :obj:`None`.
 
     Returns:
         :obj:`~Client`: The created client instance.
@@ -659,4 +681,5 @@ def client_from_app(
         default_locale,
         localization_provider,
         delete_unknown_commands,
+        deferred_registration_callback,
     )

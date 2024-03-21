@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import dataclasses
+import inspect
 import typing as t
 
 import hikari
@@ -54,3 +55,9 @@ class CommandCollection:
 
 def non_undefined_or(item: hikari.UndefinedOr[T], default: D) -> T | D:
     return item if item is not hikari.UNDEFINED else default
+
+
+async def maybe_await(item: T | t.Awaitable[T]) -> T:
+    if inspect.isawaitable(item):
+        return await item
+    return t.cast(T, item)

@@ -133,7 +133,7 @@ class SubGroup(GroupMixin):
     """The parent group of the subgroup."""
     _commands: SubGroupCommandMappingT = dataclasses.field(init=False, default_factory=dict)
 
-    def to_command_option(
+    async def to_command_option(
         self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
     ) -> hikari.CommandOption:
         """
@@ -147,9 +147,12 @@ class SubGroup(GroupMixin):
         description_localizations: t.Mapping[hikari.Locale, str] = {}
 
         if self.localize:
-            name, description, name_localizations, description_localizations = utils.localize_name_and_description(
-                name, description, default_locale, localization_provider
-            )
+            (
+                name,
+                description,
+                name_localizations,
+                description_localizations,
+            ) = await utils.localize_name_and_description(name, description, default_locale, localization_provider)
 
         return hikari.CommandOption(
             type=hikari.OptionType.SUB_COMMAND_GROUP,
@@ -158,7 +161,8 @@ class SubGroup(GroupMixin):
             description=description,
             description_localizations=description_localizations,  # type: ignore[reportArgumentType]
             options=[
-                command.to_command_option(default_locale, localization_provider) for command in self._commands.values()
+                await command.to_command_option(default_locale, localization_provider)
+                for command in self._commands.values()
             ],
         )
 
@@ -206,7 +210,7 @@ class Group(GroupMixin):
         self._commands[name] = new
         return new
 
-    def as_command_builder(
+    async def as_command_builder(
         self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
     ) -> hikari.api.CommandBuilder:
         """
@@ -220,9 +224,12 @@ class Group(GroupMixin):
         description_localizations: t.Mapping[hikari.Locale, str] = {}
 
         if self.localize:
-            name, description, name_localizations, description_localizations = utils.localize_name_and_description(
-                name, description, default_locale, localization_provider
-            )
+            (
+                name,
+                description,
+                name_localizations,
+                description_localizations,
+            ) = await utils.localize_name_and_description(name, description, default_locale, localization_provider)
 
         bld = (
             hikari.impl.SlashCommandBuilder(name=name, description=description)
@@ -234,6 +241,6 @@ class Group(GroupMixin):
         )
 
         for command_or_group in self._commands.values():
-            bld.add_option(command_or_group.to_command_option(default_locale, localization_provider))
+            bld.add_option(await command_or_group.to_command_option(default_locale, localization_provider))
 
         return bld

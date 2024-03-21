@@ -117,7 +117,7 @@ class OptionData(t.Generic[D]):
             if self.max_length is not hikari.UNDEFINED and (self.max_length < 1 or self.max_length > 6000):
                 raise ValueError("'max_length' - must be between 1 and 6000 (inclusive)")
 
-    def to_command_option(
+    async def to_command_option(
         self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
     ) -> hikari.CommandOption:
         name, description = self.name, self.description
@@ -125,9 +125,12 @@ class OptionData(t.Generic[D]):
         description_localizations: t.Mapping[hikari.Locale, str] = {}
 
         if self.localize:
-            name, description, name_localizations, description_localizations = cmd_utils.localize_name_and_description(
-                name, description, default_locale, localization_provider
-            )
+            (
+                name,
+                description,
+                name_localizations,
+                description_localizations,
+            ) = await cmd_utils.localize_name_and_description(name, description, default_locale, localization_provider)
 
         return hikari.CommandOption(
             type=self.type,

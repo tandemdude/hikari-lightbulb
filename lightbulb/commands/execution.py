@@ -22,20 +22,20 @@ from __future__ import annotations
 
 import collections
 import dataclasses
-import inspect
 import typing as t
 
 from lightbulb import exceptions
 from lightbulb.internal import constants
 from lightbulb.internal import di
-from lightbulb.internal.types import MaybeAwaitable
+from lightbulb.internal import types
+from lightbulb.internal import utils
 
 if t.TYPE_CHECKING:
     from lightbulb import context as context_
 
 __all__ = ["ExecutionStep", "ExecutionSteps", "ExecutionHook", "ExecutionPipeline", "hook", "invoke"]
 
-ExecutionHookFuncT: t.TypeAlias = t.Callable[["ExecutionPipeline", "context_.Context"], MaybeAwaitable[None]]
+ExecutionHookFuncT: t.TypeAlias = t.Callable[["ExecutionPipeline", "context_.Context"], types.MaybeAwaitable[None]]
 
 
 @dataclasses.dataclass(frozen=True, slots=True, eq=True)
@@ -91,9 +91,7 @@ class ExecutionHook:
     """The function that this hook executes."""
 
     async def __call__(self, pipeline: ExecutionPipeline, context: context_.Context) -> None:
-        maybe_await = self.func(pipeline, context)
-        if inspect.isawaitable(maybe_await):
-            await maybe_await
+        await utils.maybe_await(self.func(pipeline, context))
 
 
 class ExecutionPipeline:

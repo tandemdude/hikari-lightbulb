@@ -26,6 +26,7 @@ __all__ = ["localize_name_and_description"]
 import typing as t
 
 from lightbulb import exceptions
+from lightbulb.internal import utils
 
 if t.TYPE_CHECKING:
     import hikari
@@ -33,19 +34,19 @@ if t.TYPE_CHECKING:
     from lightbulb import localization
 
 
-def localize_name_and_description(
+async def localize_name_and_description(
     name: str,
     description: str | None,
     default_locale: hikari.Locale,
     localization_provider: localization.LocalizationProviderT,
 ) -> tuple[str, str, t.Mapping[hikari.Locale, str], t.Mapping[hikari.Locale, str]]:
-    name_localizations: t.Mapping[hikari.Locale, str] = localization_provider(name)
+    name_localizations: t.Mapping[hikari.Locale, str] = await utils.maybe_await(localization_provider(name))
     localized_name: str | None = name_localizations.get(default_locale, None)
     if localized_name is None:
         raise exceptions.LocalizationFailedException(f"failed to resolve key {name!r} for default locale")
 
     description_localizations: t.Mapping[hikari.Locale, str] = (
-        {} if description is None else localization_provider(description)
+        {} if description is None else (await utils.maybe_await(localization_provider(description)))
     )
     localized_description: str | None = (
         "" if description is None else description_localizations.get(default_locale, None)

@@ -155,7 +155,7 @@ class LazyInjecting:
 
     See Also:
         :obj:`~with_di`
-        :obj:`~lightbulb.commands.execcution.hook`
+        :obj:`~lightbulb.commands.execution.hook`
         :obj:`~lightbulb.commands.execution.invoke`
     """
 

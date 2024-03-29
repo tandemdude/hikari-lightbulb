@@ -36,16 +36,6 @@ LocalizationMappingT: t.TypeAlias = t.Mapping[hikari.Locale, str]
 LocalizationProviderT: t.TypeAlias = t.Callable[[str], types.MaybeAwaitable[LocalizationMappingT]]
 
 
-def _(string: str) -> str:
-    """
-    Utility function to fool ``xgettext`` into generating a correct ``.po`` file
-    from command and option localization keys.
-
-    Just returns the value that is passed in with no processing.
-    """
-    return string
-
-
 def localization_unsupported(_: str) -> t.NoReturn:
     """
     Default localization provider. Functions to disable the ability to localize commands and options. If

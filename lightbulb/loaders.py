@@ -23,6 +23,7 @@ from __future__ import annotations
 __all__ = ["Loadable", "Loader"]
 
 import abc
+import logging
 import typing as t
 
 import hikari
@@ -39,15 +40,36 @@ CommandOrGroup: t.TypeAlias = t.Union[type[commands.CommandBase], groups.Group]
 CommandOrGroupT = t.TypeVar("CommandOrGroupT", bound=CommandOrGroup)
 EventT = t.TypeVar("EventT", bound=type[hikari.Event])
 
+LOGGER = logging.getLogger("lightbulb.loaders")
+
 
 class Loadable(abc.ABC):
+    """Abstract class containing the logic required to add and remove a feature from a client instance."""
+
     __slots__ = ()
 
     @abc.abstractmethod
-    async def load(self, client: client_.Client) -> None: ...
+    async def load(self, client: client_.Client) -> None:
+        """
+        Add the feature to the client instance.
+
+        Args:
+            client (:obj:`~lightbulb.client.Client`): The client instance to add the feature to.
+
+        Returns:
+            :obj:`None`
+        """
 
     async def unload(self, client: client_.Client) -> None:
-        pass
+        """
+        Remove the feature from the client instance.
+
+        Args:
+            client (:obj:`~lightbulb.client.Client`): The client instance to remove the feature from.
+
+        Returns:
+            :obj:`None`
+        """
 
 
 class _CommandLoadable(Loadable):
@@ -89,18 +111,42 @@ class _ListenerLoadable(Loadable):
 
 
 class Loader:
+    """Class used for loading features into the client from extensions."""
+
     __slots__ = ("_loadables",)
 
     def __init__(self) -> None:
         self._loadables: list[Loadable] = []
 
-    async def _add_to_client(self, client: client_.Client) -> None:
+    async def add_to_client(self, client: client_.Client) -> None:
+        """
+        Add the features contained within this loader to the given client.
+
+        Args:
+            client (:obj:`~lightbulb.client.Client`): The client to add this loader's features to.
+
+        Returns:
+            :obj:`None`
+        """
         for loadable in self._loadables:
             await loadable.load(client)
 
-    async def _remove_from_client(self, client: client_.Client) -> None:
+    async def remove_from_client(self, client: client_.Client) -> None:
+        """
+        Remove the features contained within this loader from the given client. If any single
+        loadable's unload method raises an exception then the remaining loadables will still be unloaded.
+
+        Args:
+            client (:obj:`~lightbulb.client.Client`): The client to remove this loader's features from.
+
+        Returns:
+            :obj:`None`
+        """
         for loadable in self._loadables:
-            await loadable.unload(client)
+            try:
+                await loadable.unload(client)
+            except Exception as e:
+                LOGGER.warning("error while unloading loadable %r", loadable, exc_info=(type(e), e, e.__traceback__))
 
     @t.overload
     def command(
@@ -115,6 +161,43 @@ class Loader:
     def command(
         self, command: CommandOrGroupT | None = None, *, guilds: t.Sequence[hikari.Snowflakeish] | None = None
     ) -> CommandOrGroupT | t.Callable[[CommandOrGroupT], CommandOrGroupT]:
+        """
+        Register a command or group with this loader. Optionally, a sequence of guild ids can
+        be provided to make the commands created in specific guilds only - overriding the value for
+        default enabled guilds.
+
+        This method can be used as a function, or a first or second order decorator.
+
+        Args:
+            command (:obj:`~typing.Union` [ :obj:`~typing.Type` [ :obj:`~lightbulb.commands.commands.CommandBase ], :obj:`~lightbulb.commands.groups.Group` ]): The
+                command class or command group to register with the client.
+            guilds (:obj:`~typing.Optional` [ :obj:`~typing.Sequence` [ :obj:`~hikari.Snowflakeish` ]]): The guilds
+                to create the command or group in. If set to :obj:`None`, then this will fall back to the default
+                enabled guilds. To override default enabled guilds and make the command or group global, this should
+                be set to an empty sequence.
+
+        Returns:
+            The registered command or group, unchanged.
+
+        Example:
+
+            .. code-block:: python
+
+                loader = lightbulb.Loader()
+
+                # valid
+                @loader.register
+                # also valid
+                @loader.register(guilds=[...])
+                class Example(
+                    lightbulb.SlashCommand,
+                    ...
+                ):
+                    ...
+
+                # also valid
+                loader.register(Example, guilds=[...])
+        """  # noqa: E501
         # Used as a function
         if command is not None:
             self._loadables.append(_CommandLoadable(command, guilds))
@@ -129,6 +212,27 @@ class Loader:
     def listener(
         self, event_type: EventT
     ) -> t.Callable[[t.Callable[..., t.Awaitable[None]]], t.Callable[[EventT], t.Awaitable[None]]]:
+        """
+        Decorator to register a listener with this loader. Also enables dependency injection on the listener
+        callback.
+
+        If an :obj:`hikari.api.event_manager.EventManager` instance is not available through dependency
+        injection then adding this loader to the client will fail at runtime.
+
+        Args:
+            event_type (:obj:`~typing.Type` [ :obj:`hikari.Event` ]): The event class for the listener to listen to.
+
+        Example:
+
+            .. code-block:: python
+
+                loader = lightbulb.Loader()
+
+                @loader.listener(hikari.MessageCreateEvent)
+                async def message_create_listener(event: hikari.MessageCreateEvent) -> None:
+                    ...
+        """
+
         def _inner(callback: t.Callable[..., t.Awaitable[None]]) -> t.Callable[[EventT], t.Awaitable[None]]:
             di_enabled = t.cast(t.Callable[[EventT], t.Awaitable[None]], di.with_di(callback))
             self._loadables.append(_ListenerLoadable(di_enabled, event_type))

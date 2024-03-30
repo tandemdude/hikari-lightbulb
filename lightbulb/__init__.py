@@ -26,6 +26,7 @@ from lightbulb.client import *
 from lightbulb.commands import *
 from lightbulb.context import *
 from lightbulb.internal import *
+from lightbulb.loaders import *
 from lightbulb.localization import *
 
 __all__ = [
@@ -62,6 +63,8 @@ __all__ = [
     "RestContext",
     "ensure_di_context",
     "with_di",
+    "Loadable",
+    "Loader",
     "localization_unsupported",
     "DictLocalizationProvider",
     "GnuLocalizationProvider",

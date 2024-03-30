@@ -36,7 +36,7 @@ docs/source/api-reference.rst
 
 # Test files
 bot_test.py
-_test_translations/
+_test_extensions/
 .token
 
 # Stupid OSX files

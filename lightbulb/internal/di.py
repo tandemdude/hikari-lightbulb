@@ -23,6 +23,7 @@ from __future__ import annotations
 import contextlib
 import contextvars
 import inspect
+import logging
 import os
 import typing as t
 
@@ -34,9 +35,9 @@ if t.TYPE_CHECKING:
 T = t.TypeVar("T")
 AnyAsyncCallableT = t.TypeVar("AnyAsyncCallableT", bound=t.Callable[..., t.Awaitable[t.Any]])
 
-
-DI_ENABLED: t.Final[bool] = os.environ.get("LIGHTBULB_DI_DISABLED", "false").lower() == "true"
+DI_ENABLED: t.Final[bool] = os.environ.get("LIGHTBULB_DI_DISABLED", "false").lower() != "true"
 DI_CONTAINER: contextvars.ContextVar[svcs.Container] = contextvars.ContextVar("_di_container")
+LOGGER = logging.getLogger("lightbulb.internal.di")
 
 
 class DependencyInjectionManager:
@@ -60,7 +61,9 @@ class DependencyInjectionManager:
             self._di_container = svcs.Container(self.di_registry)
         return self._di_container
 
-    def register_dependency(self, type_: type[T], factory: t.Callable[[], MaybeAwaitable[T]]) -> None:
+    def register_dependency(
+        self, type_: type[T], factory: t.Callable[[], MaybeAwaitable[T]], *, enter: bool = False
+    ) -> None:
         """
         Register a dependency as usable by dependency injection. All dependencies are considered to be
         singletons, meaning the factory will always be called at most once.
@@ -68,11 +71,16 @@ class DependencyInjectionManager:
         Args:
             type_ (:obj:`~typing.Type` [ ``T`` ]): The type of the dependency to register.
             factory: The factory function to use to provide the dependency value.
+            enter (:obj:`~bool`): Whether to enter context managers, if one is returned from the factory. Defaults
+                to :obj:`False`.
 
         Returns:
             :obj:`None`
         """
-        self.di_registry.register_factory(type_, factory)  # type: ignore[reportUnknownMemberType]
+        self.di_registry.register_factory(type_, factory, enter=enter)  # type: ignore[reportUnknownMemberType]
+
+    async def get_dependency(self, type_: type[T]) -> T:
+        return await self.di_container.aget(type_)
 
 
 @contextlib.contextmanager
@@ -159,7 +167,7 @@ class LazyInjecting:
         :obj:`~lightbulb.commands.execution.invoke`
     """
 
-    __slots__ = ("_func", "_processed", "_self")
+    __slots__ = ("_func", "_self")
 
     def __init__(
         self,
@@ -178,6 +186,9 @@ class LazyInjecting:
         return getattr(self._func, item)
 
     def __setattr__(self, key: str, value: t.Any) -> None:
+        if key in ("_func", "_self"):
+            return super().__setattr__(key, value)
+
         setattr(self._func, key, value)
 
     async def __call__(self, *args: t.Any, **kwargs: t.Any) -> t.Any:
@@ -204,7 +215,7 @@ def with_di(func: AnyAsyncCallableT) -> AnyAsyncCallableT:
     has been disabled globally then this function does nothing and simply returns the object that was passed in.
 
     Args:
-        func: The asynchronous function to enable dependency injection for
+        func: The asynchronous function to enable dependency injection for.
 
     Returns:
         The function with dependency injection enabled, or the same function if DI has been disabled globally.
@@ -215,6 +226,6 @@ def with_di(func: AnyAsyncCallableT) -> AnyAsyncCallableT:
         (such as command invocation or error handling), then one will be available automatically. Otherwise,
         you will have to set up the context yourself using the helper context manager :obj:`~setup_di_context`.
     """
-    if DI_ENABLED:
+    if DI_ENABLED and not isinstance(func, LazyInjecting):
         return LazyInjecting(func)  # type: ignore[reportReturnType]
-    return func
+    return func  # type: ignore[reportReturnType]

@@ -25,12 +25,15 @@ __all__ = ["Client", "GatewayEnabledClient", "RestEnabledClient", "client_from_a
 import asyncio
 import collections
 import functools
+import importlib
 import logging
+import pathlib
 import typing as t
 
 import hikari
 
 from lightbulb import context as context_
+from lightbulb import loaders
 from lightbulb import localization
 from lightbulb.commands import commands
 from lightbulb.commands import execution
@@ -41,6 +44,8 @@ from lightbulb.internal import sync
 from lightbulb.internal import utils
 
 if t.TYPE_CHECKING:
+    import types
+
     from lightbulb.commands import options
     from lightbulb.internal.types import MaybeAwaitable
 
@@ -135,6 +140,9 @@ class Client:
 
         self._commands: CommandMapT = collections.defaultdict(lambda: collections.defaultdict(utils.CommandCollection))
         self._application: t.Optional[hikari.PartialApplication] = None
+
+        self.di.register_dependency(hikari.api.RESTClient, lambda: self.rest, enter=False)
+        self.di.register_dependency(Client, lambda: self)
 
     @property
     def di(self) -> di_.DependencyInjectionManager:
@@ -267,6 +275,115 @@ class Client:
 
         self._deferred_commands.append(command)
         return command
+
+    async def load_extensions(self, *import_paths: str) -> None:
+        """
+        Load extensions from the given import paths. If loading of a single extension fails it will be skipped
+        and any loaders already processed, as well as the one that caused the error will be removed.
+
+        Args:
+            *import_paths (:obj:`str`): The import paths for the extensions to be loaded.
+
+        Returns:
+            :obj:`None`
+
+        See Also:
+            :meth:`~Client.load_extensions_from_package`
+        """
+        for path in import_paths:
+            try:
+                extension = importlib.import_module(path)
+            except ImportError as e:
+                LOGGER.error("could not import extension %r - skipping", path, exc_info=(type(e), e, e.__traceback__))
+                continue
+
+            loaded: list[loaders.Loader] = []
+
+            maybe_loader: loaders.Loader | None = None
+            try:
+                for name in dir(extension):
+                    if isinstance(item := getattr(extension, name, None), loaders.Loader):
+                        maybe_loader = item
+                        await maybe_loader._add_to_client(self)
+
+                        loaded.append(maybe_loader)
+            except Exception as e:
+                LOGGER.error(
+                    "error while loading extension %r - skipping", path, exc_info=(type(e), e, e.__traceback__)
+                )
+
+                if maybe_loader is not None and maybe_loader not in loaded:
+                    loaded.append(maybe_loader)
+
+                for loader in loaded:
+                    try:
+                        await loader._remove_from_client(self)
+                    except Exception as e:
+                        LOGGER.debug("error while removing loader", exc_info=(type(e), e, e.__traceback__))
+
+                continue
+
+            LOGGER.info("extension %r loaded successfully", path)
+
+    async def load_extensions_from_package(self, package: types.ModuleType, *, recursive: bool = False) -> None:
+        """
+        Load all extension modules from the given package. Ignores any files with a name that starts with an underscore.
+
+        Args:
+            package (:obj:`~types.ModuleType`): The package to load extensions from. Expects the imported module for
+                the ``__init__.py`` file in the package.
+            recursive (:obj:`bool`): Whether to recursively load extensions from subpackages. Defaults to :obj:`False`.
+
+        Returns:
+            :obj:`None`
+
+        Raises:
+            :obj:`TypeError`: If the given module is not for the ``__init__.py`` file of a package.
+
+        Example:
+
+            Given the following file structure:
+
+            .. code-block:: bash
+                extensions/
+                ├── __init__.py
+                ├── extension1.py
+                └── extension2.py
+                bot.py
+
+            To load all extensions in the ``extensions`` package you should do the following:
+
+            .. code-block:: python
+
+                import extensions
+
+                await client.load_extensions_from_package(extensions)
+
+        See Also:
+            :meth:`~Client.load_extensions`
+        """
+        if not (package.__file__ or "").endswith("__init__.py"):
+            raise TypeError("the given module does not appear to be a package")
+
+        assert package.__file__ is not None
+        package_path = pathlib.Path(package.__file__).parent
+        package_import_path = package.__name__
+
+        extensions: list[str] = []
+        for item in package_path.iterdir():
+            if item.is_dir():
+                if not recursive:
+                    continue
+
+                # TODO - recursive extension loading
+                continue
+
+            if item.name.startswith("_") or not item.name.endswith(".py"):
+                continue
+
+            extensions.append(package_import_path + "." + item.name[:-3])
+
+        await self.load_extensions(*extensions)
 
     async def _ensure_application(self) -> hikari.PartialApplication:
         if self._application is not None:
@@ -495,6 +612,11 @@ class GatewayEnabledClient(Client):
             functools.partial(wrap_listener, func=self.start, arg_resolver=lambda _: ()),
         )
 
+        if isinstance(app, hikari.GatewayBot):
+            self.di.register_dependency(hikari.GatewayBot, lambda: app)
+
+        self.di.register_dependency(hikari.api.EventManager, lambda: app.event_manager)
+
 
 class RestEnabledClient(Client):
     """
@@ -520,6 +642,9 @@ class RestEnabledClient(Client):
 
         if isinstance(app, hikari.RESTBot):
             app.add_startup_callback(lambda _: self.start())
+            self.di.register_dependency(hikari.RESTBot, lambda: app)
+
+        self.di.register_dependency(hikari.api.InteractionServer, lambda: app.interaction_server)
 
     def build_rest_autocomplete_context(
         self,

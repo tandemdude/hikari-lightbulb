@@ -304,7 +304,7 @@ class Client:
                 for name in dir(extension):
                     if isinstance(item := getattr(extension, name, None), loaders.Loader):
                         maybe_loader = item
-                        await maybe_loader._add_to_client(self)
+                        await maybe_loader.add_to_client(self)
 
                         loaded.append(maybe_loader)
             except Exception as e:
@@ -316,10 +316,7 @@ class Client:
                     loaded.append(maybe_loader)
 
                 for loader in loaded:
-                    try:
-                        await loader._remove_from_client(self)
-                    except Exception as e:
-                        LOGGER.debug("error while removing loader", exc_info=(type(e), e, e.__traceback__))
+                    await loader.remove_from_client(self)
 
                 continue
 

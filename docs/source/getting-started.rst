@@ -27,6 +27,9 @@ Your first bot can be written in just a few lines of code:
     bot = hikari.GatewayBot("your_token_here")
     client = lightbulb.client_from_app(bot)
 
+    # Ensure the client will be started when the bot is ready
+    bot.subscribe(hikari.StartedEvent, client.start)
+
     # Register the command with the client
     @client.register()
     class Ping(

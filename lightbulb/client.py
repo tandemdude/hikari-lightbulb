@@ -148,7 +148,7 @@ class Client:
     def di(self) -> di_.DependencyInjectionManager:
         return self._di
 
-    async def start(self) -> None:
+    async def start(self, _: t.Any = None) -> None:
         """
         Starts the client. Ensures that commands are registered properly with the client, and that
         commands have been synced with discord.
@@ -580,6 +580,21 @@ class GatewayEnabledClient(Client):
 
     Warning:
         This client should not be instantiated manually. Use :func:`~client_from_app` instead.
+
+    Warning:
+        This client **will not** be started automatically (see: :meth:`~Client.start`). It is recommended
+        that you start the client in a listener for :obj:`~hikari.StartedEvent`. You should ensure that any
+        commands are registered and extensions have been loaded **before** starting the client - otherwise
+        command syncing may not work properly.
+
+        For example:
+
+        .. code-block:: python
+
+            bot = hikari.GatewayBot(...)
+            client = lightbulb.client_from_app(bot, ...)
+
+            bot.subscribe(hikari.StartedEvent, client.start)
     """
 
     __slots__ = ("_app",)
@@ -604,10 +619,6 @@ class GatewayEnabledClient(Client):
                 arg_resolver=lambda e: (t.cast(hikari.InteractionCreateEvent, e).interaction,),
             ),
         )
-        app.event_manager.subscribe(
-            hikari.StartedEvent,
-            functools.partial(wrap_listener, func=self.start, arg_resolver=lambda _: ()),
-        )
 
         if isinstance(app, hikari.GatewayBot):
             self.di.register_dependency(hikari.GatewayBot, lambda: app)
@@ -623,9 +634,21 @@ class RestEnabledClient(Client):
         This client should not be instantiated manually. Use :func:`~client_from_app` instead.
 
     Warning:
-        Unless you are using :obj:`~hikari.impl.rest_bot.RESTBot`, the client **must** be manually
-        started (see :meth:`~Client.start`) to ensure that any commands with deferred registration are registered
-        correctly, and that commands have been synced with discord.
+        This client **will not** be started automatically (see: :meth:`~Client.start`). It is recommended
+        that you start the client in a :obj:`~hikari.impl.rest_bot.RESTBot` startup callback. You should ensure that any
+        commands are registered and extensions have been loaded **before** starting the client - otherwise
+        command syncing may not work properly.
+
+        For example:
+
+        .. code-block:: python
+
+            bot = hikari.RESTBot(...)
+            client = lightbulb.client_from_app(bot, ...)
+
+            async def start_client() -> None:
+                # Load extensions here
+                await client.start()
     """
 
     __slots__ = ("_app",)
@@ -638,7 +661,6 @@ class RestEnabledClient(Client):
         app.interaction_server.set_listener(hikari.CommandInteraction, self.handle_rest_application_command_interaction)
 
         if isinstance(app, hikari.RESTBot):
-            app.add_startup_callback(lambda _: self.start())
             self.di.register_dependency(hikari.RESTBot, lambda: app)
 
         self.di.register_dependency(hikari.api.InteractionServer, lambda: app.interaction_server)

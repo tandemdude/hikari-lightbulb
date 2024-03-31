@@ -25,6 +25,10 @@ import typing as t
 API_REFERENCES_DIRECTORY = "docs", "source", "api-references"
 
 
+def is_package(path: pathlib.Path) -> bool:
+    return path.is_dir() and (path / "__init__.py").is_file()
+
+
 class Module:
     def __init__(self, path: pathlib.Path) -> None:
         self.path = path
@@ -122,17 +126,13 @@ class Package:
             ]
 
             if package_lines:
-                lines.extend(["**Subpackages:**", "", ".. toctree::", "    :maxdepth: 1", "", *package_lines, ""])
+                lines.extend(["**Subpackages:**", "", ".. toctree::", "    :maxdepth: 1", "", *sorted(package_lines), ""])
             if module_lines:
-                lines.extend(["**Submodules:**", "", ".. toctree::", "    :maxdepth: 1", "", *module_lines, ""])
+                lines.extend(["**Submodules:**", "", ".. toctree::", "    :maxdepth: 1", "", *sorted(module_lines), ""])
 
             fp.write("\n".join(lines).strip())
 
         return True
-
-
-def is_package(path: pathlib.Path) -> bool:
-    return path.is_dir() and (path / "__init__.py").is_file()
 
 
 def run() -> None:

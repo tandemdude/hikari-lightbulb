@@ -40,7 +40,7 @@ you should submit an issue on the GitHub repository `here <https://github.com/ta
 Before doing so you should make sure you are on the latest version of the library and check to see if an issue
 already exists for your bug or feature.
 
-Also see `Tanjun <https://fasterspeeding.github.io/Tanjun/master/>`_ if you would prefer different command handler
+Also see `Tanjun <https://tanjun.cursed.solutions/>`_ if you would prefer different command handler
 syntax. I recommend taking a look at both Lightbulb and Tanjun before choosing which one you wish to use for your bot.
 
 `View Tanjun on GitHub <https://github.com/FasterSpeeding/Tanjun>`_

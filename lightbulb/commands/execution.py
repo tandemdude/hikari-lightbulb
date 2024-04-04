@@ -236,7 +236,7 @@ def hook(step: ExecutionStep) -> t.Callable[[ExecutionHookFunc], ExecutionHook]:
 
 
 def invoke(
-    func: t.Callable[t.Concatenate[context_.Context, ...], t.Awaitable[t.Any]],
+    func: t.Callable[..., t.Awaitable[t.Any]],
 ) -> t.Callable[[context_.Context], t.Awaitable[t.Any]]:
     """
     First order decorator to mark a method as the invocation method to be used for the command. Also enables

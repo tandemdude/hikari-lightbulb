@@ -170,6 +170,7 @@ class ExecutionPipeline:
             if self._current_step == ExecutionSteps.INVOKE:
                 try:
                     await getattr(self._context.command, self._context.command_data.invoke_method)(self._context)
+                    self._current_step = self._next_step()
                     continue
                 except Exception as e:
                     raise exceptions.InvocationFailedException(e, self._context)

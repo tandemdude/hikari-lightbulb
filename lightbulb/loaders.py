@@ -211,7 +211,9 @@ class Loader:
 
     def listener(
         self, event_type: EventT
-    ) -> t.Callable[[t.Callable[..., t.Awaitable[None]]], t.Callable[[EventT], t.Awaitable[None]]]:
+    ) -> t.Callable[
+        [t.Callable[t.Concatenate[EventT, ...], t.Awaitable[None]]], t.Callable[[EventT], t.Awaitable[None]]
+    ]:
         """
         Decorator to register a listener with this loader. Also enables dependency injection on the listener
         callback.
@@ -233,7 +235,9 @@ class Loader:
                     ...
         """
 
-        def _inner(callback: t.Callable[..., t.Awaitable[None]]) -> t.Callable[[EventT], t.Awaitable[None]]:
+        def _inner(
+            callback: t.Callable[t.Concatenate[EventT, ...], t.Awaitable[None]],
+        ) -> t.Callable[[EventT], t.Awaitable[None]]:
             di_enabled = t.cast(t.Callable[[EventT], t.Awaitable[None]], di.with_di(callback))
             self._loadables.append(_ListenerLoadable(di_enabled, event_type))
             return di_enabled

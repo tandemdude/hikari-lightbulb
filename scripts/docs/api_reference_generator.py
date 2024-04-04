@@ -126,7 +126,9 @@ class Package:
             ]
 
             if package_lines:
-                lines.extend(["**Subpackages:**", "", ".. toctree::", "    :maxdepth: 1", "", *sorted(package_lines), ""])
+                lines.extend(
+                    ["**Subpackages:**", "", ".. toctree::", "    :maxdepth: 1", "", *sorted(package_lines), ""]
+                )
             if module_lines:
                 lines.extend(["**Submodules:**", "", ".. toctree::", "    :maxdepth: 1", "", *sorted(module_lines), ""])
 

@@ -47,12 +47,12 @@ name = "lightbulb"
 
 [tool.black]
 line-length     = 120
-target-version  = ["py38"]
+target-version  = ["py310"]
 include         = ".*py$"
 
 [tool.ruff]
 line-length = 120
-target-version = "py38"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = [

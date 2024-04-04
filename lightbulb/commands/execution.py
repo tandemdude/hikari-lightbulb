@@ -35,7 +35,9 @@ if t.TYPE_CHECKING:
 
 __all__ = ["ExecutionStep", "ExecutionSteps", "ExecutionHook", "ExecutionPipeline", "hook", "invoke"]
 
-ExecutionHookFuncT: t.TypeAlias = t.Callable[["ExecutionPipeline", "context_.Context"], types.MaybeAwaitable[None]]
+ExecutionHookFunc: t.TypeAlias = t.Callable[
+    t.Concatenate["ExecutionPipeline", "context_.Context", ...], types.MaybeAwaitable[None]
+]
 
 
 @dataclasses.dataclass(frozen=True, slots=True, eq=True)
@@ -71,6 +73,10 @@ class ExecutionSteps:
     """Step for execution of command check logic."""
     COOLDOWNS = ExecutionStep("COOLDOWNS")
     """Step for execution of command cooldown logic."""
+    INVOKE = ExecutionStep("INVOKE")
+    """Step for command invocation. No hooks should ever use this step."""
+    POST_INVOKE = ExecutionStep("POST_INVOKE")
+    """Step for post-invocation logic."""
 
 
 @dataclasses.dataclass(frozen=True, slots=True, eq=True)
@@ -87,7 +93,7 @@ class ExecutionHook:
 
     step: ExecutionStep
     """The step that this hook should be run during."""
-    func: ExecutionHookFuncT
+    func: ExecutionHookFunc
     """The function that this hook executes."""
 
     async def __call__(self, pipeline: ExecutionPipeline, context: context_.Context) -> None:
@@ -138,6 +144,14 @@ class ExecutionPipeline:
             return self._remaining.pop(0)
         return None
 
+    def _fail(self, exc: Exception) -> None:
+        assert self._current_step is not None
+        assert self._current_hook is not None
+
+        hook_exc = exceptions.HookFailedException(exc, self._current_hook)
+
+        self._failure = hook_exc
+
     async def _run(self) -> None:
         """
         Run the pipeline. Does not reset the state if called multiple times.
@@ -153,13 +167,20 @@ class ExecutionPipeline:
         """
         self._current_step = self._next_step()
         while self._current_step is not None:
+            if self._current_step == ExecutionSteps.INVOKE:
+                try:
+                    await getattr(self._context.command, self._context.command_data.invoke_method)(self._context)
+                    continue
+                except Exception as e:
+                    raise exceptions.InvocationFailedException(e, self._context)
+
             step_hooks = list(self._hooks.get(self._current_step, []))
             while step_hooks and not self.failed:
                 self._current_hook = step_hooks.pop(0)
                 try:
                     await self._current_hook(self, self._context)
                 except Exception as e:
-                    self.fail(e)
+                    self._fail(e)
 
             if self.failed:
                 break
@@ -170,34 +191,8 @@ class ExecutionPipeline:
             assert self._failure is not None
             raise self._failure
 
-        try:
-            await getattr(self._context.command, self._context.command_data.invoke_method)(self._context)
-        except Exception as e:
-            raise exceptions.InvocationFailedException(e, self._context)
 
-    def fail(self, exc: str | Exception) -> None:
-        """
-        Notify the pipeline of a failure in an execution hook.
-
-        Args:
-            exc (:obj:`~typing.Union` [ :obj:`str`, :obj:`Exception` ]): Message or exception to include
-                with the failure.
-
-        Returns:
-            :obj:`None`
-        """
-        if not isinstance(exc, Exception):
-            exc = RuntimeError(exc)
-
-        assert self._current_step is not None
-        assert self._current_hook is not None
-
-        hook_exc = exceptions.HookFailedException(exc, self._current_hook)
-
-        self._failure = hook_exc
-
-
-def hook(step: ExecutionStep) -> t.Callable[[ExecutionHookFuncT], ExecutionHook]:
+def hook(step: ExecutionStep) -> t.Callable[[ExecutionHookFunc], ExecutionHook]:
     """
     Second order decorator to convert a function into an execution hook for the given
     step. Also enables dependency injection on the decorated function.
@@ -231,14 +226,18 @@ def hook(step: ExecutionStep) -> t.Callable[[ExecutionHookFuncT], ExecutionHook]
                     # Fail the pipeline execution
                     pl.fail("This command can only be used on mondays")
     """
+    if step == ExecutionSteps.INVOKE:
+        raise ValueError("hooks cannot be registered for the 'INVOKE' execution step")
 
-    def inner(func: ExecutionHookFuncT) -> ExecutionHook:
+    def inner(func: ExecutionHookFunc) -> ExecutionHook:
         return ExecutionHook(step, di.with_di(func))  # type: ignore[reportArgumentType]
 
     return inner
 
 
-def invoke(func: t.Callable[..., t.Awaitable[t.Any]]) -> t.Callable[[context_.Context], t.Awaitable[t.Any]]:
+def invoke(
+    func: t.Callable[t.Concatenate[context_.Context, ...], t.Awaitable[t.Any]],
+) -> t.Callable[[context_.Context], t.Awaitable[t.Any]]:
     """
     First order decorator to mark a method as the invocation method to be used for the command. Also enables
     dependency injection on the decorated method. The decorated method **must** have the first parameter (non-self)

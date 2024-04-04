@@ -60,6 +60,8 @@ DEFAULT_EXECUTION_STEP_ORDER = (
     execution.ExecutionSteps.MAX_CONCURRENCY,
     execution.ExecutionSteps.CHECKS,
     execution.ExecutionSteps.COOLDOWNS,
+    execution.ExecutionSteps.INVOKE,
+    execution.ExecutionSteps.POST_INVOKE,
 )
 
 

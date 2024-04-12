@@ -138,7 +138,7 @@ class OptionData(t.Generic[D]):
             name_localizations=name_localizations,  # type: ignore[reportArgumentType]
             description=description,
             description_localizations=description_localizations,  # type: ignore[reportArgumentType]
-            is_required=self.default is not hikari.UNDEFINED,
+            is_required=self.default is hikari.UNDEFINED,
             choices=non_undefined_or(self.choices, None),
             channel_types=non_undefined_or(self.channel_types, None),
             min_value=non_undefined_or(self.min_value, None),
@@ -278,7 +278,7 @@ def string(
     min_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     max_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     autocomplete: hikari.UndefinedOr[AutocompleteProviderT] = hikari.UNDEFINED,
-) -> str:
+) -> str | D:
     """
     A string option.
 
@@ -337,7 +337,7 @@ def integer(
     min_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     max_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     autocomplete: hikari.UndefinedOr[AutocompleteProviderT] = hikari.UNDEFINED,
-) -> int:
+) -> int | D:
     """
     An integer option.
 
@@ -390,7 +390,7 @@ def boolean(
     *,
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
-) -> bool:
+) -> bool | D:
     """
     A boolean option.
 
@@ -433,7 +433,7 @@ def number(
     min_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
     max_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
     autocomplete: hikari.UndefinedOr[AutocompleteProviderT] = hikari.UNDEFINED,
-) -> float:
+) -> float | D:
     """
     A numeric (float) option.
 
@@ -486,7 +486,7 @@ def user(
     *,
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
-) -> hikari.User:
+) -> hikari.User | D:
     """
     A user option.
 
@@ -524,7 +524,7 @@ def channel(
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
     channel_types: hikari.UndefinedOr[t.Sequence[hikari.ChannelType]] = hikari.UNDEFINED,
-) -> hikari.PartialChannel:
+) -> hikari.PartialChannel | D:
     """
     A channel option.
 
@@ -564,7 +564,7 @@ def role(
     *,
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
-) -> hikari.Role:
+) -> hikari.Role | D:
     """
     A role option.
 
@@ -601,7 +601,7 @@ def mentionable(
     *,
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
-) -> hikari.Snowflake:
+) -> hikari.Snowflake | D:
     """
     A mentionable (snowflake) option.
 
@@ -638,7 +638,7 @@ def attachment(
     *,
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
-) -> hikari.Attachment:
+) -> hikari.Attachment | D:
     """
     An attachment option.
 

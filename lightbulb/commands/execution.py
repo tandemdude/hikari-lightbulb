@@ -86,6 +86,7 @@ class ExecutionHook:
 
     Args:
         step (:obj:`~ExecutionStep`): The step that this hook should be run during.
+        skip_when_failed (:obj:`bool`): Whether this hook should be skipped if the pipeline has already failed.
         func: The function that this hook executes. May either be synchronous or asynchronous, and **must** take
             (at least) two arguments - and instance of :obj:`~ExecutionPipeline` and :obj:`~lightbulb.context.Context`
             respectively.
@@ -93,6 +94,8 @@ class ExecutionHook:
 
     step: ExecutionStep
     """The step that this hook should be run during."""
+    skip_when_failed: bool
+    """Whether this hook should be skipped if the pipeline has already failed."""
     func: ExecutionHookFunc
     """The function that this hook executes."""
 
@@ -105,9 +108,43 @@ class ExecutionPipeline:
     Class representing an entire command execution flow. Handles processing command hooks, including
     failure handling and collecting, as well as the calling of the command invocation function if
     all hooks succeed.
+
+    Warning:
+        A single hook failure **will not** prevent future hooks from being executed. If a hook should not
+        be executed if previous ones have failed you can set the `skip_when_failed` parameter to prevent this from
+        happening.
+
+        .. code-block:: python
+
+            @lightbulb.hook(lightbulb.ExecutionSteps.CHECKS, skip_when_failed=True)
+            async def some_hook(pl: lightbulb.ExecutionPipeline, ctx: lightbulb.Context) -> None:
+                ...
+
+        Alternatively if you wish to customize the behaviour further you can add a guard clause in the hook
+        function.
+
+        .. code-block:: python
+
+            @lightbulb.hook(lightbulb.ExecutionSteps.CHECKS, skip_when_failed=True)
+            async def some_hook(pl: lightbulb.ExecutionPipeline, ctx: lightbulb.Context) -> None:
+                # Prevent the hook from running if previous hooks (or the command invocation) failed.
+                # Also see 'ExecutionPipeline.any_hook_failed' and 'ExecutionPipeline.invocation_failed' for
+                # alternative behaviour.
+                if pl.failed:
+                    return
+
+                ...
     """
 
-    __slots__ = ("_context", "_remaining", "_hooks", "_current_step", "_current_hook", "_failure")
+    __slots__ = (
+        "_context",
+        "_remaining",
+        "_hooks",
+        "_current_step",
+        "_current_hook",
+        "_hook_failures",
+        "_invocation_failure",
+    )
 
     def __init__(self, context: context_.Context, order: t.Sequence[ExecutionStep]) -> None:
         self._context = context
@@ -120,16 +157,39 @@ class ExecutionPipeline:
         self._current_step: ExecutionStep | None = None
         self._current_hook: ExecutionHook | None = None
 
-        self._failure: exceptions.HookFailedException | None = None
+        self._hook_failures: list[exceptions.HookFailedException] = []
+        self._invocation_failure: exceptions.InvocationFailedException | None = None
 
     @property
     def failed(self) -> bool:
         """
         Whether this pipeline has failed.
 
-        A pipeline is considered failed if any single hook execution failed.
+        A pipeline is considered failed if any single hook execution failed, or the command invocation failed.
+
+        Note:
+            This **will** be :obj:`True` even if the failed hook(s) were executed **after** the command
+            invocation function. Use :obj:`~ExecutionPipeline.invocation_failed` if you need to know if the
+            invocation function threw an exception.
         """
-        return self._failure is not None
+        return self.any_hook_failed or self.invocation_failed
+
+    @property
+    def any_hook_failed(self) -> bool:
+        """
+        Whether any single invocation hook threw an exception.
+
+        Note:
+            This **will** be :obj:`True` even if the failed hook(s) were executed **after** the command
+            invocation function. Use :obj:`~ExecutionPipeline.invocation_failed` if you need to know if the
+            invocation function threw an exception.
+        """
+        return len(self._hook_failures) > 0
+
+    @property
+    def invocation_failed(self) -> bool:
+        """Whether the command invocation function threw an exception."""
+        return self._invocation_failure is not None
 
     def _next_step(self) -> ExecutionStep | None:
         """
@@ -149,8 +209,7 @@ class ExecutionPipeline:
         assert self._current_hook is not None
 
         hook_exc = exceptions.HookFailedException(exc, self._current_hook)
-
-        self._failure = hook_exc
+        self._hook_failures.append(hook_exc)
 
     async def _run(self) -> None:
         """
@@ -161,39 +220,43 @@ class ExecutionPipeline:
             :obj:`None`
 
         Raises:
-            :obj:`~lightbulb.exceptions.HookFailedException`: If an execution hook failed.
-            :obj:`~lightbulb.exceptions.InvocationFailedException`: If the command execution function raised
-                an exception.
+            :obj:`~lightbulb.exceptions.ExecutionPipelineFailedException`: If any hook or the command invocation
+                raised an error
         """
         self._current_step = self._next_step()
         while self._current_step is not None:
-            if self._current_step == ExecutionSteps.INVOKE:
+            if self._current_step == ExecutionSteps.INVOKE and not self.failed:
                 try:
                     await getattr(self._context.command, self._context.command_data.invoke_method)(self._context)
                     self._current_step = self._next_step()
-                    continue
                 except Exception as e:
-                    raise exceptions.InvocationFailedException(e, self._context)
+                    self._invocation_failure = exceptions.InvocationFailedException(e)
+
+                continue
 
             step_hooks = list(self._hooks.get(self._current_step, []))
-            while step_hooks and not self.failed:
+            while step_hooks:
                 self._current_hook = step_hooks.pop(0)
+
+                if self.failed and not self._current_hook.skip_when_failed:
+                    continue
+
                 try:
                     await self._current_hook(self, self._context)
                 except Exception as e:
                     self._fail(e)
 
-            if self.failed:
-                break
-
             self._current_step = self._next_step()
 
         if self.failed:
-            assert self._failure is not None
-            raise self._failure
+            raise exceptions.ExecutionPipelineFailedException(
+                [exc for exc in [*self._hook_failures, self._invocation_failure] if exc is not None],
+                self,
+                self._context,
+            )
 
 
-def hook(step: ExecutionStep) -> t.Callable[[ExecutionHookFunc], ExecutionHook]:
+def hook(step: ExecutionStep, skip_when_failed: bool = False) -> t.Callable[[ExecutionHookFunc], ExecutionHook]:
     """
     Second order decorator to convert a function into an execution hook for the given
     step. Also enables dependency injection on the decorated function.
@@ -211,6 +274,8 @@ def hook(step: ExecutionStep) -> t.Callable[[ExecutionHookFunc], ExecutionHook]:
 
     Args:
         step (:obj:`~ExecutionStep`): The step that this hook should be run during.
+        skip_when_failed (:obj:`bool`): Whether this hook should be skipped if the :obj:`~ExecutionPipeline`
+            has already failed due to a different hook or command invocation exception. Defaults to :obj:`False`.
 
     Returns:
         :obj:`~ExecutionHook`: The created execution hook.
@@ -225,13 +290,13 @@ def hook(step: ExecutionStep) -> t.Callable[[ExecutionHookFunc], ExecutionHook]:
                 # Check if today is Monday (0)
                 if datetime.date.today().weekday() != 0:
                     # Fail the pipeline execution
-                    pl.fail("This command can only be used on mondays")
+                    raise RuntimeError("This command can only be used on mondays!")
     """
     if step == ExecutionSteps.INVOKE:
         raise ValueError("hooks cannot be registered for the 'INVOKE' execution step")
 
     def inner(func: ExecutionHookFunc) -> ExecutionHook:
-        return ExecutionHook(step, di.with_di(func))  # type: ignore[reportArgumentType]
+        return ExecutionHook(step, skip_when_failed, di.with_di(func))  # type: ignore[reportArgumentType]
 
     return inner
 
@@ -263,6 +328,10 @@ def invoke(
                 @lightbulb.invoke
                 async def invoke(self, ctx: lightbulb.Context) -> None:
                     await ctx.respond("example")
+
+    Note:
+        The command invocation function will never be called if any of the hooks for that command caused the pipeline
+        to fail.
     """
     func = di.with_di(func)
     setattr(func, constants.COMMAND_INVOKE_METHOD_MARKER, "_")

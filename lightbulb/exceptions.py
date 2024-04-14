@@ -26,6 +26,7 @@ __all__ = [
     "ExecutionException",
     "HookFailedException",
     "InvocationFailedException",
+    "ExecutionPipelineFailedException",
 ]
 
 import typing as t
@@ -63,9 +64,26 @@ class HookFailedException(ExecutionException):
 class InvocationFailedException(ExecutionException):
     """Exception raised when a command invocation function raised an error during execution."""
 
-    def __init__(self, cause: Exception, context: context_.Context) -> None:
+    def __init__(self, cause: Exception) -> None:
         super().__init__("exception encountered during command invocation")
 
         self.__cause__ = cause
+
+
+class ExecutionPipelineFailedException(ExecutionException):
+    def __init__(
+        self,
+        causes: t.Sequence[HookFailedException | InvocationFailedException],
+        pipeline: execution.ExecutionPipeline,
+        context: context_.Context,
+    ) -> None:
+        self.causes = causes
+        self.pipeline = pipeline
         self.context = context
-        """The context that caused the command invocation to fail."""
+
+        if len(causes) == 1:
+            self.__cause__ = causes[0]
+
+    @property
+    def invocation_method_succeeded(self) -> bool:
+        return all(not isinstance(cause, InvocationFailedException) for cause in self.causes)

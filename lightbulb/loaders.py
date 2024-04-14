@@ -29,6 +29,7 @@ import typing as t
 import hikari
 import svcs
 
+from lightbulb import exceptions
 from lightbulb.commands import commands
 from lightbulb.commands import groups
 from lightbulb.internal import di
@@ -38,6 +39,10 @@ if t.TYPE_CHECKING:
 
 CommandOrGroup: t.TypeAlias = t.Union[type[commands.CommandBase], groups.Group]
 CommandOrGroupT = t.TypeVar("CommandOrGroupT", bound=CommandOrGroup)
+ErrorHandler: t.TypeAlias = t.Callable[
+    t.Concatenate[exceptions.ExecutionPipelineFailedException, ...], t.Awaitable[bool]
+]
+ErrorHandlerT = t.TypeVar("ErrorHandlerT", bound=ErrorHandler)
 EventT = t.TypeVar("EventT", bound=type[hikari.Event])
 
 LOGGER = logging.getLogger("lightbulb.loaders")
@@ -108,6 +113,17 @@ class _ListenerLoadable(Loadable):
     async def unload(self, client: client_.Client) -> None:
         event_manager = await client.di.get_dependency(hikari.api.EventManager)
         event_manager.unsubscribe(self._event_type, self._wrapped_callback or self._callback)  # type: ignore[reportArgumentType]
+
+
+class _ErrorHandlerLoadable(Loadable):
+    __slots__ = ("_callback", "_priority")
+
+    def __init__(self, callback: ErrorHandler, priority: int) -> None:
+        self._callback = callback
+        self._priority = priority
+
+    async def load(self, client: client_.Client) -> None:
+        client.error_handler(self._callback, priority=self._priority)
 
 
 class Loader:
@@ -198,12 +214,12 @@ class Loader:
                 # also valid
                 loader.register(Example, guilds=[...])
         """  # noqa: E501
-        # Used as a function
+        # Used as a function or first-order decorator
         if command is not None:
             self._loadables.append(_CommandLoadable(command, guilds))
             return command
 
-        # Used as a decorator
+        # Used as a second-order decorator
         def _inner(command_: CommandOrGroupT) -> CommandOrGroupT:
             return self.command(command_, guilds=guilds)
 
@@ -238,8 +254,40 @@ class Loader:
         def _inner(
             callback: t.Callable[t.Concatenate[EventT, ...], t.Awaitable[None]],
         ) -> t.Callable[[EventT], t.Awaitable[None]]:
-            di_enabled = t.cast(t.Callable[[EventT], t.Awaitable[None]], di.with_di(callback))
-            self._loadables.append(_ListenerLoadable(di_enabled, event_type))
-            return di_enabled
+            wrapped = t.cast(t.Callable[[EventT], t.Awaitable[None]], di.with_di(callback))
+            self._loadables.append(_ListenerLoadable(wrapped, event_type))
+            return wrapped
+
+        return _inner
+
+    @t.overload
+    def error_handler(self, *, priority: int = 0) -> t.Callable[[ErrorHandlerT], ErrorHandlerT]: ...
+
+    @t.overload
+    def error_handler(self, func: ErrorHandlerT, *, priority: int = 0) -> ErrorHandlerT: ...
+
+    def error_handler(
+        self, func: ErrorHandlerT | None = None, *, priority: int = 0
+    ) -> ErrorHandlerT | t.Callable[[ErrorHandlerT], ErrorHandlerT]:
+        """
+        Register an error handler function to call when an :obj:`~lightbulb.commands.execution.ExecutionPipeline` fails.
+        Also enables dependency injection for the error handler function.
+
+        The function must take the exception as its first argument, which will be an instance of
+        :obj:`~lightbulb.exceptions.ExecutionPipelineFailedException`. The function **must** return a boolean
+        indicating whether the exception was successfully handled. Non-boolean return values will be cast to booleans.
+
+        Args:
+            func: The function to register as a command error handler.
+            priority (:obj:`int`): The priority that this handler should be registered at. Higher priority handlers
+                will be executed first.
+        """
+        if func is not None:
+            wrapped = di.with_di(func)
+            self._loadables.append(_ErrorHandlerLoadable(wrapped, priority))
+            return wrapped
+
+        def _inner(func_: ErrorHandlerT) -> ErrorHandlerT:
+            return self.error_handler(func_, priority=priority)
 
         return _inner

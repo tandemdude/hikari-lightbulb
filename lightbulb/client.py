@@ -33,6 +33,7 @@ import typing as t
 import hikari
 
 from lightbulb import context as context_
+from lightbulb import exceptions
 from lightbulb import loaders
 from lightbulb import localization
 from lightbulb.commands import commands
@@ -50,9 +51,13 @@ if t.TYPE_CHECKING:
     from lightbulb.internal.types import MaybeAwaitable
 
 T = t.TypeVar("T")
+CommandMap: t.TypeAlias = t.MutableMapping[hikari.Snowflakeish, t.MutableMapping[str, utils.CommandCollection]]
 CommandOrGroup: t.TypeAlias = t.Union[groups.Group, type[commands.CommandBase]]
 CommandOrGroupT = t.TypeVar("CommandOrGroupT", bound=CommandOrGroup)
-CommandMapT = t.MutableMapping[hikari.Snowflakeish, t.MutableMapping[str, utils.CommandCollection]]
+ErrorHandler: t.TypeAlias = t.Callable[
+    t.Concatenate[exceptions.ExecutionPipelineFailedException, ...], t.Awaitable[bool]
+]
+ErrorHandlerT = t.TypeVar("ErrorHandlerT", bound=ErrorHandler)
 OptionT = t.TypeVar("OptionT", bound=hikari.CommandInteractionOption)
 
 LOGGER = logging.getLogger("lightbulb.client")
@@ -109,6 +114,7 @@ class Client:
         "_localized_commands",
         "_deferred_commands",
         "_commands",
+        "_error_handlers",
         "_application",
     )
 
@@ -140,7 +146,8 @@ class Client:
         self._localized_commands: list[tuple[t.Sequence[hikari.Snowflakeish], CommandOrGroup]] = []
         self._deferred_commands: list[CommandOrGroup] = []
 
-        self._commands: CommandMapT = collections.defaultdict(lambda: collections.defaultdict(utils.CommandCollection))
+        self._commands: CommandMap = collections.defaultdict(lambda: collections.defaultdict(utils.CommandCollection))
+        self._error_handlers: dict[int, list[ErrorHandler]] = {}
         self._application: t.Optional[hikari.PartialApplication] = None
 
         self.di.register_dependency(hikari.api.RESTClient, lambda: self.rest, enter=False)
@@ -184,6 +191,45 @@ class Client:
                 self._commands[guild][name].put(command)
 
         await self.sync_application_commands()
+
+    @t.overload
+    def error_handler(self, *, priority: int = 0) -> t.Callable[[ErrorHandlerT], ErrorHandlerT]: ...
+
+    @t.overload
+    def error_handler(self, func: ErrorHandlerT, *, priority: int = 0) -> ErrorHandlerT: ...
+
+    def error_handler(
+        self, func: ErrorHandlerT | None = None, *, priority: int = 0
+    ) -> ErrorHandlerT | t.Callable[[ErrorHandlerT], ErrorHandlerT]:
+        """
+        Register an error handler function to call when an :obj:`~lightbulb.commands.execution.ExecutionPipeline` fails.
+        Also enables dependency injection for the error handler function.
+
+        The function must take the exception as its first argument, which will be an instance of
+        :obj:`~lightbulb.exceptions.ExecutionPipelineFailedException`. The function **must** return a boolean
+        indicating whether the exception was successfully handled. Non-boolean return values will be cast to booleans.
+
+        Args:
+            func: The function to register as a command error handler.
+            priority (:obj:`int`): The priority that this handler should be registered at. Higher priority handlers
+                will be executed first.
+        """
+        if func is not None:
+            wrapped = di_.with_di(func)
+
+            handlers_with_same_priority = self._error_handlers.get(priority, [])
+            handlers_with_same_priority.append(wrapped)
+            self._error_handlers[priority] = handlers_with_same_priority
+
+            sorted_handlers = sorted(self._error_handlers.items(), key=lambda item: item[0], reverse=True)
+            self._error_handlers = {k: v for k, v in sorted_handlers}
+
+            return wrapped
+
+        def _inner(func_: ErrorHandlerT) -> ErrorHandlerT:
+            return self.error_handler(func_, priority=priority)
+
+        return _inner
 
     @t.overload
     def register(
@@ -249,7 +295,7 @@ class Client:
             # so added the below just to remove the error
             register_in = maybe_guilds if maybe_guilds is not hikari.UNDEFINED else ()
 
-        # Used as a function
+        # Used as a function or first-order decorator
         if command is not None:
             name = command.name if isinstance(command, groups.Group) else command._command_data.name
             localize = command.localize if isinstance(command, groups.Group) else command._command_data.localize
@@ -265,7 +311,7 @@ class Client:
             LOGGER.debug("command %r (%r) registered successfully", name, command)
             return command
 
-        # Used as a decorator
+        # Used as a second-order decorator
         def _inner(command_: CommandOrGroupT) -> CommandOrGroupT:
             return self.register(command_, guilds=register_in)
 
@@ -549,15 +595,23 @@ class Client:
 
     async def _execute_command_context(self, context: context_.Context) -> None:
         with di_.ensure_di_context(self.di):
+            pipeline = execution.ExecutionPipeline(context, self.execution_step_order)
+
             try:
-                await execution.ExecutionPipeline(context, self.execution_step_order)._run()
-            except Exception as e:
-                # TODO - dispatch to error handler
-                LOGGER.error(
-                    "Error encountered during invocation of command %r",
-                    context.command._command_data.qualified_name,
-                    exc_info=(type(e), e, e.__traceback__),
-                )
+                await pipeline._run()
+            except exceptions.ExecutionPipelineFailedException as ex:
+                all_handlers = [handler for handlers in self._error_handlers.values() for handler in handlers]
+
+                handled = False
+                while all_handlers and not handled:
+                    handled = await (all_handlers.pop(0))(ex)
+
+                if not handled:
+                    LOGGER.error(
+                        "Error encountered during invocation of command %r",
+                        context.command._command_data.qualified_name,
+                        exc_info=(type(ex), ex, ex.__traceback__),
+                    )
 
     async def handle_application_command_interaction(self, interaction: hikari.CommandInteraction) -> None:
         out = self._resolve_options_and_command(interaction)

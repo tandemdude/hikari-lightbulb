@@ -238,7 +238,7 @@ class ExecutionPipeline:
             while step_hooks:
                 self._current_hook = step_hooks.pop(0)
 
-                if self.failed and not self._current_hook.skip_when_failed:
+                if self.failed and self._current_hook.skip_when_failed:
                     continue
 
                 try:

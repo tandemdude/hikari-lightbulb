@@ -22,10 +22,10 @@ import argparse
 import re
 import sys
 
-VERSION_REGEX = re.compile(r"__version__\s*=\s*\"(?P<version>\d+\.\d+\.\d+)(?:\.dev(?P<devnum>\d+))?\"")
+VERSION_REGEX = re.compile(r"__version__\s*=\s*\"(?P<version>\d+\.\d+\.\d+)(?:a(?P<alphanum>\d+))?\"")
 
 parser = argparse.ArgumentParser()
-parser.add_argument("type", choices=["major", "minor", "patch", "dev"])
+parser.add_argument("type", choices=["major", "minor", "patch", "alpha"])
 parser.add_argument("increment")
 
 _noop = lambda n: n  # noqa: E731
@@ -36,7 +36,7 @@ ACTIONS = {
     "major": (_increment, _reset, _reset, _reset),
     "minor": (_noop, _increment, _reset, _reset),
     "patch": (_noop, _noop, _increment, _reset),
-    "dev": (_noop, _noop, _noop, _increment),
+    "alpha": (_noop, _noop, _noop, _increment),
 }
 
 
@@ -49,21 +49,21 @@ def run(version_type: str, increment: str) -> None:
         raise RuntimeError("Could not find version in __init__ file")
 
     version = current_version.groupdict()["version"]
-    dev = current_version.groupdict().get("devnum", "0")
+    alpha = current_version.groupdict().get("alphanum", "0")
 
     if increment.lower() != "true":
-        sys.stdout.write(f"{version}{('.dev' + dev) if version_type.lower() == 'dev' else ''}")
+        sys.stdout.write(f"{version}{('a' + alpha) if version_type.lower() == 'alpha' else ''}")
         return
 
     major, minor, patch = version.split(".")
 
     actions = ACTIONS[version_type.lower()]
-    major, minor, patch, dev = [a(s) for a, s in zip(actions, [major, minor, patch, dev])]
+    major, minor, patch, alpha = [a(s) for a, s in zip(actions, [major, minor, patch, alpha])]
 
     new_version = f"{major}.{minor}.{patch}"
 
-    if version_type.lower() == "dev":
-        new_version += f".dev{dev}"
+    if version_type.lower() == "alpha":
+        new_version += f"a{alpha}"
 
     updated_file_content = VERSION_REGEX.sub(f'__version__ = "{new_version}"', content)
     with open("lightbulb/__init__.py", "w") as fp:

@@ -11,7 +11,7 @@ on:
           - major
           - minor
           - patch
-          - dev
+          - alpha
       increment:
         description: "Whether to increment the version before release."
         type: boolean

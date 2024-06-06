@@ -37,13 +37,22 @@ Changelog = "https://hikari-lightbulb.readthedocs.io/en/latest/changelog.html"
 [project.optional-dependencies]
 localization = ["polib>=1.2.0, <2", "types-polib>=1.2.0.20240115, <2"]
 dev = ["nox==2023.4.22"]
-"dev.docs" = ["sphinx>=7.2.6, <8", "furo==2024.1.29"]
+"dev.docs" = ["sphinx>=7.2.6, <8", "furo==2024.1.29", "myst-parser>=3.0.1, <4"]
 "dev.format" = ["ruff>=0.2.1, <1"]
 "dev.typecheck" = ["pyright>=1.1.350, <2"]
 "dev.slotscheck" = ["slotscheck>=0.17.3, <1"]
+"dev.release" = ["flit==3.9.0"]
+"dev.changelog" = ["towncrier==23.11.0"]
 
 [tool.flit.module]
 name = "lightbulb"
+
+[tool.towncrier]
+directory = "fragments"
+filename = "CHANGES.md"
+package = "lightbulb"
+title_format = "v{version} ({project_date})"
+issue_format = "[#{issue}](https://github.com/tandemdude/hikari-lightbulb/issues/{issue})"
 
 [tool.black]
 line-length     = 120

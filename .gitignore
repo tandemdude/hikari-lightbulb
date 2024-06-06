@@ -33,6 +33,7 @@ pip-wheel-metadata/
 docs/build/
 docs/source/api-references/
 docs/source/api-reference.rst
+CHANGES.md
 
 # Test files
 bot_test.py

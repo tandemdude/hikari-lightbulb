@@ -60,3 +60,21 @@ jobs:
         run: |
           pip install nox
           nox -s slotscheck
+
+  fragment-check:
+    name: Fragment check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Check changelog fragment exists
+        run: |
+          PR_NUMBER=${{ github.event.number }}
+          
+          if [ -n "$(compgen -G "fragments/${PR_NUMBER}.*.md")" ]; then
+            echo "Fragment exists"
+            exit 0
+          fi
+
+          echo "Fragment does not exist"
+          exit 1

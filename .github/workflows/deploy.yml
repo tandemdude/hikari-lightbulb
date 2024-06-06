@@ -36,24 +36,38 @@ jobs:
         run: |
           output=$(python scripts/deploy/update_version.py ${{ inputs.version_type }} ${{ inputs.increment }})
           echo "VERSION=$output" >> $GITHUB_OUTPUT
-      - name: Commit version update
+
+      - name: Generate Changelogs
+        run: |
+          pip install .[dev.changelog]
+          towncrier build --yes
+          python scripts/deploy/populate_changelog.py CHANGES.md docs/source/changelogs/v3-changelog.md
+          rm fragments/*.md
+
+      - name: Commit Changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Bump version"
-          file_pattern: "lightbulb/*.py"
+          commit_message: "Bump version, update changelog"
+          file_pattern: "lightbulb/*.py fragments/*.md docs/source/changelogs/*.md"
 
       - name: Upload to PyPI
         env:
           FLIT_USERNAME: ${{ secrets.FLIT_USERNAME }}
           FLIT_PASSWORD: ${{ secrets.FLIT_PASSWORD }}
         run: |
-          pip install flit==3.9.0
+          pip install .[dev.release]
           flit publish
 
+      - name: Create Tag
+        run: |
+          git tag ${{ steps.update-version.outputs.VERSION }}
+          git push origin ${{ steps.update-version.outputs.VERSION }}
+
       - name: Create Release
-        uses: marvinpinto/action-automatic-releases@latest
+        uses: softprops/action-gh-release@v2
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "${{ steps.update-version.outputs.VERSION }}"
+          token: "${{ secrets.GITHUB_TOKEN }}"
+          name: "v${{ steps.update-version.outputs.VERSION }}"
+          tag_name: "refs/tags/${{ steps.update-version.outputs.VERSION }}"
+          body_path: CHANGES.md
           prerelease: true
-          title: "v${{ steps.update-version.outputs.VERSION }}"

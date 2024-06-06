@@ -67,6 +67,9 @@ jobs:
     if: github.event_name == 'pull_request'
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
       - name: Check changelog fragment exists
         run: |
           PR_NUMBER=${{ github.event.number }}

@@ -6,3 +6,11 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 ----
 
 <!-- next-changelog -->
+
+## v3.0.0a1 (2024-06-09)
+
+### Features
+
+- Add `lightbulb.INJECTED` flag for dependency injection typing improvements ([#424](https://github.com/tandemdude/hikari-lightbulb/issues/424))
+
+----

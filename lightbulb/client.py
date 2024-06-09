@@ -390,6 +390,7 @@ class Client:
             Given the following file structure:
 
             .. code-block:: bash
+
                 extensions/
                 ├── __init__.py
                 ├── extension1.py

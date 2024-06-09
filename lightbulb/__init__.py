@@ -63,6 +63,7 @@ __all__ = [
     "RestContext",
     "ensure_di_context",
     "with_di",
+    "INJECTED",
     "Loadable",
     "Loader",
     "localization_unsupported",

@@ -157,7 +157,7 @@ class Client:
     def di(self) -> di_.DependencyInjectionManager:
         return self._di
 
-    async def start(self, _: t.Any = None) -> None:
+    async def start(self, *_: t.Any) -> None:
         """
         Starts the client. Ensures that commands are registered properly with the client, and that
         commands have been synced with discord.

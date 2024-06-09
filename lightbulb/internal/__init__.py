@@ -18,7 +18,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from lightbulb.internal.di import INJECTED
 from lightbulb.internal.di import ensure_di_context
 from lightbulb.internal.di import with_di
 
-__all__ = ["ensure_di_context", "with_di"]
+__all__ = ["ensure_di_context", "with_di", "INJECTED"]

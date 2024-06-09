@@ -39,9 +39,28 @@ DI_ENABLED: t.Final[bool] = os.environ.get("LIGHTBULB_DI_DISABLED", "false").low
 DI_CONTAINER: contextvars.ContextVar[svcs.Container] = contextvars.ContextVar("_di_container")
 LOGGER = logging.getLogger("lightbulb.internal.di")
 
+INJECTED: t.Final[t.Any] = object()
+"""
+Flag value used to explicitly mark that a function parameter should be dependency-injected.
+
+This exists to stop type checkers complaining that function arguments are not provided when calling
+dependency-injection enabled functions.
+
+Example:
+
+    .. code-block:: python
+
+        @lightbulb.with_di
+        async def foo(bar: SomeClass = lightbulb.INJECTED) -> None:
+            ...
+
+        # Type-checker shouldn't error that a parameter is missing
+        await foo()
+"""
+
 
 class DependencyInjectionManager:
-    """Class which contains dependency injection functionality - intended to be used with composition."""
+    """Class which contains dependency injection functionality."""
 
     __slots__ = ("_di_registry", "_di_container")
 
@@ -119,7 +138,7 @@ def find_injectable_kwargs(
 
     - It has a type annotation
 
-    - It has no default value
+    - It has no default value (unless the default value is :obj:`~INJECTED`).
 
     - It is not positional-only (injected parameters are always passed as a keyword argument)
 
@@ -140,7 +159,7 @@ def find_injectable_kwargs(
         # Injectable parameters MUST have an annotation and no default
         if (
             parameter.annotation is inspect.Parameter.empty
-            or parameter.default is not inspect.Parameter.empty
+            or ((default := parameter.default) is not inspect.Parameter.empty and default is not INJECTED)
             # Injecting positional only parameters is far too annoying
             or parameter.kind is inspect.Parameter.POSITIONAL_ONLY
             # If a kwarg has been passed then we don't want to replace it

@@ -31,6 +31,12 @@ def main(new_changes_path: str, changelog_path: str) -> None:
     with open(new_changes_path) as fp:
         new_changes = fp.read().strip()
 
+        new_changes_lines = new_changes.splitlines()
+        # Remove the underline (I can't be bothered to make my own template
+        new_changes_lines.pop(1)
+        # Add the h2 prefix for the version number
+        new_changes = "## " + "\n".join(new_changes_lines)
+
     with open(changelog_path) as fp:
         changelog_contents = fp.read()
 

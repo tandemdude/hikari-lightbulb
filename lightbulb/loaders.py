@@ -40,7 +40,7 @@ if t.TYPE_CHECKING:
 CommandOrGroup: t.TypeAlias = t.Union[type[commands.CommandBase], groups.Group]
 CommandOrGroupT = t.TypeVar("CommandOrGroupT", bound=CommandOrGroup)
 ErrorHandler: t.TypeAlias = t.Callable[
-    t.Concatenate[exceptions.ExecutionPipelineFailedException, ...], t.Awaitable[bool]
+    "t.Concatenate[exceptions.ExecutionPipelineFailedException, ...]", t.Awaitable[bool]
 ]
 ErrorHandlerT = t.TypeVar("ErrorHandlerT", bound=ErrorHandler)
 EventT = t.TypeVar("EventT", bound=type[hikari.Event])
@@ -234,7 +234,7 @@ class Loader:
     def listener(
         self, event_type: EventT
     ) -> t.Callable[
-        [t.Callable[t.Concatenate[EventT, ...], t.Awaitable[None]]], t.Callable[[EventT], t.Awaitable[None]]
+        [t.Callable["t.Concatenate[EventT, ...]", t.Awaitable[None]]], t.Callable[[EventT], t.Awaitable[None]]
     ]:
         """
         Decorator to register a listener with this loader. Also enables dependency injection on the listener
@@ -258,7 +258,7 @@ class Loader:
         """
 
         def _inner(
-            callback: t.Callable[t.Concatenate[EventT, ...], t.Awaitable[None]],
+            callback: t.Callable["t.Concatenate[EventT, ...]", t.Awaitable[None]],
         ) -> t.Callable[[EventT], t.Awaitable[None]]:
             wrapped = t.cast(t.Callable[[EventT], t.Awaitable[None]], di.with_di(callback))
             self._loadables.append(_ListenerLoadable(wrapped, event_type))

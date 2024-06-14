@@ -55,7 +55,7 @@ CommandMap: t.TypeAlias = t.MutableMapping[hikari.Snowflakeish, t.MutableMapping
 CommandOrGroup: t.TypeAlias = t.Union[groups.Group, type[commands.CommandBase]]
 CommandOrGroupT = t.TypeVar("CommandOrGroupT", bound=CommandOrGroup)
 ErrorHandler: t.TypeAlias = t.Callable[
-    t.Concatenate[exceptions.ExecutionPipelineFailedException, ...], t.Awaitable[bool]
+    "t.Concatenate[exceptions.ExecutionPipelineFailedException, ...]", t.Awaitable[bool]
 ]
 ErrorHandlerT = t.TypeVar("ErrorHandlerT", bound=ErrorHandler)
 OptionT = t.TypeVar("OptionT", bound=hikari.CommandInteractionOption)

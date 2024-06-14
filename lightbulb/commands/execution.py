@@ -36,7 +36,7 @@ if t.TYPE_CHECKING:
 __all__ = ["ExecutionStep", "ExecutionSteps", "ExecutionHook", "ExecutionPipeline", "hook", "invoke"]
 
 ExecutionHookFunc: t.TypeAlias = t.Callable[
-    t.Concatenate["ExecutionPipeline", "context_.Context", ...], types.MaybeAwaitable[None]
+    't.Concatenate["ExecutionPipeline", "context_.Context", ...]', types.MaybeAwaitable[None]
 ]
 
 

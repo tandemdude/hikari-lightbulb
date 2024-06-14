@@ -41,9 +41,9 @@ async def localize_name_and_description(
     localization_provider: localization.LocalizationProviderT,
 ) -> tuple[str, str, t.Mapping[hikari.Locale, str], t.Mapping[hikari.Locale, str]]:
     """
-    Helper method to resolve the localizations for the name and description of a command 
+    Helper method to resolve the localizations for the name and description of a command
     using the given localization provider.
-    
+
     Args:
         name (:obj:`str`): The command's name
         description (:obj:`str`): The command's description

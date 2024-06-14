@@ -168,6 +168,9 @@ class Client:
         Returns:
             :obj:`None`
         """
+        if self._started:
+            raise RuntimeError("cannot start already-started client")
+
         if self._localized_commands and self.localization_provider is localization.localization_unsupported:
             raise RuntimeError("some commands are marked as localized but no localization provider is available")
 
@@ -234,6 +237,25 @@ class Client:
             return self.error_handler(func_, priority=priority)
 
         return _inner
+
+    def remove_error_handler(self, func: ErrorHandler) -> None:
+        """
+        Unregister a command error handler function from the client.
+
+        Args:
+            func: The function to unregister as a command error handler.
+
+        Returns:
+            :obj:`None`
+        """
+        new_handlers: dict[int, list[ErrorHandler]] = {}
+        for priority, handlers in self._error_handlers.items():
+            handlers = [h for h in handlers if h is not func]
+            if handlers:
+                new_handlers[priority] = handlers
+
+        sorted_handlers = sorted(new_handlers.items(), key=lambda item: item[0], reverse=True)
+        self._error_handlers = {k: v for k, v in sorted_handlers}
 
     @t.overload
     def register(
@@ -322,11 +344,46 @@ class Client:
         return _inner
 
     def register_deferred(self, command: CommandOrGroupT) -> CommandOrGroupT:
+        """
+        Register a command with the client, but defer resolving the guilds that the command should be created
+        in until the client has been started.
+
+        Args:
+            command (:obj:`~typing.Union` [ :obj:`~typing.Type` [ :obj:`~lightbulb.commands.commands.CommandBase ], :obj:`~lightbulb.commands.groups.Group` ]): The
+                command class or command group to register with the client.
+
+        Returns:
+            The registered command or group, unchanged.
+
+        Raises:
+            :obj:`ValueError`: If no `deferred_registration_callback` was set upon client creation.
+        """  # noqa: E501
         if self.deferred_registration_callback is None:
             raise ValueError("cannot defer registration if no deferred registration callback was provided")
 
         self._deferred_commands.append(command)
         return command
+
+    def unregister(self, command: CommandOrGroup) -> None:
+        """
+        Unregister a command with the client. This will prevent the client from handling any incoming
+        interactions for the given command globally, or in any guild. This **will not** delete the command from
+        discord and users will still be able to see it in the command menu.
+
+        Args:
+            command (:obj:`~typing.Union` [ :obj:`~typing.Type` [ :obj:`~lightbulb.commands.commands.CommandBase ], :obj:`~lightbulb.commands.groups.Group` ]): The
+                command class or command group to unregister with the client.
+
+        Returns:
+            :obj:`None`
+        """  # noqa: E501
+        for mapping in self._commands.values():
+            for collection in mapping.values():
+                collection.remove(command)
+
+        self._deferred_commands.remove(command)
+        localized_commands = [item for item in self._localized_commands if item[1] is not command]
+        self._localized_commands = localized_commands
 
     async def load_extensions(self, *import_paths: str) -> None:
         """
@@ -718,9 +775,7 @@ class RestEnabledClient(Client):
             bot = hikari.RESTBot(...)
             client = lightbulb.client_from_app(bot, ...)
 
-            async def start_client() -> None:
-                # Load extensions here
-                await client.start()
+            bot.add_startup_callback(client.start)
     """
 
     __slots__ = ("_app",)

@@ -116,7 +116,9 @@ require-superclass = true
 require-subclass = true
 exclude-classes = """
 (
-    ^lightbulb\\.commands\\.commands:CommandMeta$
+    ^lightbulb\\.commands\\.commands:CommandMeta$ |
+    ^lightbulb\\.context:RestAutocompleteContext$ |
+    ^lightbulb\\.context:RestContext$
 )
 """
 

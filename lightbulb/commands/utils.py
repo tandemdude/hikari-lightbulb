@@ -40,6 +40,21 @@ async def localize_name_and_description(
     default_locale: hikari.Locale,
     localization_provider: localization.LocalizationProviderT,
 ) -> tuple[str, str, t.Mapping[hikari.Locale, str], t.Mapping[hikari.Locale, str]]:
+    """
+    Helper method to resolve the localizations for the name and description of a command 
+    using the given localization provider.
+    
+    Args:
+        name (:obj:`str`): The command's name
+        description (:obj:`str`): The command's description
+        default_locale (:obj:`~hikari.Locale`): The default locale to use for the command.
+        localization_provider (:obj:`~lightbulb.localization.LocalizationProviderT`): The localization provider
+            to use to get the available localizations for the command.
+
+    Returns:
+        :obj:`~typing.Tuple` [ :obj:`str`, :obj:`str`, :obj:`~typing.Mapping` [ :obj:`~hikari.Locale`, :obj:`str` ], :obj:`~typing.Mapping` [ :obj:`~hikari.Locale`, :obj:`str` ] ]: The
+            resolved name, description and localizations for the name and description.
+    """  # noqa: E501
     name_localizations: t.Mapping[hikari.Locale, str] = await utils.maybe_await(localization_provider(name))
     localized_name: str | None = name_localizations.get(default_locale, None)
     if localized_name is None:

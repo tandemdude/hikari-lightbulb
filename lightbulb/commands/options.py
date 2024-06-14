@@ -94,6 +94,7 @@ class OptionData(t.Generic[D]):
     autocomplete: bool = False
     """Whether autocomplete is enabled for the option."""
     autocomplete_provider: hikari.UndefinedOr[AutocompleteProviderT] = hikari.UNDEFINED
+    """The provider to use to resolve autocomplete interactions for this command."""
 
     def __post_init__(self) -> None:
         if len(self.name) < 1 or len(self.name) > 32:

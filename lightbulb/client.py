@@ -116,6 +116,7 @@ class Client:
         "_commands",
         "_error_handlers",
         "_application",
+        "_started",
     )
 
     def __init__(
@@ -152,6 +153,8 @@ class Client:
 
         self.di.register_dependency(hikari.api.RESTClient, lambda: self.rest, enter=False)
         self.di.register_dependency(Client, lambda: self)
+
+        self._started = False
 
     @property
     def di(self) -> di_.DependencyInjectionManager:
@@ -191,6 +194,7 @@ class Client:
                 self._commands[guild][name].put(command)
 
         await self.sync_application_commands()
+        self._started = True
 
     @t.overload
     def error_handler(self, *, priority: int = 0) -> t.Callable[[ErrorHandlerT], ErrorHandlerT]: ...
@@ -543,12 +547,16 @@ class Client:
                 await autocomplete_provider(context)
             except Exception as e:
                 LOGGER.error(
-                    "Error encountered during invocation of autocomplete for command %r",
+                    "error encountered during invocation of autocomplete for command %r",
                     context.command._command_data.qualified_name,
                     exc_info=(type(e), e, e.__traceback__),
                 )
 
     async def handle_autocomplete_interaction(self, interaction: hikari.AutocompleteInteraction) -> None:
+        if not self._started:
+            LOGGER.debug("ignoring autocomplete interaction received before the client was started")
+            return
+
         out = self._resolve_options_and_command(interaction)
         if out is None:
             return
@@ -612,12 +620,16 @@ class Client:
 
                 if not handled:
                     LOGGER.error(
-                        "Error encountered during invocation of command %r",
+                        "error encountered during invocation of command %r",
                         context.command._command_data.qualified_name,
                         exc_info=(type(ex), ex, ex.__traceback__),
                     )
 
     async def handle_application_command_interaction(self, interaction: hikari.CommandInteraction) -> None:
+        if not self._started:
+            LOGGER.debug("ignoring command interaction received before the client was started")
+            return
+
         out = self._resolve_options_and_command(interaction)
         if out is None:
             return
@@ -737,6 +749,10 @@ class RestEnabledClient(Client):
     async def handle_rest_autocomplete_interaction(
         self, interaction: hikari.AutocompleteInteraction
     ) -> t.AsyncGenerator[hikari.api.InteractionAutocompleteBuilder, t.Any]:
+        if not self._started:
+            LOGGER.debug("ignoring autocomplete interaction received before the client was started")
+            return
+
         out = self._resolve_options_and_command(interaction)
         if out is None:
             return
@@ -797,6 +813,10 @@ class RestEnabledClient(Client):
         | hikari.api.InteractionModalBuilder,
         t.Any,
     ]:
+        if not self._started:
+            LOGGER.debug("ignoring command interaction received before the client was started")
+            return
+
         out = self._resolve_options_and_command(interaction)
         if out is None:
             return

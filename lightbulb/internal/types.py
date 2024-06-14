@@ -23,3 +23,4 @@ import typing as t
 T = t.TypeVar("T")
 
 MaybeAwaitable: t.TypeAlias = t.Union[T, t.Awaitable[T]]
+"""TypeAlias for an item that might be able to be awaited."""

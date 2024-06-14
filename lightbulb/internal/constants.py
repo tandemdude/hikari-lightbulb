@@ -18,8 +18,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-__all__ = ["COMMAND_INVOKE_METHOD_MARKER"]
+__all__ = ["COMMAND_INVOKE_METHOD_MARKER", "GLOBAL_COMMAND_KEY"]
 
 COMMAND_INVOKE_METHOD_MARKER = "__lb_command_invoke_method__"
 """Name of the marker attribute set to mark a method as the invocation method for a command."""
 GLOBAL_COMMAND_KEY = 0
+"""The value used to store global commands on the client instance."""

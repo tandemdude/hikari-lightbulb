@@ -34,8 +34,8 @@ from lightbulb.commands import groups
 from lightbulb.internal import di
 
 if t.TYPE_CHECKING:
-    from lightbulb import exceptions
     from lightbulb import client as client_
+    from lightbulb import exceptions
 
 CommandOrGroup: t.TypeAlias = t.Union[type[commands.CommandBase], groups.Group]
 CommandOrGroupT = t.TypeVar("CommandOrGroupT", bound=CommandOrGroup)

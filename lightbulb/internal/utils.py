@@ -29,20 +29,42 @@ import hikari
 from lightbulb.commands import commands
 from lightbulb.commands import groups
 
+if t.TYPE_CHECKING:
+    from lightbulb.internal import types
+
 T = t.TypeVar("T")
 D = t.TypeVar("D")
 
 
 @dataclasses.dataclass(slots=True)
 class CommandCollection:
+    """
+    Collection of commands used internally in the Client to allow commands of multiple
+    types to share the same name.
+    """
+
     slash: groups.Group | type[commands.SlashCommand] | None = None
+    """The collection's slash command."""
     user: type[commands.UserCommand] | None = None
+    """The collection's user command."""
     message: type[commands.MessageCommand] | None = None
+    """The collection's message command."""
 
     def put(
         self,
         command: groups.Group | t.Type[commands.CommandBase],
     ) -> None:
+        """
+        Add a command to the collection. Automatically places it in the correct attribute. If a second
+        command of the same type is given then it will replace the first command.
+
+        Args:
+            command (:obj:`~lightbulb.groups.Group` | :obj:`~typing.Type` [ :obj:`~lightbulb.commands.commands.CommandBase` ]): The
+                command to add to the collection.
+
+        Returns:
+            :obj:`None`
+        """  # noqa: E501
         if isinstance(command, groups.Group) or issubclass(command, commands.SlashCommand):
             self.slash = command
         elif issubclass(command, commands.UserCommand):
@@ -54,10 +76,29 @@ class CommandCollection:
 
 
 def non_undefined_or(item: hikari.UndefinedOr[T], default: D) -> T | D:
+    """
+    Return the given item if it is not undefined, otherwise return the default.
+
+    Args:
+        item (:obj:`~hikari.UndefinedOr` [ ``T`` ]): The item that may be undefined.
+        default (``D``): The default to return when the item is undefined.
+
+    Returns:
+        ``item`` or ``default`` depending on whether ``item`` was undefined.
+    """
     return item if item is not hikari.UNDEFINED else default
 
 
-async def maybe_await(item: T | t.Awaitable[T]) -> T:
+async def maybe_await(item: types.MaybeAwaitable[T]) -> T:
+    """
+    Await the given item if it is awaitable, otherwise just return the given item.
+
+    Args:
+        item (:obj:`~lightbulb.internal.types.MaybeAwaitable`): The item to maybe await.
+
+    Returns:
+        The item, or the return once the item was awaited.
+    """
     if inspect.isawaitable(item):
         return await item
     return t.cast(T, item)

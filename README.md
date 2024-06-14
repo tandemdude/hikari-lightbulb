@@ -8,7 +8,7 @@
 [![PyPI](https://img.shields.io/pypi/v/hikari-lightbulb)](https://pypi.org/project/hikari-lightbulb)
 
 # Lightbulb
-Lightbulb is designed to be an easy to use command handler library that integrates with the
+Lightbulb is designed to be an easy-to-use command handler library that integrates with the
 Discord API wrapper library for Python, Hikari.
 
 This library aims to make it simple for you to make your own Discord bots and provide

@@ -29,12 +29,12 @@ import typing as t
 import hikari
 import svcs
 
-from lightbulb import exceptions
 from lightbulb.commands import commands
 from lightbulb.commands import groups
 from lightbulb.internal import di
 
 if t.TYPE_CHECKING:
+    from lightbulb import exceptions
     from lightbulb import client as client_
 
 CommandOrGroup: t.TypeAlias = t.Union[type[commands.CommandBase], groups.Group]

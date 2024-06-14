@@ -87,6 +87,9 @@ class _CommandLoadable(Loadable):
     async def load(self, client: client_.Client) -> None:
         client.register(self._command, guilds=self._guilds)
 
+    async def unload(self, client: client_.Client) -> None:
+        client.unregister(self._command)
+
 
 class _ListenerLoadable(Loadable):
     __slots__ = ("_callback", "_wrapped_callback", "_event_type")
@@ -124,6 +127,9 @@ class _ErrorHandlerLoadable(Loadable):
 
     async def load(self, client: client_.Client) -> None:
         client.error_handler(self._callback, priority=self._priority)
+
+    async def unload(self, client: client_.Client) -> None:
+        client.remove_error_handler(self._callback)
 
 
 class Loader:

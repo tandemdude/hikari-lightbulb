@@ -74,6 +74,24 @@ class CommandCollection:
         else:
             raise TypeError("unsupported command passed")
 
+    def remove(self, command: groups.Group | t.Type[commands.CommandBase]) -> None:
+        """
+        Remove a command from the collection. Does nothing if the command is not present in this collection.
+
+        Args:
+            command (:obj:`~lightbulb.groups.Group` | :obj:`~typing.Type` [ :obj:`~lightbulb.commands.commands.CommandBase` ]): The
+                command to remove from the collection.
+
+        Returns:
+            :obj:`None`
+        """  # noqa: E501
+        if self.slash is command:
+            self.slash = None
+        if self.user is command:
+            self.user = None
+        if self.message is command:
+            self.message = None
+
 
 def non_undefined_or(item: hikari.UndefinedOr[T], default: D) -> T | D:
     """

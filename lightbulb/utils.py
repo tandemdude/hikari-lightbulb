@@ -89,6 +89,7 @@ EMPTY_CHANNEL = hikari.PartialChannel(
     name="",
     type=hikari.ChannelType.GUILD_TEXT,
 )
+"""Placeholder for a channel. Used when attempting to get value for an option on a class instead of instance."""
 EMPTY_ROLE = hikari.Role(
     app=None,  # type: ignore[reportGeneralTypeIssues]
     id=hikari.Snowflake(0),

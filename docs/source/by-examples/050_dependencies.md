@@ -1,3 +1,4 @@
+(5-dependencies)=
 # 5 - Dependencies
 
 Now that your bot is coming along nicely, you are likely thinking about adding some features that may require
@@ -24,22 +25,23 @@ import aiohttp
 client.di.register_dependency(aiohttp.ClientSession, lambda: aiohttp.ClientSession())
 ```
 
-```{tip}
+::::{tip}
 Lightbulb registers some dependencies for you automatically depending on what type of application you pass when creating
 the client. You can see these below.
 
-When using `hikari.GatewayBot`:
-- `hikari.GatewayBot`
-- `hikari.api.EventManager`
-
-When using `hikari.RESTBot`:
-- `hikari.RESTBot`
-- `hikari.api.InteractionServer`
-
-Always:
+:::{tab} Always
 - `lightbulb.Client`
 - `hikari.api.RESTClient`
-```
+:::
+:::{tab} GatewayBot
+- `hikari.GatewayBot`
+- `hikari.api.EventManager`
+:::
+:::{tab} RESTBot
+- `hikari.RESTBot`
+- `hikari.api.InteractionServer`
+:::
+::::
 
 ## Injection
 
@@ -65,12 +67,12 @@ These are listed below:
 If you need to enable dependency injection on other functions, you can decorate it with `@lightbulb.with_di` - from
 then on, each time the function is called, lightbulb will attempt to dependency inject suitable parameters.
 
-```{note}
+:::{note}
 For a parameter to be suitable for dependency injection, it needs to match the following rules:
 - It **must** have a type annotation
 - It has no default value, or a default value of exactly `lightbulb.INJECTED`
 - It **cannot** be positional-only (injected parameters are always passed using keywords)
-```
+:::
 
 Simple example using the `aiohttp.ClientSession` registered before:
 
@@ -145,11 +147,11 @@ Listeners by themselves are not dependency injected, so you may need to use the 
 `Client.di.get_dependency` method to retrieve the created dependencies instead. Refer to the previous section
 to see an example on how dependency cleanup could be implemented.
 
-```{note}
+:::{note}
 The `Client.di.get_dependency` method **does not** require a dependency injection context to
 be present due to it fetching the dependencies directly from the client, so it can be called
 whenever the client is available.
-```
+:::
 
 ## Disabling Dependency Injection
 

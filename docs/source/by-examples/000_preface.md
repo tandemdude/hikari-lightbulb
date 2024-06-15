@@ -1,3 +1,4 @@
+(0-preface)=
 # 0 - Preface
 
 Whether you are a new developer using Lightbulb, or a returning developer experienced using V2 you are likely to
@@ -21,13 +22,13 @@ For additional help with migrating existing code you should view the migration g
 1-to-1 replacements for common patterns that you have used before (although some functionality *may* have to be
 implemented yourself).
 
-```{note}
+:::{note}
 As of version 3, prefix command support has been completely removed. If you still wish to support prefix commands
 you will have to create a listener for Hikari's `MessageCreateEvent` and process and parse the messages manually.
 
 This may be more inconvenient for you but it allowed me to greatly simplify the internals and developer-facing
 API for a better experience (no more long decorator stacks).
-```
+:::
 
 ---
 
@@ -50,23 +51,46 @@ To get Lightbulb working in your project, you first need to create a Hikari bot 
 [`hikari.GatewayBot`](https://docs.hikari-py.dev/en/latest/#gatewaybot) and [`hikari.RESTBot`](https://docs.hikari-py.dev/en/latest/#gatewaybot).
 The steps for setting up both to work with Lightbulb are the same:
 
+:::{tab} GatewayBot
 ```python
 import hikari
 import lightbulb
 
-bot = hikari.GatewayBot("your bot token")  # or hikari.RESTBot(...)
+bot = hikari.GatewayBot(
+    token="...",
+)
 # Set up the lightbulb client
 client = lightbulb.client_from_app(bot)
 ```
+:::
 
-The lightbulb client has to be started in order to sync commands with discord and begin processing interactions:
-
+:::{tab} RESTBot
 ```python
-# if using hikari.GatewayBot
-bot.subscribe(hikari.StartingEvent, client.start)
+import hikari
+import lightbulb
 
-# if using hikari.RESTBot
+bot = hikari.RESTBot(
+    token="...",
+    token_type="...",
+    public_key="...",
+)
+# Set up the lightbulb client
+client = lightbulb.client_from_app(bot)
+```
+:::
+
+The Lightbulb client must then be started in order to sync commands with discord and begin processing interactions:
+
+:::{tab} GatewayBot
+```python
+bot.subscribe(hikari.StartingEvent, client.start)
+```
+:::
+
+:::{tab} RESTBot
+```python
 bot.add_startup_callback(client.start)
 ```
+:::
 
 You are now ready to write your first command.

@@ -65,10 +65,15 @@ class Module:
 
 class Package:
     def __init__(
-        self, path: pathlib.Path, header_override: t.Optional[str] = None, child_prefix: t.Optional[str] = None
+        self,
+        path: pathlib.Path,
+        header_override: t.Optional[str] = None,
+        before_header: t.Optional[str] = None,
+        child_prefix: t.Optional[str] = None,
     ) -> None:
         self.path = path
         self.header_override = header_override
+        self.before_header = before_header
         self.child_prefix = [child_prefix] if child_prefix else []
 
         self.packages = []
@@ -119,6 +124,7 @@ class Package:
             ]
 
             lines = [
+                self.before_header or "",
                 "=" * len(package_name),
                 package_name,
                 "=" * len(package_name),
@@ -139,7 +145,10 @@ class Package:
 
 def run() -> None:
     Package(
-        pathlib.Path("lightbulb"), header_override="API Reference", child_prefix=API_REFERENCES_DIRECTORY[-1]
+        pathlib.Path("lightbulb"),
+        header_override="API Reference",
+        before_header=".. _api-reference:\n",
+        child_prefix=API_REFERENCES_DIRECTORY[-1],
     ).write()
     os.rename(
         os.path.join(*API_REFERENCES_DIRECTORY, "lightbulb.rst"),

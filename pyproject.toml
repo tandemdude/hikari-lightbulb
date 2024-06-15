@@ -37,7 +37,14 @@ Changelog = "https://hikari-lightbulb.readthedocs.io/en/latest/changelog.html"
 [project.optional-dependencies]
 localization = ["polib>=1.2.0, <2", "types-polib>=1.2.0.20240327, <2"]
 dev = ["nox==2024.4.15"]
-"dev.docs" = ["sphinx>=7.3.7, <8", "furo==2024.5.6", "myst-parser>=3.0.1, <4"]
+"dev.docs" = [
+    "sphinx>=7.3.7, <8",
+    "furo==2024.5.6",
+    "myst-parser>=3.0.1, <4",
+    "sphinx-copybutton>=0.5.2, <1",
+    "sphinx-inline-tabs==2023.4.21",
+    "sphinx_design>=0.6.0, <1"
+]
 "dev.format" = ["ruff>=0.4.8, <1"]
 "dev.typecheck" = ["pyright>=1.1.367, <2"]
 "dev.slotscheck" = ["slotscheck>=0.19.0, <1"]

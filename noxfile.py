@@ -45,7 +45,7 @@ def format_fix(session):
 def format_check(session: nox.Session):
     session.install(".[localization,dev.format]")
     session.run("python", "-m", "ruff", "format", *SCRIPT_PATHS, "--check")
-    session.run("python", "-m", "ruff", "--output-format", "github", *SCRIPT_PATHS)
+    session.run("python", "-m", "ruff", "check", "--output-format", "github", *SCRIPT_PATHS)
 
 
 @nox.session()

@@ -7,6 +7,6 @@ Note that context menu commands **cannot** have options - see the context menu s
 
 ## Adding an Option
 
-## Accessing an Option
+## Using an Option
 
 ## Option Types

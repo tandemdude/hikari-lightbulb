@@ -250,9 +250,11 @@ class Client:
         """
         new_handlers: dict[int, list[ErrorHandler]] = {}
         for priority, handlers in self._error_handlers.items():
-            handlers = [h for h in handlers if h is not func]
+            handlers = [
+                h for h in handlers if h is not func and (isinstance(h, di_.LazyInjecting) and h._func is not func)
+            ]
             if handlers:
-                new_handlers[priority] = handlers
+                new_handlers[priority] = t.cast(list[ErrorHandler], handlers)
 
         sorted_handlers = sorted(new_handlers.items(), key=lambda item: item[0], reverse=True)
         self._error_handlers = {k: v for k, v in sorted_handlers}

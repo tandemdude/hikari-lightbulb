@@ -129,6 +129,8 @@ class Package:
                 package_name,
                 "=" * len(package_name),
                 "",
+                ".. automodule:: " + ".".join(parts),
+                "",
             ]
 
             if package_lines:

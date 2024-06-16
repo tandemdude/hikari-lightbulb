@@ -47,6 +47,7 @@ extensions = [
     "sphinx_design",
     "sphinx_prompt",
     "notfound.extension",
+    "sphinxext.opengraph",
 ]
 myst_enable_extensions = ["colon_fence"]
 
@@ -82,3 +83,6 @@ html_theme_options = {
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 html_logo = "_static/logo.png"
+
+ogp_image = "/_static/logo.png"
+ogp_site_name = "Hikari Lightbulb Documentation"

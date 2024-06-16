@@ -80,5 +80,5 @@ html_theme = "furo"
 html_static_path = ["_static"]
 html_logo = "_static/logo.png"
 
-ogp_image = "/_static/logo.png"
+ogp_image = "_static/logo.png"
 ogp_site_name = "Hikari Lightbulb Documentation"

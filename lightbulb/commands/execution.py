@@ -125,7 +125,7 @@ class ExecutionPipeline:
 
         .. code-block:: python
 
-            @lightbulb.hook(lightbulb.ExecutionSteps.CHECKS, skip_when_failed=True)
+            @lightbulb.hook(lightbulb.ExecutionSteps.CHECKS)
             async def some_hook(pl: lightbulb.ExecutionPipeline, ctx: lightbulb.Context) -> None:
                 # Prevent the hook from running if previous hooks (or the command invocation) failed.
                 # Also see 'ExecutionPipeline.any_hook_failed' and 'ExecutionPipeline.invocation_failed' for

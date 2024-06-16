@@ -45,7 +45,8 @@ extensions = [
     "sphinx_copybutton",
     "sphinx_inline_tabs",
     "sphinx_design",
-    "sphinx_prompt"
+    "sphinx_prompt",
+    "notfound.extension",
 ]
 myst_enable_extensions = ["colon_fence"]
 
@@ -61,7 +62,7 @@ exclude_patterns = []
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
-    "hikari": ("https://hikari-py.github.io/hikari", None),
+    "hikari": ("https://docs.hikari-py.dev/en/latest", None),
 }
 
 

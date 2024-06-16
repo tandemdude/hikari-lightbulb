@@ -11,29 +11,29 @@ If you think anything is missing, make a pull request to add it, or contact thom
 :gutter: 3
 
 :::{grid-item-card} {material-outlined}`new_releases;2em` Version 3
-:link: v3-changelog
-:link-type: ref
+:link: changelogs/v3-changelog
+:link-type: doc
 
 Changelog for current versions - `3.0.0` and newer.
 :::
 
 :::{grid-item-card} Version 2
-:link: v2-changelog
-:link-type: ref
+:link: changelogs/v2-changelog
+:link-type: doc
 
 Changelog for versions since `2.0.0`.
 :::
 
 :::{grid-item-card} Version 1
-:link: v1-changelog
-:link-type: ref
+:link: changelogs/v1-changelog
+:link-type: doc
 
 Changelog for versions since `1.0.0`.
 :::
 
 :::{grid-item-card} Version 0
-:link: v0-changelog
-:link-type: ref
+:link: changelogs/v0-changelog
+:link-type: doc
 
 Changelog for versions since `0.0.39`.
 :::

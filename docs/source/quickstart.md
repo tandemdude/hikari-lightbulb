@@ -2,9 +2,11 @@
 # Quickstart
 
 Lightbulb can be installed using pip:
-```bash
-$ pip install hikari-lightbulb
-```
+:::{prompt}
+:language: bash
+
+pip install hikari-lightbulb
+:::
 
 :::{important}
 This library is dependent on Hikari and so naturally will only be available for Python

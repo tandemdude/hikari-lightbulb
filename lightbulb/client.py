@@ -85,16 +85,15 @@ class Client:
     Base client implementation supporting generic application command handling.
 
     Args:
-        rest (:obj:`~hikari.api.RESTClient`): The rest client to use.
-        default_enabled_guilds (:obj:`~typing.Sequence` [ :obj:`~hikari.Snowflakeish` ]): The guilds that application
-            commands should be created in by default. Can be overridden on a per-command basis.
-        execution_step_order (:obj:`~typing.Sequence` [ :obj:`~lightbulb.commands.execution.ExecutionStep` ]): The
-            order that execution steps will be run in upon command processing.
-        default_locale (:obj:`~hikari.locales.Locale`): The default locale to use for command names and descriptions,
+        rest: The rest client to use.
+        default_enabled_guilds: The guilds that application commands should be created in by default.
+            Can be overridden on a per-command basis.
+        execution_step_order: The order that execution steps will be run in upon command processing.
+        default_locale: The default locale to use for command names and descriptions,
             as well as option names and descriptions. Has no effect if localizations are not being used.
         localization_provider: The localization provider function to use. This will be called whenever the client
             needs to get the localizations for a key.
-        delete_unknown_commands (:obj:`bool`): Whether to delete existing commands that the client does not have
+        delete_unknown_commands: Whether to delete existing commands that the client does not have
             an implementation for during command syncing.
         deferred_registration_callback: The callback to use to resolve which guilds a command should be created in
             if a command is registered using :meth:`~Client.register_deferred`. Allows for commands to be
@@ -218,7 +217,7 @@ class Client:
 
         Args:
             func: The function to register as a command error handler.
-            priority (:obj:`int`): The priority that this handler should be registered at. Higher priority handlers
+            priority: The priority that this handler should be registered at. Higher priority handlers
                 will be executed first.
         """
         if func is not None:
@@ -283,12 +282,10 @@ class Client:
         This method can be used as a function, or a first or second order decorator.
 
         Args:
-            command (:obj:`~typing.Union` [ :obj:`~typing.Type` [ :obj:`~lightbulb.commands.commands.CommandBase ], :obj:`~lightbulb.commands.groups.Group` ]): The
-                command class or command group to register with the client.
-            guilds (:obj:`~typing.Optional` [ :obj:`~typing.Sequence` [ :obj:`~hikari.Snowflakeish` ]]): The guilds
-                to create the command or group in. If set to :obj:`None`, then this will fall back to the default
-                enabled guilds. To override default enabled guilds and make the command or group global, this should
-                be set to an empty sequence.
+            command: The command class or command group to register with the client.
+            guilds: The guilds to create the command or group in. If set to :obj:`None`, then this will
+                fall back to the default enabled guilds. To override default enabled guilds and make the
+                command or group global, this should be set to an empty sequence.
 
         Returns:
             The registered command or group, unchanged.
@@ -311,7 +308,7 @@ class Client:
 
                 # also valid
                 client.register(Example, guilds=[...])
-        """  # noqa: E501
+        """
         register_in: t.Sequence[hikari.Snowflakeish]
         if not guilds and guilds is not None:
             # commands should ignore default guilds and be global
@@ -351,15 +348,14 @@ class Client:
         in until the client has been started.
 
         Args:
-            command (:obj:`~typing.Union` [ :obj:`~typing.Type` [ :obj:`~lightbulb.commands.commands.CommandBase ], :obj:`~lightbulb.commands.groups.Group` ]): The
-                command class or command group to register with the client.
+            command: The command class or command group to register with the client.
 
         Returns:
             The registered command or group, unchanged.
 
         Raises:
             :obj:`ValueError`: If no `deferred_registration_callback` was set upon client creation.
-        """  # noqa: E501
+        """
         if self.deferred_registration_callback is None:
             raise ValueError("cannot defer registration if no deferred registration callback was provided")
 
@@ -373,12 +369,11 @@ class Client:
         discord and users will still be able to see it in the command menu.
 
         Args:
-            command (:obj:`~typing.Union` [ :obj:`~typing.Type` [ :obj:`~lightbulb.commands.commands.CommandBase ], :obj:`~lightbulb.commands.groups.Group` ]): The
-                command class or command group to unregister with the client.
+            command: The command class or command group to unregister with the client.
 
         Returns:
             :obj:`None`
-        """  # noqa: E501
+        """
         for mapping in self._commands.values():
             for collection in mapping.values():
                 collection.remove(command)
@@ -393,7 +388,7 @@ class Client:
         and any loaders already processed, as well as the one that caused the error will be removed.
 
         Args:
-            *import_paths (:obj:`str`): The import paths for the extensions to be loaded.
+            *import_paths: The import paths for the extensions to be loaded.
 
         Returns:
             :obj:`None`
@@ -438,9 +433,9 @@ class Client:
         Load all extension modules from the given package. Ignores any files with a name that starts with an underscore.
 
         Args:
-            package (:obj:`~types.ModuleType`): The package to load extensions from. Expects the imported module for
+            package: The package to load extensions from. Expects the imported module for
                 the ``__init__.py`` file in the package.
-            recursive (:obj:`bool`): Whether to recursively load extensions from subpackages. Defaults to :obj:`False`.
+            recursive: Whether to recursively load extensions from subpackages. Defaults to :obj:`False`.
 
         Returns:
             :obj:`None`
@@ -587,11 +582,9 @@ class Client:
         Build a context object from the given parameters.
 
         Args:
-            interaction (:obj:`~hikari.AutocompleteInteraction`): The interaction for the autocomplete invocation.
-            options (:obj:`~typing.Sequence` [ :obj:`hikari.CommandInteractionOption` ]): The options supplied with
-                the interaction.
-            command_cls (:obj:`~typing.Type` [ :obj:`~lightbulb.commands.commands.CommandBase` ]): The command class
-                that represents the command that has the option being autocompleted.
+            interaction: The interaction for the autocomplete invocation.
+            options: The options supplied with the interaction.
+            command_cls: The command class that represents the command that has the option being autocompleted.
 
         Returns:
             :obj:`~lightbulb.context.AutocompleteContext`: The built context.
@@ -648,11 +641,9 @@ class Client:
         Build a context object from the given parameters.
 
         Args:
-            interaction (:obj:`~hikari.CommandInteraction`): The interaction for the command invocation.
-            options (:obj:`~typing.Sequence` [ :obj:`hikari.CommandInteractionOption` ]): The options to use to
-                invoke the command with.
-            command_cls (:obj:`~typing.Type` [ :obj:`~lightbulb.commands.commands.CommandBase` ]): The command class
-                that represents the command that should be invoked for the interaction.
+            interaction: The interaction for the command invocation.
+            options: The options to use to invoke the command with.
+            command_cls: The command class that represents the command that should be invoked for the interaction.
 
         Returns:
             :obj:`~lightbulb.context.Context`: The built context.
@@ -926,19 +917,16 @@ def client_from_app(
 
     Args:
         app: Application that either supports gateway events, or an interaction server.
-        default_enabled_guilds (:obj:`~typing.Sequence` [ :obj:`~hikari.Snowflakeish` ]): The guilds that application
-            commands should be created in by default.
-        execution_step_order (:obj:`~typing.Sequence` [ :obj:`~lightbulb.commands.execution.ExecutionStep` ]): The
-            order that execution steps will be run in upon command processing.
-        default_locale: (:obj:`~hikari.locales.Locale`): The default locale to use for command names and descriptions,
+        default_enabled_guilds: The guilds that application commands should be created in by default.
+        execution_step_order: The order that execution steps will be run in upon command processing.
+        default_locale: The default locale to use for command names and descriptions,
             as well as option names and descriptions. Has no effect if localizations are not being used.
             Defaults to :obj:`hikari.locales.Locale.EN_US`.
-        localization_provider (:obj:`~typing.Callable` [ [ :obj:`str` ], :obj:`~typing.Mapping` [ :obj:`~hikari.locales.Locale`, :obj:`str` ] ]): The
-            localization provider function to use. This will be called whenever the client needs to get the
-            localizations for a key. Defaults to :obj:`~lightbulb.localization.localization_unsupported` - the client
-            does not support localizing commands. **Must** be passed if you intend
-            to support localizations.
-        delete_unknown_commands (:obj:`bool`): Whether to delete existing commands that the client does not have
+        localization_provider: The localization provider function to use. This will be called whenever the
+            client needs to get the localizations for a key. Defaults to
+            :obj:`~lightbulb.localization.localization_unsupported` - the client does not support localizing commands.
+            **Must** be passed if you intend to support localizations.
+        delete_unknown_commands: Whether to delete existing commands that the client does not have
             an implementation for during command syncing. Defaults to :obj:`True`.
         deferred_registration_callback: The callback to use to resolve which guilds a command should be created in
             if a command is registered using :meth:`~Client.register_deferred`. Allows for commands to be
@@ -947,7 +935,7 @@ def client_from_app(
 
     Returns:
         :obj:`~Client`: The created client instance.
-    """  # noqa: E501
+    """
     if isinstance(app, GatewayClientAppT):
         LOGGER.debug("building gateway client from app")
         cls = GatewayEnabledClient

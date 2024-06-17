@@ -132,10 +132,9 @@ def get_command_data(command: commands.CommandBase | type[commands.CommandBase])
     Utility method to get the command data dataclass for a command instance or command class.
 
     Args:
-        command (:obj:`~typing.Union` [ :obj:`~lightbulb.commands.commands.CommandBase`, :obj:`~typing.Type` [ :obj:`~lightbulb.commands.commands.CommandBase` ]]): The
-            command instance or command class to get the command data for.
+        command: The command instance or command class to get the command data for.
 
     Returns:
         :obj:`~lightbulb.commands.commands.CommandData`: Command data dataclass for the given command.
-    """  # noqa: E501
+    """
     return command._command_data

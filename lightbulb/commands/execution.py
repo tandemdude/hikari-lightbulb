@@ -47,7 +47,7 @@ class ExecutionStep:
     function being called.
 
     Args:
-        name (:obj:`str`): The name of the execution step.
+        name: The name of the execution step.
     """
 
     name: str
@@ -85,8 +85,8 @@ class ExecutionHook:
     Dataclass representing a command execution hook executed before the invocation method is called.
 
     Args:
-        step (:obj:`~ExecutionStep`): The step that this hook should be run during.
-        skip_when_failed (:obj:`bool`): Whether this hook should be skipped if the pipeline has already failed.
+        step: The step that this hook should be run during.
+        skip_when_failed: Whether this hook should be skipped if the pipeline has already failed.
         func: The function that this hook executes. May either be synchronous or asynchronous, and **must** take
             (at least) two arguments - and instance of :obj:`~ExecutionPipeline` and :obj:`~lightbulb.context.Context`
             respectively.
@@ -197,7 +197,7 @@ class ExecutionPipeline:
         have been exhausted.
 
         Returns:
-            :obj:`~typing.Optional` [ :obj:`~ExecutionStep` ]: The new execution step, or :obj:`None` if there
+            :obj:`~ExecutionStep` | :obj:`None`: The new execution step, or :obj:`None` if there
                 are none remaining
         """
         if self._remaining:
@@ -273,8 +273,8 @@ def hook(step: ExecutionStep, skip_when_failed: bool = False) -> t.Callable[[Exe
             ...
 
     Args:
-        step (:obj:`~ExecutionStep`): The step that this hook should be run during.
-        skip_when_failed (:obj:`bool`): Whether this hook should be skipped if the :obj:`~ExecutionPipeline`
+        step: The step that this hook should be run during.
+        skip_when_failed: Whether this hook should be skipped if the :obj:`~ExecutionPipeline`
             has already failed due to a different hook or command invocation exception. Defaults to :obj:`False`.
 
     Returns:

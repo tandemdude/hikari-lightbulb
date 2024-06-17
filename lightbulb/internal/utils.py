@@ -59,12 +59,11 @@ class CommandCollection:
         command of the same type is given then it will replace the first command.
 
         Args:
-            command (:obj:`~lightbulb.groups.Group` | :obj:`~typing.Type` [ :obj:`~lightbulb.commands.commands.CommandBase` ]): The
-                command to add to the collection.
+            command: The command to add to the collection.
 
         Returns:
             :obj:`None`
-        """  # noqa: E501
+        """
         if isinstance(command, groups.Group) or issubclass(command, commands.SlashCommand):
             self.slash = command
         elif issubclass(command, commands.UserCommand):
@@ -79,12 +78,11 @@ class CommandCollection:
         Remove a command from the collection. Does nothing if the command is not present in this collection.
 
         Args:
-            command (:obj:`~lightbulb.groups.Group` | :obj:`~typing.Type` [ :obj:`~lightbulb.commands.commands.CommandBase` ]): The
-                command to remove from the collection.
+            command: The command to remove from the collection.
 
         Returns:
             :obj:`None`
-        """  # noqa: E501
+        """
         if self.slash is command:
             self.slash = None
         if self.user is command:
@@ -98,8 +96,8 @@ def non_undefined_or(item: hikari.UndefinedOr[T], default: D) -> T | D:
     Return the given item if it is not undefined, otherwise return the default.
 
     Args:
-        item (:obj:`~hikari.UndefinedOr` [ ``T`` ]): The item that may be undefined.
-        default (``D``): The default to return when the item is undefined.
+        item: The item that may be undefined.
+        default: The default to return when the item is undefined.
 
     Returns:
         ``item`` or ``default`` depending on whether ``item`` was undefined.
@@ -112,7 +110,7 @@ async def maybe_await(item: types.MaybeAwaitable[T]) -> T:
     Await the given item if it is awaitable, otherwise just return the given item.
 
     Args:
-        item (:obj:`~lightbulb.internal.types.MaybeAwaitable`): The item to maybe await.
+        item: The item to maybe await.
 
     Returns:
         The item, or the return once the item was awaited.

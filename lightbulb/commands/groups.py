@@ -58,8 +58,7 @@ class GroupMixin(abc.ABC):
         or called with the command to register.
 
         Args:
-            command (:obj:`~typing.Type` [ :obj:`~lightbulb.commands.commands.CommandBase` ]): The command to register
-                to the group as a subcommand.
+            command: The command to register to the group as a subcommand.
 
         Returns:
             The passed command, with the parent set.
@@ -96,7 +95,7 @@ class GroupMixin(abc.ABC):
         Resolve the subcommand for the given path - fully qualified command name.
 
         Args:
-            path (:obj:`~typing.List` [ :obj:`str` ]): The path of the subcommand to resolve.
+            path: The path of the subcommand to resolve.
 
         Returns:
             The resolved command class, or :obj:`None` if one was not found.
@@ -197,9 +196,9 @@ class Group(GroupMixin):
         Create a new subgroup as a child of this group.
 
         Args:
-            name (:obj:`str`): The name of the subgroup.
-            description (:obj:`str`): The description of the subgroup.
-            localize (:obj:`bool`, optional): Whether to localize the group's name and description. If :obj:`true`,
+            name: The name of the subgroup.
+            description: The description of the subgroup.
+            localize: Whether to localize the group's name and description. If :obj:`true`,
                 then the ``name`` and ``description`` arguments will instead be interpreted as localization keys from
                 which the actual name and description will be retrieved from. Defaults to :obj:`False`.
 

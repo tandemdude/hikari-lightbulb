@@ -89,15 +89,14 @@ class AutocompleteContext:
         Get the option with the given name if available.
 
         Args:
-            name (:obj:`str`): The name of the option to get.
+            name: The name of the option to get.
 
         Returns:
-            :obj:`~typing.Optional` [ :obj:`hikari.interactions.command_interactions.AutocompleteInteractionOption` ]: The
-                option, or :obj:`None` if not available from the interaction.
+            The option, or :obj:`None` if not available from the interaction.
 
         See Also:
             :obj:`~AutocompleteContext.focused`
-        """  # noqa: E501
+        """
         return next(filter(lambda opt: opt.name == name, self.options), None)
 
     @staticmethod
@@ -217,8 +216,7 @@ class Context:
         Edit the response with the given identifier.
 
         Args:
-            response_id (:obj:`hikari.snowflakes.Snowflakeish`): The identifier of the response to delete - as
-                returned by :meth:`~Context.respond`.
+            response_id: The identifier of the response to delete - as returned by :meth:`~Context.respond`.
             content: The message contents.
             attachment: The message attachment.
             attachments: The message attachments.
@@ -271,8 +269,7 @@ class Context:
         Delete the response with the given identifier.
 
         Args:
-            response_id (:obj:`hikari.snowflakes.Snowflakeish`): The identifier of the response to delete - as
-                returned by :meth:`~Context.respond`.
+            response_id: The identifier of the response to delete - as returned by :meth:`~Context.respond`.
 
         Returns:
             :obj:`None`
@@ -286,8 +283,7 @@ class Context:
         Fetch the message object for the response with the given identifier.
 
         Args:
-            response_id (:obj:`~hikari.snowflakes.Snowflakeish`): The identifier of the response to fetch - as
-                returned by :meth:`~Context.respond`.
+            response_id: The identifier of the response to fetch - as returned by :meth:`~Context.respond`.
 
         Returns:
             :obj:`~hikari.messages.Message`: The message for the response with the given identifier.
@@ -335,7 +331,7 @@ class Context:
         Defer the creation of a response for the interaction that this context represents.
 
         Args:
-            ephemeral (:obj:`bool`): Whether to defer ephemerally (message only visible to the user that triggered
+            ephemeral: Whether to defer ephemerally (message only visible to the user that triggered
                 the command).
 
         Returns:
@@ -362,16 +358,14 @@ class Context:
         Create a modal response to the interaction that this context represents.
 
         Args:
-            title (:obj:`str`): The title that will show up in the modal.
-            custom_id (:obj:`str`): Developer set custom ID used for identifying interactions with this modal.
-            component (:obj:`~hikari.UndefinedOr` [ :obj:`~hikari.api.special_endpoints.ComponentBuilder` ]): A
-                component builder to send in this modal.
-            components (:obj:`~hikari.UndefinedOr` [ :obj:`~typing.Sequence` [ :obj:`~hikari.api.special_endpoints.ComponentBuilder` ]]): A
-                sequence of component builders to send in this modal.
+            title: The title that will show up in the modal.
+            custom_id: Developer set custom ID used for identifying interactions with this modal.
+            component: A component builder to send in this modal.
+            components: A sequence of component builders to send in this modal.
 
         Returns:
             :obj:`None`
-        """  # noqa: E501
+        """
         async with self._response_lock:
             if self._initial_response_sent:
                 return
@@ -413,8 +407,8 @@ class Context:
             role_mentions: The role mentions to include in the message.
 
         Returns:
-            :obj:`hikari.Snowflakeish`: An identifier for the response. This can then be used to edit, delete, or
-                fetch the response message using the appropriate methods.
+            :obj:`hikari.snowflakes.Snowflakeish`: An identifier for the response. This can then be used to edit,
+                delete, or fetch the response message using the appropriate methods.
 
         Note:
             This documentation does not contain a full description of the parameters as they would just

@@ -158,8 +158,8 @@ class Option(t.Generic[T, D]):
     use of one of the helper functions.
 
     Args:
-        data (:obj:`~OptionData` [ ``D`` ]): The dataclass describing this instance.
-        default_when_not_bound (``T``): The value to return from the descriptor if accessed through the class
+        data: The dataclass describing this instance.
+        default_when_not_bound: The value to return from the descriptor if accessed through the class
             instead of through an instance
 
     See Also:
@@ -284,19 +284,19 @@ def string(
     A string option.
 
     Args:
-        name (:obj:`str`): The name of the option.
-        description (:obj:`str`): The description of the option.
-        localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
+        name: The name of the option.
+        description: The description of the option.
+        localize: Whether to localize this option's name and description. If :obj:`True`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
-        default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
-        choices (:obj:`~hikari.undefined.UndefinedOr` [ ``ChoicesT`` ]): The choices for the option. Any of the
+        default: The default value for the option.
+        choices: The choices for the option. Any of the
             following can be interpreted as a choice: a sequence of :obj:`~hikari.commands.CommandChoice`, a mapping
             of choice name to choice value, a sequence of 2-tuples where the first element is the name
             and the second element is the value, or a sequence of :obj:`str` where the choice name and value will
             be the same.
-        min_length (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`int` ]): The minimum length for the option.
-        max_length (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`int` ]): The maximum length for the option.
+        min_length: The minimum length for the option.
+        max_length: The maximum length for the option.
         autocomplete: The autocomplete provider function to use for the option.
 
     Returns:
@@ -343,19 +343,19 @@ def integer(
     An integer option.
 
     Args:
-        name (:obj:`str`): The name of the option.
-        description (:obj:`str`): The description of the option.
-        localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
+        name: The name of the option.
+        description: The description of the option.
+        localize: Whether to localize this option's name and description. If :obj:`True`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
-        default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
-        choices (:obj:`~hikari.undefined.UndefinedOr` [ ``ChoicesT`` ]): The choices for the option. Any of the
+        default: The default value for the option.
+        choices: The choices for the option. Any of the
             following can be interpreted as a choice: a sequence of :obj:`~hikari.commands.CommandChoice`, a mapping
             of choice name to choice value, a sequence of 2-tuples where the first element is the name
             and the second element is the value, or a sequence of :obj:`int` where the choice name and value will
             be the same.
-        min_value (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`int` ]): The minimum value for the option.
-        max_value (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`int` ]): The maximum value for the option.
+        min_value: The minimum value for the option.
+        max_value: The maximum value for the option.
         autocomplete: The autocomplete provider function to use for the option.
 
     Returns:
@@ -396,12 +396,12 @@ def boolean(
     A boolean option.
 
     Args:
-        name (:obj:`str`): The name of the option.
-        description (:obj:`str`): The description of the option.
-        localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
+        name: The name of the option.
+        description: The description of the option.
+        localize: Whether to localize this option's name and description. If :obj:`True`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
-        default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
+        default: The default value for the option.
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
@@ -439,19 +439,19 @@ def number(
     A numeric (float) option.
 
     Args:
-        name (:obj:`str`): The name of the option.
-        description (:obj:`str`): The description of the option.
-        localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
+        name: The name of the option.
+        description: The description of the option.
+        localize: Whether to localize this option's name and description. If :obj:`True`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
-        default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
-        choices (:obj:`~hikari.undefined.UndefinedOr` [ ``ChoicesT`` ]): The choices for the option. Any of the
+        default: The default value for the option.
+        choices: The choices for the option. Any of the
             following can be interpreted as a choice: a sequence of :obj:`~hikari.commands.CommandChoice`, a mapping
             of choice name to choice value, a sequence of 2-tuples where the first element is the name
             and the second element is the value, or a sequence of :obj:`float` where the choice name and value will
             be the same.
-        min_value (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`float` ]): The minimum value for the option.
-        max_value (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`float` ]): The maximum value for the option.
+        min_value: The minimum value for the option.
+        max_value: The maximum value for the option.
         autocomplete: The autocomplete provider function to use for the option.
 
     Returns:
@@ -492,12 +492,12 @@ def user(
     A user option.
 
     Args:
-        name (:obj:`str`): The name of the option.
-        description (:obj:`str`): The description of the option.
-        localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
+        name: The name of the option.
+        description: The description of the option.
+        localize: Whether to localize this option's name and description. If :obj:`True`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
-        default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
+        default: The default value for the option.
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
@@ -530,18 +530,17 @@ def channel(
     A channel option.
 
     Args:
-        name (:obj:`str`): The name of the option.
-        description (:obj:`str`): The description of the option.
-        localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
+        name: The name of the option.
+        description: The description of the option.
+        localize: Whether to localize this option's name and description. If :obj:`True`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
-        default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
-        channel_types (:obj:`~hikari.undefined.UndefinedOr` [ :obj:`~typing.Sequence` [ :obj:`~hikari.channels.ChannelType` ]]): The
-            channel types permitted for the option.
+        default: The default value for the option.
+        channel_types: The channel types permitted for the option.
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
-    """  # noqa: E501
+    """
     return t.cast(
         hikari.PartialChannel,
         Option(
@@ -570,12 +569,12 @@ def role(
     A role option.
 
     Args:
-        name (:obj:`str`): The name of the option.
-        description (:obj:`str`): The description of the option.
-        localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
+        name: The name of the option.
+        description: The description of the option.
+        localize: Whether to localize this option's name and description. If :obj:`True`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
-        default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
+        default: The default value for the option.
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
@@ -607,12 +606,12 @@ def mentionable(
     A mentionable (snowflake) option.
 
     Args:
-        name (:obj:`str`): The name of the option.
-        description (:obj:`str`): The description of the option.
-        localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
+        name: The name of the option.
+        description: The description of the option.
+        localize: Whether to localize this option's name and description. If :obj:`True`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
-        default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
+        default: The default value for the option.
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
@@ -644,12 +643,12 @@ def attachment(
     An attachment option.
 
     Args:
-        name (:obj:`str`): The name of the option.
-        description (:obj:`str`): The description of the option.
-        localize (:obj:`bool`): Whether to localize this option's name and description. If :obj:`true`, then the
+        name: The name of the option.
+        description: The description of the option.
+        localize: Whether to localize this option's name and description. If :obj:`True`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
-        default (:obj:`~hikari.undefined.UndefinedOr` [ ``D`` ]): The default value for the option.
+        default: The default value for the option.
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.

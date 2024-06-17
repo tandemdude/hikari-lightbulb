@@ -174,7 +174,7 @@ async def sync_application_commands(client: client_.Client) -> None:
     Synchronise the commands registered to the given client with discord.
 
     Args:
-        client (:obj:`~lightbulb.client.Client`): The client which has the commands to synchronise registered.
+        client: The client which has the commands to synchronise registered.
 
     Returns:
         :obj:`None`

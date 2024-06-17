@@ -59,7 +59,7 @@ class Loadable(abc.ABC):
         Add the feature to the client instance.
 
         Args:
-            client (:obj:`~lightbulb.client.Client`): The client instance to add the feature to.
+            client: The client instance to add the feature to.
 
         Returns:
             :obj:`None`
@@ -70,7 +70,7 @@ class Loadable(abc.ABC):
         Remove the feature from the client instance.
 
         Args:
-            client (:obj:`~lightbulb.client.Client`): The client instance to remove the feature from.
+            client: The client instance to remove the feature from.
 
         Returns:
             :obj:`None`
@@ -145,7 +145,7 @@ class Loader:
         Add the features contained within this loader to the given client.
 
         Args:
-            client (:obj:`~lightbulb.client.Client`): The client to add this loader's features to.
+            client: The client to add this loader's features to.
 
         Returns:
             :obj:`None`
@@ -159,7 +159,7 @@ class Loader:
         loadable's unload method raises an exception then the remaining loadables will still be unloaded.
 
         Args:
-            client (:obj:`~lightbulb.client.Client`): The client to remove this loader's features from.
+            client: The client to remove this loader's features from.
 
         Returns:
             :obj:`None`
@@ -191,12 +191,10 @@ class Loader:
         This method can be used as a function, or a first or second order decorator.
 
         Args:
-            command (:obj:`~typing.Union` [ :obj:`~typing.Type` [ :obj:`~lightbulb.commands.commands.CommandBase ], :obj:`~lightbulb.commands.groups.Group` ]): The
-                command class or command group to register with the client.
-            guilds (:obj:`~typing.Optional` [ :obj:`~typing.Sequence` [ :obj:`~hikari.Snowflakeish` ]]): The guilds
-                to create the command or group in. If set to :obj:`None`, then this will fall back to the default
-                enabled guilds. To override default enabled guilds and make the command or group global, this should
-                be set to an empty sequence.
+            command: The command class or command group to register with the client.
+            guilds: The guilds to create the command or group in. If set to :obj:`None`, then this will fall
+                back to the default enabled guilds. To override default enabled guilds and make the command or
+                group global, this should be set to an empty sequence.
 
         Returns:
             The registered command or group, unchanged.
@@ -219,7 +217,7 @@ class Loader:
 
                 # also valid
                 loader.register(Example, guilds=[...])
-        """  # noqa: E501
+        """
         # Used as a function or first-order decorator
         if command is not None:
             self._loadables.append(_CommandLoadable(command, guilds))
@@ -244,7 +242,7 @@ class Loader:
         injection then adding this loader to the client will fail at runtime.
 
         Args:
-            event_type (:obj:`~typing.Type` [ :obj:`hikari.Event` ]): The event class for the listener to listen to.
+            event_type: The event class for the listener to listen to.
 
         Example:
 
@@ -285,7 +283,7 @@ class Loader:
 
         Args:
             func: The function to register as a command error handler.
-            priority (:obj:`int`): The priority that this handler should be registered at. Higher priority handlers
+            priority: The priority that this handler should be registered at. Higher priority handlers
                 will be executed first.
         """
         if func is not None:

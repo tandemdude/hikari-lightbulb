@@ -113,7 +113,7 @@ class CommandData:
         Convert the command data into a hikari command builder object.
 
         Returns:
-            :obj:`hikari.api.CommandBuilder`: The builder object for this command data.
+            :obj:`hikari.api.special_endpoints.CommandBuilder`: The builder object for this command data.
         """
         name, description = self.name, self.description
         name_localizations: t.Mapping[hikari.Locale, str] = {}
@@ -156,7 +156,7 @@ class CommandData:
         Convert the command data into a sub-command command option.
 
         Returns:
-            :obj:`hikari.CommandOption`: The sub-command option for this command data.
+            :obj:`hikari.commands.CommandOption`: The sub-command option for this command data.
         """
         name, description = self.name, self.description
         name_localizations: t.Mapping[hikari.Locale, str] = {}
@@ -193,21 +193,20 @@ class CommandMeta(type):
     implementations (:obj:`~SlashCommand`, :obj:`~UserCommand`, :obj:`~MessageCommand`).
 
     Parameters:
-        type (:obj:`hikari.CommandType`): The type of the command that the class implements. This should not
+        type: The type of the command that the class implements. This should not
             be passed manually - it is filled automatically depending on the command implementation class that
             is subclassed. I.e. subclassing :obj:`SlashCommand` sets this parameter to :obj:`hikari.CommandType.SLASH`.
-        name (:obj:`str`, required): The name of the command.
-        description (:obj:`str`, optional): The description of the command. Only required for slash commands.
-        localize (:obj:`bool`, optional): Whether to localize the command's name and description. If :obj:`true`,
+        name: The name of the command.
+        description: The description of the command. Only required for slash commands.
+        localize: Whether to localize the command's name and description. If :obj:`true`,
             then the ``name`` and ``description`` arguments will instead be interpreted as localization keys from
             which the actual name and description will be retrieved. Defaults to :obj:`False`.
-        nsfw (:obj:`bool`, optional): Whether the command should be marked as nsfw. Defaults to :obj:`False`.
-        dm_enabled (:obj:`bool`, optional): Whether the command can be used in direct messages. Defaults to :obj:`True`.
-        default_member_permissions (:obj:`hikari.Permissions`, optional): The default permissions required for a
+        nsfw: Whether the command should be marked as nsfw. Defaults to :obj:`False`.
+        dm_enabled: Whether the command can be used in direct messages. Defaults to :obj:`True`.
+        default_member_permissions: The default permissions required for a
             guild member to use the command. If unspecified, all users can use the command by default. Set to
             ``hikari.Permissions.NONE`` to disable for everyone apart from admins.
-        hooks (:obj:`~typing.Sequence` [ :obj:`~lightbulb.commands.execution.ExecutionHook` ], optional): The hooks to
-            run before the command invocation function is executed. Defaults to an empty set.
+        hooks: The hooks to run before the command invocation function is executed. Defaults to an empty set.
     """
 
     __command_types: t.ClassVar[dict[type, hikari.CommandType]] = {}
@@ -305,7 +304,7 @@ class CommandBase:
         Convenience method to set the current execution context and clear the resolved option cache.
 
         Args:
-            context (:obj:`~lightbulb.context.Context`): The context being used for the current execution.
+            context: The context being used for the current execution.
 
         Returns:
             :obj:`None`
@@ -320,10 +319,10 @@ class CommandBase:
         the cached value is returned instead.
 
         Args:
-            option (:obj:`~lightbulb.commands.options.Option`): The option to resolve the value for.
+            option: The option to resolve the value for.
 
         Returns:
-            :obj:`~typing.Union` [ ``T``, ``D`` ]: The resolved value for the given option.
+            ``T`` | ``D``: The resolved value for the given option.
         """
         context = self._current_context
         if context is None:
@@ -375,7 +374,7 @@ class CommandBase:
         Convert the command into a hikari command builder object.
 
         Returns:
-            :obj:`hikari.api.CommandBuilder`: The builder object for this command.
+            :obj:`hikari.api.special_endpoints.CommandBuilder`: The builder object for this command.
         """
         return await cls._command_data.as_command_builder(default_locale, localization_provider)
 
@@ -387,7 +386,7 @@ class CommandBase:
         Convert the command into a sub-command command option.
 
         Returns:
-            :obj:`hikari.CommandOption`: The sub-command option for this command.
+            :obj:`hikari.commands.CommandOption`: The sub-command option for this command.
         """
         return await cls._command_data.to_command_option(default_locale, localization_provider)
 
@@ -400,18 +399,17 @@ class SlashCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.S
     All subclasses **must** contain a method marked with the :obj:`lightbulb.commands.execution.invoke` decorator.
 
     Parameters:
-        name (:obj:`str`, required): The name of the command.
-        description (:obj:`str`, required): The description of the command.
-        localize (:obj:`bool`, optional): Whether to localize the command's name and description. If :obj:`true`,
+        name: The name of the command.
+        description: The description of the command.
+        localize: Whether to localize the command's name and description. If :obj:`true`,
             then the ``name`` and ``description`` arguments will instead be interpreted as localization keys from
             which the actual name and description will be retrieved. Defaults to :obj:`False`.
-        nsfw (:obj:`bool`, optional): Whether the command should be marked as nsfw. Defaults to :obj:`False`.
-        dm_enabled (:obj:`bool`, optional): Whether the command can be used in direct messages. Defaults to :obj:`True`.
-        default_member_permissions (:obj:`hikari.Permissions`, optional): The default permissions required for a
+        nsfw: Whether the command should be marked as nsfw. Defaults to :obj:`False`.
+        dm_enabled: Whether the command can be used in direct messages. Defaults to :obj:`True`.
+        default_member_permissions: The default permissions required for a
             guild member to use the command. If unspecified, all users can use the command by default. Set to
             ``hikari.Permissions.NONE`` to disable for everyone apart from admins.
-        hooks (:obj:`~typing.Sequence` [ :obj:`~lightbulb.commands.execution.ExecutionHook` ], optional): The hooks to
-            run before the command invocation function is executed. Defaults to an empty set.
+        hooks: The hooks to run before the command invocation function is executed. Defaults to an empty set.
 
     Example:
 
@@ -439,17 +437,16 @@ class UserCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.US
     All subclasses **must** contain a method marked with the :obj:`lightbulb.commands.execution.invoke` decorator.
 
     Parameters:
-        name (:obj:`str`, required): The name of the command.
-        localize (:obj:`bool`, optional): Whether to localize the command's name and description. If :obj:`true`,
+        name: The name of the command.
+        localize: Whether to localize the command's name and description. If :obj:`true`,
             then the ``name`` argument will instead be interpreted as a localization key from
             which the actual name will be retrieved. Defaults to :obj:`False`.
-        nsfw (:obj:`bool`, optional): Whether the command should be marked as nsfw. Defaults to :obj:`False`.
-        dm_enabled (:obj:`bool`, optional): Whether the command can be used in direct messages. Defaults to :obj:`True`.
-        default_member_permissions (:obj:`hikari.Permissions`, optional): The default permissions required for a
+        nsfw: Whether the command should be marked as nsfw. Defaults to :obj:`False`.
+        dm_enabled: Whether the command can be used in direct messages. Defaults to :obj:`True`.
+        default_member_permissions: The default permissions required for a
             guild member to use the command. If unspecified, all users can use the command by default. Set to
             ``hikari.Permissions.NONE`` to disable for everyone apart from admins.
-        hooks (:obj:`~typing.Sequence` [ :obj:`~lightbulb.commands.execution.ExecutionHook` ], optional): The hooks to
-            run before the command invocation function is executed. Defaults to an empty set.
+        hooks: The hooks to run before the command invocation function is executed. Defaults to an empty set.
 
     Example:
 
@@ -480,17 +477,16 @@ class MessageCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType
     All subclasses **must** contain a method marked with the :obj:`lightbulb.commands.execution.invoke` decorator.
 
     Parameters:
-        name (:obj:`str`, required): The name of the command.
-        localize (:obj:`bool`, optional): Whether to localize the command's name and description. If :obj:`true`,
+        name: The name of the command.
+        localize: Whether to localize the command's name and description. If :obj:`true`,
             then the ``name`` argument will instead be interpreted as a localization key from
             which the actual name will be retrieved. Defaults to :obj:`False`.
-        nsfw (:obj:`bool`, optional): Whether the command should be marked as nsfw. Defaults to :obj:`False`.
-        dm_enabled (:obj:`bool`, optional): Whether the command can be used in direct messages. Defaults to :obj:`True`.
-        default_member_permissions (:obj:`hikari.Permissions`, optional): The default permissions required for a
-            guild member to use the command. If unspecified, all users can use the command by default. Set to
-            ``hikari.Permissions.NONE`` to disable for everyone apart from admins.
-        hooks (:obj:`~typing.Sequence` [ :obj:`~lightbulb.commands.execution.ExecutionHook` ], optional): The hooks to
-            run before the command invocation function is executed. Defaults to an empty set.
+        nsfw: Whether the command should be marked as nsfw. Defaults to :obj:`False`.
+        dm_enabled: Whether the command can be used in direct messages. Defaults to :obj:`True`.
+        default_member_permissions: The default permissions required for a guild member to use the command.
+            If unspecified, all users can use the command by default. Set to ``hikari.Permissions.NONE`` to
+            disable for everyone apart from admins.
+        hooks: The hooks to run before the command invocation function is executed. Defaults to an empty set.
 
     Example:
 

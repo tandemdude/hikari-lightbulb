@@ -88,9 +88,9 @@ class DependencyInjectionManager:
         singletons, meaning the factory will always be called at most once.
 
         Args:
-            type_ (:obj:`~typing.Type` [ ``T`` ]): The type of the dependency to register.
+            type_: The type of the dependency to register.
             factory: The factory function to use to provide the dependency value.
-            enter (:obj:`~bool`): Whether to enter context managers, if one is returned from the factory. Defaults
+            enter: Whether to enter context managers, if one is returned from the factory. Defaults
                 to :obj:`False`.
 
         Returns:
@@ -103,13 +103,12 @@ class DependencyInjectionManager:
 
 
 @contextlib.contextmanager
-def ensure_di_context(client: DependencyInjectionManager) -> t.Generator[None, t.Any, t.Any]:
+def ensure_di_context(manager: DependencyInjectionManager) -> t.Generator[None, t.Any, t.Any]:
     """
     Context manager that ensures a dependency injection context is available for the nested operations.
 
     Args:
-        client (:obj:`~DependencyInjectionAware`): The client that is aware of the required information to be
-            able to supply dependencies for injection.
+        manager: The DI manager to use to supply dependencies for this injection context.
 
     Example:
 
@@ -119,7 +118,7 @@ def ensure_di_context(client: DependencyInjectionManager) -> t.Generator[None, t
                 await some_function_that_needs_dependencies()
     """
     if DI_ENABLED:
-        token = DI_CONTAINER.set(client.di_container)
+        token = DI_CONTAINER.set(manager.di_container)
         try:
             yield
         finally:
@@ -144,13 +143,13 @@ def find_injectable_kwargs(
 
     Args:
         func: The function to discover the dependency injection suitable parameters for.
-        passed_args (:obj:`int`): The number of positional arguments passed to the function in this invocation.
-        passed_kwargs (:obj:`~typing.Collection` [ :obj:`str` ]): The names of all the keyword arguments passed
+        passed_args: The number of positional arguments passed to the function in this invocation.
+        passed_kwargs: The names of all the keyword arguments passed
             to the function in this invocation.
 
     Returns:
-        :obj:`~typing.Dict` [ :obj:`str`, :obj:`~typing.Any` ]: Mapping of parameter name to parameter annotation
-            value for parameters that are suitable for dependency injection.
+        Mapping of parameter name to parameter annotation value for parameters that are suitable for
+        dependency injection.
     """
     parameters = inspect.signature(func, eval_str=True).parameters
 

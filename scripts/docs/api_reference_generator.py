@@ -112,7 +112,8 @@ class Package:
         os.makedirs(api_reference_dir_path, exist_ok=True)
 
         with open(os.path.join(api_reference_dir_path, parts[-1] + ".rst"), "w") as fp:
-            package_name = self.header_override or ".".join(parts)
+            package_name = ".".join(parts)
+            header_text = self.header_override or package_name
 
             package_lines = [
                 f"    {'/'.join([*self.child_prefix, self.path.name, *package.path.relative_to(self.path).parts])}"
@@ -125,11 +126,11 @@ class Package:
 
             lines = [
                 self.before_header or "",
-                "=" * len(package_name),
-                package_name,
-                "=" * len(package_name),
+                "=" * len(header_text),
+                header_text,
+                "=" * len(header_text),
                 "",
-                ".. automodule:: " + ".".join(parts),
+                ".. automodule:: " + package_name,
                 "",
             ]
 

@@ -1,0 +1,39 @@
+{
+  "lightbulb.commands.commands.SlashCommand": {
+    "required": {
+      "name": "str",
+      "description": "str"
+    },
+    "optional": {
+      "localize": "bool",
+      "nsfw": "bool",
+      "dm_enabled": "bool",
+      "default_member_permissions": "hikari.permissions.Permissions",
+      "hooks": "list[lightbulb.ExecutionHook]"
+    }
+  },
+  "lightbulb.commands.commands.MessageCommand": {
+    "required": {
+      "name": "str"
+    },
+    "optional": {
+      "localize": "bool",
+      "nsfw": "bool",
+      "dm_enabled": "bool",
+      "default_member_permissions": "hikari.permissions.Permissions",
+      "hooks": "list[lightbulb.ExecutionHook]"
+    }
+  },
+  "lightbulb.commands.commands.UserCommand": {
+    "required": {
+      "name": "str"
+    },
+    "optional": {
+      "localize": "bool",
+      "nsfw": "bool",
+      "dm_enabled": "bool",
+      "default_member_permissions": "hikari.permissions.Permissions",
+      "hooks": "list[lightbulb.ExecutionHook]"
+    }
+  }
+}

@@ -63,6 +63,7 @@ filename = "CHANGES.md"
 package = "lightbulb"
 title_format = "v{version} ({project_date})"
 issue_format = "[#{issue}](https://github.com/tandemdude/hikari-lightbulb/issues/{issue})"
+orphan_prefix = "+"
 
 [tool.black]
 line-length     = 120

@@ -8,6 +8,26 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a1 (2024-06-20)
+
+### Features
+
+- A [plugin](https://plugins.jetbrains.com/plugin/24669-hikari-lightbulb-support) for IntelliJ-based IDEs has been 
+  released to add autocompletion and type checking support for command parameters. It supports Lightbulb from 
+  this version and later. More features are planned.
+
+### Bugfixes
+
+- Use `interaction.registered_guild_id` when resolving command interactions to prevent issues where guild commands
+  would sometimes be invoked instead of global commands. ([#426](https://github.com/tandemdude/hikari-lightbulb/issues/426))
+
+### Improved Documentation
+
+- Documentation has been reworked to look nicer and function better. A Lightbulb-by-example section is in-progress for
+  better tutorials and explanations for users of the library.
+
+----
+
 ## v3.0.0a1 (2024-06-09)
 
 ### Features

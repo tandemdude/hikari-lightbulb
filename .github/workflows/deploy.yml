@@ -42,7 +42,6 @@ jobs:
           pip install .[dev.changelog]
           towncrier build --yes
           python scripts/deploy/populate_changelog.py CHANGES.md docs/source/changelogs/v3-changelog.md
-          rm fragments/*.md
 
       - name: Commit Changes
         uses: stefanzweifel/git-auto-commit-action@v5

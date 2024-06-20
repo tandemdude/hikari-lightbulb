@@ -542,11 +542,11 @@ class Client:
             options = subcommand.options
 
         global_commands = self._commands.get(constants.GLOBAL_COMMAND_KEY, {}).get(interaction.command_name)
-        guild_commands = self._commands.get(interaction.guild_id or constants.GLOBAL_COMMAND_KEY, {}).get(
+        guild_commands = self._commands.get(interaction.registered_guild_id or constants.GLOBAL_COMMAND_KEY, {}).get(
             interaction.command_name
         )
-        # TODO - fix this when hikari adds the guild_id from interaction data to the model
-        root_commands = guild_commands or global_commands
+
+        root_commands = guild_commands if interaction.registered_guild_id is not None else global_commands
         if root_commands is None:
             LOGGER.debug("ignoring interaction received for unknown command - %r", interaction.command_name)
             return

@@ -63,3 +63,12 @@ it is greatly appreciated and lets me know that I'm going in the right direction
 - **License:** [MIT](https://choosealicense.com/licenses/mit/)
 - **Repository:** [GitHub](https://github.com/tandemdude/hikari-lightbulb)
 - **Documentation:** [ReadTheDocs](https://hikari-lightbulb.readthedocs.io/en/latest/)
+
+## IDE Plugin
+
+Lightbulb now has a plugin for IntelliJ-based IDEs (IntelliJ, Pycharm, etc) to help improve the developer experience 
+by providing autocompletion and type checking not yet supported by other tools. More features such as command 
+boilerplate generation and further code inspections are planned.
+
+You can install the plugin from the Jetbrains Marketplace within your IDE. View the plugin 
+[here](https://plugins.jetbrains.com/plugin/24669-hikari-lightbulb-support).

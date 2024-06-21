@@ -27,6 +27,17 @@ you should submit an issue on the GitHub repository [here](https://github.com/ta
 Before doing so you should make sure you are on the latest version of the library and check to see if an issue
 already exists for your bug or feature.
 
+## IDE Plugin
+
+Lightbulb now has a plugin for IntelliJ-based IDEs (IntelliJ, Pycharm, etc) to help improve the developer experience 
+by providing autocompletion and type checking not yet supported by other tools. More features such as command 
+boilerplate generation and further code inspections are planned.
+
+You can install the plugin from the Jetbrains Marketplace within your IDE. View the plugin 
+[here](https://plugins.jetbrains.com/plugin/24669-hikari-lightbulb-support).
+
+---
+
 :::{dropdown} Helpful Resources
 :icon: question
 - [Hikari Documentation](https://docs.hikari-py.dev/en/latest/)
@@ -44,6 +55,8 @@ already exists for your bug or feature.
 - [nekokatt](https://gitlab.com/nekokatt) for helping with the early stages of lightbulb and teaching me much of what I know.
 - [davfsa](https://github.com/davfsa) for maintaining Hikari for all this time. Without which lightbulb could not exist.
 :::
+
+---
 
 ## Next Steps
 

@@ -65,6 +65,10 @@ intersphinx_mapping = {
 # a list of builtin themes.
 #
 html_theme = "furo"
+html_theme_options = {
+    "announcement": "<b>Testers Wanted - Report issues on discord</b>"
+    "<br>Release V3 is now in Alpha - <a href='https://hikari-lightbulb.readthedocs.io/en/v3/'>docs</a>"
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

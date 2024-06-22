@@ -47,7 +47,7 @@ from lightbulb.internal import utils
 if t.TYPE_CHECKING:
     import types
 
-    from lightbulb.commands import options
+    from lightbulb.commands import options as options_
     from lightbulb.internal.types import MaybeAwaitable
 
 T = t.TypeVar("T")
@@ -592,7 +592,7 @@ class Client:
         return context_.AutocompleteContext(self, interaction, options, command_cls)
 
     async def _execute_autocomplete_context(
-        self, context: context_.AutocompleteContext, autocomplete_provider: options.AutocompleteProviderT
+        self, context: context_.AutocompleteContext, autocomplete_provider: options_.AutocompleteProviderT
     ) -> None:
         with di_.ensure_di_context(self.di):
             try:

@@ -1,3 +1,10 @@
+> [!TIP]
+> V3 is now in Alpha. It is a complete rewrite of the entire library, and we are looking for feedback. If you are
+> going to write a new bot using Lightbulb, maybe consider using V3 instead of V2.
+> 
+> Report any bugs or issues, and ask for help in the discord channel.
+> The documentation can be found [here](https://hikari-lightbulb.readthedocs.io/en/v3/)
+
 [![PyPI](https://img.shields.io/pypi/v/hikari-lightbulb)](https://pypi.org/project/hikari-lightbulb)
 
 # Lightbulb

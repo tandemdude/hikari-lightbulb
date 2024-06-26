@@ -85,9 +85,6 @@ class CommandData:
     parent: groups.Group | groups.SubGroup | None = dataclasses.field(init=False, default=None)
     """The group that the command belongs to, or :obj:`None` if not applicable."""
 
-    _localized_name: str = dataclasses.field(init=False, default="")
-    _localized_description: str = dataclasses.field(init=False, default="")
-
     def __post_init__(self) -> None:
         if len(self.name) < 1 or len(self.name) > 32:
             raise ValueError("'name' - must be 1-32 characters")

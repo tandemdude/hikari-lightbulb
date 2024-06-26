@@ -129,9 +129,6 @@ class CommandData:
                 name, description or None, default_locale, localization_provider
             )
 
-        self._localized_name = name
-        self._localized_description = description
-
         if self.type is hikari.CommandType.SLASH:
             bld = (
                 hikari.impl.SlashCommandBuilder(name=name, description=description)

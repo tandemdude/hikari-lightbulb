@@ -85,6 +85,9 @@ class CommandData:
     parent: groups.Group | groups.SubGroup | None = dataclasses.field(init=False, default=None)
     """The group that the command belongs to, or :obj:`None` if not applicable."""
 
+    _localized_name: str = dataclasses.field(init=False, default="")
+    _localized_description: str = dataclasses.field(init=False, default="")
+
     def __post_init__(self) -> None:
         if len(self.name) < 1 or len(self.name) > 32:
             raise ValueError("'name' - must be 1-32 characters")
@@ -128,6 +131,9 @@ class CommandData:
             ) = await utils.localize_name_and_description(
                 name, description or None, default_locale, localization_provider
             )
+
+        self._localized_name = name
+        self._localized_description = description
 
         if self.type is hikari.CommandType.SLASH:
             bld = (
@@ -328,10 +334,10 @@ class CommandBase:
         if context is None:
             raise RuntimeError("cannot resolve option if no context is available")
 
-        if option._data.name in self._resolved_option_cache:
-            return t.cast(T, self._resolved_option_cache[option._data.name])
+        if option._data._localized_name in self._resolved_option_cache:
+            return t.cast(T, self._resolved_option_cache[option._data._localized_name])
 
-        found = [opt for opt in context.options if opt.name == option._data.name]
+        found = [opt for opt in context.options if opt.name == option._data._localized_name]
 
         if not found or (option._data.type not in _PRIMITIVE_OPTION_TYPES and context.interaction.resolved is None):
             if option._data.default is hikari.UNDEFINED:
@@ -341,7 +347,7 @@ class CommandBase:
             return option._data.default
 
         if option._data.type in _PRIMITIVE_OPTION_TYPES:
-            self._resolved_option_cache[option._data.name] = found[0].value
+            self._resolved_option_cache[option._data._localized_name] = found[0].value
             return t.cast(T, found[0].value)
 
         snowflake = found[0].value
@@ -363,7 +369,7 @@ class CommandBase:
         else:
             raise TypeError("unsupported option type passed")
 
-        self._resolved_option_cache[option._data.name] = resolved_option
+        self._resolved_option_cache[option._data._localized_name] = resolved_option
         return t.cast(T, resolved_option)
 
     @classmethod

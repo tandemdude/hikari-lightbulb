@@ -113,7 +113,7 @@ class GroupMixin(abc.ABC):
         return maybe_command
 
 
-@dataclasses.dataclass(slots=True, frozen=True)
+@dataclasses.dataclass(slots=True)
 class SubGroup(GroupMixin):
     """
     Dataclass representing a slash command subgroup.
@@ -130,7 +130,11 @@ class SubGroup(GroupMixin):
     """Whether the group name and description should be localized."""
     parent: Group
     """The parent group of the subgroup."""
+
     _commands: SubGroupCommandMappingT = dataclasses.field(init=False, default_factory=dict)
+
+    _localized_name: str = dataclasses.field(init=False, default="")
+    _localized_description: str = dataclasses.field(init=False, default="")
 
     async def to_command_option(
         self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
@@ -153,6 +157,9 @@ class SubGroup(GroupMixin):
                 description_localizations,
             ) = await utils.localize_name_and_description(name, description, default_locale, localization_provider)
 
+        self._localized_name = name
+        self._localized_description = description
+
         return hikari.CommandOption(
             type=hikari.OptionType.SUB_COMMAND_GROUP,
             name=name,
@@ -166,7 +173,7 @@ class SubGroup(GroupMixin):
         )
 
 
-@dataclasses.dataclass(slots=True, frozen=True)
+@dataclasses.dataclass(slots=True)
 class Group(GroupMixin):
     """
     Dataclass representing a slash command group.
@@ -190,6 +197,9 @@ class Group(GroupMixin):
     """The default permissions required to use the group in a guild."""
 
     _commands: GroupCommandMappingT = dataclasses.field(init=False, default_factory=dict)
+
+    _localized_name: str = dataclasses.field(init=False, default="")
+    _localized_description: str = dataclasses.field(init=False, default="")
 
     def subgroup(self, name: str, description: str, *, localize: bool = False) -> SubGroup:
         """
@@ -229,6 +239,9 @@ class Group(GroupMixin):
                 name_localizations,
                 description_localizations,
             ) = await utils.localize_name_and_description(name, description, default_locale, localization_provider)
+
+        self._localized_name = name
+        self._localized_description = description
 
         bld = (
             hikari.impl.SlashCommandBuilder(name=name, description=description)

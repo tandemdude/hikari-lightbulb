@@ -96,6 +96,9 @@ class OptionData(t.Generic[D]):
     autocomplete_provider: hikari.UndefinedOr[AutocompleteProviderT] = hikari.UNDEFINED
     """The provider to use to resolve autocomplete interactions for this command."""
 
+    _localized_name: str = dataclasses.field(init=False, default="")
+    _localized_description: str = dataclasses.field(init=False, default="")
+
     def __post_init__(self) -> None:
         if len(self.name) < 1 or len(self.name) > 32:
             raise ValueError("'name' - must be 1-32 characters")
@@ -132,6 +135,9 @@ class OptionData(t.Generic[D]):
                 name_localizations,
                 description_localizations,
             ) = await cmd_utils.localize_name_and_description(name, description, default_locale, localization_provider)
+
+        self._localized_name = name
+        self._localized_description = description
 
         return hikari.CommandOption(
             type=self.type,

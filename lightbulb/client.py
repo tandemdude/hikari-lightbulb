@@ -20,7 +20,7 @@
 # SOFTWARE.
 from __future__ import annotations
 
-__all__ = ["Client", "GatewayEnabledClient", "RestEnabledClient", "client_from_app"]
+__all__ = ["DEFAULT_EXECUTION_STEP_ORDER", "Client", "GatewayEnabledClient", "RestEnabledClient", "client_from_app"]
 
 import asyncio
 import collections
@@ -65,9 +65,11 @@ DEFAULT_EXECUTION_STEP_ORDER = (
     execution.ExecutionSteps.MAX_CONCURRENCY,
     execution.ExecutionSteps.CHECKS,
     execution.ExecutionSteps.COOLDOWNS,
+    execution.ExecutionSteps.PRE_INVOKE,
     execution.ExecutionSteps.INVOKE,
     execution.ExecutionSteps.POST_INVOKE,
 )
+"""The order that execution steps will be run in if you don't specify your own order."""
 
 
 @t.runtime_checkable

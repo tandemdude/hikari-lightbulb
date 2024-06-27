@@ -29,16 +29,16 @@ client.di.register_dependency(aiohttp.ClientSession, lambda: aiohttp.ClientSessi
 Lightbulb registers some dependencies for you automatically depending on what type of application you pass when creating
 the client. You can see these below.
 
-:::{tab} Always
-- `lightbulb.Client`
-- `hikari.api.RESTClient`
-:::
 :::{tab} GatewayBot
+- `lightbulb.Client`
 - `hikari.GatewayBot`
+- `hikari.api.RESTClient`
 - `hikari.api.EventManager`
 :::
 :::{tab} RESTBot
+- `lightbulb.Client`
 - `hikari.RESTBot`
+- `hikari.api.RESTClient`
 - `hikari.api.InteractionServer`
 :::
 ::::

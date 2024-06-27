@@ -73,6 +73,8 @@ class ExecutionSteps:
     """Step for execution of command check logic."""
     COOLDOWNS = ExecutionStep("COOLDOWNS")
     """Step for execution of command cooldown logic."""
+    PRE_INVOKE = ExecutionStep("PRE_INVOKE")
+    """Step for pre-invocation logic."""
     INVOKE = ExecutionStep("INVOKE")
     """Step for command invocation. No hooks should ever use this step."""
     POST_INVOKE = ExecutionStep("POST_INVOKE")

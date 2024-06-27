@@ -32,6 +32,7 @@ from lightbulb.localization import *
 __all__ = [
     "exceptions",
     "utils",
+    "DEFAULT_EXECUTION_STEP_ORDER",
     "Client",
     "GatewayEnabledClient",
     "RestEnabledClient",

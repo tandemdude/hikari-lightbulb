@@ -258,6 +258,8 @@ class Loader:
                 async def message_create_listener(event: hikari.MessageCreateEvent) -> None:
                     ...
         """
+        if not event_types:
+            raise ValueError("you must specify at least one event type")
 
         def _inner(
             callback: t.Callable["t.Concatenate[EventT, ...]", t.Awaitable[None]],

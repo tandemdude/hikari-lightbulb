@@ -92,11 +92,11 @@ class _CommandLoadable(Loadable):
 
 
 class _ListenerLoadable(Loadable):
-    __slots__ = ("_callback", "_wrapped_callback", "_event_type")
+    __slots__ = ("_callback", "_wrapped_callback", "_event_types")
 
-    def __init__(self, callback: t.Callable[[EventT], t.Awaitable[None]], event_type: type[EventT]) -> None:
+    def __init__(self, callback: t.Callable[[EventT], t.Awaitable[None]], *event_types: type[EventT]) -> None:
         self._callback = callback
-        self._event_type = event_type
+        self._event_types = event_types
 
         self._wrapped_callback: t.Callable[..., t.Awaitable[t.Any]] | None = None
 
@@ -111,11 +111,15 @@ class _ListenerLoadable(Loadable):
                 return await self._callback(*args, **kwargs)
 
         self._wrapped_callback = _wrapped if di.DI_ENABLED else None
-        event_manager.subscribe(self._event_type, self._wrapped_callback or self._callback)  # type: ignore[reportArgumentType]
+
+        for event in self._event_types:
+            event_manager.subscribe(event, self._wrapped_callback or self._callback)  # type: ignore[reportArgumentType]
 
     async def unload(self, client: client_.Client) -> None:
         event_manager = await client.di.get_dependency(hikari.api.EventManager)
-        event_manager.unsubscribe(self._event_type, self._wrapped_callback or self._callback)  # type: ignore[reportArgumentType]
+
+        for event in self._event_types:
+            event_manager.unsubscribe(event, self._wrapped_callback or self._callback)  # type: ignore[reportArgumentType]
 
 
 class _ErrorHandlerLoadable(Loadable):
@@ -230,7 +234,7 @@ class Loader:
         return _inner
 
     def listener(
-        self, event_type: type[EventT]
+        self, *event_types: type[EventT]
     ) -> t.Callable[
         [t.Callable["t.Concatenate[EventT, ...]", t.Awaitable[None]]], t.Callable[[EventT], t.Awaitable[None]]
     ]:
@@ -259,7 +263,7 @@ class Loader:
             callback: t.Callable["t.Concatenate[EventT, ...]", t.Awaitable[None]],
         ) -> t.Callable[[EventT], t.Awaitable[None]]:
             wrapped = t.cast(t.Callable[[EventT], t.Awaitable[None]], di.with_di(callback))
-            self._loadables.append(_ListenerLoadable(wrapped, event_type))
+            self._loadables.append(_ListenerLoadable(wrapped, *event_types))
             return wrapped
 
         return _inner

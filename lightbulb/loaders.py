@@ -43,7 +43,7 @@ ErrorHandler: t.TypeAlias = t.Callable[
     "t.Concatenate[exceptions.ExecutionPipelineFailedException, ...]", t.Awaitable[bool]
 ]
 ErrorHandlerT = t.TypeVar("ErrorHandlerT", bound=ErrorHandler)
-EventT = t.TypeVar("EventT", bound=type[hikari.Event])
+EventT = t.TypeVar("EventT", bound=hikari.Event)
 
 LOGGER = logging.getLogger("lightbulb.loaders")
 
@@ -94,7 +94,7 @@ class _CommandLoadable(Loadable):
 class _ListenerLoadable(Loadable):
     __slots__ = ("_callback", "_wrapped_callback", "_event_type")
 
-    def __init__(self, callback: t.Callable[[EventT], t.Awaitable[None]], event_type: EventT) -> None:
+    def __init__(self, callback: t.Callable[[EventT], t.Awaitable[None]], event_type: type[EventT]) -> None:
         self._callback = callback
         self._event_type = event_type
 
@@ -230,7 +230,7 @@ class Loader:
         return _inner
 
     def listener(
-        self, event_type: EventT
+        self, event_type: type[EventT]
     ) -> t.Callable[
         [t.Callable["t.Concatenate[EventT, ...]", t.Awaitable[None]]], t.Callable[[EventT], t.Awaitable[None]]
     ]:

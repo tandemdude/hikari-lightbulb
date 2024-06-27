@@ -246,7 +246,7 @@ class Loader:
         injection then adding this loader to the client will fail at runtime.
 
         Args:
-            event_type: The event class for the listener to listen to.
+            *event_types: The event class(es) for the listener to listen to.
 
         Example:
 

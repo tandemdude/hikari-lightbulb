@@ -8,6 +8,19 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a2 (2024-06-28)
+
+### Features
+
+- Add `PRE_INVOKE` execution step to default execution step order.
+- Add ability for `Loadable.listener`s to listen for multiple event types.
+
+### Bugfixes
+
+- Fix not being able to access option values when their name and description are localized.
+
+----
+
 ## v3.0.0a1 (2024-06-20)
 
 ### Features

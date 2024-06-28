@@ -75,7 +75,7 @@ class CommandData:
     default_member_permissions: hikari.UndefinedOr[hikari.Permissions]
     """The default permissions required to use the command in a guild. This field is ignored for subcommands."""
 
-    hooks: t.Set[execution.ExecutionHook]
+    hooks: t.Sequence[execution.ExecutionHook]
     """Hooks to run prior to the invoke method being executed."""
     options: t.Mapping[str, options_.OptionData[t.Any]]
     """Map of option name to option data for the command options."""
@@ -248,7 +248,13 @@ class CommandMeta(type):
         if raw_hooks is not None and not isinstance(raw_hooks, collections.abc.Iterable):
             raise TypeError("'hooks' must be an iterable")
 
-        hooks: t.Set[t.Any] = set(t.cast(t.Iterable[t.Any], raw_hooks) if raw_hooks is not None else [])
+        # Don't want to use a set for deduplicating because we want to preserve ordering
+        hooks: list[t.Any] = []
+        for hook in t.cast(t.Iterable[t.Any], raw_hooks):
+            if hook in hooks:
+                continue
+            hooks.append(hook)
+
         if hooks and not any((isinstance(h, execution.ExecutionHook) for h in hooks)):
             raise TypeError("all hooks must be an instance of ExecutionHook")
 

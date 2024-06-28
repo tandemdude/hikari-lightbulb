@@ -8,7 +8,7 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
-## v3.0.0a2 (2024-06-28)
+## v3.0.0a3 (2024-06-28)
 
 ### Features
 

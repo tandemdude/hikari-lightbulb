@@ -938,6 +938,9 @@ def client_from_app(
     Returns:
         :obj:`~Client`: The created client instance.
     """
+    if execution.ExecutionSteps.INVOKE not in execution_step_order:
+        raise ValueError("'execution_step_order' must include ExecutionSteps.INVOKE")
+
     if isinstance(app, GatewayClientAppT):
         LOGGER.debug("building gateway client from app")
         cls = GatewayEnabledClient

@@ -1,2 +1,2 @@
-(8-autocomplete)=
-# 8 - Autocomplete
+(autocomplete)=
+# Autocomplete

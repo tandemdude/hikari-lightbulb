@@ -1,2 +1,2 @@
-(9-localization)=
-# 9 - Localization
+(localization)=
+# Localization

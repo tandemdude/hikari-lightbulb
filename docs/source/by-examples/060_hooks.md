@@ -1,5 +1,5 @@
-(6-hooks)=
-# 6 - Hooks
+(hooks)=
+# Hooks
 
 Hooks are a way to perform extra logic before and after a command is invoked. This is done using the concept of
 an 'execution pipeline' that has several steps which are executed in order when the user calls a command

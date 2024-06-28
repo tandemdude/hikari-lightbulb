@@ -34,7 +34,6 @@ __all__ = [
     "attachment",
 ]
 
-import collections.abc
 import dataclasses
 import typing as t
 
@@ -54,6 +53,16 @@ if t.TYPE_CHECKING:
 T = t.TypeVar("T")
 D = t.TypeVar("D")
 CtxMenuOptionReturnT = t.Union[hikari.User, hikari.Message]
+
+
+@dataclasses.dataclass(slots=True, frozen=True)
+class Choice(t.Generic[T]):
+    name: str
+    """The name of the choice."""
+    value: T
+    """The value of the choice."""
+    localize: bool = False
+    """Whether the name of the choice should be interpreted as a localization key."""
 
 
 @dataclasses.dataclass(slots=True)
@@ -76,7 +85,7 @@ class OptionData(t.Generic[D]):
 
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED
     """The default value for the option."""
-    choices: hikari.UndefinedOr[t.Sequence[hikari.CommandChoice]] = hikari.UNDEFINED
+    choices: hikari.UndefinedOr[t.Sequence[Choice[t.Any]]] = hikari.UNDEFINED
     """The choices for the option."""
     channel_types: hikari.UndefinedOr[t.Sequence[hikari.ChannelType]] = hikari.UNDEFINED
     """The channel types for the option."""
@@ -139,6 +148,20 @@ class OptionData(t.Generic[D]):
         self._localized_name = name
         self._localized_description = description
 
+        choices: list[hikari.CommandChoice] = []
+        if self.choices is not hikari.UNDEFINED:
+            for choice in self.choices:
+                if not choice.localize:
+                    choices.append(hikari.CommandChoice(name=choice.name, value=choice.value))
+                    continue
+
+                c_name, c_localizations = await cmd_utils.localize_value(
+                    choice.name, default_locale, localization_provider
+                )
+                choices.append(
+                    hikari.CommandChoice(name=c_name, name_localizations=c_localizations, value=choice.value)  # type: ignore[reportArgumentType]
+                )
+
         return hikari.CommandOption(
             type=self.type,
             name=name,
@@ -146,7 +169,7 @@ class OptionData(t.Generic[D]):
             description=description,
             description_localizations=description_localizations,  # type: ignore[reportArgumentType]
             is_required=self.default is hikari.UNDEFINED,
-            choices=non_undefined_or(self.choices, None),
+            choices=non_undefined_or(choices or hikari.UNDEFINED, None),
             channel_types=non_undefined_or(self.channel_types, None),
             min_value=non_undefined_or(self.min_value, None),
             max_value=non_undefined_or(self.max_value, None),
@@ -248,30 +271,6 @@ class ContextMenuOption(Option[CtxMenuOptionReturnT, CtxMenuOptionReturnT]):
         return message
 
 
-# TODO - consider how to implement choice localisation
-def _normalise_choices(
-    choices: t.Sequence[hikari.CommandChoice]
-    | t.Mapping[str, str | int | float]
-    | t.Sequence[tuple[str, str | int | float]]
-    | t.Sequence[str | int | float],
-) -> t.Sequence[hikari.CommandChoice]:
-    if isinstance(choices, collections.abc.Mapping):
-        return [hikari.CommandChoice(name=k, value=v) for k, v in choices.items()]
-
-    def _to_command_choice(
-        item: hikari.CommandChoice | tuple[str, str | int | float] | str | int | float,
-    ) -> hikari.CommandChoice:
-        if isinstance(item, hikari.CommandChoice):
-            return item
-
-        if isinstance(item, (str, int, float)):
-            return hikari.CommandChoice(name=str(item), value=item)
-
-        return hikari.CommandChoice(name=item[0], value=item[1])
-
-    return list(map(_to_command_choice, choices))
-
-
 def string(
     name: str,
     description: str,
@@ -279,9 +278,7 @@ def string(
     *,
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
-    choices: hikari.UndefinedOr[
-        t.Sequence[hikari.CommandChoice] | t.Mapping[str, str] | t.Sequence[tuple[str, str]] | t.Sequence[str]
-    ] = hikari.UNDEFINED,
+    choices: hikari.UndefinedOr[t.Sequence[Choice[str]]] = hikari.UNDEFINED,
     min_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     max_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     autocomplete: hikari.UndefinedOr[AutocompleteProviderT] = hikari.UNDEFINED,
@@ -296,11 +293,7 @@ def string(
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
         default: The default value for the option.
-        choices: The choices for the option. Any of the
-            following can be interpreted as a choice: a sequence of :obj:`~hikari.commands.CommandChoice`, a mapping
-            of choice name to choice value, a sequence of 2-tuples where the first element is the name
-            and the second element is the value, or a sequence of :obj:`str` where the choice name and value will
-            be the same.
+        choices: The choices for the option.
         min_length: The minimum length for the option.
         max_length: The maximum length for the option.
         autocomplete: The autocomplete provider function to use for the option.
@@ -308,9 +301,6 @@ def string(
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
     """
-    if choices is not hikari.UNDEFINED:
-        choices = _normalise_choices(choices)
-
     return t.cast(
         str,
         Option(
@@ -338,9 +328,7 @@ def integer(
     *,
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
-    choices: hikari.UndefinedOr[
-        t.Sequence[hikari.CommandChoice] | t.Mapping[str, int] | t.Sequence[t.Tuple[str, int]] | t.Sequence[int]
-    ] = hikari.UNDEFINED,
+    choices: hikari.UndefinedOr[t.Sequence[Choice[int]]] = hikari.UNDEFINED,
     min_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     max_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     autocomplete: hikari.UndefinedOr[AutocompleteProviderT] = hikari.UNDEFINED,
@@ -355,11 +343,7 @@ def integer(
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
         default: The default value for the option.
-        choices: The choices for the option. Any of the
-            following can be interpreted as a choice: a sequence of :obj:`~hikari.commands.CommandChoice`, a mapping
-            of choice name to choice value, a sequence of 2-tuples where the first element is the name
-            and the second element is the value, or a sequence of :obj:`int` where the choice name and value will
-            be the same.
+        choices: The choices for the option.
         min_value: The minimum value for the option.
         max_value: The maximum value for the option.
         autocomplete: The autocomplete provider function to use for the option.
@@ -367,9 +351,6 @@ def integer(
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
     """
-    if choices is not hikari.UNDEFINED:
-        choices = _normalise_choices(choices)
-
     return t.cast(
         int,
         Option(
@@ -434,9 +415,7 @@ def number(
     *,
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
-    choices: hikari.UndefinedOr[
-        t.Sequence[hikari.CommandChoice] | t.Mapping[str, float] | t.Sequence[tuple[str, float]] | t.Sequence[float]
-    ] = hikari.UNDEFINED,
+    choices: hikari.UndefinedOr[t.Sequence[Choice[float]]] = hikari.UNDEFINED,
     min_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
     max_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
     autocomplete: hikari.UndefinedOr[AutocompleteProviderT] = hikari.UNDEFINED,
@@ -451,11 +430,7 @@ def number(
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
         default: The default value for the option.
-        choices: The choices for the option. Any of the
-            following can be interpreted as a choice: a sequence of :obj:`~hikari.commands.CommandChoice`, a mapping
-            of choice name to choice value, a sequence of 2-tuples where the first element is the name
-            and the second element is the value, or a sequence of :obj:`float` where the choice name and value will
-            be the same.
+        choices: The choices for the option.
         min_value: The minimum value for the option.
         max_value: The maximum value for the option.
         autocomplete: The autocomplete provider function to use for the option.
@@ -463,9 +438,6 @@ def number(
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
     """
-    if choices is not hikari.UNDEFINED:
-        choices = _normalise_choices(choices)
-
     return t.cast(
         float,
         Option(

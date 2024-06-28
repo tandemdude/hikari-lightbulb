@@ -34,6 +34,17 @@ if t.TYPE_CHECKING:
     from lightbulb import localization
 
 
+async def localize_value(
+    value: str, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
+) -> tuple[str, t.Mapping[hikari.Locale, str]]:
+    localizations: t.Mapping[hikari.Locale, str] = await utils.maybe_await(localization_provider(value))
+    localized_value = localizations.get(default_locale, None)
+    if localized_value is None:
+        raise exceptions.LocalizationFailedException(f"failed to resolve key {value!r} for default locale")
+
+    return localized_value, localizations
+
+
 async def localize_name_and_description(
     name: str,
     description: str | None,
@@ -54,20 +65,13 @@ async def localize_name_and_description(
     Returns:
         Tuple containing the resolved name, description and localizations for the name and description.
     """
-    name_localizations: t.Mapping[hikari.Locale, str] = await utils.maybe_await(localization_provider(name))
-    localized_name: str | None = name_localizations.get(default_locale, None)
-    if localized_name is None:
-        raise exceptions.LocalizationFailedException(f"failed to resolve key {name!r} for default locale")
+    localized_name, name_localizations = await localize_value(name, default_locale, localization_provider)
 
-    description_localizations: t.Mapping[hikari.Locale, str] = (
-        {} if description is None else (await utils.maybe_await(localization_provider(description)))
-    )
-    localized_description: str | None = (
-        "" if description is None else description_localizations.get(default_locale, None)
-    )
+    localized_description = ""
+    description_localizations: t.Mapping[hikari.Locale, str] = {}
+    if description is not None:
+        localized_description, description_localizations = await localize_value(
+            description, default_locale, localization_provider
+        )
 
-    if description is not None and localized_description is None:
-        raise exceptions.LocalizationFailedException(f"failed to resolve key {description!r} for default locale")
-
-    assert localized_description is not None
     return localized_name, localized_description, name_localizations, description_localizations

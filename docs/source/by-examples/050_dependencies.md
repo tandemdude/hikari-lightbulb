@@ -1,5 +1,5 @@
-(5-dependencies)=
-# 5 - Dependencies
+(dependencies)=
+# Dependencies
 
 Now that your bot is coming along nicely, you are likely thinking about adding some features that may require
 data storage (i.e. a database) - or maybe you are using an API you need a client for. In these cases,

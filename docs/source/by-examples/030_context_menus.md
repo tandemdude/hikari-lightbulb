@@ -1,5 +1,5 @@
-(3-context-menus)=
-# 3 - Context Menus
+(context-menus)=
+# Context Menus
 
 ~~ info about what a context menu command is ~~
 

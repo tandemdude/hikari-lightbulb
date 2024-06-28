@@ -174,6 +174,19 @@ class Loader:
             except Exception as e:
                 LOGGER.warning("error while unloading loadable %r", loadable, exc_info=(type(e), e, e.__traceback__))
 
+    def add(self, loadable: Loadable) -> Loadable:
+        """
+        Add the given loadable to this loader.
+
+        Args:
+            loadable: The loadable to add.
+
+        Returns:
+            The added loadable, unchanged.
+        """
+        self._loadables.append(loadable)
+        return loadable
+
     @t.overload
     def command(
         self, *, guilds: t.Sequence[hikari.Snowflakeish] | None = None
@@ -224,7 +237,7 @@ class Loader:
         """
         # Used as a function or first-order decorator
         if command is not None:
-            self._loadables.append(_CommandLoadable(command, guilds))
+            self.add(_CommandLoadable(command, guilds))
             return command
 
         # Used as a second-order decorator
@@ -265,7 +278,7 @@ class Loader:
             callback: t.Callable["t.Concatenate[EventT, ...]", t.Awaitable[None]],
         ) -> t.Callable[[EventT], t.Awaitable[None]]:
             wrapped = t.cast(t.Callable[[EventT], t.Awaitable[None]], di.with_di(callback))
-            self._loadables.append(_ListenerLoadable(wrapped, *event_types))
+            self.add(_ListenerLoadable(wrapped, *event_types))
             return wrapped
 
         return _inner
@@ -294,7 +307,7 @@ class Loader:
         """
         if func is not None:
             wrapped = di.with_di(func)
-            self._loadables.append(_ErrorHandlerLoadable(wrapped, priority))
+            self.add(_ErrorHandlerLoadable(wrapped, priority))
             return wrapped
 
         def _inner(func_: ErrorHandlerT) -> ErrorHandlerT:

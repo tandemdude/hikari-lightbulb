@@ -9,7 +9,7 @@
 :link: by-examples/000_preface
 :link-type: doc
 
-Introduction to Lightbulb - including project setup and first steps.
+Introduction to Lightbulb - project setup and first steps.
 :::
 
 :::{grid-item-card} {material-outlined}`keyboard_command_key;2em` Commands
@@ -54,6 +54,13 @@ What is dependency injection - accessing objects wherever you need them without 
 Modifying command behaviour and conditionally blocking execution.
 :::
 
+:::{grid-item-card} {material-outlined}`warning;2em` Error Handling
+:link: by-examples/065_error_handling
+:link-type: doc
+
+Catching errors and how to display them to the user.
+:::
+
 :::{grid-item-card} {material-outlined}`power;2em` Extensions
 :link: by-examples/070_extensions
 :link-type: doc
@@ -95,6 +102,7 @@ by-examples/030_context_menus
 by-examples/040_groups
 by-examples/050_dependencies
 by-examples/060_hooks
+by-examples/065_error_handling
 by-examples/070_extensions
 by-examples/080_autocomplete
 by-examples/090_localization

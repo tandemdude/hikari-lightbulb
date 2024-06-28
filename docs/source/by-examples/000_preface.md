@@ -1,5 +1,5 @@
-(0-preface)=
-# 0 - Preface
+(preface)=
+# Preface
 
 Whether you are a new developer using Lightbulb, or a returning developer experienced using V2 you are likely to
 encounter some quirks with the library or have some ideas that you aren't quite sure how to implement.

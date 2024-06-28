@@ -86,3 +86,5 @@ html_logo = "_static/logo.png"
 
 ogp_image = "_static/logo.png"
 ogp_site_name = "Hikari Lightbulb Documentation"
+
+add_module_names = False

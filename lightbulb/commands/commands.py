@@ -250,7 +250,7 @@ class CommandMeta(type):
 
         # Don't want to use a set for deduplicating because we want to preserve ordering
         hooks: list[t.Any] = []
-        for hook in t.cast(t.Iterable[t.Any], raw_hooks):
+        for hook in t.cast(t.Iterable[t.Any], raw_hooks or []):
             if hook in hooks:
                 continue
             hooks.append(hook)

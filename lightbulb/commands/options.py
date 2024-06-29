@@ -240,7 +240,7 @@ class ContextMenuOption(Option[CtxMenuOptionReturnT, CtxMenuOptionReturnT]):
                 name="target",
                 description="target",
             ),
-            utils.EMPTY_USER if type is hikari.User else utils.EMPTY_MESSAGE,
+            utils.EMPTY,
         )
 
     @t.overload
@@ -316,7 +316,7 @@ def string(
                 autocomplete=autocomplete is not hikari.UNDEFINED,
                 autocomplete_provider=autocomplete,
             ),
-            "",
+            utils.EMPTY,
         ),
     )
 
@@ -366,7 +366,7 @@ def integer(
                 autocomplete=autocomplete is not hikari.UNDEFINED,
                 autocomplete_provider=autocomplete,
             ),
-            0,
+            utils.EMPTY,
         ),
     )
 
@@ -403,7 +403,7 @@ def boolean(
                 localize=localize,
                 default=default,
             ),
-            False,
+            utils.EMPTY,
         ),
     )
 
@@ -453,7 +453,7 @@ def number(
                 autocomplete=autocomplete is not hikari.UNDEFINED,
                 autocomplete_provider=autocomplete,
             ),
-            0.0,
+            utils.EMPTY,
         ),
     )
 
@@ -490,7 +490,7 @@ def user(
                 localize=localize,
                 default=default,
             ),
-            utils.EMPTY_USER,
+            utils.EMPTY,
         ),
     )
 
@@ -530,7 +530,7 @@ def channel(
                 default=default,
                 channel_types=channel_types,
             ),
-            default_when_not_bound=utils.EMPTY_CHANNEL,
+            utils.EMPTY,
         ),
     )
 
@@ -567,7 +567,7 @@ def role(
                 localize=localize,
                 default=default,
             ),
-            utils.EMPTY_ROLE,
+            utils.EMPTY,
         ),
     )
 
@@ -604,7 +604,7 @@ def mentionable(
                 localize=localize,
                 default=default,
             ),
-            hikari.Snowflake(0),
+            utils.EMPTY,
         ),
     )
 
@@ -641,6 +641,6 @@ def attachment(
                 localize=localize,
                 default=default,
             ),
-            utils.EMPTY_ATTACHMENT,
+            utils.EMPTY,
         ),
     )

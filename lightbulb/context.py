@@ -37,24 +37,19 @@ if t.TYPE_CHECKING:
     from lightbulb import client as client_
     from lightbulb import commands
 
+T = t.TypeVar("T", int, str, float)
 AutocompleteResponse: t.TypeAlias = t.Union[
     t.Sequence[special_endpoints.AutocompleteChoiceBuilder],
-    t.Sequence[str],
-    t.Mapping[str, str],
-    t.Sequence[tuple[str, str]],
-    t.Sequence[int],
-    t.Mapping[str, int],
-    t.Sequence[tuple[str, int]],
-    t.Sequence[float],
-    t.Mapping[str, float],
-    t.Sequence[tuple[str, float]],
+    t.Sequence[T],
+    t.Mapping[str, T],
+    t.Sequence[tuple[str, T]],
 ]
 
 INITIAL_RESPONSE_IDENTIFIER: t.Final[int] = -1
 
 
 @dataclasses.dataclass(slots=True)
-class AutocompleteContext:
+class AutocompleteContext(t.Generic[T]):
     client: client_.Client
     """The client that created the context."""
 
@@ -100,19 +95,15 @@ class AutocompleteContext:
         return next(filter(lambda opt: opt.name == name, self.options), None)
 
     @staticmethod
-    def _normalise_choices(choices: AutocompleteResponse) -> t.Sequence[special_endpoints.AutocompleteChoiceBuilder]:
+    def _normalise_choices(choices: AutocompleteResponse[T]) -> t.Sequence[special_endpoints.AutocompleteChoiceBuilder]:
         if isinstance(choices, collections.abc.Mapping):
             return [hikari.impl.AutocompleteChoiceBuilder(name=k, value=v) for k, v in choices.items()]
 
         def _to_command_choice(
             item: t.Union[
                 special_endpoints.AutocompleteChoiceBuilder,
-                tuple[str, str],
-                tuple[str, int],
-                tuple[str, float],
-                str,
-                int,
-                float,
+                tuple[str, T],
+                T,
             ],
         ) -> special_endpoints.AutocompleteChoiceBuilder:
             if isinstance(item, special_endpoints.AutocompleteChoiceBuilder):
@@ -125,7 +116,7 @@ class AutocompleteContext:
 
         return list(map(_to_command_choice, choices))
 
-    async def respond(self, choices: AutocompleteResponse) -> None:
+    async def respond(self, choices: AutocompleteResponse[T]) -> None:
         """
         Create a response for the autocomplete interaction this context represents.
 
@@ -140,13 +131,13 @@ class AutocompleteContext:
 
 
 @dataclasses.dataclass(slots=True)
-class RestAutocompleteContext(AutocompleteContext):
+class RestAutocompleteContext(AutocompleteContext[T]):
     _initial_response_callback: t.Callable[
         [hikari.api.InteractionAutocompleteBuilder],
         None,
     ]
 
-    async def respond(self, choices: AutocompleteResponse) -> None:
+    async def respond(self, choices: AutocompleteResponse[T]) -> None:
         normalised_choices = self._normalise_choices(choices)
         self._initial_response_callback(special_endpoints_impl.InteractionAutocompleteBuilder(normalised_choices))
 

@@ -579,7 +579,7 @@ class Client:
         interaction: hikari.AutocompleteInteraction,
         options: t.Sequence[hikari.AutocompleteInteractionOption],
         command_cls: type[commands.CommandBase],
-    ) -> context_.AutocompleteContext:
+    ) -> context_.AutocompleteContext[t.Any]:
         """
         Build a context object from the given parameters.
 
@@ -594,7 +594,7 @@ class Client:
         return context_.AutocompleteContext(self, interaction, options, command_cls)
 
     async def _execute_autocomplete_context(
-        self, context: context_.AutocompleteContext, autocomplete_provider: options_.AutocompleteProviderT
+        self, context: context_.AutocompleteContext[t.Any], autocomplete_provider: options_.AutocompleteProvider[t.Any]
     ) -> None:
         with di_.ensure_di_context(self.di):
             try:
@@ -793,7 +793,7 @@ class RestEnabledClient(Client):
         options: t.Sequence[hikari.AutocompleteInteractionOption],
         command_cls: type[commands.CommandBase],
         response_callback: t.Callable[[hikari.api.InteractionResponseBuilder], None],
-    ) -> context_.AutocompleteContext:
+    ) -> context_.AutocompleteContext[t.Any]:
         return context_.RestAutocompleteContext(self, interaction, options, command_cls, response_callback)
 
     async def handle_rest_autocomplete_interaction(

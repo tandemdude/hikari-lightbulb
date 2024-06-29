@@ -95,3 +95,24 @@ await client.load_extensions_from_package(extensions)
 
 If the `recursive` flag is set to `True`, this method will also search through subpackages for extensions. This
 defaults to `False`.
+
+## Example Usage
+
+```python
+import hikari
+import lightbulb
+
+bot = hikari.GatewayBot(...)
+client = lightbulb.client_from_app(bot)
+
+
+@bot.listen(hikari.StartingEvent)
+async def on_starting(_: hikari.StartingEvent) -> None:
+    # Load any extensions
+    await client.load_extensions("extensions.foo", "extensions.bar", "extensions.baz")
+    # Start the bot - make sure commands are synced properly
+    await client.start()
+
+
+bot.run()
+```

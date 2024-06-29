@@ -48,7 +48,7 @@ if t.TYPE_CHECKING:
     from lightbulb import context
     from lightbulb import localization
 
-    AutocompleteProviderT = t.Callable[[context.AutocompleteContext], t.Awaitable[t.Any]]  # TODO
+    AutocompleteProvider = t.Callable[[context.AutocompleteContext[context.T]], t.Awaitable[t.Any]]
 
 T = t.TypeVar("T")
 D = t.TypeVar("D")
@@ -102,7 +102,7 @@ class OptionData(t.Generic[D]):
 
     autocomplete: bool = False
     """Whether autocomplete is enabled for the option."""
-    autocomplete_provider: hikari.UndefinedOr[AutocompleteProviderT] = hikari.UNDEFINED
+    autocomplete_provider: hikari.UndefinedOr[AutocompleteProvider[t.Any]] = hikari.UNDEFINED
     """The provider to use to resolve autocomplete interactions for this command."""
 
     _localized_name: str = dataclasses.field(init=False, default="")
@@ -281,7 +281,7 @@ def string(
     choices: hikari.UndefinedOr[t.Sequence[Choice[str]]] = hikari.UNDEFINED,
     min_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     max_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
-    autocomplete: hikari.UndefinedOr[AutocompleteProviderT] = hikari.UNDEFINED,
+    autocomplete: hikari.UndefinedOr[AutocompleteProvider[str]] = hikari.UNDEFINED,
 ) -> str | D:
     """
     A string option.
@@ -331,7 +331,7 @@ def integer(
     choices: hikari.UndefinedOr[t.Sequence[Choice[int]]] = hikari.UNDEFINED,
     min_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     max_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
-    autocomplete: hikari.UndefinedOr[AutocompleteProviderT] = hikari.UNDEFINED,
+    autocomplete: hikari.UndefinedOr[AutocompleteProvider[int]] = hikari.UNDEFINED,
 ) -> int | D:
     """
     An integer option.
@@ -418,7 +418,7 @@ def number(
     choices: hikari.UndefinedOr[t.Sequence[Choice[float]]] = hikari.UNDEFINED,
     min_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
     max_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
-    autocomplete: hikari.UndefinedOr[AutocompleteProviderT] = hikari.UNDEFINED,
+    autocomplete: hikari.UndefinedOr[AutocompleteProvider[float]] = hikari.UNDEFINED,
 ) -> float | D:
     """
     A numeric (float) option.

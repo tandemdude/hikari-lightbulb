@@ -22,10 +22,7 @@ from __future__ import annotations
 
 __all__ = ["EMPTY", "get_command_data"]
 
-import datetime
 import typing as t
-
-import hikari
 
 if t.TYPE_CHECKING:
     from lightbulb.commands import commands
@@ -37,12 +34,11 @@ EMPTY: t.Any = object()
 Example:
 
     .. code-block:: python
-    
+
         class YourCommand(lightbulb.SlashCommand, ...):
             option = lightbulb.string(...)
-            
             ...
-        
+
         # The following will be True
         YourCommand.option is lightbulb.utils.EMPTY
 """

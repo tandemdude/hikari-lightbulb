@@ -368,6 +368,7 @@ class Context:
         self,
         content: hikari.UndefinedOr[t.Any] = hikari.UNDEFINED,
         *,
+        ephemeral: bool = False,
         flags: int | hikari.MessageFlag | hikari.UndefinedType = hikari.UNDEFINED,
         tts: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
         attachment: hikari.UndefinedOr[hikari.Resourceish] = hikari.UNDEFINED,
@@ -385,6 +386,9 @@ class Context:
 
         Args:
             content: The message contents.
+            ephemeral: Whether the message should be ephemeral (only visible to the user that triggered the command).
+                This is just a convenience argument - passing `flags=hikari.MessageFlag.EPHEMERAL` will function
+                the same way.
             attachment: The message attachment.
             attachments: The message attachments.
             component: The builder object of the component to include in this message.
@@ -412,6 +416,9 @@ class Context:
             :meth:`~Context.delete_response`
             :meth:`~Context.fetch_response`
         """
+        if ephemeral:
+            flags = (flags or hikari.MessageFlag.NONE) | hikari.MessageFlag.EPHEMERAL
+
         async with self._response_lock:
             if not self._initial_response_sent:
                 await self._create_initial_response(

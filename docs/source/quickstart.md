@@ -9,8 +9,7 @@ pip install hikari-lightbulb
 :::
 
 :::{important}
-This library is dependent on Hikari and so naturally will only be available for Python
-versions that Hikari also supports.
+You must have Python 3.10 or higher in order to use hikari-lightbulb.
 :::
 
 ## Creating Your First Bot

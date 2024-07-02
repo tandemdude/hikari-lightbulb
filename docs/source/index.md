@@ -8,7 +8,7 @@ ogp_description_length: 148
 
 ![](https://img.shields.io/pypi/v/hikari-lightbulb.svg) ![](https://img.shields.io/pypi/pyversions/hikari-lightbulb) ![](https://img.shields.io/github/stars/tandemdude/hikari-lightbulb) ![](https://img.shields.io/github/forks/tandemdude/hikari-lightbulb)
 
-![](https://github.com/tandemdude/hikari-lightbulb/actions/workflows/ci.yml/badge.svg?branch=master&event=push) ![](https://img.shields.io/readthedocs/hikari-lightbulb) ![](https://img.shields.io/github/license/tandemdude/hikari-lightbulb) ![](https://img.shields.io/pypi/status/hikari-lightbulb)
+![](https://github.com/tandemdude/hikari-lightbulb/actions/workflows/ci.yml/badge.svg?branch=master&event=push) ![](https://img.shields.io/readthedocs/hikari-lightbulb) ![](https://img.shields.io/badge/License-MIT-green) ![](https://img.shields.io/pypi/status/hikari-lightbulb)
 
 ---
 

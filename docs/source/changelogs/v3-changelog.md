@@ -8,6 +8,15 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a4 (2024-07-02)
+
+### Features
+
+- Add `ephemeral` convenience argument to `Context.respond`.
+- Add ability to localize choice names.
+
+----
+
 ## v3.0.0a3 (2024-06-28)
 
 ### Features

@@ -469,7 +469,7 @@ class Client:
             :meth:`~Client.load_extensions`
         """
         if not (package.__file__ or "").endswith("__init__.py"):
-            raise TypeError("the given module does not appear to be a package")
+            raise TypeError(f"the given module does not appear to be a package: {package.__name__}")
 
         assert package.__file__ is not None
         package_path = pathlib.Path(package.__file__).parent
@@ -481,8 +481,11 @@ class Client:
                 if not recursive:
                     continue
 
-                # TODO - recursive extension loading
-                continue
+                if not (item / "__init__.py").exists():
+                    continue
+
+                next_package = importlib.import_module(package_import_path + "." + item.name)
+                await self.load_extensions_from_package(next_package, recursive=recursive)
 
             if item.name.startswith("_") or not item.name.endswith(".py"):
                 continue

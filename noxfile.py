@@ -35,7 +35,7 @@ options.sessions = ["format_fix", "typecheck", "slotscheck"]
 
 
 @nox.session()
-def format_fix(session):
+def format_fix(session: nox.Session) -> None:
     session.install(".[localization,dev.format]")
     session.run("python", "-m", "ruff", "format", *SCRIPT_PATHS)
     session.run("python", "-m", "ruff", "check", "--fix", *SCRIPT_PATHS)

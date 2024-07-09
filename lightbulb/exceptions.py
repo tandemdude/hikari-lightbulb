@@ -25,7 +25,6 @@ __all__ = [
     "LocalizationFailedException",
     "ExecutionException",
     "HookFailedException",
-    "InvocationFailedException",
     "ExecutionPipelineFailedException",
 ]
 
@@ -61,29 +60,35 @@ class HookFailedException(ExecutionException):
         """The hook that triggered the failure."""
 
 
-class InvocationFailedException(ExecutionException):
-    """Exception raised when a command invocation function raised an error during execution."""
-
-    def __init__(self, cause: Exception) -> None:
-        super().__init__("exception encountered during command invocation")
-
-        self.__cause__ = cause
-
-
 class ExecutionPipelineFailedException(ExecutionException):
+    """
+    Exception raised when the execution of any step during command invocation failed. This is the
+    exception type passed to all error handlers.
+
+    If during execution, only a single exception was raised, the ``__cause__`` attribute will be
+    set to that exception.
+    """
+
     def __init__(
         self,
-        causes: t.Sequence[HookFailedException | InvocationFailedException],
+        hook_failures: t.Sequence[HookFailedException],
+        invocation_failure: Exception | None,
         pipeline: execution.ExecutionPipeline,
         context: context_.Context,
     ) -> None:
-        self.causes = causes
+        super().__init__(f"execution of command {context.command_data.qualified_name!r} failed")
+
+        self.hook_failures = hook_failures
+        """The exceptions caused by hook failures during command execution."""
+        self.invocation_failure = invocation_failure
+        """
+        The exception caused by the invocation method failing during command execution. Will be :obj:`None` if
+        the invocation method did not fail or was not executed.
+        """
         self.pipeline = pipeline
+        """The pipeline that failed."""
         self.context = context
+        """The context that caused the pipeline to fail."""
 
-        if len(causes) == 1:
+        if len(causes := [*hook_failures, invocation_failure]) == 1:
             self.__cause__ = causes[0]
-
-    @property
-    def invocation_method_succeeded(self) -> bool:
-        return all(not isinstance(cause, InvocationFailedException) for cause in self.causes)

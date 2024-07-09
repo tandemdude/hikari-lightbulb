@@ -160,7 +160,7 @@ class ExecutionPipeline:
         self._current_hook: ExecutionHook | None = None
 
         self._hook_failures: list[exceptions.HookFailedException] = []
-        self._invocation_failure: exceptions.InvocationFailedException | None = None
+        self._invocation_failure: Exception | None = None
 
     @property
     def failed(self) -> bool:
@@ -232,7 +232,7 @@ class ExecutionPipeline:
                     await getattr(self._context.command, self._context.command_data.invoke_method)(self._context)
                     self._current_step = self._next_step()
                 except Exception as e:
-                    self._invocation_failure = exceptions.InvocationFailedException(e)
+                    self._invocation_failure = e
 
                 continue
 
@@ -252,7 +252,8 @@ class ExecutionPipeline:
 
         if self.failed:
             raise exceptions.ExecutionPipelineFailedException(
-                [exc for exc in [*self._hook_failures, self._invocation_failure] if exc is not None],
+                self._hook_failures,
+                self._invocation_failure,
                 self,
                 self._context,
             )

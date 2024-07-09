@@ -38,6 +38,7 @@ __all__ = [
     "invoke",
     "SubGroup",
     "Group",
+    "Choice",
     "OptionData",
     "Option",
     "string",

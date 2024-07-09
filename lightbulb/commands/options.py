@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 __all__ = [
+    "Choice",
     "OptionData",
     "Option",
     "string",

@@ -22,7 +22,6 @@ import importlib
 import inspect
 import os
 import pathlib
-import types
 import typing as t
 
 API_REFERENCES_DIRECTORY = "docs", "source", "api-references"
@@ -143,12 +142,14 @@ class Package:
 
             if self.is_root:
                 # Include a list of exported members from the root package
+                # fmt: off
                 lines.extend([
                     ".. tip::",
                     f"    The following members are exported to the top level of the library and so can be accessed "
                     f"    using ``{package_name}.<member>`` instead of requiring you to use the full import path.",
                     "",
                 ])
+                # fmt: on
 
                 root_module = importlib.import_module(package_name)
 
@@ -160,7 +161,9 @@ class Package:
                     elif inspect.isclass(item):
                         root_members.append(f"- :class:`~{item.__module__}.{member}`")
                     elif inspect.isfunction(item):
-                        root_members.append(f"- :{'meth' if inspect.ismethod(item) else 'func'}:`~{item.__module__}.{member}`")
+                        root_members.append(
+                            f"- :{'meth' if inspect.ismethod(item) else 'func'}:`~{item.__module__}.{member}`"
+                        )
                     else:
                         root_members.append(f"- :obj:`~lightbulb.{member}`")
 

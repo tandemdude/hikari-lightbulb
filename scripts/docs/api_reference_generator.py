@@ -18,8 +18,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import importlib
+import inspect
 import os
 import pathlib
+import types
 import typing as t
 
 API_REFERENCES_DIRECTORY = "docs", "source", "api-references"
@@ -68,16 +71,16 @@ class Package:
         self,
         path: pathlib.Path,
         header_override: t.Optional[str] = None,
-        before_header: t.Optional[str] = None,
         child_prefix: t.Optional[str] = None,
+        is_root: bool = False,
     ) -> None:
         self.path = path
         self.header_override = header_override
-        self.before_header = before_header
         self.child_prefix = [child_prefix] if child_prefix else []
+        self.is_root = is_root
 
-        self.packages = []
-        self.modules = []
+        self.packages: list[Package] = []
+        self.modules: list[Module] = []
 
     def find_children(self) -> None:
         for item in self.path.iterdir():
@@ -91,8 +94,8 @@ class Package:
             self.modules.append(Module(item))
 
     def write(self) -> bool:
-        written_packages = []
-        written_modules = []
+        written_packages: list[Package] = []
+        written_modules: list[Module] = []
 
         self.find_children()
         for package in self.packages:
@@ -125,12 +128,9 @@ class Package:
             ]
 
             lines = [
-                self.before_header or "",
                 "=" * len(header_text),
                 header_text,
                 "=" * len(header_text),
-                "",
-                ".. automodule:: " + package_name,
                 "",
             ]
 
@@ -141,6 +141,37 @@ class Package:
             if module_lines:
                 lines.extend(["**Submodules:**", "", ".. toctree::", "    :maxdepth: 1", "", *sorted(module_lines), ""])
 
+            if self.is_root:
+                # Include a list of exported members from the root package
+                lines.extend([
+                    ".. tip::",
+                    f"    The following members are exported to the top level of the library and so can be accessed "
+                    f"    using ``{package_name}.<member>`` instead of requiring you to use the full import path.",
+                    "",
+                ])
+
+                root_module = importlib.import_module(package_name)
+
+                root_members: list[str] = []
+                for member in sorted(root_module.__all__):
+                    item = getattr(root_module, member)
+                    if inspect.ismodule(item):
+                        root_members.append(f"- :ref:`{member} <{item.__name__}>`")
+                    elif inspect.isclass(item):
+                        root_members.append(f"- :class:`~{item.__module__}.{member}`")
+                    elif inspect.isfunction(item):
+                        root_members.append(f"- :{'meth' if inspect.ismethod(item) else 'func'}:`~{item.__module__}.{member}`")
+                    else:
+                        root_members.append(f"- :obj:`~lightbulb.{member}`")
+
+                n_exported_table_columns = 3
+                lines.extend(["    .. list-table::", ""])
+                for i, elem in enumerate(root_members):
+                    lines.append(f"        {' ' if i % n_exported_table_columns else '*'} {elem}")
+                if n_last_row := (len(root_members) % n_exported_table_columns):
+                    lines.extend(["          -" for _ in range(n_exported_table_columns - n_last_row)])
+                lines.append("")
+
             fp.write("\n".join(lines).strip())
 
         return True
@@ -150,8 +181,8 @@ def run() -> None:
     Package(
         pathlib.Path("lightbulb"),
         header_override="API Reference",
-        before_header=".. _api-reference:\n",
         child_prefix=API_REFERENCES_DIRECTORY[-1],
+        is_root=True,
     ).write()
     os.rename(
         os.path.join(*API_REFERENCES_DIRECTORY, "lightbulb.rst"),

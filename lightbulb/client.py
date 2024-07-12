@@ -542,9 +542,9 @@ class Client:
 
         subcommand: hikari.CommandInteractionOption | hikari.AutocompleteInteractionOption | None
         options = interaction.options or []  # TODO - check if this is hikari bug with interaction server
-        while (subcommand := self._get_subcommand(options or [])) is not None:
+        while (subcommand := self._get_subcommand(options)) is not None:
             command_path.append(subcommand.name)
-            options = subcommand.options
+            options = subcommand.options or []
 
         global_commands = self._commands.get(constants.GLOBAL_COMMAND_KEY, {}).get(interaction.command_name)
         guild_commands = self._commands.get(interaction.registered_guild_id or constants.GLOBAL_COMMAND_KEY, {}).get(

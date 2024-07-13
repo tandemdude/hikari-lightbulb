@@ -8,6 +8,18 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a5 (2024-07-13)
+
+### Features
+
+- Refactor `ExecutionPipelineFailedException` to make writing error handlers more intuitive.
+
+### Bugfixes
+
+- Fix incorrect assertion error happening sometimes when a subcommand is invoked.
+
+----
+
 ## v3.0.0a4 (2024-07-02)
 
 ### Features

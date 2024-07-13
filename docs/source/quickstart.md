@@ -24,8 +24,8 @@ import lightbulb
 bot = hikari.GatewayBot("your_token_here")
 client = lightbulb.client_from_app(bot)
 
-# Ensure the client will be started when the bot is ready
-bot.subscribe(hikari.StartedEvent, client.start)
+# Ensure the client will be started when the bot is run
+bot.subscribe(hikari.StartingEvent, client.start)
 
 # Register the command with the client
 @client.register()

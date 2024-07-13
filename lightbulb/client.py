@@ -574,7 +574,6 @@ class Client:
         else:
             command = root_command
 
-        assert options is not None
         return options, command
 
     def build_autocomplete_context(

@@ -30,6 +30,8 @@ import lightbulb
 # Create a GatewayBot instance
 bot = hikari.GatewayBot("your_token_here")
 client = lightbulb.client_from_app(bot)
+# Ensure the client starts once the bot is run
+bot.subscribe(hikari.StartingEvent, client.start)
 
 # Register the command with the client
 @client.register()

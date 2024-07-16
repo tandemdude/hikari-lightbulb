@@ -1,4 +1,3 @@
-(preface)=
 # Preface
 
 Whether you are a new developer using Lightbulb, or a returning developer experienced using V2 you are likely to

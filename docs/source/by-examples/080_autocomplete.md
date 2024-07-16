@@ -1,4 +1,3 @@
-(autocomplete)=
 # Autocomplete
 
 Autocomplete is a Discord feature that allows your bot to suggest values for an option dynamically based on the content

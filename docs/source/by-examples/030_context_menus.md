@@ -1,4 +1,3 @@
-(context-menus)=
 # Context Menus
 
 Context menu commands appear when right-clicking on either a message or user within Discord. This allows you to invoke

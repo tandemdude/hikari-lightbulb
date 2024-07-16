@@ -1,4 +1,3 @@
-(groups)=
 # Groups
 
 Command groups allow you to organize multiple commands into a single tree-like structure. You can have up to

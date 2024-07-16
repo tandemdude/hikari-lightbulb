@@ -41,7 +41,8 @@ You can install the plugin from the Jetbrains Marketplace within your IDE. View 
 :::{dropdown} Helpful Resources
 :icon: question
 - [Hikari Documentation](https://docs.hikari-py.dev/en/latest/)
-- {ref}`by-example`
+- {doc}`Quickstart <quickstart>`
+- {doc}`Lightbulb By Example <by-example>`
 :::
 
 :::{dropdown} Maintainers

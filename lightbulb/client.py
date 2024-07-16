@@ -28,6 +28,7 @@ import functools
 import importlib
 import logging
 import pathlib
+import sys
 import typing as t
 
 import hikari
@@ -117,6 +118,7 @@ class Client:
         "_commands",
         "_error_handlers",
         "_application",
+        "_extensions",
         "_started",
     )
 
@@ -151,6 +153,7 @@ class Client:
         self._commands: CommandMap = collections.defaultdict(lambda: collections.defaultdict(utils.CommandCollection))
         self._error_handlers: dict[int, list[ErrorHandler]] = {}
         self._application: t.Optional[hikari.PartialApplication] = None
+        self._extensions: set[str] = set()
 
         self.di.register_dependency(hikari.api.RESTClient, lambda: self.rest, enter=False)
         self.di.register_dependency(Client, lambda: self)
@@ -171,31 +174,6 @@ class Client:
         """
         if self._started:
             raise RuntimeError("cannot start already-started client")
-
-        if self._localized_commands and self.localization_provider is localization.localization_unsupported:
-            raise RuntimeError("some commands are marked as localized but no localization provider is available")
-
-        for guilds, command in self._localized_commands:
-            builder = await command.as_command_builder(self.default_locale, self.localization_provider)
-
-            for guild in guilds:
-                self._commands[guild][builder.name].put(command)
-
-        if self._deferred_commands and self.deferred_registration_callback is None:
-            raise RuntimeError("some commands have deferred registration but no callback is available")
-
-        for command in self._deferred_commands:
-            name = command.name if isinstance(command, groups.Group) else command._command_data.name
-
-            assert self.deferred_registration_callback is not None
-            guilds = await utils.maybe_await(self.deferred_registration_callback(command))
-
-            if isinstance(guilds, int):
-                self._commands[guilds][name].put(command)
-                continue
-
-            for guild in guilds:
-                self._commands[guild][name].put(command)
 
         await self.sync_application_commands()
         self._started = True
@@ -356,7 +334,7 @@ class Client:
             The registered command or group, unchanged.
 
         Raises:
-            :obj:`ValueError`: If no `deferred_registration_callback` was set upon client creation.
+            :obj:`ValueError`: If no ``deferred_registration_callback`` was set upon client creation.
         """
         if self.deferred_registration_callback is None:
             raise ValueError("cannot defer registration if no deferred registration callback was provided")
@@ -399,10 +377,14 @@ class Client:
             :meth:`~Client.load_extensions_from_package`
         """
         for path in import_paths:
+            if path in self._extensions:
+                LOGGER.warning("extension %r is already loaded - skipping", path)
+                continue
+
             try:
                 extension = importlib.import_module(path)
             except ImportError as e:
-                LOGGER.error("could not import extension %r - skipping", path, exc_info=(type(e), e, e.__traceback__))
+                LOGGER.error("error importing extension %r - skipping", path, exc_info=(type(e), e, e.__traceback__))
                 continue
 
             loaded: list[loaders.Loader] = []
@@ -410,15 +392,13 @@ class Client:
             maybe_loader: loaders.Loader | None = None
             try:
                 for name in dir(extension):
-                    if isinstance(item := getattr(extension, name, None), loaders.Loader):
+                    if isinstance(item := getattr(extension, name, None), loaders.Loader) and item not in loaded:
                         maybe_loader = item
                         await maybe_loader.add_to_client(self)
 
                         loaded.append(maybe_loader)
             except Exception as e:
-                LOGGER.error(
-                    "error while loading extension %r - skipping", path, exc_info=(type(e), e, e.__traceback__)
-                )
+                LOGGER.error("error loading extension %r - skipping", path, exc_info=(type(e), e, e.__traceback__))
 
                 if maybe_loader is not None and maybe_loader not in loaded:
                     loaded.append(maybe_loader)
@@ -426,8 +406,13 @@ class Client:
                 for loader in loaded:
                     await loader.remove_from_client(self)
 
+                # Remove the errored extension from sys.modules so that when it is fixed,
+                # the extension will be able to be loaded as normal.
+                del sys.modules[path]
+
                 continue
 
+            self._extensions.add(path)
             LOGGER.info("extension %r loaded successfully", path)
 
     async def load_extensions_from_package(self, package: types.ModuleType, *, recursive: bool = False) -> None:
@@ -494,6 +479,85 @@ class Client:
 
         await self.load_extensions(*extensions)
 
+    async def unload_extensions(self, *import_paths: str) -> None:
+        """
+        Unload extensions from the given import paths. If unloading of a single extension fails an error will be
+        raised and no further extensions will be unloaded. Attempting to unload an extensions that is not loaded will
+        log a warning and continue with the remaining extensions.
+
+        Args:
+            *import_paths: The import paths for the extensions to be unloaded.
+
+        Returns:
+            :obj:`None`
+
+        Raises:
+            When an exception is thrown during removing loaders from the client for the extension being unloaded.
+        """
+        for path in import_paths:
+            extension = sys.modules.get(path)
+            if extension is None or path not in self._extensions:
+                LOGGER.warning("extension %r is not loaded - skipping", path)
+                continue
+
+            to_unload: list[loaders.Loader] = []
+            for name in dir(extension):
+                if isinstance(item := getattr(extension, name, None), loaders.Loader) and item not in to_unload:
+                    to_unload.append(item)
+
+            for loaded in to_unload:
+                await loaded.remove_from_client(self)
+
+            del sys.modules[path]
+            self._extensions.remove(path)
+            LOGGER.info("extension %r unloaded successfully", path)
+
+    async def reload_extensions(self, *import_paths: str) -> None:
+        """
+        Reload extensions from the given import paths. This operation is **atomic**. If reloading of an extension
+        fails, the client's state for that extension will be restored to the previous known-working state. If
+        a path is passed for an extension that is **not** loaded, it will be loaded and continue processing
+        the remaining extensions.
+
+        Args:
+            *import_paths: The import paths for the extensions to be reloaded.
+
+        Returns:
+            :obj:`None`
+        """
+        for path in import_paths:
+            if path not in self._extensions:
+                LOGGER.debug("extension %r is not loaded - loading", path)
+                await self.load_extensions(path)
+                continue
+
+            prev_extension = sys.modules[path]
+            try:
+                await self.unload_extensions(path)
+            except Exception as e:
+                LOGGER.error("error unloading extension %r - reverting", path, exc_info=(type(e), e, e.__traceback__))
+                # Make load use the cached extension that we know works. We need to remove the extension
+                # from the extensions set so that load doesn't just skip it
+                self._extensions.remove(path)
+                sys.modules[path] = prev_extension
+                await self.load_extensions(path)
+                continue
+
+            # Try to load, method doesn't raise an error if the extension couldn't be loaded,
+            # so we need to check if the extension was added to the client's list of extensions.
+            # If it wasn't - it means the extension load was unsuccessful.
+            await self.load_extensions(path)
+            if path not in self._extensions:
+                LOGGER.error("error loading extension %r - reverting", path)
+                # Revert to previous state
+                sys.modules[path] = prev_extension
+                # This time the method is called, it will use the cached version of the extension
+                # that worked previously - load_extensions will have cleaned itself up if the previous load failed.
+                await self.load_extensions(path)
+                continue
+
+            LOGGER.info("extension %r reloaded successfully", path)
+
     async def _ensure_application(self) -> hikari.PartialApplication:
         if self._application is not None:
             return self._application
@@ -503,11 +567,33 @@ class Client:
 
     async def sync_application_commands(self) -> None:
         """
-        Sync all application commands registered to the bot with discord.
+        Sync all application commands registered to the bot with discord. Also, properly registers any commands
+        with localization enabled for the command name as well as any commands using deferred registration.
 
         Returns:
             :obj:`None`
         """
+        if self._localized_commands and self.localization_provider is localization.localization_unsupported:
+            raise RuntimeError("some commands are marked as localized but no localization provider is available")
+
+        for guilds, command in self._localized_commands:
+            builder = await command.as_command_builder(self.default_locale, self.localization_provider)
+
+            for guild in guilds:
+                self._commands[guild][builder.name].put(command)
+
+        if self._deferred_commands and self.deferred_registration_callback is None:
+            raise RuntimeError("some commands have deferred registration but no callback is available")
+
+        for command in self._deferred_commands:
+            builder = await command.as_command_builder(self.default_locale, self.localization_provider)
+
+            assert self.deferred_registration_callback is not None
+            guilds = await utils.maybe_await(self.deferred_registration_callback(command))
+
+            for guild in [guilds] if isinstance(guilds, int) else guilds:
+                self._commands[guild][builder.name].put(command)
+
         await sync.sync_application_commands(self)
 
     @staticmethod

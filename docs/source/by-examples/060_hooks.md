@@ -1,4 +1,3 @@
-(hooks)=
 # Hooks
 
 Hooks are a way to perform extra logic before and after a command is invoked. This is done using the concept of

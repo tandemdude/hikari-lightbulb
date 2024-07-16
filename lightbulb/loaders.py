@@ -64,7 +64,7 @@ class Loadable(abc.ABC):
         Returns:
             :obj:`None`
 
-        Warning
+        Warning:
             This method **must** be idempotent. I.e. if the item being loaded is already loaded, the
             method **must not** attempt to load the item a second time.
         """

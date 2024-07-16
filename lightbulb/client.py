@@ -412,6 +412,10 @@ class Client:
 
                 continue
 
+            if not loaded:
+                LOGGER.warning("found no loaders in extension %r - skipping", path)
+                continue
+
             self._extensions.add(path)
             LOGGER.info("extension %r loaded successfully", path)
 

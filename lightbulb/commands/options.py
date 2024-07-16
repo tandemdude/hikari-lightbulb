@@ -110,9 +110,9 @@ class OptionData(t.Generic[D]):
     _localized_description: str = dataclasses.field(init=False, default="")
 
     def __post_init__(self) -> None:
-        if len(self.name) < 1 or len(self.name) > 32:
+        if not self.localize and (len(self.name) < 1 or len(self.name) > 32):
             raise ValueError("'name' - must be 1-32 characters")
-        if len(self.description) < 1 or len(self.description) > 100:
+        if not self.localize and (len(self.description) < 1 or len(self.description) > 100):
             raise ValueError("'description' - must be 1-100 characters")
 
         if self.choices is not hikari.UNDEFINED:
@@ -120,7 +120,7 @@ class OptionData(t.Generic[D]):
                 raise ValueError("'choices' - cannot have more than 25 choices")
 
             for i, choice in enumerate(self.choices):
-                if len(choice.name) < 1 or len(choice.name) > 100:
+                if not choice.localize and (len(choice.name) < 1 or len(choice.name) > 100):
                     raise ValueError(f"'choices[{i}]' - name must be 1-100 characters")
                 if isinstance(choice.value, str) and len(choice.value) > 100:
                     raise ValueError(f"'choices[{i}]' - value must be <= 100 characters")

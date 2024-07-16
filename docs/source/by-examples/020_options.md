@@ -1,4 +1,3 @@
-(options)=
 # Options
 
 Now that you've managed to make a basic command and have your bot respond to the users, it would probably be useful to

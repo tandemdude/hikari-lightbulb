@@ -1,4 +1,3 @@
-(error-handling)=
 # Error Handling
 
 Errors are a thing you will undoubtedly encounter during your bot development journey - this is unavoidable. 

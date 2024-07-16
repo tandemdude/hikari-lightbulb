@@ -1,4 +1,3 @@
-(by-example)=
 # Lightbulb By Example
 
 ::::{grid} 1 2 2 2

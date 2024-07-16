@@ -1,4 +1,3 @@
-(dependencies)=
 # Dependencies
 
 Now that your bot is coming along nicely, you are likely thinking about adding some features that may require

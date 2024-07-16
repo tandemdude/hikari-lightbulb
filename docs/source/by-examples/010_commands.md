@@ -1,4 +1,3 @@
-(commands)=
 # Commands
 
 While 'Commands' in Lightbulb refer to Discord's [application commands](https://discord.com/developers/docs/interactions/overview#commands), in this section we will mainly be going over _slash_ commands. Context menu commands - user and message - will be explained later.

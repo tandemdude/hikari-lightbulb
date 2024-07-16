@@ -63,8 +63,13 @@ class Loadable(abc.ABC):
 
         Returns:
             :obj:`None`
+
+        Warning
+            This method **must** be idempotent. I.e. if the item being loaded is already loaded, the
+            method **must not** attempt to load the item a second time.
         """
 
+    @abc.abstractmethod
     async def unload(self, client: client_.Client) -> None:
         """
         Remove the feature from the client instance.
@@ -74,10 +79,15 @@ class Loadable(abc.ABC):
 
         Returns:
             :obj:`None`
+
+        Warning:
+            This method **must** be idempotent. I.e. if the item being unloaded is already unloaded, the
+            method **must not** attempt to unload the item a second time.
         """
 
 
 class _CommandLoadable(Loadable):
+    # TODO - check this is correctly idempotent
     __slots__ = ("_command", "_guilds")
 
     def __init__(self, command: CommandOrGroup, guilds: t.Sequence[hikari.Snowflakeish] | None) -> None:
@@ -113,12 +123,16 @@ class _ListenerLoadable(Loadable):
         self._wrapped_callback = _wrapped if di.DI_ENABLED else None
 
         for event in self._event_types:
+            if (self._wrapped_callback or self._callback) in event_manager.get_listeners(event):
+                continue
             event_manager.subscribe(event, self._wrapped_callback or self._callback)  # type: ignore[reportArgumentType]
 
     async def unload(self, client: client_.Client) -> None:
         event_manager = await client.di.get_dependency(hikari.api.EventManager)
 
         for event in self._event_types:
+            if (self._wrapped_callback or self._callback) not in event_manager.get_listeners(event):
+                continue
             event_manager.unsubscribe(event, self._wrapped_callback or self._callback)  # type: ignore[reportArgumentType]
 
 
@@ -130,9 +144,13 @@ class _ErrorHandlerLoadable(Loadable):
         self._priority = priority
 
     async def load(self, client: client_.Client) -> None:
+        if self._callback in client._error_handlers[self._priority]:
+            return
         client.error_handler(self._callback, priority=self._priority)
 
     async def unload(self, client: client_.Client) -> None:
+        if self._callback not in client._error_handlers[self._priority]:
+            return
         client.remove_error_handler(self._callback)
 
 

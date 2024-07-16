@@ -42,7 +42,6 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
-    "sphinx.ext.autosectionlabel",
     "sphinx_copybutton",
     "sphinx_inline_tabs",
     "sphinx_design",
@@ -85,3 +84,7 @@ ogp_image = "_static/logo.png"
 ogp_site_name = "Hikari Lightbulb Documentation"
 
 add_module_names = False
+modindex_common_prefix = ["lightbulb."]
+python_use_unqualified_type_names = True
+python_display_short_literal_types = True
+# python_maximum_signature_line_length = 1

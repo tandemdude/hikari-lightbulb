@@ -1,4 +1,3 @@
-(localization)=
 # Localization
 
 Application commands can be localized, which will cause them to use localized names and descriptions depending on 

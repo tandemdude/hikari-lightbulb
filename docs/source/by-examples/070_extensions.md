@@ -1,4 +1,3 @@
-(extensions)=
 # Extensions
 
 Extensions are used to assist in splitting up your project into multiple files. A Python file is considered

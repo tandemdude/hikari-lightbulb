@@ -358,7 +358,7 @@ class Client:
             for collection in mapping.values():
                 collection.remove(command)
 
-        self._deferred_commands.remove(command)
+        self._deferred_commands = [cmd for cmd in self._deferred_commands if cmd is not command]
         localized_commands = [item for item in self._localized_commands if item[1] is not command]
         self._localized_commands = localized_commands
 

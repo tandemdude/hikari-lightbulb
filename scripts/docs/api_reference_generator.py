@@ -131,6 +131,8 @@ class Package:
                 header_text,
                 "=" * len(header_text),
                 "",
+                ".. automodule:: " + package_name,
+                "",
             ]
 
             if package_lines:

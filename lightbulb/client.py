@@ -631,7 +631,7 @@ class Client:
         command_path = [interaction.command_name]
 
         subcommand: hikari.CommandInteractionOption | hikari.AutocompleteInteractionOption | None
-        options = interaction.options or []  # TODO - check if this is hikari bug with interaction server
+        options = interaction.options or []
         while (subcommand := self._get_subcommand(options)) is not None:
             command_path.append(subcommand.name)
             options = subcommand.options or []

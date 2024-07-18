@@ -79,4 +79,4 @@ __all__ = [
 ]
 
 # Do not change the below field manually. It is updated by CI upon release.
-__version__ = "3.0.0a5"
+__version__ = "3.0.0a6"

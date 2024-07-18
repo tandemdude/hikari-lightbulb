@@ -8,6 +8,24 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a6 (2024-07-18)
+
+### Features
+
+- Add support for unloading and atomic reloading of extensions.
+- Implement repeating tasks - including uniform and cron-based triggers and support within extensions.
+
+### Bugfixes
+
+- Fix limit for message ID length for options name and description when using `GnuLocalizationProvider`. ([#427](https://github.com/tandemdude/hikari-lightbulb/issues/427))
+- Fix localization not being supported correctly for commands using deferred guild registration.
+
+### Deprecations and Removals
+
+- The `unload()` method is now required to be implemented for `Loader`s.
+
+----
+
 ## v3.0.0a5 (2024-07-13)
 
 ### Features

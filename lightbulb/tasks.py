@@ -122,10 +122,12 @@ def crontrigger(tab: str) -> t.Callable[[TaskExecutionData], float]:
 
     Example:
 
-        # Crontab '* * * * *' means 'run at every minute'
-        @client.task(lightbulb.crontrigger("* * * * *"))
-        async def print_hi() -> None:
-            print("HI")
+        .. code-block:: python
+
+            # Crontab '* * * * *' means 'run at every minute'
+            @client.task(lightbulb.crontrigger("* * * * *"))
+            async def print_hi() -> None:
+                print("HI")
     """
     try:
         import croniter

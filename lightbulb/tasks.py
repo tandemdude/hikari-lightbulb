@@ -50,8 +50,17 @@ class TaskExecutionData:
     last_invoked_at: datetime.datetime | None
 
 
-def uniformtrigger(seconds: int = 0, minutes: int = 0, hours: int = 0) -> t.Callable[[TaskExecutionData], float]:
-    def _trigger(_: TaskExecutionData) -> float:
+def uniformtrigger(seconds: int = 0, minutes: int = 0, hours: int = 0, wait_first: bool = True) -> t.Callable[[TaskExecutionData], float]:
+    if seconds < 0 or minutes < 0 or hours < 0:
+        raise ValueError("seconds, minutes, and hours must be positive")
+
+    if seconds == 0 and minutes == 0 and hours == 0:
+        raise ValueError("at least one of seconds, minutes, and hours must not be zero")
+
+    def _trigger(td: TaskExecutionData) -> float:
+        if not wait_first and td.invocation_count == 0:
+            return 0
+
         return seconds + minutes * 60 + hours * 3600
 
     return _trigger

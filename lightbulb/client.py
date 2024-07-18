@@ -194,7 +194,7 @@ class Client:
     @t.overload
     def task(self, task_: tasks.Task, /) -> tasks.Task: ...
 
-    def task(
+    def task(  # noqa: D417
         self,
         task_or_trigger: tasks.Trigger | tasks.Task,
         /,
@@ -225,7 +225,6 @@ class Client:
                 async def print_hi() -> None:
                     print("HI")
         """
-
         if isinstance(task_or_trigger, tasks.Task):
             task_obj = task_or_trigger
 

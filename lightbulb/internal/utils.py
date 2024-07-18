@@ -21,16 +21,12 @@
 from __future__ import annotations
 
 import dataclasses
-import inspect
 import typing as t
 
 import hikari
 
 from lightbulb.commands import commands
 from lightbulb.commands import groups
-
-if t.TYPE_CHECKING:
-    from lightbulb.internal import types
 
 T = t.TypeVar("T")
 D = t.TypeVar("D")
@@ -103,18 +99,3 @@ def non_undefined_or(item: hikari.UndefinedOr[T], default: D) -> T | D:
         ``item`` or ``default`` depending on whether ``item`` was undefined.
     """
     return item if item is not hikari.UNDEFINED else default
-
-
-async def maybe_await(item: types.MaybeAwaitable[T]) -> T:
-    """
-    Await the given item if it is awaitable, otherwise just return the given item.
-
-    Args:
-        item: The item to maybe await.
-
-    Returns:
-        The item, or the return once the item was awaited.
-    """
-    if inspect.isawaitable(item):
-        return await item
-    return t.cast(T, item)

@@ -28,6 +28,7 @@ from lightbulb.context import *
 from lightbulb.internal import *
 from lightbulb.loaders import *
 from lightbulb.localization import *
+from lightbulb.tasks import *
 
 __all__ = [
     "exceptions",
@@ -71,6 +72,10 @@ __all__ = [
     "localization_unsupported",
     "DictLocalizationProvider",
     "GnuLocalizationProvider",
+    "uniformtrigger",
+    "crontrigger",
+    "TaskExecutionData",
+    "Task",
 ]
 
 # Do not change the below field manually. It is updated by CI upon release.

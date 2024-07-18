@@ -37,7 +37,7 @@ AnyAsyncCallableT = t.TypeVar("AnyAsyncCallableT", bound=t.Callable[..., t.Await
 
 DI_ENABLED: t.Final[bool] = os.environ.get("LIGHTBULB_DI_DISABLED", "false").lower() != "true"
 DI_CONTAINER: contextvars.ContextVar[svcs.Container] = contextvars.ContextVar("_di_container")
-LOGGER = logging.getLogger("lightbulb.internal.di")
+LOGGER = logging.getLogger(__name__)
 
 INJECTED: t.Final[t.Any] = object()
 """

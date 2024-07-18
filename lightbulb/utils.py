@@ -22,11 +22,14 @@ from __future__ import annotations
 
 __all__ = ["EMPTY", "get_command_data"]
 
+import inspect
 import typing as t
 
 if t.TYPE_CHECKING:
     from lightbulb.commands import commands
+    from lightbulb.internal import types
 
+T = t.TypeVar("T")
 
 EMPTY: t.Any = object()
 """Placeholder object returned when attempting to get the value for an option on a class instead of an instance.
@@ -55,3 +58,18 @@ def get_command_data(command: commands.CommandBase | type[commands.CommandBase])
         :obj:`~lightbulb.commands.commands.CommandData`: Command data dataclass for the given command.
     """
     return command._command_data
+
+
+async def maybe_await(item: types.MaybeAwaitable[T]) -> T:
+    """
+    Await the given item if it is awaitable, otherwise just return the given item.
+
+    Args:
+        item: The item to maybe await.
+
+    Returns:
+        The item, or the return once the item was awaited.
+    """
+    if inspect.isawaitable(item):
+        return await item
+    return t.cast(T, item)

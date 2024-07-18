@@ -37,13 +37,15 @@ from lightbulb import context as context_
 from lightbulb import exceptions
 from lightbulb import loaders
 from lightbulb import localization
+from lightbulb import tasks
+from lightbulb import utils
 from lightbulb.commands import commands
 from lightbulb.commands import execution
 from lightbulb.commands import groups
 from lightbulb.internal import constants
 from lightbulb.internal import di as di_
 from lightbulb.internal import sync
-from lightbulb.internal import utils
+from lightbulb.internal import utils as i_utils
 
 if t.TYPE_CHECKING:
     import types
@@ -52,7 +54,7 @@ if t.TYPE_CHECKING:
     from lightbulb.internal.types import MaybeAwaitable
 
 T = t.TypeVar("T")
-CommandMap: t.TypeAlias = t.MutableMapping[hikari.Snowflakeish, t.MutableMapping[str, utils.CommandCollection]]
+CommandMap: t.TypeAlias = t.MutableMapping[hikari.Snowflakeish, t.MutableMapping[str, i_utils.CommandCollection]]
 CommandOrGroup: t.TypeAlias = t.Union[groups.Group, type[commands.CommandBase]]
 CommandOrGroupT = t.TypeVar("CommandOrGroupT", bound=CommandOrGroup)
 ErrorHandler: t.TypeAlias = t.Callable[
@@ -61,7 +63,7 @@ ErrorHandler: t.TypeAlias = t.Callable[
 ErrorHandlerT = t.TypeVar("ErrorHandlerT", bound=ErrorHandler)
 OptionT = t.TypeVar("OptionT", bound=hikari.CommandInteractionOption)
 
-LOGGER = logging.getLogger("lightbulb.client")
+LOGGER = logging.getLogger(__name__)
 DEFAULT_EXECUTION_STEP_ORDER = (
     execution.ExecutionSteps.MAX_CONCURRENCY,
     execution.ExecutionSteps.CHECKS,
@@ -119,6 +121,7 @@ class Client:
         "_error_handlers",
         "_application",
         "_extensions",
+        "_tasks",
         "_started",
     )
 
@@ -150,10 +153,11 @@ class Client:
         self._localized_commands: list[tuple[t.Sequence[hikari.Snowflakeish], CommandOrGroup]] = []
         self._deferred_commands: list[CommandOrGroup] = []
 
-        self._commands: CommandMap = collections.defaultdict(lambda: collections.defaultdict(utils.CommandCollection))
+        self._commands: CommandMap = collections.defaultdict(lambda: collections.defaultdict(i_utils.CommandCollection))
         self._error_handlers: dict[int, list[ErrorHandler]] = {}
         self._application: t.Optional[hikari.PartialApplication] = None
         self._extensions: set[str] = set()
+        self._tasks: set[tasks.Task] = set()
 
         self.di.register_dependency(hikari.api.RESTClient, lambda: self.rest, enter=False)
         self.di.register_dependency(Client, lambda: self)
@@ -167,7 +171,8 @@ class Client:
     async def start(self, *_: t.Any) -> None:
         """
         Starts the client. Ensures that commands are registered properly with the client, and that
-        commands have been synced with discord.
+        commands have been synced with discord. Also starts any tasks that were created with `auto_start` set to
+        :obj:`True`.
 
         Returns:
             :obj:`None`
@@ -177,6 +182,59 @@ class Client:
 
         await self.sync_application_commands()
         self._started = True
+
+        for task in self._tasks:
+            if task._auto_start:
+                task.start()
+
+    @t.overload
+    def task(
+        self, trigger: tasks.Trigger, /, auto_start: bool = True, max_failures: int = 1, max_invocations: int = -1
+    ) -> t.Callable[[tasks.TaskFunc], tasks.Task]: ...
+    @t.overload
+    def task(self, task_: tasks.Task, /) -> tasks.Task: ...
+
+    def task(
+        self,
+        task_or_trigger: tasks.Trigger | tasks.Task,
+        /,
+        auto_start: bool = True,
+        max_failures: int = 1,
+        max_invocations: int = -1,
+    ) -> t.Callable[[tasks.TaskFunc], tasks.Task] | tasks.Task:
+        if isinstance(task_or_trigger, tasks.Task):
+            task_obj = task_or_trigger
+
+            if task_obj in self._tasks:
+                return task_obj
+
+            task_obj._client = self
+
+            self._tasks.add(task_obj)
+            if self._started and task_obj._auto_start:
+                task_obj.start()
+
+            return task_obj
+
+        def _inner(func: tasks.TaskFunc) -> tasks.Task:
+            task_obj = tasks.Task(func, task_or_trigger, auto_start, max_failures, max_invocations)
+            return self.task(task_obj)
+
+        return _inner
+
+    def remove_task(self, task: tasks.Task, cancel: bool = False) -> None:
+        if task.running:
+            assert task._task is not None
+            task._task.add_done_callback(lambda _: setattr(task, "_client", None))
+
+            if cancel:
+                task.cancel()
+            else:
+                task.stop()
+        else:
+            task._client = None
+
+        self._tasks.remove(task)
 
     @t.overload
     def error_handler(self, *, priority: int = 0) -> t.Callable[[ErrorHandlerT], ErrorHandlerT]: ...

@@ -36,32 +36,32 @@ options.sessions = ["format_fix", "typecheck", "slotscheck"]
 
 @nox.session()
 def format_fix(session: nox.Session) -> None:
-    session.install(".[localization,dev.format]")
+    session.install(".[localization,crontrigger,dev.format]")
     session.run("python", "-m", "ruff", "format", *SCRIPT_PATHS)
     session.run("python", "-m", "ruff", "check", "--fix", *SCRIPT_PATHS)
 
 
 @nox.session()
 def format_check(session: nox.Session):
-    session.install(".[localization,dev.format]")
+    session.install(".[localization,crontrigger,dev.format]")
     session.run("python", "-m", "ruff", "format", *SCRIPT_PATHS, "--check")
     session.run("python", "-m", "ruff", "check", "--output-format", "github", *SCRIPT_PATHS)
 
 
 @nox.session()
 def typecheck(session: nox.Session):
-    session.install(".[localization,dev.typecheck]")
+    session.install(".[localization,crontrigger,dev.typecheck]")
     session.run("python", "-m", "pyright")
 
 
 @nox.session()
 def slotscheck(session: nox.Session):
-    session.install(".[localization,dev.slotscheck]")
+    session.install(".[localization,crontrigger,dev.slotscheck]")
     session.run("python", "-m", "slotscheck", "-m", "lightbulb")
 
 
 @nox.session(reuse_venv=True)
 def sphinx(session: nox.Session):
-    session.install(".[localization,dev.docs]")
+    session.install(".[localization,crontrigger,dev.docs]")
     session.run("python", "./scripts/docs/api_reference_generator.py")
     session.run("python", "-m", "sphinx.cmd.build", "docs/source", "docs/build", "-b", "html")

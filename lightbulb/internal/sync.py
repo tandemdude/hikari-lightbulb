@@ -35,7 +35,7 @@ from lightbulb.internal.utils import non_undefined_or
 if t.TYPE_CHECKING:
     from lightbulb import client as client_
 
-LOGGER = logging.getLogger("lightbulb.internal.sync")
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass(slots=True)

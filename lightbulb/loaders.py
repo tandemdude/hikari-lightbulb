@@ -29,6 +29,7 @@ import typing as t
 import hikari
 import svcs
 
+from lightbulb import tasks
 from lightbulb.commands import commands
 from lightbulb.commands import groups
 from lightbulb.internal import di
@@ -45,7 +46,7 @@ ErrorHandler: t.TypeAlias = t.Callable[
 ErrorHandlerT = t.TypeVar("ErrorHandlerT", bound=ErrorHandler)
 EventT = t.TypeVar("EventT", bound=hikari.Event)
 
-LOGGER = logging.getLogger("lightbulb.loaders")
+LOGGER = logging.getLogger(__name__)
 
 
 class Loadable(abc.ABC):
@@ -152,6 +153,25 @@ class _ErrorHandlerLoadable(Loadable):
         if self._callback not in client._error_handlers[self._priority]:
             return
         client.remove_error_handler(self._callback)
+
+
+class _TaskLoadable(Loadable):
+    __slots__ = ("_task",)
+
+    def __init__(self, task: tasks.Task) -> None:
+        self._task = task
+
+    async def load(self, client: client_.Client) -> None:
+        if self._task in client._tasks:
+            return
+
+        self._task = client.task(self._task)
+
+    async def unload(self, client: client_.Client) -> None:
+        if self._task not in client._tasks:
+            return
+
+        client.remove_task(self._task)
 
 
 class Loader:
@@ -330,5 +350,15 @@ class Loader:
 
         def _inner(func_: ErrorHandlerT) -> ErrorHandlerT:
             return self.error_handler(func_, priority=priority)
+
+        return _inner
+
+    def task(
+        self, trigger: tasks.Trigger, /, auto_start: bool = True, max_failures: int = 1, max_invocations: int = -1
+    ) -> t.Callable[[tasks.TaskFunc], tasks.Task]:
+        def _inner(func: tasks.TaskFunc) -> tasks.Task:
+            task_obj = tasks.Task(func, trigger, auto_start, max_failures, max_invocations)
+            self.add(_TaskLoadable(task_obj))
+            return task_obj
 
         return _inner

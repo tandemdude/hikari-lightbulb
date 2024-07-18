@@ -25,10 +25,10 @@ import dataclasses
 import typing as t
 
 from lightbulb import exceptions
+from lightbulb import utils
 from lightbulb.internal import constants
 from lightbulb.internal import di
 from lightbulb.internal import types
-from lightbulb.internal import utils
 
 if t.TYPE_CHECKING:
     from lightbulb import context as context_

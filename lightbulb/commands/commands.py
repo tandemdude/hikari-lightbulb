@@ -43,7 +43,7 @@ T = t.TypeVar("T")
 D = t.TypeVar("D")
 CommandT = t.TypeVar("CommandT", bound="CommandBase")
 
-LOGGER = logging.getLogger("lightbulb.commands")
+LOGGER = logging.getLogger(__name__)
 _PRIMITIVE_OPTION_TYPES = (
     hikari.OptionType.STRING,
     hikari.OptionType.INTEGER,

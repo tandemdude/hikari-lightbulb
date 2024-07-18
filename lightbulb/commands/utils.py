@@ -26,7 +26,7 @@ __all__ = ["localize_name_and_description"]
 import typing as t
 
 from lightbulb import exceptions
-from lightbulb.internal import utils
+from lightbulb import utils
 
 if t.TYPE_CHECKING:
     import hikari

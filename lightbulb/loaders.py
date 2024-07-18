@@ -356,6 +356,29 @@ class Loader:
     def task(
         self, trigger: tasks.Trigger, /, auto_start: bool = True, max_failures: int = 1, max_invocations: int = -1
     ) -> t.Callable[[tasks.TaskFunc], tasks.Task]:
+        """
+        Second order decorator to register a repeating task with this loader. Task functions will have
+        dependency injection enabled on them automatically. Task functions **must** be asynchronous.
+
+        Args:
+            trigger: The trigger function to use to resolve the interval between task executions.
+            auto_start: Whether the task should be started automatically. This means that if the task is added to
+                the client upon the client being started, the task will also be started; it will also be started
+                if being added to an already-started client.
+            max_failures: The maximum number of failed attempts to execute the task before it is cancelled.
+            max_invocations: The maximum number of times the task can be invoked before being stopped.
+
+        Exmaple:
+
+            .. code-block:: python
+
+                loader = lightbulb.Loader()
+
+                @loader.task(lightbulb.uniformtrigger(minutes=1))
+                async def print_hi() -> None:
+                    print("HI")
+        """
+
         def _inner(func: tasks.TaskFunc) -> tasks.Task:
             task_obj = tasks.Task(func, trigger, auto_start, max_failures, max_invocations)
             self.add(_TaskLoadable(task_obj))

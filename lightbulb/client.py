@@ -202,6 +202,30 @@ class Client:
         max_failures: int = 1,
         max_invocations: int = -1,
     ) -> t.Callable[[tasks.TaskFunc], tasks.Task] | tasks.Task:
+        """
+        Second order decorator to register a repeating task with the client. Task functions will have
+        dependency injection enabled on them automatically. Task functions **must** be asynchronous.
+
+        Args:
+            trigger: The trigger function to use to resolve the interval between task executions.
+            auto_start: Whether the task should be started automatically. This means that if the task is added to
+                the client upon the client being started, the task will also be started; it will also be started
+                if being added to an already-started client.
+            max_failures: The maximum number of failed attempts to execute the task before it is cancelled.
+            max_invocations: The maximum number of times the task can be invoked before being stopped.
+
+        Note:
+            This method can also be called with an existing task object to register it directly.
+
+        Example:
+
+            .. code-block:: python
+
+                @client.task(lightbulb.uniformtrigger(minutes=1)
+                async def print_hi() -> None:
+                    print("HI")
+        """
+
         if isinstance(task_or_trigger, tasks.Task):
             task_obj = task_or_trigger
 
@@ -223,6 +247,16 @@ class Client:
         return _inner
 
     def remove_task(self, task: tasks.Task, cancel: bool = False) -> None:
+        """
+        Remove a task from the client. Tasks will be stopped and unregistered from the client once they complete.
+
+        Args:
+            task: The task to remove from the client.
+            cancel: Whether the task should be immediately cancelled instead of stopped gracefully.
+
+        Returns:
+            :obj:`None`
+        """
         if task.running:
             assert task._task is not None
             task._task.add_done_callback(lambda _: setattr(task, "_client", None))

@@ -45,12 +45,46 @@ LOGGER = logging.getLogger(__name__)
 
 @dataclasses.dataclass(slots=True, frozen=True)
 class TaskExecutionData:
+    """Dataclass representing the data passed to a trigger function."""
+
     invocation_count: int
+    """The number of times the task has been invoked so far."""
     last_invocation_length: float
+    """The length of the last invocation of the task. Will be ``-1`` if the task has not been invoked yet."""
     last_invoked_at: datetime.datetime | None
+    """The time (UTC) of the last invocation of the task or :obj:`None` if the task has not been invoked."""
 
 
-def uniformtrigger(seconds: int = 0, minutes: int = 0, hours: int = 0, wait_first: bool = True) -> t.Callable[[TaskExecutionData], float]:
+def uniformtrigger(
+    seconds: int = 0, minutes: int = 0, hours: int = 0, wait_first: bool = True
+) -> t.Callable[[TaskExecutionData], float]:
+    """
+    Generates a trigger function that returns uniform intervals from the given arguments. At least one
+    of ``seconds``, ``minutes``, and ``hours`` must be specified. If multiple are specified then the
+    intervals will be combined. I.e. if ``hours`` is ``1`` AND ``seconds`` is ``5``, then the generated interval
+    will be ``3605`` seconds (1 hour 5 seconds).
+
+    Args:
+        seconds: The number of seconds for the interval.
+        minutes: The number of minutes for the interval.
+        hours: The number of hours for the interval.
+        wait_first: Whether the first invocation of the task should wait for the interval to elapse. Defaults to
+            :obj:`True`.
+
+    Returns:
+        The generated trigger function.
+
+    Raises:
+        :obj:`ValueError`: When all interval arguments are 0, or any interval argument is negative.
+
+    Example:
+
+        .. code-block:: python
+
+            @client.task(lightbulb.uniformtrigger(minutes=1))
+            async def print_hi() -> None:
+                print("HI")
+    """
     if seconds < 0 or minutes < 0 or hours < 0:
         raise ValueError("seconds, minutes, and hours must be positive")
 
@@ -67,6 +101,32 @@ def uniformtrigger(seconds: int = 0, minutes: int = 0, hours: int = 0, wait_firs
 
 
 def crontrigger(tab: str) -> t.Callable[[TaskExecutionData], float]:
+    """
+    Generates a crontab-based task trigger. Tasks will be run dependent on the given crontab. You can use a tool
+    such as `crontab.guru <https://crontab.guru/>`_ to aid in creating an appropriate crontab.
+
+    Args:
+        tab: The crontab to use to schedule task execution.
+
+    Returns:
+        The generated trigger function.
+
+    Note:
+        The crontab is **always** evaluated using UTC time.
+
+    Warning:
+        This trigger is not available unless you have the ``croniter`` requirement installed. For convenience, you
+        can install this using the '[crontrigger]' option when installing Lightbulb.
+
+        E.g. ``pip install hikari-lightbulb[crontab]``
+
+    Example:
+
+        # Crontab '* * * * *' means 'run at every minute'
+        @client.task(lightbulb.crontrigger("* * * * *"))
+        async def print_hi() -> None:
+            print("HI")
+    """
     try:
         import croniter
     except ImportError:
@@ -86,6 +146,19 @@ def crontrigger(tab: str) -> t.Callable[[TaskExecutionData], float]:
 
 
 class Task:
+    """
+    Class representing an asynchronous repeating task.
+
+    Args:
+        func: The function to execute. Dependency injection will be enabled for it once the task is created.
+        trigger: The trigger function to use to resolve the interval between task executions.
+        auto_start: Whether the task should be started automatically. This means that if the task is added to
+            the client upon the client being started, the task will also be started; it will also be started
+            if being added to an already-started client.
+        max_failures: The maximum number of failed attempts to execute the task before it is cancelled.
+        max_invocations: The maximum number of times the task can be invoked before being stopped.
+    """
+
     __slots__ = [
         "_func",
         "_trigger",
@@ -110,7 +183,7 @@ class Task:
         max_failures: int,
         max_invocations: int,
     ) -> None:
-        self._func = func
+        self._func = di.with_di(func)
         self._trigger = trigger
         self._auto_start = auto_start
         self._max_failures = max_failures
@@ -129,6 +202,10 @@ class Task:
 
     @property
     def running(self) -> bool:
+        """
+        Whether the task is running. A task is considered running if it has been started,
+        but not stopped nor cancelled.
+        """
         return self.started and not (self.stopped or self.cancelled)
 
     async def _loop(self) -> None:
@@ -181,6 +258,16 @@ class Task:
         LOGGER.debug("stopped task %r", self._func.__name__)
 
     def start(self) -> None:
+        """
+        Start the task. Does nothing if the task is already running.
+
+        Returns:
+            :obj:`None`
+
+        Raises:
+            :obj:`RuntimeError`: When trying to start a task that has not been added to a client, or the client
+                it has been added to has not been started yet.
+        """
         if self._client is None or not self._client._started:
             raise RuntimeError("cannot start a task for a non-started Client")
 
@@ -190,12 +277,24 @@ class Task:
         self._task = asyncio.create_task(self._loop())
 
     def stop(self) -> None:
+        """
+        Stop the task. Does nothing if the task is already stopped, or has not been started.
+
+        Returns:
+            :obj:`None`
+        """
         if not self.running:
             return
 
         self.stopped = True
 
     def cancel(self) -> None:
+        """
+        Cancel the task. Does nothing if the task is already stopped or canceled, or has not been started.
+
+        Returns:
+            :obj:`None`
+        """
         if not self.running:
             return
 
@@ -204,6 +303,12 @@ class Task:
         self._task = None
 
     async def await_completion(self) -> None:
+        """
+        Wait for the task to complete - either through stopping naturally or being cancelled.
+
+        Returns:
+            :obj:`None`
+        """
         if self._task is None:
             return
 

@@ -18,3 +18,27 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from __future__ import annotations
+
+__all__ = [
+    "DependencyInjectionException",
+    "ContainerClosedException",
+    "CircularDependencyException",
+    "DependencyNotSatisfiableException",
+]
+
+
+class DependencyInjectionException(Exception):
+    """Base class for all exceptions raised from the dependency injection system."""
+
+
+class ContainerClosedException(DependencyInjectionException):
+    """Exception raised when attempting to get a dependency from a closed container."""
+
+
+class CircularDependencyException(DependencyInjectionException):
+    """Exception raised when a circular dependency is detected."""
+
+
+class DependencyNotSatisfiableException(DependencyInjectionException):
+    """Exception raised when a dependency is requested but cannot be created."""

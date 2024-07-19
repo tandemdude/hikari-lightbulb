@@ -27,12 +27,11 @@ import logging
 import typing as t
 
 import hikari
-import svcs
 
+from lightbulb import di
 from lightbulb import tasks
 from lightbulb.commands import commands
 from lightbulb.commands import groups
-from lightbulb.internal import di
 
 if t.TYPE_CHECKING:
     from lightbulb import client as client_
@@ -112,29 +111,29 @@ class _ListenerLoadable(Loadable):
         self._wrapped_callback: t.Callable[..., t.Awaitable[t.Any]] | None = None
 
     async def load(self, client: client_.Client) -> None:
-        try:
-            event_manager = await client.di.get_dependency(hikari.api.EventManager)
-        except svcs.exceptions.ServiceNotFoundError as e:
-            raise RuntimeError("cannot load listeners as client does not support event dispatching") from e
+        em = getattr(getattr(client, "_app", None), "event_manager", None)
+        if not isinstance(em, hikari.api.EventManager):
+            raise RuntimeError("listeners are not supported for non event_manager aware applications")
 
         async def _wrapped(*args: t.Any, **kwargs: t.Any) -> t.Any:
-            with di.ensure_di_context(client.di):
+            async with client.di.enter_context(di.DiContext.LISTENER):
                 return await self._callback(*args, **kwargs)
 
         self._wrapped_callback = _wrapped if di.DI_ENABLED else None
 
         for event in self._event_types:
-            if (self._wrapped_callback or self._callback) in event_manager.get_listeners(event):
+            if (self._wrapped_callback or self._callback) in em.get_listeners(event):
                 continue
-            event_manager.subscribe(event, self._wrapped_callback or self._callback)  # type: ignore[reportArgumentType]
+            em.subscribe(event, self._wrapped_callback or self._callback)  # type: ignore[reportArgumentType]
 
     async def unload(self, client: client_.Client) -> None:
-        event_manager = await client.di.get_dependency(hikari.api.EventManager)
+        em = getattr(getattr(client, "_app", None), "event_manager", None)
+        assert isinstance(em, hikari.api.EventManager)
 
         for event in self._event_types:
-            if (self._wrapped_callback or self._callback) not in event_manager.get_listeners(event):
+            if (self._wrapped_callback or self._callback) not in em.get_listeners(event):
                 continue
-            event_manager.unsubscribe(event, self._wrapped_callback or self._callback)  # type: ignore[reportArgumentType]
+            em.unsubscribe(event, self._wrapped_callback or self._callback)  # type: ignore[reportArgumentType]
 
 
 class _ErrorHandlerLoadable(Loadable):

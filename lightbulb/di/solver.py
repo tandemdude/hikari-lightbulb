@@ -20,23 +20,27 @@
 # SOFTWARE.
 from __future__ import annotations
 
+__all__ = ["DI_ENABLED", "INJECTED", "DiContext", "DependencyInjectionManager", "LazyInjecting", "with_di"]
+
+import collections
 import contextlib
 import contextvars
+import enum
 import inspect
 import logging
 import os
 import typing as t
 
-import svcs
-
-if t.TYPE_CHECKING:
-    from lightbulb.internal.types import MaybeAwaitable
+from lightbulb.di import container
+from lightbulb.di import registry
 
 T = t.TypeVar("T")
 AnyAsyncCallableT = t.TypeVar("AnyAsyncCallableT", bound=t.Callable[..., t.Awaitable[t.Any]])
 
 DI_ENABLED: t.Final[bool] = os.environ.get("LIGHTBULB_DI_DISABLED", "false").lower() != "true"
-DI_CONTAINER: contextvars.ContextVar[svcs.Container] = contextvars.ContextVar("_di_container")
+DI_CONTAINER: contextvars.ContextVar[container.Container | None] = contextvars.ContextVar(
+    "lb_di_container", default=None
+)
 LOGGER = logging.getLogger(__name__)
 
 INJECTED: t.Final[t.Any] = object()
@@ -50,7 +54,7 @@ Example:
 
     .. code-block:: python
 
-        @lightbulb.with_di
+        @lightbulb.di.with_di
         async def foo(bar: SomeClass = lightbulb.INJECTED) -> None:
             ...
 
@@ -59,72 +63,63 @@ Example:
 """
 
 
+class DiContext(enum.Enum):
+    DEFAULT = enum.auto()
+    COMMAND = enum.auto()
+    LISTENER = enum.auto()
+    TASK = enum.auto()
+
+
 class DependencyInjectionManager:
     """Class which contains dependency injection functionality."""
 
-    __slots__ = ("_di_registry", "_di_container")
+    __slots__ = ("_registries", "_base_container")
 
     def __init__(self) -> None:
-        self._di_registry: svcs.Registry = svcs.Registry()
-        self._di_container: svcs.Container | None = None
+        self._registries: dict[DiContext, registry.Registry] = collections.defaultdict(registry.Registry)
+        self._base_container: container.Container | None = None
 
-    @property
-    def di_registry(self) -> svcs.Registry:
+    def registry_for(self, context: DiContext, /) -> registry.Registry:
         """The dependency injection registry containing dependencies available for this instance."""
-        return self._di_registry
+        return self._registries[context]
 
-    @property
-    def di_container(self) -> svcs.Container:
-        """The dependency injection container used for this instance. Lazily instantiated."""
-        if self._di_container is None:
-            self._di_container = svcs.Container(self.di_registry)
-        return self._di_container
+    @contextlib.asynccontextmanager
+    async def enter_context(self, context: DiContext, /) -> t.AsyncIterator[None]:
+        #     """
+        #     Context manager that ensures a dependency injection context is available for the nested operations.
+        #
+        #     Args:
+        #         manager: The DI manager to use to supply dependencies for this injection context.
+        #
+        #     Example:
+        #
+        #         .. code-block:: python
+        #
+        #             with lightbulb.ensure_di_context(client):
+        #                 await some_function_that_needs_dependencies()
+        #     """
+        if context is DiContext.DEFAULT:
+            raise ValueError("cannot explicitly enter default context")
 
-    def register_dependency(
-        self, type_: type[T], factory: t.Callable[[], MaybeAwaitable[T]], *, enter: bool = False
-    ) -> None:
-        """
-        Register a dependency as usable by dependency injection. All dependencies are considered to be
-        singletons, meaning the factory will always be called at most once.
+        if DI_ENABLED:
+            initial_token, initial = None, DI_CONTAINER.get(None)
+            if initial is None:
+                if self._base_container is None:
+                    self._base_container = container.Container(self._registries[DiContext.DEFAULT])
+                initial_token = DI_CONTAINER.set(self._base_container)
 
-        Args:
-            type_: The type of the dependency to register.
-            factory: The factory function to use to provide the dependency value.
-            enter: Whether to enter context managers, if one is returned from the factory. Defaults
-                to :obj:`False`.
+            new_container = container.Container(self._registries[context], parent=DI_CONTAINER.get())
+            token = DI_CONTAINER.set(new_container)
 
-        Returns:
-            :obj:`None`
-        """
-        self.di_registry.register_factory(type_, factory, enter=enter)  # type: ignore[reportUnknownMemberType]
-
-    async def get_dependency(self, type_: type[T]) -> T:
-        return await self.di_container.aget(type_)
-
-
-@contextlib.contextmanager
-def ensure_di_context(manager: DependencyInjectionManager) -> t.Generator[None, t.Any, t.Any]:
-    """
-    Context manager that ensures a dependency injection context is available for the nested operations.
-
-    Args:
-        manager: The DI manager to use to supply dependencies for this injection context.
-
-    Example:
-
-        .. code-block:: python
-
-            with lightbulb.ensure_di_context(client):
-                await some_function_that_needs_dependencies()
-    """
-    if DI_ENABLED:
-        token = DI_CONTAINER.set(manager.di_container)
-        try:
+            try:
+                async with new_container:
+                    yield
+            finally:
+                DI_CONTAINER.reset(token)
+                if initial_token is not None:
+                    DI_CONTAINER.reset(initial_token)
+        else:
             yield
-        finally:
-            DI_CONTAINER.reset(token)
-    else:
-        yield
 
 
 def find_injectable_kwargs(
@@ -172,6 +167,7 @@ def find_injectable_kwargs(
 
 
 class LazyInjecting:
+    # TODO - cache dependency mapping for parameters
     """
     Wrapper for a callable that implements dependency injection. When called, resolves the required
     dependencies and calls the original callable. Only supports asynchronous functions.
@@ -213,14 +209,14 @@ class LazyInjecting:
         new_kwargs: dict[str, t.Any] = {}
         new_kwargs.update(kwargs)
 
-        di_container: t.Optional[svcs.Container] = DI_CONTAINER.get(None)
+        di_container: t.Optional[container.Container] = DI_CONTAINER.get(None)
         if di_container is None:
             raise RuntimeError("cannot prepare dependency injection as no DI context is available")
 
         injectables = find_injectable_kwargs(self._func, len(args) + (self._self is not None), set(kwargs.keys()))
 
         for name, type in injectables.items():
-            new_kwargs[name] = await di_container.aget(type)
+            new_kwargs[name] = await di_container.get(type)
 
         if self._self is not None:
             return await self._func(self._self, *args, **new_kwargs)

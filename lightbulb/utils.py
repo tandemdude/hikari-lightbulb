@@ -70,6 +70,6 @@ async def maybe_await(item: types.MaybeAwaitable[T]) -> T:
     Returns:
         The item, or the return once the item was awaited.
     """
-    if inspect.isawaitable(item):
+    if inspect.iscoroutine(item):
         return await item
     return t.cast(T, item)

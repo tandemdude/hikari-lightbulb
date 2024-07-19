@@ -17,7 +17,7 @@ An autocomplete callback is an **asynchronous** function that takes an instance 
 
 :::{important}
 Dependency injection **is not** enabled on autocomplete callbacks by default - if you need
-dependency injection in your callback you should add the `@lightbulb.with_di` decorator to the function.
+dependency injection in your callback you should add the `@lightbulb.di.with_di` decorator to the function.
 :::
 
 Within an autocomplete callback, you are required to call the {meth}`~lightbulb.context.AutocompleteContext.respond`

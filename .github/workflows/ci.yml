@@ -61,6 +61,24 @@ jobs:
           pip install nox
           nox -s slotscheck
 
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Run pytest
+        run: |
+          pip install nox
+          nox -s test
+
   fragment-check:
     name: Fragment check
     runs-on: ubuntu-latest

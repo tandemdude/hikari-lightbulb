@@ -119,7 +119,7 @@ class RandomImage(
     description="Generates a random image using the picsum API"
 ):
     # The 'lightbulb.invoke` decorator enables dependency injection on the function, so we
-    # do not need to include the 'lightbulb.with_di' decorator here
+    # do not need to include the 'lightbulb.di.with_di' decorator here
     @lightbulb.invoke
     async def invoke(self, ctx: lightbulb.Context, cs: aiohttp.ClientSession) -> None:
         # Fetch the image using the injected ClientSession dependency

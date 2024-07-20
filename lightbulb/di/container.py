@@ -40,11 +40,21 @@ T = t.TypeVar("T")
 
 
 class Container:
+    """
+    A container for managing and supplying dependencies.
+
+    Args:
+        registry: The registry of dependencies supply-able by this container.
+        label: The label for the container.
+        parent: The parent container. Defaults to None.
+    """
+
     # TODO - handle registries changing after container is created
     __slots__ = ("_registry", "_parent", "_closed", "_graph", "_instances")
 
-    def __init__(self, registry: registry_.Registry, *, parent: Container | None = None) -> None:
+    def __init__(self, registry: registry_.Registry, label: str, *, parent: Container | None = None) -> None:
         self._registry = registry
+        self._registry._freeze(self)
         self._parent = parent
 
         self._closed = False
@@ -67,10 +77,9 @@ class Container:
             self._graph.add_node(node, **new_node_data)
         self._graph.add_edges_from(self._registry._graph.edges)
 
-        self.add_value(Container, self)
+        self.add_value(t.Annotated[Container, label], self)
 
     async def __aenter__(self) -> Container:
-        self.open()
         return self
 
     async def __aexit__(
@@ -78,15 +87,15 @@ class Container:
     ) -> None:
         await self.close()
 
-    def open(self) -> None: ...
-
     async def close(self) -> None:
+        """Closes the container, running teardown procedures for each created dependency belonging to this container."""
         for dependency_id, instance in self._instances.items():
             if (td := self._graph.nodes[dependency_id]["teardown"]) is None:
                 continue
 
             await utils.maybe_await(td(instance))
 
+        self._registry._unfreeze(self)
         self._closed = True
 
     def add_factory(
@@ -95,6 +104,22 @@ class Container:
         factory: t.Callable[..., lb_types.MaybeAwaitable[T]],
         teardown: t.Callable[[T], lb_types.MaybeAwaitable[None]] | None = None,
     ) -> None:
+        """
+        Adds the given factory as an ephemeral dependency to this container. This dependency is only accessible
+        from contexts including this container and will be cleaned up when the container is closed.
+
+        Args:
+            typ: The type to register the dependency as.
+            factory: The factory used to create the dependency.
+            teardown: The teardown function to be called when the container is closed. Defaults to :obj:`None`.
+
+        Returns:
+            :obj:`None`
+
+        See Also:
+            :meth:`lightbulb.di.container.Container.add_value`
+            :meth:`lightbulb.di.registry.Registry.add_factory`
+        """
         dependency_id = di_utils.get_dependency_id(typ)
 
         if dependency_id in self._graph:
@@ -107,6 +132,22 @@ class Container:
         value: T,
         teardown: t.Callable[[T], lb_types.MaybeAwaitable[None]] | None = None,
     ) -> None:
+        """
+        Adds the given value as an ephemeral dependency to this container. This dependency is only accessible
+        from contexts including this container and will be cleaned up when the container is closed.
+
+        Args:
+            typ: The type to register the dependency as.
+            value: The value to use for the dependency.
+            teardown: The teardown function to be called when the container is closed. Defaults to :obj:`None`.
+
+        Returns:
+            :obj:`None`
+
+        See Also:
+            :meth:`lightbulb.di.container.Container.add_factory`
+            :meth:`lightbulb.di.registry.Registry.add_value`
+        """
         dependency_id = di_utils.get_dependency_id(typ)
         self._instances[dependency_id] = value
 

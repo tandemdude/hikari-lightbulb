@@ -30,16 +30,32 @@ from lightbulb.di import exceptions
 from lightbulb.di import utils as di_utils
 
 if t.TYPE_CHECKING:
+    from lightbulb.di import container
     from lightbulb.internal import types
 
 T = t.TypeVar("T")
 
 
 class Registry:
-    __slots__ = ("_graph",)
+    """
+    A dependency registry containing information about how to create the registered dependencies.
+
+    Note:
+        When containers are created for a registry, the registry is frozen to prevent additional dependencies
+        being registered. The registry is unfrozen once all containers providing from a registry have been closed.
+    """
+
+    __slots__ = ("_graph", "_active_containers")
 
     def __init__(self) -> None:
         self._graph: nx.DiGraph[str] = nx.DiGraph()
+        self._active_containers: set[container.Container] = set()
+
+    def _freeze(self, cnt: container.Container) -> None:
+        self._active_containers.add(cnt)
+
+    def _unfreeze(self, cnt: container.Container) -> None:
+        self._active_containers.remove(cnt)
 
     def register_value(
         self,
@@ -47,6 +63,17 @@ class Registry:
         value: T,
         teardown: t.Callable[..., types.MaybeAwaitable[None]] | None = None,
     ) -> None:
+        """
+        Registers a pre-existing value as a dependency.
+
+        Args:
+            typ: The type to register the dependency as.
+            value: The value to use for the dependency.
+            teardown: The teardown function to be called when the container is closed. Defaults to :obj:`None`.
+
+        Returns:
+            :obj:`None`
+        """
         self.register_factory(typ, lambda: value, teardown)
 
     def register_factory(
@@ -55,6 +82,24 @@ class Registry:
         factory: t.Callable[..., types.MaybeAwaitable[T]],
         teardown: t.Callable[[T], types.MaybeAwaitable[None]] | None = None,
     ) -> None:
+        """
+        Registers a factory for creating a dependency.
+
+        Args:
+            typ: The type to register the dependency as.
+            factory: The factory used to create the dependency.
+            teardown: The teardown function to be called when the container is closed. Defaults to :obj:`None`.
+
+        Returns:
+            :obj:`None`
+
+        Raises:
+            :obj:`lightbulb.di.exceptions.RegistryFrozenException`: If the registry is frozen.
+            :obj:`lightbulb.di.exceptions.CircularDependencyException`: If the factory requires itself as a dependency.
+        """
+        if self._active_containers:
+            raise exceptions.RegistryFrozenException
+
         dependency_id = di_utils.get_dependency_id(typ)
 
         # We are overriding a previously defined dependency and want to strip the edges, so we don't have

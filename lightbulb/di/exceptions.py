@@ -25,6 +25,7 @@ __all__ = [
     "ContainerClosedException",
     "CircularDependencyException",
     "DependencyNotSatisfiableException",
+    "RegistryFrozenException",
 ]
 
 
@@ -42,3 +43,7 @@ class CircularDependencyException(DependencyInjectionException):
 
 class DependencyNotSatisfiableException(DependencyInjectionException):
     """Exception raised when a dependency is requested but cannot be created."""
+
+
+class RegistryFrozenException(DependencyInjectionException):
+    """Exception raised when attempting to register a new dependency with a frozen registry."""

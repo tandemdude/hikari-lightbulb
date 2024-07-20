@@ -75,7 +75,7 @@ class TestMethodInjection:
         manager = lightbulb.di.DependencyInjectionManager()
 
         value = object()
-        manager.registry_for(lightbulb.di.DiContext.DEFAULT).register_value(object, value)
+        manager.registry_for(lightbulb.di.Contexts.DEFAULT).register_value(object, value)
 
         @lightbulb.di.with_di
         def m(obj: object = lightbulb.di.INJECTED) -> None:
@@ -89,13 +89,13 @@ class TestMethodInjection:
         manager = lightbulb.di.DependencyInjectionManager()
 
         value = object()
-        manager.registry_for(lightbulb.di.DiContext.DEFAULT).register_value(object, value)
+        manager.registry_for(lightbulb.di.Contexts.DEFAULT).register_value(object, value)
 
         @lightbulb.di.with_di
         def m(obj: object = lightbulb.di.INJECTED) -> None:
             assert obj is value
 
-        async with manager.enter_context(lightbulb.di.DiContext.DEFAULT):
+        async with manager.enter_context(lightbulb.di.Contexts.DEFAULT):
             await m()
 
     @pytest.mark.asyncio
@@ -103,13 +103,13 @@ class TestMethodInjection:
         manager = lightbulb.di.DependencyInjectionManager()
 
         value = object()
-        manager.registry_for(lightbulb.di.DiContext.DEFAULT).register_value(object, value)
+        manager.registry_for(lightbulb.di.Contexts.DEFAULT).register_value(object, value)
 
         @lightbulb.di.with_di
         async def m(obj: object = lightbulb.di.INJECTED) -> None:
             assert obj is value
 
-        async with manager.enter_context(lightbulb.di.DiContext.DEFAULT):
+        async with manager.enter_context(lightbulb.di.Contexts.DEFAULT):
             await m()
 
     @pytest.mark.asyncio
@@ -117,13 +117,13 @@ class TestMethodInjection:
         manager = lightbulb.di.DependencyInjectionManager()
 
         value = object()
-        manager.registry_for(lightbulb.di.DiContext.DEFAULT).register_value(t.Annotated[object, "foo"], value)
+        manager.registry_for(lightbulb.di.Contexts.DEFAULT).register_value(t.Annotated[object, "foo"], value)
 
         @lightbulb.di.with_di
         async def m(obj: t.Annotated[object, "foo"] = lightbulb.di.INJECTED) -> None:
             assert obj is value
 
-        async with manager.enter_context(lightbulb.di.DiContext.DEFAULT):
+        async with manager.enter_context(lightbulb.di.Contexts.DEFAULT):
             await m()
 
     @pytest.mark.asyncio
@@ -131,13 +131,13 @@ class TestMethodInjection:
         manager = lightbulb.di.DependencyInjectionManager()
 
         value = object()
-        manager.registry_for(lightbulb.di.DiContext.DEFAULT).register_value(object, value)
+        manager.registry_for(lightbulb.di.Contexts.DEFAULT).register_value(object, value)
 
         @lightbulb.di.with_di
         async def m(*, obj: object = lightbulb.di.INJECTED) -> None:
             assert obj is value
 
-        async with manager.enter_context(lightbulb.di.DiContext.DEFAULT):
+        async with manager.enter_context(lightbulb.di.Contexts.DEFAULT):
             await m()
 
     @pytest.mark.asyncio
@@ -145,13 +145,13 @@ class TestMethodInjection:
         manager = lightbulb.di.DependencyInjectionManager()
 
         value = object()
-        manager.registry_for(lightbulb.di.DiContext.DEFAULT).register_value(object, value)
+        manager.registry_for(lightbulb.di.Contexts.DEFAULT).register_value(object, value)
 
         @lightbulb.di.with_di
         async def m(obj: object = lightbulb.di.INJECTED) -> None:
             assert obj is not value
 
-        async with manager.enter_context(lightbulb.di.DiContext.DEFAULT):
+        async with manager.enter_context(lightbulb.di.Contexts.DEFAULT):
             await m(object())
 
     @pytest.mark.asyncio
@@ -167,5 +167,5 @@ class TestMethodInjection:
 
         instance = AClass()
 
-        async with manager.enter_context(lightbulb.di.DiContext.DEFAULT):
+        async with manager.enter_context(lightbulb.di.Contexts.DEFAULT):
             await instance.bound_method()

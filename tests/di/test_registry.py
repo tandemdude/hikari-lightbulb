@@ -32,3 +32,19 @@ class TestRegistry:
 
         with pytest.raises(di.CircularDependencyException):
             registry.register_factory(object, f)
+
+    def test_cannot_add_dependency_when_frozen(self) -> None:
+        registry = di.Registry()
+        registry._freeze(object())  # type: ignore[reportArgumentType]
+
+        with pytest.raises(di.RegistryFrozenException):
+            registry.register_value(object, object())
+
+    def test_can_add_dependency_when_unfrozen(self) -> None:
+        registry = di.Registry()
+
+        fake_container = object()
+        registry._freeze(fake_container)  # type: ignore[reportArgumentType]
+        registry._unfreeze(fake_container)  # type: ignore[reportArgumentType]
+
+        registry.register_value(object, object())

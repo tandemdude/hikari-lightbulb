@@ -20,12 +20,11 @@
 # SOFTWARE.
 from __future__ import annotations
 
-__all__ = ["DI_ENABLED", "INJECTED", "DiContext", "DependencyInjectionManager", "LazyInjecting", "with_di"]
+__all__ = ["DI_ENABLED", "INJECTED", "Context", "Contexts", "DependencyInjectionManager", "LazyInjecting", "with_di"]
 
 import collections
 import contextlib
 import contextvars
-import enum
 import inspect
 import logging
 import os
@@ -66,13 +65,29 @@ Example:
         await foo()
 """
 
+Context = t.NewType("Context", str)
+"""
+Type representing a Lightbulb dependency injection context. Used for labelling containers so that they
+can be accessed using method injection if required. You can create and use your own contexts by
+creating an instance of this type.
+"""
 
-class DiContext(enum.Enum):
-    DEFAULT = enum.auto()
-    COMMAND = enum.auto()
-    AUTOCOMPLETE = enum.auto()
-    LISTENER = enum.auto()
-    TASK = enum.auto()
+
+class Contexts:
+    """Collection of the dependency injection context values Lightbulb uses."""
+
+    __slots__ = ()
+
+    DEFAULT = Context("lightbulb.di.contexts.default")
+    """The base DI context - all other contexts are built with this as the parent."""
+    COMMAND = Context("lightbulb.di.contexts.command")
+    """DI context used during command invocation, including for hooks and error handlers."""
+    AUTOCOMPLETE = Context("lightbulb.di.contexts.autocomplete")
+    """DI context used during autocomplete invocation."""
+    LISTENER = Context("lightbulb.di.contexts.listener")
+    """DI context used during listener invocation."""
+    TASK = Context("lightbulb.di.contexts.task")
+    """DI context used during task invocation."""
 
 
 class DependencyInjectionManager:
@@ -81,10 +96,10 @@ class DependencyInjectionManager:
     __slots__ = ("_registries", "_base_container")
 
     def __init__(self) -> None:
-        self._registries: dict[DiContext, registry.Registry] = collections.defaultdict(registry.Registry)
+        self._registries: dict[Context, registry.Registry] = collections.defaultdict(registry.Registry)
         self._base_container: container.Container | None = None
 
-    def registry_for(self, context: DiContext, /) -> registry.Registry:
+    def registry_for(self, context: Context, /) -> registry.Registry:
         """
         Get the dependency registry for the given context. Creates one if necessary.
 
@@ -97,7 +112,7 @@ class DependencyInjectionManager:
         return self._registries[context]
 
     @contextlib.asynccontextmanager
-    async def enter_context(self, context: DiContext = DiContext.DEFAULT, /) -> t.AsyncIterator[container.Container]:
+    async def enter_context(self, context: Context = Contexts.DEFAULT, /) -> t.AsyncIterator[container.Container]:
         """
         Context manager that ensures a dependency injection context is available for the nested operations.
 
@@ -127,13 +142,14 @@ class DependencyInjectionManager:
             initial_token, initial = None, DI_CONTAINER.get(None)
             if initial is None:
                 if self._base_container is None:
-                    self._base_container = container.Container(self._registries[DiContext.DEFAULT])
-                    self._base_container.open()
+                    self._base_container = container.Container(self._registries[Contexts.DEFAULT], Contexts.DEFAULT)
                 initial_token = DI_CONTAINER.set(self._base_container)
 
             ctx_token: contextvars.Token[container.Container | None] | None = None
-            if context != DiContext.DEFAULT:
-                ctx_token = DI_CONTAINER.set(container.Container(self._registries[context], parent=DI_CONTAINER.get()))
+            if context != Contexts.DEFAULT:
+                ctx_token = DI_CONTAINER.set(
+                    container.Container(self._registries[context], context, parent=DI_CONTAINER.get())
+                )
 
             try:
                 if (ct := DI_CONTAINER.get(None)) is not None:

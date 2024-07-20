@@ -68,7 +68,7 @@ class TestStandaloneContainer:
         registry = di.Registry()
         registry.register_value(object, value)
 
-        async with di.Container(registry) as container:
+        async with di.Container(registry, "foo") as container:
             assert (await container.get(object)) is value
 
     @pytest.mark.asyncio
@@ -78,7 +78,7 @@ class TestStandaloneContainer:
         registry = di.Registry()
         registry.register_factory(object, lambda: value)
 
-        async with di.Container(registry) as container:
+        async with di.Container(registry, "foo") as container:
             assert (await container.get(object)) is value
 
     @pytest.mark.asyncio
@@ -91,7 +91,7 @@ class TestStandaloneContainer:
         registry = di.Registry()
         registry.register_factory(object, factory)
 
-        async with di.Container(registry) as container:
+        async with di.Container(registry, "foo") as container:
             assert (await container.get(object)) is value
 
     @pytest.mark.asyncio
@@ -105,7 +105,7 @@ class TestStandaloneContainer:
         registry = di.Registry()
         registry.register_factory(object, factory)
 
-        async with di.Container(registry) as container:
+        async with di.Container(registry, "foo") as container:
             value = await container.get(object)
             assert (await container.get(object)) is value
 
@@ -118,7 +118,7 @@ class TestStandaloneContainer:
         registry = di.Registry()
         registry.register_factory(object, lambda: object(), teardown)
 
-        async with di.Container(registry):
+        async with di.Container(registry, "foo"):
             pass
 
         teardown.assert_not_called()
@@ -130,7 +130,7 @@ class TestStandaloneContainer:
         registry = di.Registry()
         registry.register_factory(object, lambda: object(), teardown)
 
-        async with di.Container(registry) as container:
+        async with di.Container(registry, "foo") as container:
             value = await container.get(object)
 
         teardown.assert_called_once_with(value)
@@ -142,7 +142,7 @@ class TestStandaloneContainer:
         registry = di.Registry()
         registry.register_factory(object, lambda: object(), teardown)
 
-        async with di.Container(registry) as container:
+        async with di.Container(registry, "foo") as container:
             value = await container.get(object)
 
         teardown.assert_awaited_once_with(value)
@@ -161,7 +161,7 @@ class TestStandaloneContainer:
         registry.register_factory(d1, f1)
         registry.register_factory(d2, f2)
 
-        async with di.Container(registry) as container:
+        async with di.Container(registry, "foo") as container:
             await container.get(d2)
 
     @pytest.mark.asyncio
@@ -181,7 +181,7 @@ class TestStandaloneContainer:
         registry.register_factory(d2, f2)
         registry.register_factory(d3, f3)
 
-        async with di.Container(registry) as container:
+        async with di.Container(registry, "foo") as container:
             await container.get(d3)
 
     @pytest.fixture
@@ -209,12 +209,12 @@ class TestStandaloneContainer:
 
     @pytest.mark.asyncio
     async def test_complicated_dependency_supplied(self, complicated_registry: di.Registry) -> None:
-        async with di.Container(complicated_registry) as container:
+        async with di.Container(complicated_registry, "foo") as container:
             await container.get(t.Annotated[object, "g"])
 
     @pytest.mark.asyncio
     async def test_all_teardowns_called_for_complicated_dependency(self, complicated_registry: di.Registry) -> None:
-        async with di.Container(complicated_registry) as container:
+        async with di.Container(complicated_registry, "foo") as container:
             await container.get(t.Annotated[object, "g"])
 
         for item in ["a", "b", "c", "d", "e", "f", "g"]:
@@ -225,7 +225,7 @@ class TestStandaloneContainer:
         registry = di.Registry()
 
         with pytest.raises(di.DependencyNotSatisfiableException):
-            async with di.Container(registry) as container:
+            async with di.Container(registry, "foo") as container:
                 await container.get(object)
 
     @pytest.mark.asyncio
@@ -237,7 +237,7 @@ class TestStandaloneContainer:
         registry.register_factory(t.Annotated[object, "d2"], f)
 
         with pytest.raises(di.DependencyNotSatisfiableException):
-            async with di.Container(registry) as container:
+            async with di.Container(registry, "foo") as container:
                 await container.get(t.Annotated[object, "d2"])
 
 
@@ -249,7 +249,10 @@ class TestContainerWithParent:
 
         child_registry = di.Registry()
 
-        async with di.Container(parent_registry) as pc, di.Container(child_registry, parent=pc) as cc:
+        async with (
+            di.Container(parent_registry, "parent") as pc,
+            di.Container(child_registry, "child", parent=pc) as cc,
+        ):
             await cc.get(object)
 
     @pytest.mark.asyncio
@@ -259,11 +262,11 @@ class TestContainerWithParent:
 
         child_registry = di.Registry()
 
-        async with di.Container(parent_registry) as pc:
-            async with di.Container(child_registry, parent=pc) as cc1:
+        async with di.Container(parent_registry, "parent") as pc:
+            async with di.Container(child_registry, "child", parent=pc) as cc1:
                 dep = await cc1.get(object)
 
-            async with di.Container(child_registry, parent=pc) as cc2:
+            async with di.Container(child_registry, "child", parent=pc) as cc2:
                 assert (await cc2.get(object)) is dep
 
     @pytest.mark.asyncio
@@ -273,13 +276,13 @@ class TestContainerWithParent:
 
         child_registry = di.Registry()
 
-        async with di.Container(parent_registry) as pc:
-            async with di.Container(child_registry, parent=pc) as cc1:
+        async with di.Container(parent_registry, "parent") as pc:
+            async with di.Container(child_registry, "child", parent=pc) as cc1:
                 parent_dep = await cc1.get(object)
 
             child_registry.register_value(object, object())
 
-            async with di.Container(child_registry, parent=pc) as cc2:
+            async with di.Container(child_registry, "child", parent=pc) as cc2:
                 assert (await cc2.get(object)) is not parent_dep
 
             assert (await pc.get(object)) is parent_dep
@@ -296,7 +299,10 @@ class TestContainerWithParent:
         child_registry.register_factory(t.Annotated[object, "d1"], lambda: object())
 
         with pytest.raises(di.DependencyNotSatisfiableException):
-            async with di.Container(parent_registry) as pc, di.Container(child_registry, parent=pc) as cc:
+            async with (
+                di.Container(parent_registry, "parent") as pc,
+                di.Container(child_registry, "child", parent=pc) as cc,
+            ):
                 await cc.get(t.Annotated[object, "d2"])
 
     @pytest.mark.asyncio
@@ -311,7 +317,7 @@ class TestContainerWithParent:
         registry.register_factory(t.Annotated[object, "b"], f_b)
 
         with pytest.raises(di.CircularDependencyException):
-            async with di.Container(registry) as c:
+            async with di.Container(registry, "foo") as c:
                 await c.get(t.Annotated[object, "a"])
 
     @pytest.mark.asyncio
@@ -323,7 +329,7 @@ class TestContainerWithParent:
         registry.register_factory(t.Annotated[object, "a"], f_a)
 
         with pytest.raises(di.DependencyNotSatisfiableException):
-            async with di.Container(registry) as c:
+            async with di.Container(registry, "foo") as c:
                 await c.get(t.Annotated[object, "b"])
 
     @pytest.mark.asyncio
@@ -332,6 +338,6 @@ class TestContainerWithParent:
         registry.register_factory(object, lambda: object())
 
         with pytest.raises(di.ContainerClosedException):
-            async with di.Container(registry) as c:
+            async with di.Container(registry, "foo") as c:
                 pass
             await c.get(object)

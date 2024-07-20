@@ -233,7 +233,7 @@ class Task:
             LOGGER.debug("invoking task %r", self._func.__name__)
 
             before, self.last_invoked_at = time.perf_counter(), datetime.datetime.now(datetime.timezone.utc)
-            async with self._client.di.enter_context(di.DiContext.TASK):
+            async with self._client.di.enter_context(di.Contexts.TASK):
                 try:
                     await self._func()
                 except Exception as e:

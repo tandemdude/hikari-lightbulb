@@ -159,8 +159,8 @@ class Client:
         self._extensions: set[str] = set()
         self._tasks: set[tasks.Task] = set()
 
-        self.di.registry_for(di_.DiContext.DEFAULT).register_value(hikari.api.RESTClient, self.rest)
-        self.di.registry_for(di_.DiContext.DEFAULT).register_value(Client, self)
+        self.di.registry_for(di_.Contexts.DEFAULT).register_value(hikari.api.RESTClient, self.rest)
+        self.di.registry_for(di_.Contexts.DEFAULT).register_value(Client, self)
 
         self._started = False
 
@@ -791,7 +791,7 @@ class Client:
     async def _execute_autocomplete_context(
         self, context: context_.AutocompleteContext[t.Any], autocomplete_provider: options_.AutocompleteProvider[t.Any]
     ) -> None:
-        async with self.di.enter_context(di_.DiContext.AUTOCOMPLETE) as container:
+        async with self.di.enter_context(di_.Contexts.AUTOCOMPLETE) as container:
             if container is not None:  # type: ignore[reportUnnecessaryComparison]
                 container.add_value(context_.AutocompleteContext, context)
 
@@ -858,7 +858,7 @@ class Client:
     async def _execute_command_context(self, context: context_.Context) -> None:
         pipeline = execution.ExecutionPipeline(context, self.execution_step_order)
 
-        async with self.di.enter_context(di_.DiContext.COMMAND) as container:
+        async with self.di.enter_context(di_.Contexts.COMMAND) as container:
             if container is not None:  # type: ignore[reportUnnecessaryComparison]
                 container.add_value(context_.Context, context)
                 container.add_value(execution.ExecutionPipeline, pipeline)
@@ -947,8 +947,8 @@ class GatewayEnabledClient(Client):
         )
 
         if isinstance(app, hikari.GatewayBot):
-            self.di.registry_for(di_.DiContext.DEFAULT).register_value(hikari.GatewayBot, app)
-        self.di.registry_for(di_.DiContext.DEFAULT).register_value(hikari.api.EventManager, app.event_manager)
+            self.di.registry_for(di_.Contexts.DEFAULT).register_value(hikari.GatewayBot, app)
+        self.di.registry_for(di_.Contexts.DEFAULT).register_value(hikari.api.EventManager, app.event_manager)
 
 
 class RestEnabledClient(Client):
@@ -984,8 +984,8 @@ class RestEnabledClient(Client):
         app.interaction_server.set_listener(hikari.CommandInteraction, self.handle_rest_application_command_interaction)
 
         if isinstance(app, hikari.RESTBot):
-            self.di.registry_for(di_.DiContext.DEFAULT).register_value(hikari.RESTBot, app)
-        self.di.registry_for(di_.DiContext.DEFAULT).register_value(hikari.api.InteractionServer, app.interaction_server)
+            self.di.registry_for(di_.Contexts.DEFAULT).register_value(hikari.RESTBot, app)
+        self.di.registry_for(di_.Contexts.DEFAULT).register_value(hikari.api.InteractionServer, app.interaction_server)
 
     def build_rest_autocomplete_context(
         self,

@@ -62,7 +62,7 @@ def get_command_data(command: commands.CommandBase | type[commands.CommandBase])
 
 async def maybe_await(item: types.MaybeAwaitable[T]) -> T:
     """
-    Await the given item if it is awaitable, otherwise just return the given item.
+    Await the given item if it is a coroutine, otherwise just return the given item.
 
     Args:
         item: The item to maybe await.

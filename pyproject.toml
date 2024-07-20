@@ -160,3 +160,6 @@ filterwarnings = [
     'ignore:.*"@coroutine" decorator is deprecated.*:DeprecationWarning',
     "ignore:.*The loop argument is deprecated.*:DeprecationWarning"
 ]
+
+[tool.coverage.report]
+exclude_also = ["if t.TYPE_CHECKING:"]

@@ -41,11 +41,10 @@ T = t.TypeVar("T")
 
 class Container:
     # TODO - handle registries changing after container is created
-    __slots__ = ("_registry", "_temp_registry", "_parent", "_closed", "_graph", "_instances")
+    __slots__ = ("_registry", "_parent", "_closed", "_graph", "_instances")
 
     def __init__(self, registry: registry_.Registry, *, parent: Container | None = None) -> None:
         self._registry = registry
-        self._temp_registry = registry_.Registry()
         self._parent = parent
 
         self._closed = False
@@ -81,7 +80,14 @@ class Container:
 
     def open(self) -> None: ...
 
-    async def close(self) -> None: ...
+    async def close(self) -> None:
+        for dependency_id, instance in self._instances.items():
+            if (td := self._graph.nodes[dependency_id]["teardown"]) is None:
+                continue
+
+            await utils.maybe_await(td(instance))
+
+        self._closed = True
 
     def add_factory(
         self,
@@ -137,16 +143,21 @@ class Container:
 
         for dep_id in creation_order:
             if (container := self._graph.nodes[dep_id].get("container")) is None:
-                raise exceptions.DependencyNotSatisfiableException(f"could not create dependency {dep_id!r}")
+                raise exceptions.DependencyNotSatisfiableException(
+                    f"could not create dependency {dep_id!r} - not provided by this or a parent container"
+                )
 
             # We already have the dependency we need
             if dep_id in container._instances:
                 continue
 
             node_data = self._graph.nodes[dep_id]
-            # Check that we actually know how to create the dependency
+            # Check that we actually know how to create the dependency - this should have been caught earlier
+            # by checking that node["container"] was present - but just in case, we check for the factory
             if node_data.get("factory") is None:
-                raise exceptions.DependencyNotSatisfiableException(f"could not create dependency {dep_id!r}")
+                raise exceptions.DependencyNotSatisfiableException(
+                    f"could not create dependency {dep_id!r} - do not know how to instantiate"
+                )
 
             # Get the dependencies for this dependency from the container this dependency was defined in.
             # This prevents 'scope promotion' - a dependency from the parent container requiring one from the
@@ -157,7 +168,9 @@ class Container:
                 for sub_dependency_id, param_name in node_data["factory_params"].items():
                     sub_dependencies[param_name] = await node_data["container"]._get(sub_dependency_id)
             except exceptions.DependencyNotSatisfiableException as e:
-                raise exceptions.DependencyNotSatisfiableException(f"could not create dependency {dep_id!r}") from e
+                raise exceptions.DependencyNotSatisfiableException(
+                    f"could not create dependency {dep_id!r} - failed creating sub-dependency"
+                ) from e
 
             # Cache the created dependency in the correct container to ensure the correct lifecycle
             container._instances[dep_id] = await utils.maybe_await(node_data["factory"](**sub_dependencies))
@@ -165,5 +178,21 @@ class Container:
         return self._graph.nodes[dependency_id]["container"]._instances[dependency_id]
 
     async def get(self, typ: type[T] | t.Annotated[T, str]) -> T:
+        """
+        Get a dependency from this container, instantiating it and sub-dependencies if necessary.
+
+        Args:
+            typ: The type used when registering the dependency.
+
+        Returns:
+            The dependency for the given type.
+
+        Raises:
+            :obj:`~lightbulb.di.exceptions.ContainerClosedException`: If the container is closed.
+            :obj:`~lightbulb.di.exceptions.CircularDependencyException`: If the dependency cannot be satisfied
+                due to a circular dependency with itself or a sub-dependency.
+            :obj:`~lightbulb.di.exceptions.DependencyNotSatisfiableException`: If the dependency cannot be satisfied
+                for any other reason.
+        """
         dependency_id = di_utils.get_dependency_id(typ)
         return t.cast(T, await self._get(dependency_id))

@@ -299,7 +299,7 @@ def hook(step: ExecutionStep, skip_when_failed: bool = False) -> t.Callable[[Exe
         raise ValueError("hooks cannot be registered for the 'INVOKE' execution step")
 
     def inner(func: ExecutionHookFunc) -> ExecutionHook:
-        return ExecutionHook(step, skip_when_failed, di.with_di(func))  # type: ignore[reportArgumentType]
+        return ExecutionHook(step, skip_when_failed, di.with_di(func))
 
     return inner
 

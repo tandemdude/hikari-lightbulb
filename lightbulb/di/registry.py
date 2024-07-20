@@ -42,7 +42,10 @@ class Registry:
         self._graph: nx.DiGraph[str] = nx.DiGraph()
 
     def register_value(
-        self, typ: type[T], value: T, teardown: t.Callable[..., types.MaybeAwaitable[None]] | None = None
+        self,
+        typ: type[T] | t.Annotated[T, str],
+        value: T,
+        teardown: t.Callable[..., types.MaybeAwaitable[None]] | None = None,
     ) -> None:
         self.register_factory(typ, lambda: value, teardown)
 

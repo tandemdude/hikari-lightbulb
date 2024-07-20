@@ -176,6 +176,9 @@ class Client:
 
         Returns:
             :obj:`None`
+
+        Raises:
+            :obj:`RuntimeError`: If the client has already been started.
         """
         if self._started:
             raise RuntimeError("cannot start already-started client")
@@ -186,6 +189,15 @@ class Client:
         for task in self._tasks:
             if task._auto_start:
                 task.start()
+
+    async def stop(self, *_: t.Any) -> None:
+        if not self._started:
+            return
+
+        for task in self._tasks:
+            task.stop()
+
+        await self.di.close()
 
     @t.overload
     def task(
@@ -779,7 +791,10 @@ class Client:
     async def _execute_autocomplete_context(
         self, context: context_.AutocompleteContext[t.Any], autocomplete_provider: options_.AutocompleteProvider[t.Any]
     ) -> None:
-        async with self.di.enter_context(di_.DiContext.COMMAND):
+        async with self.di.enter_context(di_.DiContext.AUTOCOMPLETE) as container:
+            if container is not None:  # type: ignore[reportUnnecessaryComparison]
+                container.add_value(context_.AutocompleteContext, context)
+
             try:
                 await autocomplete_provider(context)
             except Exception as e:
@@ -841,8 +856,12 @@ class Client:
         )
 
     async def _execute_command_context(self, context: context_.Context) -> None:
-        async with self.di.enter_context(di_.DiContext.COMMAND):
-            pipeline = execution.ExecutionPipeline(context, self.execution_step_order)
+        pipeline = execution.ExecutionPipeline(context, self.execution_step_order)
+
+        async with self.di.enter_context(di_.DiContext.COMMAND) as container:
+            if container is not None:  # type: ignore[reportUnnecessaryComparison]
+                container.add_value(context_.Context, context)
+                container.add_value(execution.ExecutionPipeline, pipeline)
 
             try:
                 await pipeline._run()

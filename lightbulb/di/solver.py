@@ -31,11 +31,15 @@ import logging
 import os
 import typing as t
 
+from lightbulb import utils
 from lightbulb.di import container
 from lightbulb.di import registry
 
-T = t.TypeVar("T")
-AnyAsyncCallableT = t.TypeVar("AnyAsyncCallableT", bound=t.Callable[..., t.Awaitable[t.Any]])
+if t.TYPE_CHECKING:
+    from lightbulb.internal import types
+
+P = t.ParamSpec("P")
+R = t.TypeVar("R")
 
 DI_ENABLED: t.Final[bool] = os.environ.get("LIGHTBULB_DI_DISABLED", "false").lower() != "true"
 DI_CONTAINER: contextvars.ContextVar[container.Container | None] = contextvars.ContextVar(
@@ -66,6 +70,7 @@ Example:
 class DiContext(enum.Enum):
     DEFAULT = enum.auto()
     COMMAND = enum.auto()
+    AUTOCOMPLETE = enum.auto()
     LISTENER = enum.auto()
     TASK = enum.auto()
 
@@ -80,97 +85,117 @@ class DependencyInjectionManager:
         self._base_container: container.Container | None = None
 
     def registry_for(self, context: DiContext, /) -> registry.Registry:
-        """The dependency injection registry containing dependencies available for this instance."""
+        """
+        Get the dependency registry for the given context. Creates one if necessary.
+
+        Args:
+            context: The injection context to get the registry for.
+
+        Returns:
+            The dependency registry for the given context.
+        """
         return self._registries[context]
 
     @contextlib.asynccontextmanager
-    async def enter_context(self, context: DiContext, /) -> t.AsyncIterator[None]:
-        #     """
-        #     Context manager that ensures a dependency injection context is available for the nested operations.
-        #
-        #     Args:
-        #         manager: The DI manager to use to supply dependencies for this injection context.
-        #
-        #     Example:
-        #
-        #         .. code-block:: python
-        #
-        #             with lightbulb.ensure_di_context(client):
-        #                 await some_function_that_needs_dependencies()
-        #     """
-        if context is DiContext.DEFAULT:
-            raise ValueError("cannot explicitly enter default context")
+    async def enter_context(self, context: DiContext = DiContext.DEFAULT, /) -> t.AsyncIterator[container.Container]:
+        """
+        Context manager that ensures a dependency injection context is available for the nested operations.
 
+        Args:
+            context: The context to enter. If you are trying to enter a non-default (:obj:`~DiContext.DEFAULT`) context,
+                the default context will be entered first to ensure the dependencies are available. Defaults to
+                :obj:`~DiContext.DEFAULT`.
+
+        Yields:
+            :obj:`~lightbulb.di.container.Container`: The container that has been entered.
+
+        Example:
+
+            .. code-block:: python
+
+                # Enter a specific context
+                with client.di.enter_context(lightbulb.di.DiContext.COMMAND):
+                    await some_function_that_needs_dependencies()
+
+        Warning:
+            If you have disabled dependency injection using the ``LIGHTBULB_DI_DISABLED`` environment variable,
+            this method will do nothing and the context manager will return :obj:`None`. Most users will never
+            have to worry about this, but it is something to consider. The type-hint does not reflect this
+            to prevent your type-checker complaining about not checking for :obj:`None`.
+        """
         if DI_ENABLED:
             initial_token, initial = None, DI_CONTAINER.get(None)
             if initial is None:
                 if self._base_container is None:
                     self._base_container = container.Container(self._registries[DiContext.DEFAULT])
+                    self._base_container.open()
                 initial_token = DI_CONTAINER.set(self._base_container)
 
-            new_container = container.Container(self._registries[context], parent=DI_CONTAINER.get())
-            token = DI_CONTAINER.set(new_container)
+            ctx_token: contextvars.Token[container.Container | None] | None = None
+            if context != DiContext.DEFAULT:
+                ctx_token = DI_CONTAINER.set(container.Container(self._registries[context], parent=DI_CONTAINER.get()))
 
             try:
-                async with new_container:
-                    yield
+                if (ct := DI_CONTAINER.get(None)) is not None:
+                    async with ct:
+                        yield ct
             finally:
-                DI_CONTAINER.reset(token)
+                if ctx_token is not None:
+                    DI_CONTAINER.reset(ctx_token)
                 if initial_token is not None:
                     DI_CONTAINER.reset(initial_token)
         else:
-            yield
+            # I'm not sure how to deal with this - but I definitely don't want to hint the return type
+            # as optional because that adds annoying assertions further down the line for users
+            #
+            # I think I should just account for this internally within the library and document the
+            # behaviour - chances are almost all users will never come across this
+            yield None  # type: ignore
+
+    async def close(self) -> None:
+        """
+        Close the default dependency injection context. This **must** be called if you wish the teardown
+        functions for any dependencies registered for the default registry to be called.
+
+        Returns:
+            :obj:`None`
+        """
+        if self._base_container is not None:
+            await self._base_container.close()
+            self._base_container = None
 
 
-def find_injectable_kwargs(
-    func: t.Callable[..., t.Any], passed_args: int, passed_kwargs: t.Collection[str]
-) -> dict[str, t.Any]:
-    """
-    Given a function, parse the signature to discover which parameters are suitable for dependency injection.
+def parse_injectable_kwargs(func: t.Callable[..., t.Any]) -> tuple[list[tuple[str, t.Any]], dict[str, t.Any]]:
+    positional_or_keyword_params: list[tuple[str, t.Any]] = []
+    keyword_only_params: dict[str, t.Any] = {}
 
-    A parameter is suitable for dependency injection if:
-
-    - It has a type annotation
-
-    - It has no default value (unless the default value is :obj:`~INJECTED`).
-
-    - It is not positional-only (injected parameters are always passed as a keyword argument)
-
-    Args:
-        func: The function to discover the dependency injection suitable parameters for.
-        passed_args: The number of positional arguments passed to the function in this invocation.
-        passed_kwargs: The names of all the keyword arguments passed
-            to the function in this invocation.
-
-    Returns:
-        Mapping of parameter name to parameter annotation value for parameters that are suitable for
-        dependency injection.
-    """
     parameters = inspect.signature(func, eval_str=True).parameters
-
-    injectable_parameters: dict[str, t.Any] = {}
-    for parameter in [*parameters.values()][passed_args:]:
-        # Injectable parameters MUST have an annotation and no default
+    for parameter in parameters.values():
         if (
+            # If the parameter has no annotation
             parameter.annotation is inspect.Parameter.empty
+            # If the parameter is not positional-or-keyword or keyword-only
+            or parameter.kind
+            in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
+            # If it has a default that isn't INJECTED
             or ((default := parameter.default) is not inspect.Parameter.empty and default is not INJECTED)
-            # Injecting positional only parameters is far too annoying
-            or parameter.kind is inspect.Parameter.POSITIONAL_ONLY
-            # If a kwarg has been passed then we don't want to replace it
-            or parameter.name in passed_kwargs
         ):
             continue
 
-        injectable_parameters[parameter.name] = parameter.annotation
+        if parameter.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD:
+            positional_or_keyword_params.append((parameter.name, parameter.annotation))
+        else:
+            # It has to be a keyword-only parameter
+            keyword_only_params[parameter.name] = parameter.annotation
 
-    return injectable_parameters
+    return positional_or_keyword_params, keyword_only_params
 
 
 class LazyInjecting:
-    # TODO - cache dependency mapping for parameters
     """
     Wrapper for a callable that implements dependency injection. When called, resolves the required
-    dependencies and calls the original callable. Only supports asynchronous functions.
+    dependencies and calls the original callable. Supports both synchronous and asynchronous functions,
+    however this cannot be called synchronously - synchronous functions will need to be awaited.
 
     You should generally never have to instantiate this yourself - you should instead use one of the
     decorators that applies this to the target automatically.
@@ -181,26 +206,34 @@ class LazyInjecting:
         :obj:`~lightbulb.commands.execution.invoke`
     """
 
-    __slots__ = ("_func", "_self")
+    __slots__ = ("_func", "_self", "_pos_or_kw_params", "_kw_only_params")
 
     def __init__(
         self,
         func: t.Callable[..., t.Awaitable[t.Any]],
         self_: t.Any = None,
+        _cached_pos_or_kw_params: list[tuple[str, t.Any]] | None = None,
+        _cached_kw_only_params: dict[str, t.Any] | None = None,
     ) -> None:
         self._func = func
         self._self: t.Any = self_
 
-    def __get__(self, instance: t.Any, owner: type[t.Any]) -> LazyInjecting:
+        if _cached_pos_or_kw_params is not None and _cached_kw_only_params is not None:
+            self._pos_or_kw_params = _cached_pos_or_kw_params
+            self._kw_only_params = _cached_kw_only_params
+        else:
+            self._pos_or_kw_params, self._kw_only_params = parse_injectable_kwargs(func)
+
+    def __get__(self, instance: t.Any, _: type[t.Any]) -> LazyInjecting:
         if instance is not None:
-            return LazyInjecting(self._func, instance)
+            return LazyInjecting(self._func, instance, self._pos_or_kw_params, self._kw_only_params)
         return self
 
     def __getattr__(self, item: str) -> t.Any:
         return getattr(self._func, item)
 
     def __setattr__(self, key: str, value: t.Any) -> None:
-        if key in ("_func", "_self"):
+        if key in self.__slots__:
             return super().__setattr__(key, value)
 
         setattr(self._func, key, value)
@@ -209,21 +242,22 @@ class LazyInjecting:
         new_kwargs: dict[str, t.Any] = {}
         new_kwargs.update(kwargs)
 
-        di_container: t.Optional[container.Container] = DI_CONTAINER.get(None)
+        di_container: container.Container | None = DI_CONTAINER.get(None)
         if di_container is None:
             raise RuntimeError("cannot prepare dependency injection as no DI context is available")
 
-        injectables = find_injectable_kwargs(self._func, len(args) + (self._self is not None), set(kwargs.keys()))
+        injectables = dict(self._pos_or_kw_params[len(args) + (self._self is not None) :])
+        injectables.update({name: type for name, type in self._kw_only_params.items() if name not in kwargs})
 
         for name, type in injectables.items():
             new_kwargs[name] = await di_container.get(type)
 
         if self._self is not None:
-            return await self._func(self._self, *args, **new_kwargs)
-        return await self._func(*args, **new_kwargs)
+            return await utils.maybe_await(self._func(self._self, *args, **new_kwargs))
+        return await utils.maybe_await(self._func(*args, **new_kwargs))
 
 
-def with_di(func: AnyAsyncCallableT) -> AnyAsyncCallableT:
+def with_di(func: t.Callable[P, types.MaybeAwaitable[R]]) -> t.Callable[P, t.Awaitable[R]]:
     """
     Enables dependency injection on the decorated asynchronous function. If dependency injection
     has been disabled globally then this function does nothing and simply returns the object that was passed in.

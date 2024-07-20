@@ -1,3 +1,23 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2023-present tandemdude
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 import inspect
 import typing as t
 from unittest import mock
@@ -8,6 +28,39 @@ from lightbulb import di
 
 
 class TestStandaloneContainer:
+    def test_cannot_have_non_str_in_annotated_type(self) -> None:
+        registry = di.Registry()
+
+        with pytest.raises(ValueError):
+            registry.register_value(t.Annotated[object, 12345], object())
+
+    def test_cannot_have_factory_with_pos_only_args(self) -> None:
+        registry = di.Registry()
+
+        def f(_: str, /) -> object:
+            return object()
+
+        with pytest.raises(ValueError):
+            registry.register_factory(object, f)
+
+    def test_cannot_have_factory_with_var_pos_args(self) -> None:
+        registry = di.Registry()
+
+        def f(*_: str) -> object:
+            return object()
+
+        with pytest.raises(ValueError):
+            registry.register_factory(object, f)
+
+    def test_cannot_have_factory_with_var_kw_args(self) -> None:
+        registry = di.Registry()
+
+        def f(**_: str) -> object:
+            return object()
+
+        with pytest.raises(ValueError):
+            registry.register_factory(object, f)
+
     @pytest.mark.asyncio
     async def test_supply_dependency_by_value(self) -> None:
         value = object()
@@ -71,7 +124,6 @@ class TestStandaloneContainer:
         teardown.assert_not_called()
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail
     async def test_sync_teardown_called_when_dependency_supplied(self) -> None:
         teardown = mock.Mock()
 
@@ -84,7 +136,6 @@ class TestStandaloneContainer:
         teardown.assert_called_once_with(value)
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail
     async def test_async_teardown_called_when_dependency_supplied(self) -> None:
         teardown = mock.AsyncMock()
 
@@ -162,7 +213,6 @@ class TestStandaloneContainer:
             await container.get(t.Annotated[object, "g"])
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail
     async def test_all_teardowns_called_for_complicated_dependency(self, complicated_registry: di.Registry) -> None:
         async with di.Container(complicated_registry) as container:
             await container.get(t.Annotated[object, "g"])
@@ -248,3 +298,40 @@ class TestContainerWithParent:
         with pytest.raises(di.DependencyNotSatisfiableException):
             async with di.Container(parent_registry) as pc, di.Container(child_registry, parent=pc) as cc:
                 await cc.get(t.Annotated[object, "d2"])
+
+    @pytest.mark.asyncio
+    async def test_non_direct_circular_dependency_raises_exception(self) -> None:
+        # fmt: off
+        def f_a(_: t.Annotated[object, "b"]) -> object: return object()
+        def f_b(_: t.Annotated[object, "a"]) -> object: return object()
+        # fmt: on
+
+        registry = di.Registry()
+        registry.register_factory(t.Annotated[object, "a"], f_a)
+        registry.register_factory(t.Annotated[object, "b"], f_b)
+
+        with pytest.raises(di.CircularDependencyException):
+            async with di.Container(registry) as c:
+                await c.get(t.Annotated[object, "a"])
+
+    @pytest.mark.asyncio
+    async def test_get_transient_dependency_raises_exception(self) -> None:
+        def f_a(_: t.Annotated[object, "b"]) -> object:
+            return object()
+
+        registry = di.Registry()
+        registry.register_factory(t.Annotated[object, "a"], f_a)
+
+        with pytest.raises(di.DependencyNotSatisfiableException):
+            async with di.Container(registry) as c:
+                await c.get(t.Annotated[object, "b"])
+
+    @pytest.mark.asyncio
+    async def test_get_from_closed_container_raises_exception(self) -> None:
+        registry = di.Registry()
+        registry.register_factory(object, lambda: object())
+
+        with pytest.raises(di.ContainerClosedException):
+            async with di.Container(registry) as c:
+                pass
+            await c.get(object)

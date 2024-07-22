@@ -570,7 +570,7 @@ class Wallet:
 
 
 # Initialise the bot and Lightbulb client
-# bot = hikari.GatewayBot("your token")
+bot = hikari.GatewayBot("your token")
 client = lightbulb.client_from_app(bot)
 # Hook client into bot's lifecycle
 bot.subscribe(hikari.StartingEvent, client.start)

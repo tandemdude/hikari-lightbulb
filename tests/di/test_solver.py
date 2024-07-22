@@ -23,47 +23,48 @@ import typing as t
 import pytest
 
 import lightbulb
-from lightbulb.di.solver import parse_injectable_kwargs
+from lightbulb.di.solver import CANNOT_INJECT
+from lightbulb.di.solver import parse_injectable_params
 
 
 class TestSignatureParsing:
-    def test_does_not_parse_positional_only_args(self) -> None:
+    def test_parses_positional_only_arg_correctly(self) -> None:
         def m(foo: object, /) -> None: ...
 
-        pos, kw = parse_injectable_kwargs(m)
-        assert len(pos) == 0 and len(kw) == 0
+        pos, kw = parse_injectable_params(m)
+        assert pos[0][1] is CANNOT_INJECT and len(kw) == 0
 
-    def test_does_not_parse_var_positional_args(self) -> None:
+    def test_parses_var_positional_arg_correctly(self) -> None:
         def m(*foo: object) -> None: ...
 
-        pos, kw = parse_injectable_kwargs(m)
+        pos, kw = parse_injectable_params(m)
         assert len(pos) == 0 and len(kw) == 0
 
-    def test_does_not_parse_var_kw_args(self) -> None:
+    def test_does_not_parse_var_kw_arg(self) -> None:
         def m(**foo: object) -> None: ...
 
-        pos, kw = parse_injectable_kwargs(m)
+        pos, kw = parse_injectable_params(m)
         assert len(pos) == 0 and len(kw) == 0
 
-    def test_does_not_parse_args_with_non_INJECTED_default(self) -> None:  # noqa: N802
+    def test_parses_args_with_non_INJECTED_default_correctly(self) -> None:  # noqa: N802
         def m(foo: object = object()) -> None: ...
 
-        pos, kw = parse_injectable_kwargs(m)
-        assert len(pos) == 0 and len(kw) == 0
+        pos, kw = parse_injectable_params(m)
+        assert pos[0][1] is CANNOT_INJECT and len(kw) == 0
 
-    def test_does_not_parse_args_with_no_annotation(self) -> None:
+    def test_parses_args_with_no_annotation_correctly(self) -> None:
         def m(foo) -> None:  # type: ignore[unknownParameterType]
             ...
 
-        pos, kw = parse_injectable_kwargs(m)  # type: ignore[unknownArgumentType]
-        assert len(pos) == 0 and len(kw) == 0
+        pos, kw = parse_injectable_params(m)  # type: ignore[unknownArgumentType]
+        assert pos[0][1] is CANNOT_INJECT and len(kw) == 0
 
     def test_parses_args_correctly(self) -> None:
         def m(
             foo: str, bar: int = lightbulb.di.INJECTED, *, baz: float, bork: bool = lightbulb.di.INJECTED
         ) -> None: ...
 
-        pos, kw = parse_injectable_kwargs(m)
+        pos, kw = parse_injectable_params(m)
 
         assert pos == [("foo", str), ("bar", int)]
         assert kw == {"baz": float, "bork": bool}
@@ -221,3 +222,17 @@ class TestMethodInjection:
 
         async with manager.enter_context(lightbulb.di.Contexts.DEFAULT):
             await instance.bound_method(obj_)
+
+    @pytest.mark.asyncio
+    async def test_dependency_provided_when_argument_passed_to_non_annotated_parameter(self) -> None:
+        manager = lightbulb.di.DependencyInjectionManager()
+
+        value = object()
+        manager.registry_for(lightbulb.di.Contexts.DEFAULT).register_value(object, value)
+
+        @lightbulb.di.with_di
+        def m(foo, obj: object = lightbulb.di.INJECTED) -> None:  # type: ignore[reportUnknownParameterType]
+            assert obj is value
+
+        async with manager.enter_context(lightbulb.di.Contexts.DEFAULT):
+            await m("bar")

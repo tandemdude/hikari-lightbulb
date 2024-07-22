@@ -225,7 +225,10 @@ class DependencyInjectionManager:
             self._default_container = None
 
 
-def parse_injectable_kwargs(func: t.Callable[..., t.Any]) -> tuple[list[tuple[str, t.Any]], dict[str, t.Any]]:
+CANNOT_INJECT = object()
+
+
+def parse_injectable_params(func: t.Callable[..., t.Any]) -> tuple[list[tuple[str, t.Any]], dict[str, t.Any]]:
     positional_or_keyword_params: list[tuple[str, t.Any]] = []
     keyword_only_params: dict[str, t.Any] = {}
 
@@ -240,6 +243,8 @@ def parse_injectable_kwargs(func: t.Callable[..., t.Any]) -> tuple[list[tuple[st
             # If it has a default that isn't INJECTED
             or ((default := parameter.default) is not inspect.Parameter.empty and default is not INJECTED)
         ):
+            if parameter.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
+                positional_or_keyword_params.append((parameter.name, CANNOT_INJECT))
             continue
 
         if parameter.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD:
@@ -282,7 +287,7 @@ class LazyInjecting:
             self._pos_or_kw_params = _cached_pos_or_kw_params
             self._kw_only_params = _cached_kw_only_params
         else:
-            self._pos_or_kw_params, self._kw_only_params = parse_injectable_kwargs(func)
+            self._pos_or_kw_params, self._kw_only_params = parse_injectable_params(func)
 
     def __get__(self, instance: t.Any, _: type[t.Any]) -> LazyInjecting:
         if instance is not None:
@@ -306,13 +311,18 @@ class LazyInjecting:
         if di_container is None:
             raise RuntimeError("cannot prepare dependency injection as no DI context is available")
 
-        injectables = dict(self._pos_or_kw_params[len(args) :])
-        injectables.update({name: type for name, type in self._kw_only_params.items()})
+        injectables = {
+            name: type
+            for name, type in self._pos_or_kw_params[len(args) + (self._self is not None) :]
+            if name not in new_kwargs
+        }
+        injectables.update({name: type for name, type in self._kw_only_params.items() if name not in new_kwargs})
 
         for name, type in injectables.items():
-            # Skip any arguments that we have already been given a value for
-            if name in new_kwargs:
+            # Skip any arguments that we can't inject
+            if type is CANNOT_INJECT:
                 continue
+
             new_kwargs[name] = await di_container.get(type)
 
         if self._self is not None:

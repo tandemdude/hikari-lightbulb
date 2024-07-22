@@ -23,6 +23,7 @@ from __future__ import annotations
 __all__ = ["get_dependency_id", "resolve_dependency_id_for_all_parameters", "populate_graph_for_dependency"]
 
 import inspect
+import sys
 import typing as t
 
 if t.TYPE_CHECKING:
@@ -31,21 +32,16 @@ if t.TYPE_CHECKING:
     from lightbulb.internal import types
 
 
-def get_dependency_id(dependency_type: type[t.Any] | t.Annotated[t.Any, str]) -> str:
-    if t.get_origin(dependency_type) is t.Annotated:
-        _, id = t.get_args(dependency_type)
-        if not isinstance(id, str):
-            raise ValueError("Annotated second argument for type dependencies must be str")
-
-        return id
-
-    return f"{dependency_type.__module__}.{dependency_type.__qualname__}"
+def get_dependency_id(dependency_type: type[t.Any]) -> str:
+    return f"{dependency_type.__module__}.{getattr(dependency_type, '__qualname__', dependency_type.__name__)}"
 
 
 def resolve_dependency_id_for_all_parameters(func: t.Callable[..., types.MaybeAwaitable[t.Any]]) -> dict[str, str]:
     dependencies: dict[str, str] = {}
 
-    for param in inspect.signature(func, eval_str=True).parameters.values():
+    for param in inspect.signature(
+        func, locals={"lightbulb": sys.modules["lightbulb"]}, eval_str=True
+    ).parameters.values():
         if param.kind in (
             inspect.Parameter.POSITIONAL_ONLY,
             inspect.Parameter.VAR_POSITIONAL,

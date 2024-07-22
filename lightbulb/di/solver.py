@@ -20,7 +20,20 @@
 # SOFTWARE.
 from __future__ import annotations
 
-__all__ = ["DI_ENABLED", "INJECTED", "Context", "Contexts", "DependencyInjectionManager", "LazyInjecting", "with_di"]
+__all__ = [
+    "DI_ENABLED",
+    "INJECTED",
+    "Context",
+    "Contexts",
+    "DefaultContainer",
+    "CommandContainer",
+    "AutocompleteContainer",
+    "ListenerContainer",
+    "TaskContainer",
+    "DependencyInjectionManager",
+    "LazyInjecting",
+    "with_di",
+]
 
 import collections
 import contextlib
@@ -28,6 +41,7 @@ import contextvars
 import inspect
 import logging
 import os
+import sys
 import typing as t
 
 from lightbulb import utils
@@ -90,14 +104,42 @@ class Contexts:
     """DI context used during task invocation."""
 
 
+DefaultContainer = t.NewType("DefaultContainer", container.Container)
+"""Injectable type representing the dependency container for the default context."""
+CommandContainer = t.NewType("CommandContainer", container.Container)
+"""Injectable type representing the dependency container for the command context."""
+AutocompleteContainer = t.NewType("AutocompleteContainer", container.Container)
+"""Injectable type representing the dependency container for the autocomplete context."""
+ListenerContainer = t.NewType("ListenerContainer", container.Container)
+"""Injectable type representing the dependency container for the listener context."""
+TaskContainer = t.NewType("TaskContainer", container.Container)
+"""Injectable type representing the dependency container for the task context."""
+
+_CONTAINER_TYPE_BY_CONTEXT = {
+    Contexts.DEFAULT: DefaultContainer,
+    Contexts.COMMAND: CommandContainer,
+    Contexts.AUTOCOMPLETE: AutocompleteContainer,
+    Contexts.LISTENER: ListenerContainer,
+    Contexts.TASK: TaskContainer,
+}
+
+
 class DependencyInjectionManager:
     """Class which contains dependency injection functionality."""
 
-    __slots__ = ("_registries", "_base_container")
+    __slots__ = ("_registries", "_default_container")
 
     def __init__(self) -> None:
         self._registries: dict[Context, registry.Registry] = collections.defaultdict(registry.Registry)
-        self._base_container: container.Container | None = None
+        self._default_container: container.Container | None = None
+
+    @property
+    def default_container(self) -> container.Container | None:
+        """
+        The container being used to provide dependencies for the :attr:`~Contexts.DEFAULT` context. This will
+        be :obj:`None` until the first time any injection context is entered.
+        """
+        return self._default_container
 
     def registry_for(self, context: Context, /) -> registry.Registry:
         """
@@ -118,7 +160,7 @@ class DependencyInjectionManager:
 
         Args:
             context: The context to enter. If you are trying to enter a non-default (:obj:`~DiContext.DEFAULT`) context,
-                the default context will be entered first to ensure the dependencies are available. Defaults to
+                the default context will be entered first to ensure its dependencies are available. Defaults to
                 :obj:`~DiContext.DEFAULT`.
 
         Yields:
@@ -128,7 +170,7 @@ class DependencyInjectionManager:
 
             .. code-block:: python
 
-                # Enter a specific context
+                # Enter a specific context ('client' is your lightbulb.Client instance)
                 with client.di.enter_context(lightbulb.di.DiContext.COMMAND):
                     await some_function_that_needs_dependencies()
 
@@ -141,15 +183,17 @@ class DependencyInjectionManager:
         if DI_ENABLED:
             initial_token, initial = None, DI_CONTAINER.get(None)
             if initial is None:
-                if self._base_container is None:
-                    self._base_container = container.Container(self._registries[Contexts.DEFAULT], Contexts.DEFAULT)
-                initial_token = DI_CONTAINER.set(self._base_container)
+                if self._default_container is None:
+                    self._default_container = container.Container(self._registries[Contexts.DEFAULT])
+                    self._default_container.add_value(DefaultContainer, self._default_container)
+
+                initial_token = DI_CONTAINER.set(self._default_container)
 
             ctx_token: contextvars.Token[container.Container | None] | None = None
             if context != Contexts.DEFAULT:
-                ctx_token = DI_CONTAINER.set(
-                    container.Container(self._registries[context], context, parent=DI_CONTAINER.get())
-                )
+                new_container = container.Container(self._registries[context], parent=DI_CONTAINER.get())
+                new_container.add_value(_CONTAINER_TYPE_BY_CONTEXT[context], new_container)
+                ctx_token = DI_CONTAINER.set(new_container)
 
             try:
                 if (ct := DI_CONTAINER.get(None)) is not None:
@@ -176,16 +220,16 @@ class DependencyInjectionManager:
         Returns:
             :obj:`None`
         """
-        if self._base_container is not None:
-            await self._base_container.close()
-            self._base_container = None
+        if self._default_container is not None:
+            await self._default_container.close()
+            self._default_container = None
 
 
 def parse_injectable_kwargs(func: t.Callable[..., t.Any]) -> tuple[list[tuple[str, t.Any]], dict[str, t.Any]]:
     positional_or_keyword_params: list[tuple[str, t.Any]] = []
     keyword_only_params: dict[str, t.Any] = {}
 
-    parameters = inspect.signature(func, eval_str=True).parameters
+    parameters = inspect.signature(func, locals={"lightbulb": sys.modules["lightbulb"]}, eval_str=True).parameters
     for parameter in parameters.values():
         if (
             # If the parameter has no annotation
@@ -217,9 +261,9 @@ class LazyInjecting:
     decorators that applies this to the target automatically.
 
     See Also:
-        :obj:`~with_di`
-        :obj:`~lightbulb.commands.execution.hook`
-        :obj:`~lightbulb.commands.execution.invoke`
+        :meth:`~with_di`
+        :meth:`~lightbulb.commands.execution.hook`
+        :meth:`~lightbulb.commands.execution.invoke`
     """
 
     __slots__ = ("_func", "_self", "_pos_or_kw_params", "_kw_only_params")
@@ -275,7 +319,7 @@ class LazyInjecting:
 
 def with_di(func: t.Callable[P, types.MaybeAwaitable[R]]) -> t.Callable[P, t.Awaitable[R]]:
     """
-    Enables dependency injection on the decorated asynchronous function. If dependency injection
+    Decorator that enables dependency injection on the decorated asynchronous function. If dependency injection
     has been disabled globally then this function does nothing and simply returns the object that was passed in.
 
     Args:
@@ -288,7 +332,8 @@ def with_di(func: t.Callable[P, types.MaybeAwaitable[R]]) -> t.Callable[P, t.Awa
         Dependency injection relies on a context (note: not a lightbulb :obj:`~lightbulb.context.Context`) being
         available when the function is called. If the function is called during a lightbulb-controlled flow
         (such as command invocation or error handling), then one will be available automatically. Otherwise,
-        you will have to set up the context yourself using the helper context manager :obj:`~setup_di_context`.
+        you will have to set up the context yourself using the helper context manager
+        :meth:`~DependencyInjectionManager.enter_context`.
     """
     if DI_ENABLED and not isinstance(func, LazyInjecting):
         return LazyInjecting(func)  # type: ignore[reportReturnType]

@@ -13,12 +13,8 @@ called for every autocomplete interaction sent when that option is focused.
 ## Callback Specification
 
 An autocomplete callback is an **asynchronous** function that takes an instance of 
-{obj}`~lightbulb.context.AutocompleteContext` as its first argument - any return value will be discarded.
-
-:::{important}
-Dependency injection **is not** enabled on autocomplete callbacks by default - if you need
-dependency injection in your callback you should add the `@lightbulb.di.with_di` decorator to the function.
-:::
+{obj}`~lightbulb.context.AutocompleteContext` as its first argument - any return value will be discarded. Further
+arguments will be dependency injected.
 
 Within an autocomplete callback, you are required to call the {meth}`~lightbulb.context.AutocompleteContext.respond`
 method **exactly once**. This is what actually submits the autocompletion suggestions to Discord. For details

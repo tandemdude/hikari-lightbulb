@@ -59,9 +59,10 @@ class Registry:
 
     def register_value(
         self,
-        typ: type[T] | t.Annotated[T, str],
+        typ: type[T],
         value: T,
-        teardown: t.Callable[..., types.MaybeAwaitable[None]] | None = None,
+        *,
+        teardown: t.Callable[[T], types.MaybeAwaitable[None]] | None = None,
     ) -> None:
         """
         Registers a pre-existing value as a dependency.
@@ -69,17 +70,22 @@ class Registry:
         Args:
             typ: The type to register the dependency as.
             value: The value to use for the dependency.
-            teardown: The teardown function to be called when the container is closed. Defaults to :obj:`None`.
+            teardown: The teardown function to be called when the container is closed. Teardown functions
+                must take exactly one argument - the dependency that is being torn down. Defaults to :obj:`None`.
 
         Returns:
             :obj:`None`
+
+        Raises:
+            :obj:`lightbulb.di.exceptions.RegistryFrozenException`: If the registry is frozen.
         """
-        self.register_factory(typ, lambda: value, teardown)
+        self.register_factory(typ, lambda: value, teardown=teardown)
 
     def register_factory(
         self,
-        typ: type[T] | t.Annotated[T, str],
+        typ: type[T],
         factory: t.Callable[..., types.MaybeAwaitable[T]],
+        *,
         teardown: t.Callable[[T], types.MaybeAwaitable[None]] | None = None,
     ) -> None:
         """
@@ -87,8 +93,11 @@ class Registry:
 
         Args:
             typ: The type to register the dependency as.
-            factory: The factory used to create the dependency.
-            teardown: The teardown function to be called when the container is closed. Defaults to :obj:`None`.
+            factory: The factory used to create the dependency. A factory method may take any number of parameters.
+                The parameters will all attempt to be dependency-injected when creating the dependency. Any default
+                parameter values will be ignored.
+            teardown: The teardown function to be called when the container is closed. Teardown functions
+                must take exactly one argument - the dependency that is being torn down. Defaults to :obj:`None`.
 
         Returns:
             :obj:`None`

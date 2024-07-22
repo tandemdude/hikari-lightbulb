@@ -45,14 +45,13 @@ class Container:
 
     Args:
         registry: The registry of dependencies supply-able by this container.
-        label: The label for the container.
         parent: The parent container. Defaults to None.
     """
 
     # TODO - handle registries changing after container is created
     __slots__ = ("_registry", "_parent", "_closed", "_graph", "_instances")
 
-    def __init__(self, registry: registry_.Registry, label: str, *, parent: Container | None = None) -> None:
+    def __init__(self, registry: registry_.Registry, *, parent: Container | None = None) -> None:
         self._registry = registry
         self._registry._freeze(self)
         self._parent = parent
@@ -77,7 +76,7 @@ class Container:
             self._graph.add_node(node, **new_node_data)
         self._graph.add_edges_from(self._registry._graph.edges)
 
-        self.add_value(t.Annotated[Container, label], self)
+        self.add_value(Container, self)
 
     async def __aenter__(self) -> Container:
         return self
@@ -100,8 +99,9 @@ class Container:
 
     def add_factory(
         self,
-        typ: type[T] | t.Annotated[T, str],
+        typ: type[T],
         factory: t.Callable[..., lb_types.MaybeAwaitable[T]],
+        *,
         teardown: t.Callable[[T], lb_types.MaybeAwaitable[None]] | None = None,
     ) -> None:
         """
@@ -117,8 +117,7 @@ class Container:
             :obj:`None`
 
         See Also:
-            :meth:`lightbulb.di.container.Container.add_value`
-            :meth:`lightbulb.di.registry.Registry.add_factory`
+            :meth:`lightbulb.di.registry.Registry.add_factory` for factory and teardown function spec.
         """
         dependency_id = di_utils.get_dependency_id(typ)
 
@@ -128,8 +127,9 @@ class Container:
 
     def add_value(
         self,
-        typ: type[T] | t.Annotated[T, str],
+        typ: type[T],
         value: T,
+        *,
         teardown: t.Callable[[T], lb_types.MaybeAwaitable[None]] | None = None,
     ) -> None:
         """
@@ -145,8 +145,7 @@ class Container:
             :obj:`None`
 
         See Also:
-            :meth:`lightbulb.di.container.Container.add_factory`
-            :meth:`lightbulb.di.registry.Registry.add_value`
+            :meth:`lightbulb.di.registry.Registry.add_value` for teardown function spec.
         """
         dependency_id = di_utils.get_dependency_id(typ)
         self._instances[dependency_id] = value
@@ -218,7 +217,7 @@ class Container:
 
         return self._graph.nodes[dependency_id]["container"]._instances[dependency_id]
 
-    async def get(self, typ: type[T] | t.Annotated[T, str]) -> T:
+    async def get(self, typ: type[T]) -> T:
         """
         Get a dependency from this container, instantiating it and sub-dependencies if necessary.
 

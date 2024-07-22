@@ -113,14 +113,16 @@ class TestMethodInjection:
             await m()
 
     @pytest.mark.asyncio
-    async def test_injection_by_annotated(self) -> None:
+    async def test_injection_by_new_type(self) -> None:
+        Foo = t.NewType("Foo", object)
+
         manager = lightbulb.di.DependencyInjectionManager()
 
         value = object()
-        manager.registry_for(lightbulb.di.Contexts.DEFAULT).register_value(t.Annotated[object, "foo"], value)
+        manager.registry_for(lightbulb.di.Contexts.DEFAULT).register_value(Foo, value)
 
         @lightbulb.di.with_di
-        async def m(obj: t.Annotated[object, "foo"] = lightbulb.di.INJECTED) -> None:
+        async def m(obj: Foo = lightbulb.di.INJECTED) -> None:
             assert obj is value
 
         async with manager.enter_context(lightbulb.di.Contexts.DEFAULT):

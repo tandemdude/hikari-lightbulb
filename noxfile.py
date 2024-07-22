@@ -27,11 +27,12 @@ from nox import options
 SCRIPT_PATHS = [
     os.path.join(".", "lightbulb"),
     os.path.join(".", "scripts"),
+    os.path.join(".", "tests"),
     "noxfile.py",
     "docs/source/conf.py",
 ]
 
-options.sessions = ["format_fix", "typecheck", "slotscheck"]
+options.sessions = ["format_fix", "typecheck", "slotscheck", "test"]
 
 
 @nox.session()
@@ -58,6 +59,12 @@ def typecheck(session: nox.Session):
 def slotscheck(session: nox.Session):
     session.install(".[localization,crontrigger,dev.slotscheck]")
     session.run("python", "-m", "slotscheck", "-m", "lightbulb")
+
+
+@nox.session()
+def test(session: nox.Session):
+    session.install(".[localization,crontrigger,dev.test]")
+    session.run("python", "-m", "pytest", "tests")
 
 
 @nox.session(reuse_venv=True)

@@ -20,6 +20,7 @@
 # SOFTWARE.
 """A simple-to-use command handler for Hikari."""
 
+from lightbulb import di
 from lightbulb import exceptions
 from lightbulb import utils
 from lightbulb.client import *
@@ -31,6 +32,7 @@ from lightbulb.localization import *
 from lightbulb.tasks import *
 
 __all__ = [
+    "di",
     "exceptions",
     "utils",
     "DEFAULT_EXECUTION_STEP_ORDER",
@@ -64,9 +66,6 @@ __all__ = [
     "AutocompleteContext",
     "Context",
     "RestContext",
-    "ensure_di_context",
-    "with_di",
-    "INJECTED",
     "Loadable",
     "Loader",
     "localization_unsupported",

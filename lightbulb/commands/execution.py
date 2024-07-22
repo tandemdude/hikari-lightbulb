@@ -24,10 +24,10 @@ import collections
 import dataclasses
 import typing as t
 
+from lightbulb import di
 from lightbulb import exceptions
 from lightbulb import utils
 from lightbulb.internal import constants
-from lightbulb.internal import di
 from lightbulb.internal import types
 
 if t.TYPE_CHECKING:
@@ -299,7 +299,7 @@ def hook(step: ExecutionStep, skip_when_failed: bool = False) -> t.Callable[[Exe
         raise ValueError("hooks cannot be registered for the 'INVOKE' execution step")
 
     def inner(func: ExecutionHookFunc) -> ExecutionHook:
-        return ExecutionHook(step, skip_when_failed, di.with_di(func))  # type: ignore[reportArgumentType]
+        return ExecutionHook(step, skip_when_failed, di.with_di(func))
 
     return inner
 

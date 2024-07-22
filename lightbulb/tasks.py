@@ -30,8 +30,8 @@ import logging
 import time
 import typing as t
 
+from lightbulb import di
 from lightbulb import utils
-from lightbulb.internal import di
 from lightbulb.internal import types
 
 if t.TYPE_CHECKING:
@@ -233,7 +233,7 @@ class Task:
             LOGGER.debug("invoking task %r", self._func.__name__)
 
             before, self.last_invoked_at = time.perf_counter(), datetime.datetime.now(datetime.timezone.utc)
-            with di.ensure_di_context(self._client.di):
+            async with self._client.di.enter_context(di.Contexts.TASK):
                 try:
                     await self._func()
                 except Exception as e:

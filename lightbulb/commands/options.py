@@ -40,6 +40,7 @@ import typing as t
 
 import hikari
 
+from lightbulb import di
 from lightbulb import utils
 from lightbulb.commands import utils as cmd_utils
 from lightbulb.internal.utils import non_undefined_or
@@ -131,6 +132,9 @@ class OptionData(t.Generic[D]):
             if self.max_length is not hikari.UNDEFINED and (self.max_length < 1 or self.max_length > 6000):
                 raise ValueError("'max_length' - must be between 1 and 6000 (inclusive)")
 
+        if self.autocomplete_provider is not hikari.UNDEFINED:
+            self.autocomplete_provider = di.with_di(self.autocomplete_provider)
+
     async def to_command_option(
         self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
     ) -> hikari.CommandOption:
@@ -204,7 +208,7 @@ class Option(t.Generic[T, D]):
         :meth:`~attachment`
     """
 
-    __slots__ = ("_data", "_unbound_default", "_supports_autocomplete")
+    __slots__ = ("_data", "_unbound_default")
 
     def __init__(self, data: OptionData[D], default_when_not_bound: T) -> None:
         self._data = data

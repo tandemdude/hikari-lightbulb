@@ -157,6 +157,20 @@ class TestMethodInjection:
             await m(object())
 
     @pytest.mark.asyncio
+    async def test_no_injection_when_parameter_passed_by_keyword(self) -> None:
+        manager = lightbulb.di.DependencyInjectionManager()
+
+        value = object()
+        manager.registry_for(lightbulb.di.Contexts.DEFAULT).register_value(object, value)
+
+        @lightbulb.di.with_di
+        async def m(obj: object = lightbulb.di.INJECTED) -> None:
+            assert obj is not value
+
+        async with manager.enter_context(lightbulb.di.Contexts.DEFAULT):
+            await m(obj=object())
+
+    @pytest.mark.asyncio
     async def test_self_correctly_provided_for_bound_method(self) -> None:
         manager = lightbulb.di.DependencyInjectionManager()
 
@@ -171,3 +185,39 @@ class TestMethodInjection:
 
         async with manager.enter_context(lightbulb.di.Contexts.DEFAULT):
             await instance.bound_method()
+
+    @pytest.mark.asyncio
+    async def test_dependency_provided_for_bound_method(self) -> None:
+        manager = lightbulb.di.DependencyInjectionManager()
+
+        value = object()
+        manager.registry_for(lightbulb.di.Contexts.DEFAULT).register_value(object, value)
+
+        class AClass:
+            @lightbulb.di.with_di
+            async def bound_method(self, obj: object = lightbulb.di.INJECTED) -> None:
+                assert obj is value
+
+        instance = AClass()
+
+        async with manager.enter_context(lightbulb.di.Contexts.DEFAULT):
+            await instance.bound_method()
+
+    @pytest.mark.asyncio
+    async def test_dependency_provided_when_argument_passed_for_bound_method(self) -> None:
+        manager = lightbulb.di.DependencyInjectionManager()
+
+        Value = t.NewType("Value", object)
+        value, obj_ = Value(object()), object()
+        manager.registry_for(lightbulb.di.Contexts.DEFAULT).register_value(Value, value)
+
+        class AClass:
+            @lightbulb.di.with_di
+            async def bound_method(self, obj: object, val: Value = lightbulb.di.INJECTED) -> None:
+                assert obj is obj_
+                assert val is value
+
+        instance = AClass()
+
+        async with manager.enter_context(lightbulb.di.Contexts.DEFAULT):
+            await instance.bound_method(obj_)

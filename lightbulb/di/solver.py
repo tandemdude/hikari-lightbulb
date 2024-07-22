@@ -306,7 +306,7 @@ class LazyInjecting:
         if di_container is None:
             raise RuntimeError("cannot prepare dependency injection as no DI context is available")
 
-        injectables = dict(self._pos_or_kw_params[len(args) + (self._self is not None) :])
+        injectables = dict(self._pos_or_kw_params[len(args) :])
         injectables.update({name: type for name, type in self._kw_only_params.items() if name not in kwargs})
 
         for name, type in injectables.items():

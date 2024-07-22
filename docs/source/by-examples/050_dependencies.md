@@ -491,7 +491,7 @@ bot.add_shutdown_callback(client.stop)
 
 ### Basic
 
-Now a basic worked example with a working command you should be able to drop straight into your own bot.
+A basic worked example with a working command you should be able to drop straight into your own bot.
 
 :::{dropdown} Code
 ```python
@@ -545,9 +545,75 @@ bot.run()
 
 ### Flow-scoped Dependencies
 
-TODO
+A more advanced example implementing a basic currency system with wallets stored in Redis. We use a command-scoped
+dependency to fetch and save the wallet changes automatically within each command.
 
 :::{dropdown} Code
+```python
+import os
+
+import hikari
+import lightbulb
+import redis.asyncio as redis
+
+
+class Wallet:
+    def __init__(self, r: redis.Redis, user_id: str, balance: int = 0) -> None:
+        self.r = r
+        self.user_id = user_id
+        self.balance = balance
+
+    # We are going to call this in our teardown function for the Wallet dependency
+    # so that it gets saved back to Redis automatically
+    async def save(self) -> None:
+        await self.r.set(self.user_id, str(self.balance))
+
+
+# Initialise the bot and Lightbulb client
+# bot = hikari.GatewayBot("your token")
+client = lightbulb.client_from_app(bot)
+# Hook client into bot's lifecycle
+bot.subscribe(hikari.StartingEvent, client.start)
+bot.subscribe(hikari.StoppingEvent, client.stop)
+
+# Register the redis client as a dependency
+client.di.registry_for(lightbulb.di.Contexts.DEFAULT).register_factory(
+    redis.Redis,
+    lambda: redis.from_url(os.environ["REDIS_URL"]),
+    teardown=redis.Redis.aclose
+)
+
+# Define the factory for creating the Wallet instance
+async def get_wallet(r: redis.Redis, ctx: lightbulb.Context) -> Wallet:
+    balance: bytes | None = await r.get(user_id := str(ctx.user.id))
+    return Wallet(r, user_id, 0 if balance is None else int(balance.decode("utf-8")))
+
+# Register the wallet as a dependency for the COMMAND injection context
+client.di.registry_for(lightbulb.di.Contexts.COMMAND).register_factory(
+    Wallet,
+    get_wallet,
+    teardown=lambda w: w.save()
+)
+
+
+@client.register
+class Balance(
+    lightbulb.SlashCommand,
+    name="balance",
+    description="Get your current balance",
+):
+    # The 'lightbulb.invoke` decorator enables dependency injection on the function, so we
+    # do not need to include the 'lightbulb.di.with_di' decorator here
+    @lightbulb.invoke
+    async def invoke(self, ctx: lightbulb.Context, wallet: Wallet) -> None:
+        # The injected value for 'wallet' will be the wallet for the person who invoked the command
+        await ctx.respond(f"Your current balance is `{wallet.balance}`.")
+
+
+# Run the bot
+if __name__ == "__main__":
+    bot.run()
+```
 :::
 
 ---

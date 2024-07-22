@@ -22,6 +22,7 @@ from __future__ import annotations
 
 __all__ = ["DEFAULT_EXECUTION_STEP_ORDER", "Client", "GatewayEnabledClient", "RestEnabledClient", "client_from_app"]
 
+import abc
 import asyncio
 import collections
 import functools
@@ -34,6 +35,7 @@ import typing as t
 import hikari
 
 from lightbulb import context as context_
+from lightbulb import di as di_
 from lightbulb import exceptions
 from lightbulb import loaders
 from lightbulb import localization
@@ -43,7 +45,6 @@ from lightbulb.commands import commands
 from lightbulb.commands import execution
 from lightbulb.commands import groups
 from lightbulb.internal import constants
-from lightbulb.internal import di as di_
 from lightbulb.internal import sync
 from lightbulb.internal import utils as i_utils
 
@@ -85,7 +86,7 @@ class RestClientAppT(hikari.InteractionServerAware, hikari.RESTAware, t.Protocol
     """Protocol indicating an application supports an interaction server."""
 
 
-class Client:
+class Client(abc.ABC):
     """
     Base client implementation supporting generic application command handling.
 
@@ -159,13 +160,19 @@ class Client:
         self._extensions: set[str] = set()
         self._tasks: set[tasks.Task] = set()
 
-        self.di.register_dependency(hikari.api.RESTClient, lambda: self.rest, enter=False)
-        self.di.register_dependency(Client, lambda: self)
+        self.di.registry_for(di_.Contexts.DEFAULT).register_value(hikari.api.RESTClient, self.rest)
+        self.di.registry_for(di_.Contexts.DEFAULT).register_value(Client, self)
 
         self._started = False
 
     @property
+    @abc.abstractmethod
+    def app(self) -> hikari.RESTAware:
+        """The app that this client was created from."""
+
+    @property
     def di(self) -> di_.DependencyInjectionManager:
+        """The dependency injection manager used by this client."""
         return self._di
 
     async def start(self, *_: t.Any) -> None:
@@ -176,6 +183,9 @@ class Client:
 
         Returns:
             :obj:`None`
+
+        Raises:
+            :obj:`RuntimeError`: If the client has already been started.
         """
         if self._started:
             raise RuntimeError("cannot start already-started client")
@@ -186,6 +196,22 @@ class Client:
         for task in self._tasks:
             if task._auto_start:
                 task.start()
+
+    async def stop(self, *_: t.Any) -> None:
+        """
+        Stops the client. Cancelling any tasks that are running, and closing the default DI container - causing teardown
+        methods to be called.
+
+        Returns:
+            :obj:`None`
+        """
+        if not self._started:
+            return
+
+        for task in self._tasks:
+            task.cancel()
+
+        await self.di.close()
 
     @t.overload
     def task(
@@ -321,7 +347,7 @@ class Client:
         new_handlers: dict[int, list[ErrorHandler]] = {}
         for priority, handlers in self._error_handlers.items():
             handlers = [
-                h for h in handlers if h is not func and (isinstance(h, di_.LazyInjecting) and h._func is not func)
+                h for h in handlers if h is not func and (isinstance(h, di_.AutoInjecting) and h._func is not func)
             ]
             if handlers:
                 new_handlers[priority] = t.cast(list[ErrorHandler], handlers)
@@ -779,7 +805,10 @@ class Client:
     async def _execute_autocomplete_context(
         self, context: context_.AutocompleteContext[t.Any], autocomplete_provider: options_.AutocompleteProvider[t.Any]
     ) -> None:
-        with di_.ensure_di_context(self.di):
+        async with self.di.enter_context(di_.Contexts.AUTOCOMPLETE) as container:
+            if container is not None:  # type: ignore[reportUnnecessaryComparison]
+                container.add_value(context_.AutocompleteContext, context)
+
             try:
                 await autocomplete_provider(context)
             except Exception as e:
@@ -841,8 +870,12 @@ class Client:
         )
 
     async def _execute_command_context(self, context: context_.Context) -> None:
-        with di_.ensure_di_context(self.di):
-            pipeline = execution.ExecutionPipeline(context, self.execution_step_order)
+        pipeline = execution.ExecutionPipeline(context, self.execution_step_order)
+
+        async with self.di.enter_context(di_.Contexts.COMMAND) as container:
+            if container is not None:  # type: ignore[reportUnnecessaryComparison]
+                container.add_value(context_.Context, context)
+                container.add_value(execution.ExecutionPipeline, pipeline)
 
             try:
                 await pipeline._run()
@@ -928,9 +961,12 @@ class GatewayEnabledClient(Client):
         )
 
         if isinstance(app, hikari.GatewayBot):
-            self.di.register_dependency(hikari.GatewayBot, lambda: app)
+            self.di.registry_for(di_.Contexts.DEFAULT).register_value(hikari.GatewayBot, app)
+        self.di.registry_for(di_.Contexts.DEFAULT).register_value(hikari.api.EventManager, app.event_manager)
 
-        self.di.register_dependency(hikari.api.EventManager, lambda: app.event_manager)
+    @property
+    def app(self) -> GatewayClientAppT:
+        return self._app
 
 
 class RestEnabledClient(Client):
@@ -966,9 +1002,12 @@ class RestEnabledClient(Client):
         app.interaction_server.set_listener(hikari.CommandInteraction, self.handle_rest_application_command_interaction)
 
         if isinstance(app, hikari.RESTBot):
-            self.di.register_dependency(hikari.RESTBot, lambda: app)
+            self.di.registry_for(di_.Contexts.DEFAULT).register_value(hikari.RESTBot, app)
+        self.di.registry_for(di_.Contexts.DEFAULT).register_value(hikari.api.InteractionServer, app.interaction_server)
 
-        self.di.register_dependency(hikari.api.InteractionServer, lambda: app.interaction_server)
+    @property
+    def app(self) -> RestClientAppT:
+        return self._app
 
     def build_rest_autocomplete_context(
         self,
@@ -1085,6 +1124,32 @@ class RestEnabledClient(Client):
         await task
 
 
+@t.overload
+def client_from_app(
+    app: GatewayClientAppT,
+    default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (constants.GLOBAL_COMMAND_KEY,),
+    execution_step_order: t.Sequence[execution.ExecutionStep] = DEFAULT_EXECUTION_STEP_ORDER,
+    default_locale: hikari.Locale = hikari.Locale.EN_US,
+    localization_provider: localization.LocalizationProviderT = localization.localization_unsupported,
+    delete_unknown_commands: bool = True,
+    deferred_registration_callback: t.Callable[
+        [CommandOrGroup], MaybeAwaitable[hikari.Snowflakeish | t.Sequence[hikari.Snowflakeish]]
+    ]
+    | None = None,
+) -> GatewayEnabledClient: ...
+@t.overload
+def client_from_app(
+    app: RestClientAppT,
+    default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (constants.GLOBAL_COMMAND_KEY,),
+    execution_step_order: t.Sequence[execution.ExecutionStep] = DEFAULT_EXECUTION_STEP_ORDER,
+    default_locale: hikari.Locale = hikari.Locale.EN_US,
+    localization_provider: localization.LocalizationProviderT = localization.localization_unsupported,
+    delete_unknown_commands: bool = True,
+    deferred_registration_callback: t.Callable[
+        [CommandOrGroup], MaybeAwaitable[hikari.Snowflakeish | t.Sequence[hikari.Snowflakeish]]
+    ]
+    | None = None,
+) -> RestEnabledClient: ...
 def client_from_app(
     app: GatewayClientAppT | RestClientAppT,
     default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (constants.GLOBAL_COMMAND_KEY,),

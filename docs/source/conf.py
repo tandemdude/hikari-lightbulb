@@ -48,6 +48,7 @@ extensions = [
     "sphinx_prompt",
     "notfound.extension",
     "sphinxext.opengraph",
+    "sphinxcontrib.mermaid",
 ]
 myst_enable_extensions = ["colon_fence"]
 
@@ -64,6 +65,7 @@ exclude_patterns = []
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "hikari": ("https://docs.hikari-py.dev/en/latest", None),
+    "aiohttp": ("https://docs.aiohttp.org/en/stable/", None),
 }
 
 

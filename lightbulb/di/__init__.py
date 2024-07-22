@@ -41,6 +41,6 @@ __all__ = [
     "ListenerContainer",
     "TaskContainer",
     "DependencyInjectionManager",
-    "LazyInjecting",
+    "AutoInjecting",
     "with_di",
 ]

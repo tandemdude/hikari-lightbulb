@@ -31,7 +31,7 @@ __all__ = [
     "ListenerContainer",
     "TaskContainer",
     "DependencyInjectionManager",
-    "LazyInjecting",
+    "AutoInjecting",
     "with_di",
 ]
 
@@ -46,6 +46,7 @@ import typing as t
 
 from lightbulb import utils
 from lightbulb.di import container
+from lightbulb.di import exceptions
 from lightbulb.di import registry
 
 if t.TYPE_CHECKING:
@@ -256,7 +257,7 @@ def parse_injectable_params(func: t.Callable[..., t.Any]) -> tuple[list[tuple[st
     return positional_or_keyword_params, keyword_only_params
 
 
-class LazyInjecting:
+class AutoInjecting:
     """
     Wrapper for a callable that implements dependency injection. When called, resolves the required
     dependencies and calls the original callable. Supports both synchronous and asynchronous functions,
@@ -289,9 +290,9 @@ class LazyInjecting:
         else:
             self._pos_or_kw_params, self._kw_only_params = parse_injectable_params(func)
 
-    def __get__(self, instance: t.Any, _: type[t.Any]) -> LazyInjecting:
+    def __get__(self, instance: t.Any, _: type[t.Any]) -> AutoInjecting:
         if instance is not None:
-            return LazyInjecting(self._func, instance, self._pos_or_kw_params, self._kw_only_params)
+            return AutoInjecting(self._func, instance, self._pos_or_kw_params, self._kw_only_params)
         return self
 
     def __getattr__(self, item: str) -> t.Any:
@@ -308,8 +309,6 @@ class LazyInjecting:
         new_kwargs.update(kwargs)
 
         di_container: container.Container | None = DI_CONTAINER.get(None)
-        if di_container is None:
-            raise RuntimeError("cannot prepare dependency injection as no DI context is available")
 
         injectables = {
             name: type
@@ -322,6 +321,9 @@ class LazyInjecting:
             # Skip any arguments that we can't inject
             if type is CANNOT_INJECT:
                 continue
+
+            if di_container is None:
+                raise exceptions.DependencyNotSatisfiableException("no DI context is available")
 
             new_kwargs[name] = await di_container.get(type)
 
@@ -348,6 +350,6 @@ def with_di(func: t.Callable[P, types.MaybeAwaitable[R]]) -> t.Callable[P, t.Awa
         you will have to set up the context yourself using the helper context manager
         :meth:`~DependencyInjectionManager.enter_context`.
     """
-    if DI_ENABLED and not isinstance(func, LazyInjecting):
-        return LazyInjecting(func)  # type: ignore[reportReturnType]
+    if DI_ENABLED and not isinstance(func, AutoInjecting):
+        return AutoInjecting(func)  # type: ignore[reportReturnType]
     return func  # type: ignore[reportReturnType]

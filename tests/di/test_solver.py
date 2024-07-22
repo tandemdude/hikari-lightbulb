@@ -82,7 +82,7 @@ class TestMethodInjection:
         def m(obj: object = lightbulb.di.INJECTED) -> None:
             assert obj is value
 
-        with pytest.raises(RuntimeError):
+        with pytest.raises(lightbulb.di.DependencyNotSatisfiableException):
             await m()
 
     @pytest.mark.asyncio

@@ -347,7 +347,7 @@ class Client(abc.ABC):
         new_handlers: dict[int, list[ErrorHandler]] = {}
         for priority, handlers in self._error_handlers.items():
             handlers = [
-                h for h in handlers if h is not func and (isinstance(h, di_.LazyInjecting) and h._func is not func)
+                h for h in handlers if h is not func and (isinstance(h, di_.AutoInjecting) and h._func is not func)
             ]
             if handlers:
                 new_handlers[priority] = t.cast(list[ErrorHandler], handlers)

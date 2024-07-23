@@ -21,7 +21,7 @@
 # SOFTWARE.
 from __future__ import annotations
 
-__all__ = ["localize_name_and_description"]
+__all__ = ["localize_value", "localize_name_and_description"]
 
 import typing as t
 
@@ -37,6 +37,18 @@ if t.TYPE_CHECKING:
 async def localize_value(
     value: str, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
 ) -> tuple[str, t.Mapping[hikari.Locale, str]]:
+    """
+    Get the value, and localized values for the given string, using the provided localization provider.
+
+    Args:
+        value: The string to get the localized values for.
+        default_locale: The default locale to use.
+        localization_provider: The localization provider to use.
+
+    Returns:
+        The string localized to the default locale, and a dictionary containing the localized values for all
+        the remaining locales.
+    """
     localizations: t.Mapping[hikari.Locale, str] = await utils.maybe_await(localization_provider(value))
     localized_value = localizations.get(default_locale, None)
     if localized_value is None:

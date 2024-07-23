@@ -48,7 +48,6 @@ class Container:
         parent: The parent container. Defaults to None.
     """
 
-    # TODO - handle registries changing after container is created
     __slots__ = ("_registry", "_parent", "_closed", "_graph", "_instances")
 
     def __init__(self, registry: registry_.Registry, *, parent: Container | None = None) -> None:

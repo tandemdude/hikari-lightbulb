@@ -8,6 +8,23 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a7 (2024-07-23)
+
+### Features
+
+- Dependency injection system has been completely rewritten to make it much more flexible and powerful. See the
+  dependencies guide on the 'By Examples' page for details on the new implementation. ([#428](https://github.com/tandemdude/hikari-lightbulb/issues/428))
+
+### Deprecations and Removals
+
+- - Removed `lightbulb.with_di`, it has been replaced by `lightbulb.di.with_di`
+  - Removed `lightbulb.INJECTED`, it has been replaced by `lightbulb.di.INJECTED`
+  - Removed `Client.di.register_dependency` - see the dependencies guide for details on the replacement
+
+  ([#428](https://github.com/tandemdude/hikari-lightbulb/issues/428))
+
+----
+
 ## v3.0.0a6 (2024-07-18)
 
 ### Features

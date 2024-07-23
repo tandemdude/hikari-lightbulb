@@ -138,6 +138,16 @@ class OptionData(t.Generic[D]):
     async def to_command_option(
         self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
     ) -> hikari.CommandOption:
+        """
+        Convert this option data into a hikari :obj:`~hikari.commands.CommandOption`.
+
+        Args:
+            default_locale: The default locale to use when resolving localizations.
+            localization_provider: The localization provider to use when resolving localizations.
+
+        Returns:
+            The created command option.
+        """
         name, description = self.name, self.description
         name_localizations: t.Mapping[hikari.Locale, str] = {}
         description_localizations: t.Mapping[hikari.Locale, str] = {}

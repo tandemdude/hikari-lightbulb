@@ -25,13 +25,15 @@ __all__ = ["EMPTY", "get_command_data"]
 import inspect
 import typing as t
 
+from lightbulb.internal import marker
+
 if t.TYPE_CHECKING:
     from lightbulb.commands import commands
     from lightbulb.internal import types
 
 T = t.TypeVar("T")
 
-EMPTY: t.Any = object()
+EMPTY: t.Final[t.Any] = marker.Marker("EMPTY")
 """Placeholder object returned when attempting to get the value for an option on a class instead of an instance.
 
 Example:

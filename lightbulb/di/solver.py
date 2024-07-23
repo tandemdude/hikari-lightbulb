@@ -48,6 +48,7 @@ from lightbulb import utils
 from lightbulb.di import container
 from lightbulb.di import exceptions
 from lightbulb.di import registry
+from lightbulb.internal import marker
 
 if t.TYPE_CHECKING:
     from lightbulb.internal import types
@@ -61,7 +62,7 @@ DI_CONTAINER: contextvars.ContextVar[container.Container | None] = contextvars.C
 )
 LOGGER = logging.getLogger(__name__)
 
-INJECTED: t.Final[t.Any] = object()
+INJECTED: t.Final[t.Any] = marker.Marker("INJECTED")
 """
 Flag value used to explicitly mark that a function parameter should be dependency-injected.
 

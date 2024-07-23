@@ -40,6 +40,19 @@ class Registry:
     """
     A dependency registry containing information about how to create the registered dependencies.
 
+    You can use ``in`` to check if a dependency has been registered to this registry.
+
+    Example:
+
+        .. code-block:: python
+
+            >>> registry = lightbulb.di.Registry()
+            >>> object in registry
+            False
+            >>> registry.register_value(object, object())
+            >>> object in registry
+            True
+
     Note:
         When containers are created for a registry, the registry is frozen to prevent additional dependencies
         being registered. The registry is unfrozen once all containers providing from a registry have been closed.
@@ -50,6 +63,13 @@ class Registry:
     def __init__(self) -> None:
         self._graph: nx.DiGraph[str] = nx.DiGraph()
         self._active_containers: set[container.Container] = set()
+
+    def __contains__(self, item: type[t.Any]) -> bool:
+        dep_id = di_utils.get_dependency_id(item)
+        if dep_id not in self._graph:
+            return False
+
+        return self._graph.nodes[dep_id].get("factory") is not None
 
     def _freeze(self, cnt: container.Container) -> None:
         self._active_containers.add(cnt)

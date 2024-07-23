@@ -835,7 +835,10 @@ class Client(abc.ABC):
 
         context = self.build_autocomplete_context(interaction, options, command)
 
-        option = command._command_data.options.get(context.focused.name, None)
+        option = next(
+            filter(lambda opt: opt._localized_name == context.focused.name, command._command_data.options.values()),
+            None,
+        )
         if option is None or not option.autocomplete:
             LOGGER.debug("interaction appears to refer to option that has autocomplete disabled - ignoring")
             return
@@ -1045,7 +1048,10 @@ class RestEnabledClient(Client):
 
         context = self.build_rest_autocomplete_context(interaction, options, command, set_response)
 
-        option = command._command_data.options.get(context.focused.name, None)
+        option = next(
+            filter(lambda opt: opt._localized_name == context.focused.name, command._command_data.options.values()),
+            None,
+        )
         if option is None or not option.autocomplete:
             LOGGER.debug("interaction appears to refer to option that has autocomplete disabled - ignoring")
             return

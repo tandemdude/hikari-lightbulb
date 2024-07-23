@@ -97,6 +97,7 @@ select = [
     "D417",  # Missing argument descriptions in docstring
     "D418",  # No docstring on @overload
     "D419",  # No empty docstring
+    "ANN2",  # Function missing return type annotation
 ]
 fixable = [
     "I",     # isort errors

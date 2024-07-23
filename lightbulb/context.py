@@ -81,7 +81,8 @@ class AutocompleteContext(t.Generic[T]):
 
     def get_option(self, name: str) -> hikari.AutocompleteInteractionOption | None:
         """
-        Get the option with the given name if available.
+        Get the option with the given name if available. If the option has localization enabled, you should
+        use its localization key.
 
         Args:
             name: The name of the option to get.
@@ -92,7 +93,11 @@ class AutocompleteContext(t.Generic[T]):
         See Also:
             :obj:`~AutocompleteContext.focused`
         """
-        return next(filter(lambda opt: opt.name == name, self.options), None)
+        option = self.command._command_data.options.get(name)
+        if option is None:
+            return None
+
+        return next(filter(lambda opt: opt.name == option._localized_name, self.options), None)
 
     @staticmethod
     def _normalise_choices(choices: AutocompleteResponse[T]) -> t.Sequence[special_endpoints.AutocompleteChoiceBuilder]:

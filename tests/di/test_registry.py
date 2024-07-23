@@ -18,6 +18,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import typing as t
+
 import pytest
 
 from lightbulb import di
@@ -48,3 +50,23 @@ class TestRegistry:
         registry._unfreeze(fake_container)  # type: ignore[reportArgumentType]
 
         registry.register_value(object, object())
+
+    def test__contains__returns_true_when_dependency_registered(self) -> None:
+        registry = di.Registry()
+        registry.register_value(object, object())
+        assert object in registry
+
+    def test__contains__returns_false_when_dependency_not_registered(self) -> None:
+        registry = di.Registry()
+        assert object not in registry
+
+    def test__contains__returns_true_when_NewType_dependency_registered(self) -> None:
+        registry = di.Registry()
+        T = t.NewType("T", object)
+        registry.register_value(T, object())
+        assert T in registry
+
+    def test__contains__returns_false_when_NewType_dependency_not_registered(self) -> None:
+        registry = di.Registry()
+        T = t.NewType("T", object)
+        assert T not in registry

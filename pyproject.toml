@@ -120,6 +120,8 @@ force-single-line = true
 # F403 (Star import used) - hopefully we're sensible enough to know what objects modules contain
 # F405 (Import via star) - everything is imported to top-level
 "__init__.py" = ["F401", "F403", "F405"]
+# N802 Function name should be lowercase - tests are special ;)
+"tests/*.py" = ["N802"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

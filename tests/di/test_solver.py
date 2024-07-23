@@ -46,7 +46,7 @@ class TestSignatureParsing:
         pos, kw = parse_injectable_params(m)
         assert len(pos) == 0 and len(kw) == 0
 
-    def test_parses_args_with_non_INJECTED_default_correctly(self) -> None:  # noqa: N802
+    def test_parses_args_with_non_INJECTED_default_correctly(self) -> None:
         def m(foo: object = object()) -> None: ...
 
         pos, kw = parse_injectable_params(m)

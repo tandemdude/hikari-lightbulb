@@ -55,7 +55,7 @@ class ExecutionStep:
 
     __all_steps: t.ClassVar[t.Set[str]] = set()
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.name in ExecutionStep.__all_steps:
             raise RuntimeError(f"a step with name {self.name} already exists")
         ExecutionStep.__all_steps.add(self.name)

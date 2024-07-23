@@ -159,7 +159,7 @@ class ExecutionPipeline:
         self._current_step: ExecutionStep | None = None
         self._current_hook: ExecutionHook | None = None
 
-        self._hook_failures: list[exceptions.HookFailedException] = []
+        self._hook_failures: list[tuple[ExecutionHook, Exception]] = []
         self._invocation_failure: Exception | None = None
 
     @property
@@ -210,8 +210,7 @@ class ExecutionPipeline:
         assert self._current_step is not None
         assert self._current_hook is not None
 
-        hook_exc = exceptions.HookFailedException(exc, self._current_hook)
-        self._hook_failures.append(hook_exc)
+        self._hook_failures.append((self._current_hook, exc))
 
     async def _run(self) -> None:
         """

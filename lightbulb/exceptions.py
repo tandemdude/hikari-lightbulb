@@ -84,7 +84,7 @@ class ExecutionPipelineFailedException(ExecutionException):
         self.context = context
         """The context that caused the pipeline to fail."""
 
-        self.causes = [*self.hook_failures, invocation_failure]
+        self.causes = [e for e in [*self.hook_failures, invocation_failure] if e is not None]
         """All the exceptions raised during command execution."""
 
         if len(self.causes) == 1:

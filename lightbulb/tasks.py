@@ -195,9 +195,9 @@ class Task:
         self.last_invocation_length: float = -1
         self.last_invoked_at: datetime.datetime | None = None
 
-        self.started = False
-        self.stopped = False
-        self.cancelled = False
+        self.started: bool = False
+        self.stopped: bool = False
+        self.cancelled: bool = False
 
         self._task: asyncio.Task[None] | None = None
         self._client: client.Client | None = None

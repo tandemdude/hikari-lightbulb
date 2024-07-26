@@ -413,8 +413,7 @@ class SlashCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.S
         nsfw: Whether the command should be marked as nsfw. Defaults to :obj:`False`.
         dm_enabled: Whether the command can be used in direct messages. Defaults to :obj:`True`.
         default_member_permissions: The default permissions required for a
-            guild member to use the command. If unspecified, all users can use the command by default. Set to
-            ``hikari.Permissions.NONE`` to disable for everyone apart from admins.
+            guild member to use the command. If unspecified, all users can use the command by default.
         hooks: The hooks to run before the command invocation function is executed. Defaults to an empty set.
 
     Example:
@@ -450,8 +449,7 @@ class UserCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.US
         nsfw: Whether the command should be marked as nsfw. Defaults to :obj:`False`.
         dm_enabled: Whether the command can be used in direct messages. Defaults to :obj:`True`.
         default_member_permissions: The default permissions required for a
-            guild member to use the command. If unspecified, all users can use the command by default. Set to
-            ``hikari.Permissions.NONE`` to disable for everyone apart from admins.
+            guild member to use the command. If unspecified, all users can use the command by default.
         hooks: The hooks to run before the command invocation function is executed. Defaults to an empty set.
 
     Example:
@@ -490,8 +488,7 @@ class MessageCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType
         nsfw: Whether the command should be marked as nsfw. Defaults to :obj:`False`.
         dm_enabled: Whether the command can be used in direct messages. Defaults to :obj:`True`.
         default_member_permissions: The default permissions required for a guild member to use the command.
-            If unspecified, all users can use the command by default. Set to ``hikari.Permissions.NONE`` to
-            disable for everyone apart from admins.
+            If unspecified, all users can use the command by default.
         hooks: The hooks to run before the command invocation function is executed. Defaults to an empty set.
 
     Example:

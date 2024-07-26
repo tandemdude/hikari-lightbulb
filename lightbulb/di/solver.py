@@ -89,6 +89,7 @@ creating an instance of this type.
 """
 
 
+@t.final
 class Contexts:
     """Collection of the dependency injection context values Lightbulb uses."""
 
@@ -230,7 +231,7 @@ class DependencyInjectionManager:
 CANNOT_INJECT = object()
 
 
-def parse_injectable_params(func: t.Callable[..., t.Any]) -> tuple[list[tuple[str, t.Any]], dict[str, t.Any]]:
+def _parse_injectable_params(func: t.Callable[..., t.Any]) -> tuple[list[tuple[str, t.Any]], dict[str, t.Any]]:
     positional_or_keyword_params: list[tuple[str, t.Any]] = []
     keyword_only_params: dict[str, t.Any] = {}
 
@@ -289,7 +290,7 @@ class AutoInjecting:
             self._pos_or_kw_params = _cached_pos_or_kw_params
             self._kw_only_params = _cached_kw_only_params
         else:
-            self._pos_or_kw_params, self._kw_only_params = parse_injectable_params(func)
+            self._pos_or_kw_params, self._kw_only_params = _parse_injectable_params(func)
 
     def __get__(self, instance: t.Any, _: type[t.Any]) -> AutoInjecting:
         if instance is not None:

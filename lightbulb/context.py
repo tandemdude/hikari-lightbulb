@@ -50,6 +50,8 @@ INITIAL_RESPONSE_IDENTIFIER: t.Final[int] = -1
 
 @dataclasses.dataclass(slots=True)
 class AutocompleteContext(t.Generic[T]):
+    """Dataclass representing the context for an autocomplete interaction."""
+
     client: client_.Client
     """The client that created the context."""
 

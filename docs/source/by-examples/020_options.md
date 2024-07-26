@@ -5,6 +5,8 @@ take some form of input. For slash commands, this is done using options.
 
 Note that context menu commands **cannot** have options - see the context menu section for more on how they work.
 
+---
+
 ## Adding an Option
 
 Options are defined as class variables in your command class. Lightbulb provides various methods to help you
@@ -34,6 +36,8 @@ Options are added to commands in the order they are defined in the class. Any op
 a default value) must appear **after** required options.
 :::
 
+---
+
 ## Using an Option
 
 You should understand how to add options to commands now - it would probably be useful to get the value the user
@@ -54,6 +58,8 @@ class Echo(
     async def invoke(self, ctx: lightbulb.Context) -> None:
         await ctx.respond(self.text)
 ```
+
+---
 
 ## Option Types
 
@@ -89,6 +95,8 @@ class YourCommand(
     async def invoke(self, ctx: lightbulb.Context) -> None:
         ...
 ```
+
+---
 
 ## Common Pitfalls
 

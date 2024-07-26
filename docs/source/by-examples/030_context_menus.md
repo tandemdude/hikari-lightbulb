@@ -10,6 +10,8 @@ Unfortunately, discord limits you to very few of these commands but they can sti
 Context menu commands cannot have a description - you only need to provide a name when declaring one.
 :::
 
+---
+
 ## Message Commands
 
 A message command shows up in the context menu when right-clicking on a sent message. When invoked, these commands
@@ -26,6 +28,8 @@ class GetMessageId(
         # 'self.target' contains the message object the command was executed on
         await ctx.respond(self.target.id)
 ```
+
+---
 
 ## User Commands
 

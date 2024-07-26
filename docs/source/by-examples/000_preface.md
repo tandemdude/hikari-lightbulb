@@ -6,11 +6,15 @@ encounter some quirks with the library or have some ideas that you aren't quite 
 This series of pages aims to introduce you slowly to the main ideas behind the new version of Lightbulb
 and how to use them to their full potential in order to develop the Discord bot of your dreams.
 
+---
+
 ## New developers
 
 In the following examples I expect you to be familiar with Python's syntax, especially class definitions and
 async Python. You should probably read into the basics if you have not already - there are many great resources
 on the internet that will explain them to you much better than this documentation can.
+
+---
 
 ## Returning developers
 
@@ -29,8 +33,6 @@ This may be more inconvenient for you but it allowed me to greatly simplify the 
 API for a better experience (no more long decorator stacks).
 :::
 
----
-
 Most of all, do not be afraid to ask for help either in the Hikari [Discord server](https://discord.gg/hikari) or by 
 creating a discussion on the [repository](https://github.com/tandemdude/hikari-lightbulb).
 
@@ -43,6 +45,8 @@ Their guide explains it far better than I can.
 
 A Lightbulb [project template](https://github.com/tandemdude/hikari-lightbulb-bot-template) exists for your convenience
 and can be used to initialise your project with a known-good structure and basic working implementation if you wish.
+
+---
 
 ### First Steps
 

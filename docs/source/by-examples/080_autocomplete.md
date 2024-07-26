@@ -10,6 +10,8 @@ Only options of type `string`, `integer`, or `number` can be autocompleted.
 Lightbulb implements autocomplete by allowing you to specify an 'autocomplete callback' function that will be
 called for every autocomplete interaction sent when that option is focused.
 
+---
+
 ## Callback Specification
 
 An autocomplete callback is an **asynchronous** function that takes an instance of 
@@ -19,6 +21,8 @@ arguments will be dependency injected.
 Within an autocomplete callback, you are required to call the {meth}`~lightbulb.context.AutocompleteContext.respond`
 method **exactly once**. This is what actually submits the autocompletion suggestions to Discord. For details
 about the acceptable values you can pass to `respond()`, see the method's documentation.
+
+---
 
 ## Implementation
 
@@ -36,6 +40,8 @@ class Command(
 
     ...
 ```
+
+---
 
 ## Full Example Command
 

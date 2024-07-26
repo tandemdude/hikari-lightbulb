@@ -153,7 +153,7 @@ class ExecutionPipeline:
         self._remaining = list(order)
 
         self._hooks: dict[ExecutionStep, list[ExecutionHook]] = collections.defaultdict(list)
-        for hook in context.command_data.hooks:
+        for hook in [*context.client.hooks, *context.command_data.hooks]:
             self._hooks[hook.step].append(hook)
 
         self._current_step: ExecutionStep | None = None

@@ -134,7 +134,7 @@ class SubGroup(GroupMixin):
     _commands: SubGroupCommandMappingT = dataclasses.field(init=False, default_factory=dict)
 
     async def to_command_option(
-        self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
+        self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProvider
     ) -> hikari.CommandOption:
         """
         Convert the subgroup into a subgroup command option.
@@ -211,7 +211,7 @@ class Group(GroupMixin):
         return new
 
     async def as_command_builder(
-        self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
+        self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProvider
     ) -> hikari.api.CommandBuilder:
         """
         Convert the group into a hikari command builder object.

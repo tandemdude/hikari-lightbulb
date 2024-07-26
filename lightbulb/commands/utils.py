@@ -35,7 +35,7 @@ if t.TYPE_CHECKING:
 
 
 async def localize_value(
-    value: str, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
+    value: str, default_locale: hikari.Locale, localization_provider: localization.LocalizationProvider
 ) -> tuple[str, t.Mapping[hikari.Locale, str]]:
     """
     Get the value, and localized values for the given string, using the provided localization provider.
@@ -61,7 +61,7 @@ async def localize_name_and_description(
     name: str,
     description: str | None,
     default_locale: hikari.Locale,
-    localization_provider: localization.LocalizationProviderT,
+    localization_provider: localization.LocalizationProvider,
 ) -> tuple[str, str, t.Mapping[hikari.Locale, str], t.Mapping[hikari.Locale, str]]:
     """
     Helper method to resolve the localizations for the name and description of a command

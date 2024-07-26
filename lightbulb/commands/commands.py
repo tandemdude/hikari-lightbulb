@@ -107,7 +107,7 @@ class CommandData:
         return " ".join(names[::-1])
 
     async def as_command_builder(
-        self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
+        self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProvider
     ) -> hikari.api.CommandBuilder:
         """
         Convert the command data into a hikari command builder object.
@@ -150,7 +150,7 @@ class CommandData:
         )
 
     async def to_command_option(
-        self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
+        self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProvider
     ) -> hikari.CommandOption:
         """
         Convert the command data into a sub-command command option.
@@ -374,7 +374,7 @@ class CommandBase:
 
     @classmethod
     async def as_command_builder(
-        cls, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
+        cls, default_locale: hikari.Locale, localization_provider: localization.LocalizationProvider
     ) -> hikari.api.CommandBuilder:
         """
         Convert the command into a hikari command builder object.
@@ -386,7 +386,7 @@ class CommandBase:
 
     @classmethod
     async def to_command_option(
-        cls, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
+        cls, default_locale: hikari.Locale, localization_provider: localization.LocalizationProvider
     ) -> hikari.CommandOption:
         """
         Convert the command into a sub-command command option.

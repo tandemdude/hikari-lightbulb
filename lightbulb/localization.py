@@ -32,8 +32,8 @@ import hikari
 from lightbulb import exceptions
 from lightbulb.internal import types
 
-LocalizationMappingT: t.TypeAlias = t.Mapping[hikari.Locale, str]
-LocalizationProviderT: t.TypeAlias = t.Callable[[str], types.MaybeAwaitable[LocalizationMappingT]]
+LocalizationMapping: t.TypeAlias = t.Mapping[hikari.Locale, str]
+LocalizationProvider: t.TypeAlias = t.Callable[[str], types.MaybeAwaitable[LocalizationMapping]]
 
 
 def localization_unsupported(_: str) -> t.NoReturn:
@@ -57,7 +57,7 @@ class DictLocalizationProvider:
     localizations: t.Mapping[hikari.Locale, t.Mapping[str, str]]
     """Mapping containing the localizations that can be provided."""
 
-    def __call__(self, key: str) -> LocalizationMappingT:
+    def __call__(self, key: str) -> LocalizationMapping:
         out: dict[hikari.Locale, str] = {}
         for locale, translations in self.localizations.items():
             if key in translations:
@@ -120,5 +120,5 @@ class GnuLocalizationProvider:
 
         self._dict_provider = DictLocalizationProvider(localizations)
 
-    def __call__(self, key: str) -> LocalizationMappingT:
+    def __call__(self, key: str) -> LocalizationMapping:
         return self._dict_provider(key)

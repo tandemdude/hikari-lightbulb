@@ -54,7 +54,7 @@ jobs:
           FLIT_USERNAME: ${{ secrets.FLIT_USERNAME }}
           FLIT_PASSWORD: ${{ secrets.FLIT_PASSWORD }}
         run: |
-          pip install .[dev.release]
+          pip install ".[dev.release]"
           flit publish
 
       - name: Create Tag

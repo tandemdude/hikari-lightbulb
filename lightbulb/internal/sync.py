@@ -20,7 +20,7 @@
 # SOFTWARE.
 from __future__ import annotations
 
-__all__ = []
+__all__ = ["sync_application_commands"]
 
 import collections
 import dataclasses
@@ -39,7 +39,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass(slots=True)
-class CommandBuilderCollection:
+class _CommandBuilderCollection:
     slash: hikari.api.SlashCommandBuilder | None = None
     user: hikari.api.ContextMenuCommandBuilder | None = None
     message: hikari.api.ContextMenuCommandBuilder | None = None
@@ -56,7 +56,7 @@ class CommandBuilderCollection:
             raise TypeError("unrecognised builder type")
 
 
-def hikari_command_to_builder(
+def _hikari_command_to_builder(
     cmd: hikari.PartialCommand,
 ) -> hikari.api.SlashCommandBuilder | hikari.api.ContextMenuCommandBuilder:
     bld: hikari.api.SlashCommandBuilder | hikari.api.ContextMenuCommandBuilder
@@ -76,14 +76,14 @@ def hikari_command_to_builder(
     )
 
 
-async def get_existing_and_registered_commands(
+async def _get_existing_and_registered_commands(
     client: client_.Client, application: hikari.PartialApplication, guild: hikari.UndefinedOr[hikari.Snowflakeish]
-) -> tuple[dict[str, CommandBuilderCollection], dict[str, CommandBuilderCollection]]:
-    existing: dict[str, CommandBuilderCollection] = collections.defaultdict(CommandBuilderCollection)
-    registered: dict[str, CommandBuilderCollection] = collections.defaultdict(CommandBuilderCollection)
+) -> tuple[dict[str, _CommandBuilderCollection], dict[str, _CommandBuilderCollection]]:
+    existing: dict[str, _CommandBuilderCollection] = collections.defaultdict(_CommandBuilderCollection)
+    registered: dict[str, _CommandBuilderCollection] = collections.defaultdict(_CommandBuilderCollection)
 
     for existing_command in await client.rest.fetch_application_commands(application, guild=guild):
-        existing[existing_command.name].put(hikari_command_to_builder(existing_command))
+        existing[existing_command.name].put(_hikari_command_to_builder(existing_command))
     for name, collection in client._commands.get(
         constants.GLOBAL_COMMAND_KEY if guild is hikari.UNDEFINED else guild, {}
     ).items():
@@ -96,7 +96,7 @@ async def get_existing_and_registered_commands(
     return existing, registered
 
 
-def serialize_builder(bld: hikari.api.CommandBuilder) -> dict[str, t.Any]:
+def _serialize_builder(bld: hikari.api.CommandBuilder) -> dict[str, t.Any]:
     def serialize_option(opt: hikari.CommandOption) -> dict[str, t.Any]:
         return {
             "type": opt.type,
@@ -130,9 +130,9 @@ def serialize_builder(bld: hikari.api.CommandBuilder) -> dict[str, t.Any]:
     return out
 
 
-def get_commands_to_set(
-    existing: dict[str, CommandBuilderCollection],
-    registered: dict[str, CommandBuilderCollection],
+def _get_commands_to_set(
+    existing: dict[str, _CommandBuilderCollection],
+    registered: dict[str, _CommandBuilderCollection],
     delete_unknown: bool,
 ) -> t.Sequence[hikari.api.CommandBuilder] | None:
     created, deleted, updated, unchanged = 0, 0, 0, 0
@@ -158,7 +158,7 @@ def get_commands_to_set(
                 else:
                     commands_to_set.append(existing_bld)
             else:
-                if serialize_builder(existing_bld) != serialize_builder(registered_bld):
+                if _serialize_builder(existing_bld) != _serialize_builder(registered_bld):
                     commands_to_set.append(registered_bld)
                     updated += 1
                 else:
@@ -182,10 +182,10 @@ async def sync_application_commands(client: client_.Client) -> None:
     application = await client._ensure_application()
 
     LOGGER.info("syncing global commands")
-    existing_global_commands, registered_global_commands = await get_existing_and_registered_commands(
+    existing_global_commands, registered_global_commands = await _get_existing_and_registered_commands(
         client, application, hikari.UNDEFINED
     )
-    global_commands_to_set = get_commands_to_set(
+    global_commands_to_set = _get_commands_to_set(
         existing_global_commands, registered_global_commands, client.delete_unknown_commands
     )
     if global_commands_to_set is not None:
@@ -197,10 +197,10 @@ async def sync_application_commands(client: client_.Client) -> None:
             continue
 
         LOGGER.info("syncing commands for guild '%s'", guild)
-        existing_guild_commands, registered_guild_commands = await get_existing_and_registered_commands(
+        existing_guild_commands, registered_guild_commands = await _get_existing_and_registered_commands(
             client, application, guild
         )
-        guild_commands_to_set = get_commands_to_set(
+        guild_commands_to_set = _get_commands_to_set(
             existing_guild_commands, registered_guild_commands, client.delete_unknown_commands
         )
         if guild_commands_to_set is not None:

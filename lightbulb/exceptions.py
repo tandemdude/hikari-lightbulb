@@ -67,25 +67,25 @@ class ExecutionPipelineFailedException(ExecutionException):
     ) -> None:
         super().__init__(f"execution of command {context.command_data.qualified_name!r} failed")
 
-        self.failed_hooks = [item[0] for item in failed_hooks_with_exceptions]
+        self.failed_hooks: t.Sequence[execution.ExecutionHook] = [item[0] for item in failed_hooks_with_exceptions]
         """
         The hooks that failed during command execution.
         The corresponding exception can be found at the same index in ``hook_failures``.
         """
-        self.hook_failures = [item[1] for item in failed_hooks_with_exceptions]
+        self.hook_failures: t.Sequence[Exception] = [item[1] for item in failed_hooks_with_exceptions]
         """The exceptions caused by hook failures during command execution."""
-        self.invocation_failure = invocation_failure
+        self.invocation_failure: Exception | None = invocation_failure
         """
         The exception caused by the invocation method failing during command execution. Will be :obj:`None` if
         the invocation method did not fail or was not executed.
         """
-        self.pipeline = pipeline
+        self.pipeline: execution.ExecutionPipeline = pipeline
         """The pipeline that failed."""
-        self.context = context
+        self.context: context_.Context = context
         """The context that caused the pipeline to fail."""
 
-        self.causes = [e for e in [*self.hook_failures, invocation_failure] if e is not None]
+        self.causes: t.Sequence[Exception] = [e for e in [*self.hook_failures, invocation_failure] if e is not None]
         """All the exceptions raised during command execution."""
 
         if len(self.causes) == 1:
-            self.__cause__ = self.causes[0]
+            self.__cause__: BaseException | None = self.causes[0]

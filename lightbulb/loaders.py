@@ -88,14 +88,25 @@ class Loadable(abc.ABC):
 
 class _CommandLoadable(Loadable):
     # TODO - check this is correctly idempotent
-    __slots__ = ("_command", "_guilds")
+    __slots__ = ("_command", "_guilds", "_global", "_defer_guilds")
 
-    def __init__(self, command: CommandOrGroup, guilds: t.Sequence[hikari.Snowflakeish] | None) -> None:
+    def __init__(
+        self,
+        command: CommandOrGroup,
+        guilds: t.Sequence[hikari.Snowflakeish] | None,
+        global_: bool | None,
+        defer_guilds: bool,
+    ) -> None:
         self._command = command
         self._guilds = guilds
+        self._global = global_
+        self._defer_guilds = defer_guilds
 
     async def load(self, client: client_.Client) -> None:
-        client.register(self._command, guilds=self._guilds)
+        if self._defer_guilds:
+            client.register(self._command, defer_guilds=True)
+        else:
+            client.register(self._command, guilds=self._guilds, global_=self._global)
 
     async def unload(self, client: client_.Client) -> None:
         client.unregister(self._command)
@@ -170,7 +181,7 @@ class _TaskLoadable(Loadable):
         if self._task not in client._tasks:
             return
 
-        client.remove_task(self._task)
+        client.remove_task(self._task, cancel=True)
 
 
 class Loader:
@@ -226,29 +237,45 @@ class Loader:
 
     @t.overload
     def command(
-        self, *, guilds: t.Sequence[hikari.Snowflakeish] | None = None
+        self, *, guilds: t.Sequence[hikari.Snowflakeish] | None = None, global_: bool | None = None
     ) -> t.Callable[[CommandOrGroupT], CommandOrGroupT]: ...
 
     @t.overload
+    def command(self, *, defer_guilds: t.Literal[True]) -> t.Callable[[CommandOrGroupT], CommandOrGroupT]: ...
+
+    @t.overload
     def command(
-        self, command: CommandOrGroupT, *, guilds: t.Sequence[hikari.Snowflakeish] | None = None
+        self,
+        command: CommandOrGroupT,
+        *,
+        guilds: t.Sequence[hikari.Snowflakeish] | None = None,
+        global_: bool | None = None,
     ) -> CommandOrGroupT: ...
 
+    @t.overload
+    def command(self, command: CommandOrGroupT, *, defer_guilds: t.Literal[True]) -> CommandOrGroupT: ...
+
     def command(
-        self, command: CommandOrGroupT | None = None, *, guilds: t.Sequence[hikari.Snowflakeish] | None = None
+        self,
+        command: CommandOrGroupT | None = None,
+        *,
+        guilds: t.Sequence[hikari.Snowflakeish] | None = None,
+        global_: bool | None = None,
+        defer_guilds: bool = False,
     ) -> CommandOrGroupT | t.Callable[[CommandOrGroupT], CommandOrGroupT]:
         """
-        Register a command or group with this loader. Optionally, a sequence of guild ids can
-        be provided to make the commands created in specific guilds only - overriding the value for
-        default enabled guilds.
+        Register a command or group with this loader.
 
         This method can be used as a function, or a first or second order decorator.
 
         Args:
             command: The command class or command group to register with the client.
-            guilds: The guilds to create the command or group in. If set to :obj:`None`, then this will fall
-                back to the default enabled guilds. To override default enabled guilds and make the command or
-                group global, this should be set to an empty sequence.
+            guilds: The guilds to create the command or group in.
+            global_: Whether the command should be registered globally.
+            defer_guilds: Whether the guilds to create this command in should be resolved when the client is started.
+                If :obj:`True`, the client's ``deferred_registration_callback`` will be used to resolve which guilds
+                to create the command in. You can also use this to conditionally prevent the command from being
+                registered to any guilds.
 
         Returns:
             The registered command or group, unchanged.
@@ -271,10 +298,13 @@ class Loader:
 
                 # also valid
                 loader.register(Example, guilds=[...])
+
+        See Also:
+            :meth:`~lightbulb.client.Client.register`
         """
         # Used as a function or first-order decorator
         if command is not None:
-            self.add(_CommandLoadable(command, guilds))
+            self.add(_CommandLoadable(command, guilds, global_, defer_guilds))
             return command
 
         # Used as a second-order decorator
@@ -367,7 +397,7 @@ class Loader:
             max_failures: The maximum number of failed attempts to execute the task before it is cancelled.
             max_invocations: The maximum number of times the task can be invoked before being stopped.
 
-        Exmaple:
+        Example:
 
             .. code-block:: python
 

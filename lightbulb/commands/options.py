@@ -184,12 +184,12 @@ class OptionData(t.Generic[D]):
             description=description,
             description_localizations=description_localizations,  # type: ignore[reportArgumentType]
             is_required=self.default is hikari.UNDEFINED,
-            choices=non_undefined_or(choices or hikari.UNDEFINED, None),
-            channel_types=non_undefined_or(self.channel_types, None),
+            choices=choices or None,
+            channel_types=self.channel_types or None,
             min_value=non_undefined_or(self.min_value, None),
             max_value=non_undefined_or(self.max_value, None),
-            min_length=non_undefined_or(self.min_length, None),
-            max_length=non_undefined_or(self.max_length, None),
+            min_length=self.min_length if self.min_length is not hikari.UNDEFINED else None,
+            max_length=self.max_length if self.max_length is not hikari.UNDEFINED else None,
             autocomplete=self.autocomplete,
         )
 

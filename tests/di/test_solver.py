@@ -24,39 +24,39 @@ import pytest
 
 import lightbulb
 from lightbulb.di.solver import CANNOT_INJECT
-from lightbulb.di.solver import parse_injectable_params
+from lightbulb.di.solver import _parse_injectable_params
 
 
 class TestSignatureParsing:
     def test_parses_positional_only_arg_correctly(self) -> None:
         def m(foo: object, /) -> None: ...
 
-        pos, kw = parse_injectable_params(m)
+        pos, kw = _parse_injectable_params(m)
         assert pos[0][1] is CANNOT_INJECT and len(kw) == 0
 
     def test_parses_var_positional_arg_correctly(self) -> None:
         def m(*foo: object) -> None: ...
 
-        pos, kw = parse_injectable_params(m)
+        pos, kw = _parse_injectable_params(m)
         assert len(pos) == 0 and len(kw) == 0
 
     def test_does_not_parse_var_kw_arg(self) -> None:
         def m(**foo: object) -> None: ...
 
-        pos, kw = parse_injectable_params(m)
+        pos, kw = _parse_injectable_params(m)
         assert len(pos) == 0 and len(kw) == 0
 
     def test_parses_args_with_non_INJECTED_default_correctly(self) -> None:
         def m(foo: object = object()) -> None: ...
 
-        pos, kw = parse_injectable_params(m)
+        pos, kw = _parse_injectable_params(m)
         assert pos[0][1] is CANNOT_INJECT and len(kw) == 0
 
     def test_parses_args_with_no_annotation_correctly(self) -> None:
         def m(foo) -> None:  # type: ignore[unknownParameterType]
             ...
 
-        pos, kw = parse_injectable_params(m)  # type: ignore[unknownArgumentType]
+        pos, kw = _parse_injectable_params(m)  # type: ignore[unknownArgumentType]
         assert pos[0][1] is CANNOT_INJECT and len(kw) == 0
 
     def test_parses_args_correctly(self) -> None:
@@ -64,7 +64,7 @@ class TestSignatureParsing:
             foo: str, bar: int = lightbulb.di.INJECTED, *, baz: float, bork: bool = lightbulb.di.INJECTED
         ) -> None: ...
 
-        pos, kw = parse_injectable_params(m)
+        pos, kw = _parse_injectable_params(m)
 
         assert pos == [("foo", str), ("bar", int)]
         assert kw == {"baz": float, "bork": bool}

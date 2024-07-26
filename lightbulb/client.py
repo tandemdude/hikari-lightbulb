@@ -46,13 +46,13 @@ from lightbulb.commands import execution
 from lightbulb.commands import groups
 from lightbulb.internal import constants
 from lightbulb.internal import sync
+from lightbulb.internal import types as lb_types
 from lightbulb.internal import utils as i_utils
 
 if t.TYPE_CHECKING:
     import types
 
     from lightbulb.commands import options as options_
-    from lightbulb.internal.types import MaybeAwaitable
 
 T = t.TypeVar("T")
 CommandMap: t.TypeAlias = t.MutableMapping[hikari.Snowflakeish, t.MutableMapping[str, i_utils.CommandCollection]]
@@ -62,6 +62,9 @@ ErrorHandler: t.TypeAlias = t.Callable[
     "t.Concatenate[exceptions.ExecutionPipelineFailedException, ...]", t.Awaitable[bool]
 ]
 ErrorHandlerT = t.TypeVar("ErrorHandlerT", bound=ErrorHandler)
+DeferredRegistrationCallback: t.TypeAlias = t.Callable[
+    [CommandOrGroup], lb_types.MaybeAwaitable[tuple[t.Iterable[hikari.Snowflakeish], bool] | None]
+]
 OptionT = t.TypeVar("OptionT", bound=hikari.CommandInteractionOption)
 
 LOGGER = logging.getLogger(__name__)
@@ -134,20 +137,17 @@ class Client(abc.ABC):
         default_locale: hikari.Locale,
         localization_provider: localization.LocalizationProviderT,
         delete_unknown_commands: bool,
-        deferred_registration_callback: t.Callable[
-            [CommandOrGroup], MaybeAwaitable[hikari.Snowflakeish | t.Sequence[hikari.Snowflakeish]]
-        ]
-        | None,
+        deferred_registration_callback: DeferredRegistrationCallback | None,
     ) -> None:
         super().__init__()
 
-        self.rest = rest
-        self.default_enabled_guilds = default_enabled_guilds
-        self.execution_step_order = execution_step_order
-        self.default_locale = default_locale
-        self.localization_provider = localization_provider
-        self.delete_unknown_commands = delete_unknown_commands
-        self.deferred_registration_callback = deferred_registration_callback
+        self.rest: hikari.api.RESTClient = rest
+        self.default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = default_enabled_guilds
+        self.execution_step_order: t.Sequence[execution.ExecutionStep] = execution_step_order
+        self.default_locale: hikari.Locale = default_locale
+        self.localization_provider: localization.LocalizationProviderT = localization_provider
+        self.delete_unknown_commands: bool = delete_unknown_commands
+        self.deferred_registration_callback: DeferredRegistrationCallback | None = deferred_registration_callback
 
         self._di = di_.DependencyInjectionManager()
 
@@ -218,7 +218,7 @@ class Client(abc.ABC):
         self, trigger: tasks.Trigger, /, auto_start: bool = True, max_failures: int = 1, max_invocations: int = -1
     ) -> t.Callable[[tasks.TaskFunc], tasks.Task]: ...
     @t.overload
-    def task(self, task_: tasks.Task, /) -> tasks.Task: ...
+    def task(self, task: tasks.Task, /) -> tasks.Task: ...
 
     def task(  # noqa: D417
         self,
@@ -233,6 +233,8 @@ class Client(abc.ABC):
         dependency injection enabled on them automatically. Task functions **must** be asynchronous.
 
         Args:
+            task: The task to register with the client. If this parameter is provided then all other parameters
+                are ignored.
             trigger: The trigger function to use to resolve the interval between task executions.
             auto_start: Whether the task should be started automatically. This means that if the task is added to
                 the client upon the client being started, the task will also be started; it will also be started
@@ -357,35 +359,67 @@ class Client(abc.ABC):
 
     @t.overload
     def register(
-        self, *, guilds: t.Sequence[hikari.Snowflakeish] | None = None
+        self, *, guilds: t.Sequence[hikari.Snowflakeish] | None = None, global_: bool | None = None
     ) -> t.Callable[[CommandOrGroupT], CommandOrGroupT]: ...
 
     @t.overload
+    def register(self, *, defer_guilds: t.Literal[True]) -> t.Callable[[CommandOrGroupT], CommandOrGroupT]: ...
+
+    @t.overload
     def register(
-        self, command: CommandOrGroupT, *, guilds: t.Sequence[hikari.Snowflakeish] | None = None
+        self,
+        command: CommandOrGroupT,
+        *,
+        guilds: t.Sequence[hikari.Snowflakeish] | None = None,
+        global_: bool | None = None,
     ) -> CommandOrGroupT: ...
+
+    @t.overload
+    def register(self, command: CommandOrGroupT, *, defer_guilds: t.Literal[True]) -> CommandOrGroupT: ...
 
     def register(
         self,
         command: CommandOrGroupT | None = None,
         *,
         guilds: t.Sequence[hikari.Snowflakeish] | None = None,
+        global_: bool | None = None,
+        defer_guilds: bool = False,
     ) -> CommandOrGroupT | t.Callable[[CommandOrGroupT], CommandOrGroupT]:
         """
-        Register a command or group with this client instance. Optionally, a sequence of guild ids can
-        be provided to make the commands created in specific guilds only - overriding the value for
-        default enabled guilds.
+        Register a command or group with this client instance.
+
+        Optionally, a sequence of guild ids, and/or a boolean indicating whether the command should be registered
+        globally can be provided to make the commands created in specific guilds  only - overriding the value
+        for default enabled guilds. If you specify ``global_=False`` then you **must** specify either
+        ``guilds=[...]`` in this function, or ``default_enabled_guilds`` when creating the client.
+
+        If a value is passed to ``guilds`` or you pass ``global_=True``, then this command will not use the value
+        you provided to ``default_enabled_guilds``.
+
+        You may specify ``defer_guilds=True`` in order to resolve the guilds the command should be created in
+        once the client has been started.
 
         This method can be used as a function, or a first or second order decorator.
 
         Args:
             command: The command class or command group to register with the client.
-            guilds: The guilds to create the command or group in. If set to :obj:`None`, then this will
-                fall back to the default enabled guilds. To override default enabled guilds and make the
-                command or group global, this should be set to an empty sequence.
+            guilds: The guilds to create the command or group in.
+            global_: Whether the command should be registered globally.
+            defer_guilds: Whether the guilds to create this command in should be resolved when the client is started.
+                If :obj:`True`, the ``deferred_registration_callback`` will be used to resolve which guilds
+                to create the command in. You can also use this to conditionally prevent the command from being
+                registered to any guilds.
 
         Returns:
             The registered command or group, unchanged.
+
+        Raises:
+            :obj:`ValueError`: If ``defer_guilds`` is :obj:`True`, and no ``deferred_registration_callback`` was
+                set upon client creation.
+
+        Note:
+            The signature overloads do not allow for you to pass a value for both ``guilds`` and ``defer_guilds``. If
+            for some reason you pass both however, then ``defer_guilds`` will take precedence.
 
         Example:
 
@@ -396,7 +430,9 @@ class Client(abc.ABC):
                 # valid
                 @client.register
                 # also valid
-                @client.register(guilds=[...])
+                @client.register(guilds=[...], global_=True)
+                # also valid
+                @client.register(defer_guilds=True)
                 class Example(
                     lightbulb.SlashCommand,
                     ...
@@ -404,28 +440,65 @@ class Client(abc.ABC):
                     ...
 
                 # also valid
-                client.register(Example, guilds=[...])
+                client.register(Example, guilds=[...], global_=True)
+                # also valid
+                client.register(Example, defer_guilds=True)
+
+            .. code-block:: python
+
+                client = lightbulb.client_from_app(..., default_enabled_guilds=[123, 456])
+
+                # Command will be registered in:
+                # guilds: 123, 456
+                # globally: false
+                client.register(command)
+
+                # guilds: 123, 456
+                # globally: false
+                client.register(command, global_=False)
+
+                # guilds: 789
+                # globally: false
+                client.register(command, guilds=[789])
+
+                # guilds: none
+                # globally: true
+                client.register(command, global_=True)
+
+                # guilds: 789
+                # globally: true
+                client.register(command, guilds=[789], global_=True)
+
+                # === IF NO 'default_enabled_guilds' SET ===
+
+                # guilds: none
+                # globally: true
+                client.register(command)
         """
-        register_in: t.Sequence[hikari.Snowflakeish]
-        if not guilds and guilds is not None:
-            # commands should ignore default guilds and be global
-            register_in = (constants.GLOBAL_COMMAND_KEY,)
-        else:
-            # commands should either use the passed guilds, or if none passed, use default guilds
-            maybe_guilds = guilds or self.default_enabled_guilds
-            # pyright isn't happy about just using the above line even though it should be fine,
-            # so added the below just to remove the error
-            register_in = maybe_guilds if maybe_guilds is not hikari.UNDEFINED else ()
+        register_in: set[hikari.Snowflakeish] = set()
+        if guilds:
+            register_in.update(guilds)
+        if global_:
+            register_in.add(constants.GLOBAL_COMMAND_KEY)
+
+        if global_ is False:
+            if not guilds and not self.default_enabled_guilds:
+                raise ValueError("cannot set 'global_=False' without specifying 'guilds' or 'default_enabled_guilds'")
+            register_in.update(guilds or self.default_enabled_guilds)
 
         # Used as a function or first-order decorator
         if command is not None:
             name = command.name if isinstance(command, groups.Group) else command._command_data.name
             localize = command.localize if isinstance(command, groups.Group) else command._command_data.localize
 
-            if localize:
+            if defer_guilds:
+                if self.deferred_registration_callback is None:
+                    raise ValueError("cannot defer registration if no deferred registration callback was provided")
+                self._deferred_commands.append(command)
+            elif localize:
                 # We need to handle localized commands separately because we don't know what their
                 # name is until we resolve it using the callback
-                self._localized_commands.append((register_in, command))
+                self._localized_commands.append((list(register_in), command))
             else:
                 for guild_id in register_in:
                     self._commands[guild_id][name].put(command)
@@ -435,29 +508,11 @@ class Client(abc.ABC):
 
         # Used as a second-order decorator
         def _inner(command_: CommandOrGroupT) -> CommandOrGroupT:
-            return self.register(command_, guilds=register_in)
+            if defer_guilds:
+                return self.register(command_, defer_guilds=True)
+            return self.register(command_, guilds=guilds, global_=global_)
 
         return _inner
-
-    def register_deferred(self, command: CommandOrGroupT) -> CommandOrGroupT:
-        """
-        Register a command with the client, but defer resolving the guilds that the command should be created
-        in until the client has been started.
-
-        Args:
-            command: The command class or command group to register with the client.
-
-        Returns:
-            The registered command or group, unchanged.
-
-        Raises:
-            :obj:`ValueError`: If no ``deferred_registration_callback`` was set upon client creation.
-        """
-        if self.deferred_registration_callback is None:
-            raise ValueError("cannot defer registration if no deferred registration callback was provided")
-
-        self._deferred_commands.append(command)
-        return command
 
     def unregister(self, command: CommandOrGroup) -> None:
         """
@@ -710,9 +765,15 @@ class Client(abc.ABC):
             builder = await command.as_command_builder(self.default_locale, self.localization_provider)
 
             assert self.deferred_registration_callback is not None
-            guilds = await utils.maybe_await(self.deferred_registration_callback(command))
+            output = await utils.maybe_await(self.deferred_registration_callback(command))
+            if output is None:
+                continue
 
-            for guild in [guilds] if isinstance(guilds, int) else guilds:
+            guilds, global_ = set(output[0]), output[1]
+            if global_:
+                guilds.add(constants.GLOBAL_COMMAND_KEY)
+
+            for guild in guilds:
                 self._commands[guild][builder.name].put(command)
 
         await sync.sync_application_commands(self)
@@ -1138,10 +1199,7 @@ def client_from_app(
     default_locale: hikari.Locale = hikari.Locale.EN_US,
     localization_provider: localization.LocalizationProviderT = localization.localization_unsupported,
     delete_unknown_commands: bool = True,
-    deferred_registration_callback: t.Callable[
-        [CommandOrGroup], MaybeAwaitable[hikari.Snowflakeish | t.Sequence[hikari.Snowflakeish]]
-    ]
-    | None = None,
+    deferred_registration_callback: DeferredRegistrationCallback | None = None,
 ) -> GatewayEnabledClient: ...
 @t.overload
 def client_from_app(
@@ -1151,10 +1209,7 @@ def client_from_app(
     default_locale: hikari.Locale = hikari.Locale.EN_US,
     localization_provider: localization.LocalizationProviderT = localization.localization_unsupported,
     delete_unknown_commands: bool = True,
-    deferred_registration_callback: t.Callable[
-        [CommandOrGroup], MaybeAwaitable[hikari.Snowflakeish | t.Sequence[hikari.Snowflakeish]]
-    ]
-    | None = None,
+    deferred_registration_callback: DeferredRegistrationCallback | None = None,
 ) -> RestEnabledClient: ...
 def client_from_app(
     app: GatewayClientAppT | RestClientAppT,
@@ -1163,10 +1218,7 @@ def client_from_app(
     default_locale: hikari.Locale = hikari.Locale.EN_US,
     localization_provider: localization.LocalizationProviderT = localization.localization_unsupported,
     delete_unknown_commands: bool = True,
-    deferred_registration_callback: t.Callable[
-        [CommandOrGroup], MaybeAwaitable[hikari.Snowflakeish | t.Sequence[hikari.Snowflakeish]]
-    ]
-    | None = None,
+    deferred_registration_callback: DeferredRegistrationCallback | None = None,
 ) -> Client:
     """
     Create and return the appropriate client implementation from the given application.

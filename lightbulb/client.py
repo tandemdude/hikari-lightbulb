@@ -55,16 +55,8 @@ if t.TYPE_CHECKING:
     from lightbulb.commands import options as options_
 
 T = t.TypeVar("T")
-CommandMap: t.TypeAlias = t.MutableMapping[hikari.Snowflakeish, t.MutableMapping[str, i_utils.CommandCollection]]
-CommandOrGroup: t.TypeAlias = t.Union[groups.Group, type[commands.CommandBase]]
-CommandOrGroupT = t.TypeVar("CommandOrGroupT", bound=CommandOrGroup)
-ErrorHandler: t.TypeAlias = t.Callable[
-    "t.Concatenate[exceptions.ExecutionPipelineFailedException, ...]", t.Awaitable[bool]
-]
-ErrorHandlerT = t.TypeVar("ErrorHandlerT", bound=ErrorHandler)
-DeferredRegistrationCallback: t.TypeAlias = t.Callable[
-    [CommandOrGroup], lb_types.MaybeAwaitable[tuple[t.Iterable[hikari.Snowflakeish], bool] | None]
-]
+CommandOrGroupT = t.TypeVar("CommandOrGroupT", bound=lb_types.CommandOrGroup)
+ErrorHandlerT = t.TypeVar("ErrorHandlerT", bound=lb_types.ErrorHandler)
 OptionT = t.TypeVar("OptionT", bound=hikari.CommandInteractionOption)
 
 LOGGER = logging.getLogger(__name__)
@@ -107,6 +99,8 @@ class Client(abc.ABC):
         deferred_registration_callback: The callback to use to resolve which guilds a command should be created in
             if a command is registered using :meth:`~Client.register_deferred`. Allows for commands to be
             dynamically created in guilds, for example enabled on a per-guild basis using feature flags.
+        hooks: Execution hooks that should be applied to all commands. These hooks will always run **before**
+            all other hooks registered for the same step are executed.
     """
 
     __slots__ = (
@@ -117,6 +111,7 @@ class Client(abc.ABC):
         "localization_provider",
         "delete_unknown_commands",
         "deferred_registration_callback",
+        "hooks",
         "_di",
         "_localization",
         "_localized_commands",
@@ -135,9 +130,10 @@ class Client(abc.ABC):
         default_enabled_guilds: t.Sequence[hikari.Snowflakeish],
         execution_step_order: t.Sequence[execution.ExecutionStep],
         default_locale: hikari.Locale,
-        localization_provider: localization.LocalizationProviderT,
+        localization_provider: localization.LocalizationProvider,
         delete_unknown_commands: bool,
-        deferred_registration_callback: DeferredRegistrationCallback | None,
+        deferred_registration_callback: lb_types.DeferredRegistrationCallback | None,
+        hooks: t.Sequence[execution.ExecutionHook],
     ) -> None:
         super().__init__()
 
@@ -145,17 +141,22 @@ class Client(abc.ABC):
         self.default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = default_enabled_guilds
         self.execution_step_order: t.Sequence[execution.ExecutionStep] = execution_step_order
         self.default_locale: hikari.Locale = default_locale
-        self.localization_provider: localization.LocalizationProviderT = localization_provider
+        self.localization_provider: localization.LocalizationProvider = localization_provider
         self.delete_unknown_commands: bool = delete_unknown_commands
-        self.deferred_registration_callback: DeferredRegistrationCallback | None = deferred_registration_callback
+        self.deferred_registration_callback: lb_types.DeferredRegistrationCallback | None = (
+            deferred_registration_callback
+        )
+        self.hooks: t.Sequence[execution.ExecutionHook] = hooks
 
         self._di = di_.DependencyInjectionManager()
 
-        self._localized_commands: list[tuple[t.Sequence[hikari.Snowflakeish], CommandOrGroup]] = []
-        self._deferred_commands: list[CommandOrGroup] = []
+        self._localized_commands: list[tuple[t.Sequence[hikari.Snowflakeish], lb_types.CommandOrGroup]] = []
+        self._deferred_commands: list[lb_types.CommandOrGroup] = []
 
-        self._commands: CommandMap = collections.defaultdict(lambda: collections.defaultdict(i_utils.CommandCollection))
-        self._error_handlers: dict[int, list[ErrorHandler]] = {}
+        self._commands: lb_types.CommandMap = collections.defaultdict(
+            lambda: collections.defaultdict(i_utils.CommandCollection)
+        )
+        self._error_handlers: dict[int, list[lb_types.ErrorHandler]] = {}
         self._application: t.Optional[hikari.PartialApplication] = None
         self._extensions: set[str] = set()
         self._tasks: set[tasks.Task] = set()
@@ -336,7 +337,7 @@ class Client(abc.ABC):
 
         return _inner
 
-    def remove_error_handler(self, func: ErrorHandler) -> None:
+    def remove_error_handler(self, func: lb_types.ErrorHandler) -> None:
         """
         Unregister a command error handler function from the client.
 
@@ -346,13 +347,13 @@ class Client(abc.ABC):
         Returns:
             :obj:`None`
         """
-        new_handlers: dict[int, list[ErrorHandler]] = {}
+        new_handlers: dict[int, list[lb_types.ErrorHandler]] = {}
         for priority, handlers in self._error_handlers.items():
             handlers = [
                 h for h in handlers if h is not func and (isinstance(h, di_.AutoInjecting) and h._func is not func)
             ]
             if handlers:
-                new_handlers[priority] = t.cast(list[ErrorHandler], handlers)
+                new_handlers[priority] = t.cast(list[lb_types.ErrorHandler], handlers)
 
         sorted_handlers = sorted(new_handlers.items(), key=lambda item: item[0], reverse=True)
         self._error_handlers = {k: v for k, v in sorted_handlers}
@@ -514,7 +515,7 @@ class Client(abc.ABC):
 
         return _inner
 
-    def unregister(self, command: CommandOrGroup) -> None:
+    def unregister(self, command: lb_types.CommandOrGroup) -> None:
         """
         Unregister a command with the client. This will prevent the client from handling any incoming
         interactions for the given command globally, or in any guild. This **will not** delete the command from
@@ -1197,9 +1198,10 @@ def client_from_app(
     default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (constants.GLOBAL_COMMAND_KEY,),
     execution_step_order: t.Sequence[execution.ExecutionStep] = DEFAULT_EXECUTION_STEP_ORDER,
     default_locale: hikari.Locale = hikari.Locale.EN_US,
-    localization_provider: localization.LocalizationProviderT = localization.localization_unsupported,
+    localization_provider: localization.LocalizationProvider = localization.localization_unsupported,
     delete_unknown_commands: bool = True,
-    deferred_registration_callback: DeferredRegistrationCallback | None = None,
+    deferred_registration_callback: lb_types.DeferredRegistrationCallback | None = None,
+    hooks: t.Sequence[execution.ExecutionHook] = (),
 ) -> GatewayEnabledClient: ...
 @t.overload
 def client_from_app(
@@ -1207,18 +1209,20 @@ def client_from_app(
     default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (constants.GLOBAL_COMMAND_KEY,),
     execution_step_order: t.Sequence[execution.ExecutionStep] = DEFAULT_EXECUTION_STEP_ORDER,
     default_locale: hikari.Locale = hikari.Locale.EN_US,
-    localization_provider: localization.LocalizationProviderT = localization.localization_unsupported,
+    localization_provider: localization.LocalizationProvider = localization.localization_unsupported,
     delete_unknown_commands: bool = True,
-    deferred_registration_callback: DeferredRegistrationCallback | None = None,
+    deferred_registration_callback: lb_types.DeferredRegistrationCallback | None = None,
+    hooks: t.Sequence[execution.ExecutionHook] = (),
 ) -> RestEnabledClient: ...
 def client_from_app(
     app: GatewayClientAppT | RestClientAppT,
     default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (constants.GLOBAL_COMMAND_KEY,),
     execution_step_order: t.Sequence[execution.ExecutionStep] = DEFAULT_EXECUTION_STEP_ORDER,
     default_locale: hikari.Locale = hikari.Locale.EN_US,
-    localization_provider: localization.LocalizationProviderT = localization.localization_unsupported,
+    localization_provider: localization.LocalizationProvider = localization.localization_unsupported,
     delete_unknown_commands: bool = True,
-    deferred_registration_callback: DeferredRegistrationCallback | None = None,
+    deferred_registration_callback: lb_types.DeferredRegistrationCallback | None = None,
+    hooks: t.Sequence[execution.ExecutionHook] = (),
 ) -> Client:
     """
     Create and return the appropriate client implementation from the given application.
@@ -1240,6 +1244,8 @@ def client_from_app(
             if a command is registered using :meth:`~Client.register_deferred`. Allows for commands to be
             dynamically created in guilds, for example enabled on a per-guild basis using feature flags. Defaults
             to :obj:`None`.
+        hooks: Execution hooks that should be applied to all commands. These hooks will always run **before**
+            all other hooks registered for the same step are executed.
 
     Returns:
         :obj:`~Client`: The created client instance.
@@ -1262,4 +1268,5 @@ def client_from_app(
         localization_provider,
         delete_unknown_commands,
         deferred_registration_callback,
+        hooks,
     )

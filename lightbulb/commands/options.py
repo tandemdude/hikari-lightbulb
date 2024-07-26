@@ -136,7 +136,7 @@ class OptionData(t.Generic[D]):
             self.autocomplete_provider = di.with_di(self.autocomplete_provider)
 
     async def to_command_option(
-        self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProviderT
+        self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProvider
     ) -> hikari.CommandOption:
         """
         Convert this option data into a hikari :obj:`~hikari.commands.CommandOption`.

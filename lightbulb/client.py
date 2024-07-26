@@ -563,6 +563,7 @@ class Client(abc.ABC):
                 continue
 
             loaded: list[loaders.Loader] = []
+            any_skipped: bool = False
 
             maybe_loader: loaders.Loader | None = None
             try:
@@ -571,6 +572,7 @@ class Client(abc.ABC):
                         maybe_loader = item
 
                         if not await utils.maybe_await(maybe_loader._should_load_hook()):
+                            any_skipped = True
                             continue
 
                         await maybe_loader.add_to_client(self)
@@ -591,7 +593,7 @@ class Client(abc.ABC):
 
                 continue
 
-            if not loaded:
+            if not loaded and not any_skipped:
                 LOGGER.warning("found no loaders in extension %r - skipping", path)
                 continue
 

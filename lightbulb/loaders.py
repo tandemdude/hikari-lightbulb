@@ -30,19 +30,13 @@ import hikari
 
 from lightbulb import di
 from lightbulb import tasks
-from lightbulb.commands import commands
-from lightbulb.commands import groups
 
 if t.TYPE_CHECKING:
     from lightbulb import client as client_
-    from lightbulb import exceptions
+    from lightbulb.internal import types
 
-CommandOrGroup: t.TypeAlias = t.Union[type[commands.CommandBase], groups.Group]
-CommandOrGroupT = t.TypeVar("CommandOrGroupT", bound=CommandOrGroup)
-ErrorHandler: t.TypeAlias = t.Callable[
-    "t.Concatenate[exceptions.ExecutionPipelineFailedException, ...]", t.Awaitable[bool]
-]
-ErrorHandlerT = t.TypeVar("ErrorHandlerT", bound=ErrorHandler)
+CommandOrGroupT = t.TypeVar("CommandOrGroupT", bound="types.CommandOrGroup")
+ErrorHandlerT = t.TypeVar("ErrorHandlerT", bound="types.ErrorHandler")
 EventT = t.TypeVar("EventT", bound=hikari.Event)
 
 LOGGER = logging.getLogger(__name__)
@@ -92,7 +86,7 @@ class _CommandLoadable(Loadable):
 
     def __init__(
         self,
-        command: CommandOrGroup,
+        command: types.CommandOrGroup,
         guilds: t.Sequence[hikari.Snowflakeish] | None,
         global_: bool | None,
         defer_guilds: bool,
@@ -150,7 +144,7 @@ class _ListenerLoadable(Loadable):
 class _ErrorHandlerLoadable(Loadable):
     __slots__ = ("_callback", "_priority")
 
-    def __init__(self, callback: ErrorHandler, priority: int) -> None:
+    def __init__(self, callback: types.ErrorHandler, priority: int) -> None:
         self._callback = callback
         self._priority = priority
 
@@ -185,11 +179,19 @@ class _TaskLoadable(Loadable):
 
 
 class Loader:
-    """Class used for loading features into the client from extensions."""
+    """
+    Class used for loading features into the client from extensions.
 
-    __slots__ = ("_loadables",)
+    Args:
+        should_load_hook: Synchronous or asynchronous function which will be called when the loader is added to the
+            client. Returns a boolean indicating whether this loader should be loaded or not. If it returns
+            :obj:`False`, the loader **will not** be loaded and none of its features will be added to the client.
+    """
 
-    def __init__(self) -> None:
+    __slots__ = ("_should_load_hook", "_loadables")
+
+    def __init__(self, should_load_hook: t.Callable[[], types.MaybeAwaitable[bool]] = lambda: True) -> None:
+        self._should_load_hook = should_load_hook
         self._loadables: list[Loadable] = []
 
     async def add_to_client(self, client: client_.Client) -> None:

@@ -569,6 +569,10 @@ class Client(abc.ABC):
                 for name in dir(extension):
                     if isinstance(item := getattr(extension, name, None), loaders.Loader) and item not in loaded:
                         maybe_loader = item
+
+                        if not await utils.maybe_await(maybe_loader._should_load_hook()):
+                            continue
+
                         await maybe_loader.add_to_client(self)
 
                         loaded.append(maybe_loader)

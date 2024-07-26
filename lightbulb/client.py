@@ -477,15 +477,17 @@ class Client(abc.ABC):
                 client.register(command)
         """
         register_in: set[hikari.Snowflakeish] = set()
-        if guilds:
-            register_in.update(guilds)
-        if global_:
-            register_in.add(constants.GLOBAL_COMMAND_KEY)
 
-        if global_ is False:
+        if guilds is None and global_ is None:
+            register_in.update(self.default_enabled_guilds or (constants.GLOBAL_COMMAND_KEY,))
+        elif global_ is False:
             if not guilds and not self.default_enabled_guilds:
                 raise ValueError("cannot set 'global_=False' without specifying 'guilds' or 'default_enabled_guilds'")
             register_in.update(guilds or self.default_enabled_guilds)
+        else:
+            register_in.update(guilds or ())
+            if global_:
+                register_in.add(constants.GLOBAL_COMMAND_KEY)
 
         # Used as a function or first-order decorator
         if command is not None:
@@ -1195,7 +1197,7 @@ class RestEnabledClient(Client):
 @t.overload
 def client_from_app(
     app: GatewayClientAppT,
-    default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (constants.GLOBAL_COMMAND_KEY,),
+    default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (),
     execution_step_order: t.Sequence[execution.ExecutionStep] = DEFAULT_EXECUTION_STEP_ORDER,
     default_locale: hikari.Locale = hikari.Locale.EN_US,
     localization_provider: localization.LocalizationProvider = localization.localization_unsupported,
@@ -1206,7 +1208,7 @@ def client_from_app(
 @t.overload
 def client_from_app(
     app: RestClientAppT,
-    default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (constants.GLOBAL_COMMAND_KEY,),
+    default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (),
     execution_step_order: t.Sequence[execution.ExecutionStep] = DEFAULT_EXECUTION_STEP_ORDER,
     default_locale: hikari.Locale = hikari.Locale.EN_US,
     localization_provider: localization.LocalizationProvider = localization.localization_unsupported,
@@ -1216,7 +1218,7 @@ def client_from_app(
 ) -> RestEnabledClient: ...
 def client_from_app(
     app: GatewayClientAppT | RestClientAppT,
-    default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (constants.GLOBAL_COMMAND_KEY,),
+    default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (),
     execution_step_order: t.Sequence[execution.ExecutionStep] = DEFAULT_EXECUTION_STEP_ORDER,
     default_locale: hikari.Locale = hikari.Locale.EN_US,
     localization_provider: localization.LocalizationProvider = localization.localization_unsupported,

@@ -2,6 +2,8 @@
 
 While 'Commands' in Lightbulb refer to Discord's [application commands](https://discord.com/developers/docs/interactions/overview#commands), in this section we will mainly be going over _slash_ commands. Context menu commands - user and message - will be explained later.
 
+---
+
 ## Declaration
 
 Commands are declared using classes - one class per command. In order to declare a
@@ -57,6 +59,8 @@ class HelloWorld(
     async def invoke(self, ctx: lightbulb.Context) -> None:
         await ctx.respond("Hello World!")
 ```
+
+---
 
 ## Registration
 

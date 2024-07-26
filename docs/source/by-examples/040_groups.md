@@ -18,6 +18,8 @@ This would create the following commands for the user:
 - `/group subgroup bar`
 - `/group baz`
 
+---
+
 ## Creating a Group
 
 Creating a group is as easy as creating an instance of the `Group` class. Like slash commands, groups **must** have
@@ -33,6 +35,8 @@ Subgroups must also have a name and description.
 ```python
 subgroup = group.subgroup("subgroup", "a command subgroup")
 ```
+
+---
 
 ## Adding Commands
 
@@ -54,6 +58,8 @@ class YourCommand(
 :::{important}
 Only `SlashCommand`s can be added to groups - context menu commands cannot and will error.
 :::
+
+---
 
 ## Registering Groups
 

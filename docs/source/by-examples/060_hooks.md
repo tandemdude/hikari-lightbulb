@@ -7,6 +7,8 @@ from within discord.
 All the steps must complete successfully in order for a command invocation to be considered complete. If any one
 of the hooks fails for any of the steps, the pipeline fails and an error will be thrown.
 
+---
+
 ## Creating a Hook
 
 Hooks are created using the `lightbulb.hook` decorator. They can be either synchronous or asynchronous functions - both
@@ -32,6 +34,8 @@ def fail_if_not_thommo(_: lightbulb.ExecutionPipeline, ctx: lightbulb.Context) -
 As seen above, hooks must take at least 2 arguments - the execution pipeline being run, and the context that the
 command was invoked under. Lightbulb will attempt to dependency-inject any further arguments.
 
+---
+
 ## Adding Hooks to Commands
 
 Adding hooks to commands is very simple - you just pass them to the `hooks` class parameter.
@@ -47,6 +51,8 @@ class YourCommand(
 
 When the command is invoked, hooks will be executed in the order they are defined, grouped by execution step.
 
+---
+
 ## Step Order
 
 Lightbulb provides a default step order - however, you can specify your own custom one when the `Client` is created
@@ -60,6 +66,8 @@ Custom orders **must** contain the step `lightbulb.ExecutionStep.INVOKE` otherwi
 will never be run. Hooks also **cannot** be added for this step and will throw an error if you try to do so.
 :::
 
+---
+
 ## Custom Steps
 
 Creating your own custom execution step is very simple and supported out-of-the-box by Lightbulb. All you have to
@@ -69,6 +77,8 @@ define a new step with the same ID as an existing one.
 ```python
 YOUR_STEP = lightbulb.ExecutionStep("YOUR_STEP_ID")
 ```
+
+---
 
 ## Worked Custom Step Example
 
@@ -112,4 +122,30 @@ class AutoDeferredCommand(
 
 
 bot.run()
+```
+
+---
+
+## Hook Inheritance
+
+Sometimes, you may find yourself frequently adding the same hooks to all your commands. Lightbulb allows you to
+pass some common hooks when creating your client which will then be applied to **all** commands registered
+to the client upon invocation.
+
+For example, if you want all your commands to only be usable by yourself then you could do the following:
+
+```python
+# Define the hook
+@lightbulb.hook(lightbulb.ExecutionSteps.CHECKS)
+async def only_me(_: lightbulb.ExecutionPipeline, ctx: lightbulb.Context) -> None:
+    if ctx.user.id != YOUR_USER_ID:
+        raise RuntimeError("you are not allowed to use the command")
+
+# Add the hook to the client
+client = lightbulb.client_from_app(..., hooks=[only_me])
+
+# This command will only be usable by you!
+@client.register
+class YourCommand(...):
+    ...
 ```

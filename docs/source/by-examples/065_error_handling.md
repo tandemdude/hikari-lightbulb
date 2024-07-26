@@ -17,6 +17,8 @@ that are required for the command execution). For errors during listener invocat
 for Hikari's `ExceptionEvent` instead.
 :::
 
+---
+
 ## Handler Specification
 
 An error handler is any asynchronous function that takes an instance of 
@@ -25,6 +27,8 @@ dependency-inject any further parameters. The function must also return a boolea
 error was handled. If the error was handled (i.e. the handler returned `True`), the error will not be propagated
 through any further handlers.
 
+---
+
 ### Example
 
 ```python
@@ -32,6 +36,8 @@ async def example_error_handler(exc: lightbulb.exceptions.ExecutionPipelineFaile
     # Return `'True' if the error was handled, otherwise 'False'.
     return True
 ```
+
+---
 
 ## Registering Handlers
 

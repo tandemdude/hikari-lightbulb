@@ -4,6 +4,8 @@ Extensions are used to assist in splitting up your project into multiple files. 
 an extension if it declares one or more variables that are instances of `lightbulb.Loader`s. Upon loading
 an extension into the client, it will search for any loaders and apply them - adding commands, listeners, etc.
 
+---
+
 ## Loaders
 
 A loader is the client's 'entry point' for an extension.
@@ -50,6 +52,8 @@ Other items can be linked to loaders by implementing a custom `lightbulb.Loadabl
 behaviour. This loadable can be added to a given loader using the `Loader.add()` method.
 :::
 
+---
+
 ## Loading Extensions
 
 Lightbulb provides two methods to help with loading extensions into the client.
@@ -94,6 +98,8 @@ await client.load_extensions_from_package(extensions)
 
 If the `recursive` flag is set to `True`, this method will also search through subpackages for extensions. This
 defaults to `False`.
+
+---
 
 ## Example Usage
 

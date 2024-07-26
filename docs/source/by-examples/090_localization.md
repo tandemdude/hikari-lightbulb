@@ -13,6 +13,8 @@ localized values that are identical to the default will be ignored.
 Discord [documentation](https://discord.com/developers/docs/interactions/application-commands#localization)
 :::
 
+---
+
 ## Implementation
 
 To implement localization within your bot, you must first supply a localization provider when creating the Client.
@@ -30,11 +32,15 @@ localizations from a gettext-compatible file path using `.po` or `.mo` files.
 Once you have set up a localization provider, you can simply pass `localize=True` to any items that you wish to localize
 and Lightbulb will resolve the correct localizations from the name (and description) keys.
 
+---
+
 ## Setting Default Locale
 
 The default locale defines what localizations the client will use as the default when creating commands. You can
 change this by passing a different locale to the `default_locale` kwarg when creating the client. This defaults
 to `EN_US`.
+
+---
 
 ## DictLocalizationProvider
 
@@ -86,6 +92,8 @@ class Echo(
 
 bot.run()
 ```
+
+---
 
 ## GnuLocalizationProvider
 

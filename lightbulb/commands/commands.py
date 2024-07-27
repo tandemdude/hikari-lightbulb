@@ -158,6 +158,12 @@ class CommandData:
         Returns:
             :obj:`hikari.commands.CommandOption`: The sub-command option for this command data.
         """
+        if self.default_member_permissions is not hikari.UNDEFINED:
+            LOGGER.warning(
+                f"subcommand {self.qualified_name!r} has 'default_member_permissions' set"
+                f" - this field is ignored for subcommands"
+            )
+
         name, description = self.name, self.description
         name_localizations: t.Mapping[hikari.Locale, str] = {}
         description_localizations: t.Mapping[hikari.Locale, str] = {}

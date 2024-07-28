@@ -45,6 +45,7 @@ class GroupMixin(abc.ABC):
     __slots__ = ()
 
     _commands: SubGroupCommandMappingT | GroupCommandMappingT
+    _localized_commands: SubGroupCommandMappingT | GroupCommandMappingT
 
     @t.overload
     def register(self) -> t.Callable[[CommandT], CommandT]: ...
@@ -103,7 +104,7 @@ class GroupMixin(abc.ABC):
         if not path:
             return None
 
-        maybe_command = self._commands.get(path.pop(0))
+        maybe_command = self._localized_commands.get(path.pop(0))
         if maybe_command is None:
             return None
 
@@ -132,6 +133,7 @@ class SubGroup(GroupMixin):
     """The parent group of the subgroup."""
 
     _commands: SubGroupCommandMappingT = dataclasses.field(init=False, default_factory=dict)
+    _localized_commands: SubGroupCommandMappingT = dataclasses.field(init=False, default_factory=dict)
 
     async def to_command_option(
         self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProvider
@@ -153,6 +155,12 @@ class SubGroup(GroupMixin):
                 name_localizations,
                 description_localizations,
             ) = await utils.localize_name_and_description(name, description, default_locale, localization_provider)
+
+        subcommand_options: list[hikari.CommandOption] = []
+        for command in self._commands.values():
+            option = await command.to_command_option(default_locale, localization_provider)
+            subcommand_options.append(option)
+            self._localized_commands[option.name] = command
 
         return hikari.CommandOption(
             type=hikari.OptionType.SUB_COMMAND_GROUP,
@@ -191,6 +199,7 @@ class Group(GroupMixin):
     """The default permissions required to use the group in a guild."""
 
     _commands: GroupCommandMappingT = dataclasses.field(init=False, default_factory=dict)
+    _localized_commands: GroupCommandMappingT = dataclasses.field(init=False, default_factory=dict)
 
     def subgroup(self, name: str, description: str, *, localize: bool = False) -> SubGroup:
         """
@@ -241,6 +250,8 @@ class Group(GroupMixin):
         )
 
         for command_or_group in self._commands.values():
-            bld.add_option(await command_or_group.to_command_option(default_locale, localization_provider))
+            option = await command_or_group.to_command_option(default_locale, localization_provider)
+            bld.add_option(option)
+            self._localized_commands[option.name] = command_or_group
 
         return bld

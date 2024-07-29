@@ -8,6 +8,31 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a8 (2024-07-29)
+
+### Features
+
+- Add `hooks` parameter to `client_from_app` - allowing commands to inherit common hooks from the client. ([#430](https://github.com/tandemdude/hikari-lightbulb/issues/430))
+
+### Bugfixes
+
+- Fix autocomplete callbacks not being called if the option had localization enabled.
+- Fix command parameter validation failing sometimes when using long localization keys.
+- Fix subcommands with localization enabled not being invoked as expected.
+- Slightly improved performance of invoking nested subcommands.
+
+### Deprecations and Removals
+
+- - `Client.register_deferred` has been removed. You should now use `Client.register(defer_guilds=True)` instead.
+
+  - `guilds` kwarg for `Client.register` has new semantics. Read the docstring for more information.
+
+  ([#429](https://github.com/tandemdude/hikari-lightbulb/issues/429))
+- Removed `HookFailedException`. `ExecutionPipelineFailedException` now has two attributes containing the hooks that
+  failed, and the exception that caused them to fail. You may need to update your error handler to reflect this.
+
+----
+
 ## v3.0.0a7 (2024-07-23)
 
 ### Features

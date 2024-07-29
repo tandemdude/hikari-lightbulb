@@ -66,23 +66,23 @@ class CommandData:
     """The name of the command."""
     description: str
     """The description of the command."""
-    localize: bool
+    localize: bool = dataclasses.field(repr=False)
     """Whether the command name and description should be localized."""
-    nsfw: bool
+    nsfw: bool = dataclasses.field(repr=False)
     """Whether the command is marked as nsfw."""
-    dm_enabled: bool
+    dm_enabled: bool = dataclasses.field(repr=False)
     """Whether the command is enabled in direct messages. This field is ignored for subcommands."""
-    default_member_permissions: hikari.UndefinedOr[hikari.Permissions]
+    default_member_permissions: hikari.UndefinedOr[hikari.Permissions] = dataclasses.field(repr=False)
     """The default permissions required to use the command in a guild. This field is ignored for subcommands."""
 
-    hooks: t.Sequence[execution.ExecutionHook]
+    hooks: t.Sequence[execution.ExecutionHook] = dataclasses.field(hash=False, repr=False)
     """Hooks to run prior to the invoke method being executed."""
-    options: t.Mapping[str, options_.OptionData[t.Any]]
+    options: t.Mapping[str, options_.OptionData[t.Any]] = dataclasses.field(hash=False, repr=False)
     """Map of option name to option data for the command options."""
-    invoke_method: str
+    invoke_method: str = dataclasses.field(hash=False, repr=False)
     """The attribute name of the invoke method for the command."""
 
-    parent: groups.Group | groups.SubGroup | None = dataclasses.field(init=False, default=None)
+    parent: groups.Group | groups.SubGroup | None = dataclasses.field(init=False, repr=False, default=None)
     """The group that the command belongs to, or :obj:`None` if not applicable."""
 
     def __post_init__(self) -> None:
@@ -96,7 +96,12 @@ class CommandData:
 
     @property
     def qualified_name(self) -> str:
-        """The fully qualified name of the command, including the name of any command groups."""
+        """
+        The fully qualified name of the command, including the name of any command groups.
+
+        If this command - or any parents - has localization enabled then this will instead show
+        the localization keys for the command and its parent groups.
+        """
         names = [self.name]
 
         parent = self.parent
@@ -310,6 +315,9 @@ class CommandBase:
         new._current_context = None
         new._resolved_option_cache = {}
         return new
+
+    def __repr__(self) -> str:
+        return repr(self._command_data)
 
     def _set_context(self, context: context_.Context) -> None:
         """

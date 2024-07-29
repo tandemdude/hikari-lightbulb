@@ -20,6 +20,8 @@
 # SOFTWARE.
 from __future__ import annotations
 
+__all__ = ["CommandCollection", "non_undefined_or"]
+
 import dataclasses
 import typing as t
 
@@ -39,7 +41,7 @@ class CommandCollection:
     types to share the same name.
     """
 
-    slash: groups.Group | type[commands.SlashCommand] | None = None
+    slash: type[commands.SlashCommand] | None = None
     """The collection's slash command."""
     user: type[commands.UserCommand] | None = None
     """The collection's user command."""
@@ -48,7 +50,7 @@ class CommandCollection:
 
     def put(
         self,
-        command: groups.Group | t.Type[commands.CommandBase],
+        command: t.Type[commands.CommandBase],
     ) -> None:
         """
         Add a command to the collection. Automatically places it in the correct attribute. If a second
@@ -60,7 +62,7 @@ class CommandCollection:
         Returns:
             :obj:`None`
         """
-        if isinstance(command, groups.Group) or issubclass(command, commands.SlashCommand):
+        if issubclass(command, commands.SlashCommand):
             self.slash = command
         elif issubclass(command, commands.UserCommand):
             self.user = command

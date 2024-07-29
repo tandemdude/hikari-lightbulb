@@ -23,6 +23,7 @@
 from lightbulb import di
 from lightbulb import exceptions
 from lightbulb import internal
+from lightbulb import prefab
 from lightbulb import utils
 from lightbulb.client import *
 from lightbulb.commands import *
@@ -35,6 +36,7 @@ __all__ = [
     "di",
     "exceptions",
     "internal",
+    "prefab",
     "utils",
     "DEFAULT_EXECUTION_STEP_ORDER",
     "Client",

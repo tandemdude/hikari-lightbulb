@@ -122,6 +122,7 @@ class Client(abc.ABC):
         "_extensions",
         "_tasks",
         "_started",
+        "_owner_ids",
     )
 
     def __init__(
@@ -167,6 +168,8 @@ class Client(abc.ABC):
         self.di.registry_for(di_.Contexts.DEFAULT).register_value(Client, self)
 
         self._started = False
+
+        self._owner_ids: set[hikari.Snowflakeish] | None = None
 
     @property
     @abc.abstractmethod

@@ -24,11 +24,14 @@ __all__ = ["sync_application_commands"]
 
 import collections
 import dataclasses
+import inspect
 import logging
 import typing as t
 
 import hikari
 
+from lightbulb.commands import commands
+from lightbulb.commands import groups
 from lightbulb.internal import constants
 from lightbulb.internal.utils import non_undefined_or
 
@@ -82,16 +85,27 @@ async def _get_existing_and_registered_commands(
     existing: dict[str, _CommandBuilderCollection] = collections.defaultdict(_CommandBuilderCollection)
     registered: dict[str, _CommandBuilderCollection] = collections.defaultdict(_CommandBuilderCollection)
 
-    for existing_command in await client.rest.fetch_application_commands(application, guild=guild):
+    existing_commands = await client.rest.fetch_application_commands(application, guild=guild)
+    client._created_commands[guild or constants.GLOBAL_COMMAND_KEY] = existing_commands
+
+    for existing_command in existing_commands:
         existing[existing_command.name].put(_hikari_command_to_builder(existing_command))
-    for name, collection in client._commands.get(
+
+    for collection in client._command_invocation_mapping.get(
         constants.GLOBAL_COMMAND_KEY if guild is hikari.UNDEFINED else guild, {}
-    ).items():
+    ).values():
         for item in [collection.slash, collection.user, collection.message]:
             if item is None:
                 continue
 
-            registered[name].put(await item.as_command_builder(client.default_locale, client.localization_provider))
+            command_data = item._command_data
+
+            # Get the parent command, luckily groups can only go two levels deep
+            root = getattr(command_data.parent, "parent", command_data.parent) or item
+            assert isinstance(root, groups.Group) or (inspect.isclass(root) and issubclass(root, commands.CommandBase))
+
+            builder = await root.as_command_builder(client.default_locale, client.localization_provider)
+            registered[builder.name].put(builder)
 
     return existing, registered
 
@@ -179,6 +193,7 @@ async def sync_application_commands(client: client_.Client) -> None:
     Returns:
         :obj:`None`
     """
+    client._created_commands.clear()
     application = await client._ensure_application()
 
     LOGGER.info("syncing global commands")
@@ -189,10 +204,12 @@ async def sync_application_commands(client: client_.Client) -> None:
         existing_global_commands, registered_global_commands, client.delete_unknown_commands
     )
     if global_commands_to_set is not None:
-        await client.rest.set_application_commands(application, global_commands_to_set)
+        client._created_commands[constants.GLOBAL_COMMAND_KEY] = await client.rest.set_application_commands(
+            application, global_commands_to_set
+        )
     LOGGER.info("finished syncing global commands")
 
-    for guild in client._commands:
+    for guild in client._command_invocation_mapping:
         if guild == constants.GLOBAL_COMMAND_KEY:
             continue
 
@@ -204,5 +221,7 @@ async def sync_application_commands(client: client_.Client) -> None:
             existing_guild_commands, registered_guild_commands, client.delete_unknown_commands
         )
         if guild_commands_to_set is not None:
-            await client.rest.set_application_commands(application, guild_commands_to_set, guild=guild)
+            client._created_commands[guild] = await client.rest.set_application_commands(
+                application, guild_commands_to_set, guild=guild
+            )
         LOGGER.info("finished syncing commands for guild '%s'", guild)

@@ -18,6 +18,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+__all__ = [
+    "MaybeAwaitable",
+    "CommandOrGroup",
+    "ErrorHandler",
+    "DeferredRegistrationCallback",
+]
+
 import typing as t
 
 import hikari
@@ -26,13 +33,11 @@ if t.TYPE_CHECKING:
     from lightbulb import exceptions
     from lightbulb.commands import commands
     from lightbulb.commands import groups
-    from lightbulb.internal import utils
 
 T = t.TypeVar("T")
 
 MaybeAwaitable: t.TypeAlias = t.Union[T, t.Awaitable[T]]
 """TypeAlias for an item that might be able to be awaited."""
-CommandMap: t.TypeAlias = t.MutableMapping[hikari.Snowflakeish, t.MutableMapping[str, "utils.CommandCollection"]]
 CommandOrGroup: t.TypeAlias = t.Union["groups.Group", type["commands.CommandBase"]]
 ErrorHandler: t.TypeAlias = t.Callable[
     "t.Concatenate[exceptions.ExecutionPipelineFailedException, ...]", t.Awaitable[bool]

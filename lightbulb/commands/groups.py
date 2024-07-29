@@ -45,7 +45,6 @@ class GroupMixin(abc.ABC):
     __slots__ = ()
 
     _commands: SubGroupCommandMappingT | GroupCommandMappingT
-    _localized_commands: SubGroupCommandMappingT | GroupCommandMappingT
 
     @t.overload
     def register(self) -> t.Callable[[CommandT], CommandT]: ...
@@ -91,28 +90,6 @@ class GroupMixin(abc.ABC):
 
         return _inner
 
-    def resolve_subcommand(self, path: list[str]) -> type[commands.CommandBase] | None:
-        """
-        Resolve the subcommand for the given path - fully qualified command name.
-
-        Args:
-            path: The path of the subcommand to resolve.
-
-        Returns:
-            The resolved command class, or :obj:`None` if one was not found.
-        """
-        if not path:
-            return None
-
-        maybe_command = self._localized_commands.get(path.pop(0))
-        if maybe_command is None:
-            return None
-
-        if isinstance(maybe_command, GroupMixin):
-            return maybe_command.resolve_subcommand(path)
-
-        return maybe_command
-
 
 @dataclasses.dataclass(slots=True, frozen=True)
 class SubGroup(GroupMixin):
@@ -127,13 +104,16 @@ class SubGroup(GroupMixin):
     """The name of the subgroup."""
     description: str
     """The description of the subgroup."""
-    localize: bool
+    localize: bool = dataclasses.field(repr=False)
     """Whether the group name and description should be localized."""
-    parent: Group
+    parent: Group = dataclasses.field(repr=False)
     """The parent group of the subgroup."""
 
-    _commands: SubGroupCommandMappingT = dataclasses.field(init=False, default_factory=dict)
-    _localized_commands: SubGroupCommandMappingT = dataclasses.field(init=False, default_factory=dict)
+    _commands: SubGroupCommandMappingT = dataclasses.field(init=False, hash=False, repr=False, default_factory=dict)
+
+    @property
+    def subcommands(self) -> SubGroupCommandMappingT:
+        return self._commands
 
     async def to_command_option(
         self, default_locale: hikari.Locale, localization_provider: localization.LocalizationProvider
@@ -155,12 +135,6 @@ class SubGroup(GroupMixin):
                 name_localizations,
                 description_localizations,
             ) = await utils.localize_name_and_description(name, description, default_locale, localization_provider)
-
-        subcommand_options: list[hikari.CommandOption] = []
-        for command in self._commands.values():
-            option = await command.to_command_option(default_locale, localization_provider)
-            subcommand_options.append(option)
-            self._localized_commands[option.name] = command
 
         return hikari.CommandOption(
             type=hikari.OptionType.SUB_COMMAND_GROUP,
@@ -189,17 +163,22 @@ class Group(GroupMixin):
     """The name of the group."""
     description: str
     """The description of the group."""
-    localize: bool = False
+    localize: bool = dataclasses.field(repr=False, default=False)
     """Whether the group name and description should be localized."""
-    nsfw: bool = False
+    nsfw: bool = dataclasses.field(repr=False, default=False)
     """Whether the group should be marked as nsfw. Defaults to :obj:`False`."""
-    dm_enabled: bool = True
+    dm_enabled: bool = dataclasses.field(repr=False, default=True)
     """Whether the group is enabled in direct messages."""
-    default_member_permissions: hikari.UndefinedOr[hikari.Permissions] = hikari.UNDEFINED
+    default_member_permissions: hikari.UndefinedOr[hikari.Permissions] = dataclasses.field(
+        repr=False, default=hikari.UNDEFINED
+    )
     """The default permissions required to use the group in a guild."""
 
-    _commands: GroupCommandMappingT = dataclasses.field(init=False, default_factory=dict)
-    _localized_commands: GroupCommandMappingT = dataclasses.field(init=False, default_factory=dict)
+    _commands: GroupCommandMappingT = dataclasses.field(init=False, hash=False, repr=False, default_factory=dict)
+
+    @property
+    def subcommands(self) -> GroupCommandMappingT:
+        return self._commands
 
     def subgroup(self, name: str, description: str, *, localize: bool = False) -> SubGroup:
         """
@@ -252,6 +231,5 @@ class Group(GroupMixin):
         for command_or_group in self._commands.values():
             option = await command_or_group.to_command_option(default_locale, localization_provider)
             bld.add_option(option)
-            self._localized_commands[option.name] = command_or_group
 
         return bld

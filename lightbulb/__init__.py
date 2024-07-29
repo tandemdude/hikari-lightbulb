@@ -22,11 +22,11 @@
 
 from lightbulb import di
 from lightbulb import exceptions
+from lightbulb import internal
 from lightbulb import utils
 from lightbulb.client import *
 from lightbulb.commands import *
 from lightbulb.context import *
-from lightbulb.internal import *
 from lightbulb.loaders import *
 from lightbulb.localization import *
 from lightbulb.tasks import *
@@ -34,6 +34,7 @@ from lightbulb.tasks import *
 __all__ = [
     "di",
     "exceptions",
+    "internal",
     "utils",
     "DEFAULT_EXECUTION_STEP_ORDER",
     "Client",

@@ -114,9 +114,9 @@ class Client(abc.ABC):
         "hooks",
         "_di",
         "_localization",
-        "_localized_commands",
-        "_deferred_commands",
-        "_commands",
+        "_registered_commands",
+        "_command_invocation_mapping",
+        "_created_commands",
         "_error_handlers",
         "_application",
         "_extensions",
@@ -150,12 +150,14 @@ class Client(abc.ABC):
 
         self._di = di_.DependencyInjectionManager()
 
-        self._localized_commands: list[tuple[t.Sequence[hikari.Snowflakeish], lb_types.CommandOrGroup]] = []
-        self._deferred_commands: list[lb_types.CommandOrGroup] = []
+        self._registered_commands: dict[
+            lb_types.CommandOrGroup, t.Collection[hikari.Snowflakeish] | t.Literal["defer"]
+        ] = {}
+        self._command_invocation_mapping: dict[
+            hikari.Snowflakeish, dict[tuple[str, ...], i_utils.CommandCollection]
+        ] = collections.defaultdict(lambda: collections.defaultdict(i_utils.CommandCollection))
+        self._created_commands: dict[hikari.Snowflakeish, t.Collection[hikari.PartialCommand]] = {}
 
-        self._commands: lb_types.CommandMap = collections.defaultdict(
-            lambda: collections.defaultdict(i_utils.CommandCollection)
-        )
         self._error_handlers: dict[int, list[lb_types.ErrorHandler]] = {}
         self._application: t.Optional[hikari.PartialApplication] = None
         self._extensions: set[str] = set()
@@ -175,6 +177,15 @@ class Client(abc.ABC):
     def di(self) -> di_.DependencyInjectionManager:
         """The dependency injection manager used by this client."""
         return self._di
+
+    @property
+    def created_commands(self) -> t.Mapping[hikari.Snowflakeish, t.Collection[hikari.PartialCommand]]:
+        """
+        Mapping of guild ID to commands that were created in that guild during command syncing.
+
+        Global commands are stored at the key :data:`lightbulb.internal.constants.GLOBAL_COMMAND_KEY`.
+        """
+        return self._created_commands
 
     async def start(self, *_: t.Any) -> None:
         """
@@ -491,22 +502,8 @@ class Client(abc.ABC):
 
         # Used as a function or first-order decorator
         if command is not None:
-            name = command.name if isinstance(command, groups.Group) else command._command_data.name
-            localize = command.localize if isinstance(command, groups.Group) else command._command_data.localize
-
-            if defer_guilds:
-                if self.deferred_registration_callback is None:
-                    raise ValueError("cannot defer registration if no deferred registration callback was provided")
-                self._deferred_commands.append(command)
-            elif localize:
-                # We need to handle localized commands separately because we don't know what their
-                # name is until we resolve it using the callback
-                self._localized_commands.append((list(register_in), command))
-            else:
-                for guild_id in register_in:
-                    self._commands[guild_id][name].put(command)
-
-            LOGGER.debug("command %r (%r) registered successfully", name, command)
+            self._registered_commands[command] = "defer" if defer_guilds else register_in
+            LOGGER.debug("command %r registered successfully", command)
             return command
 
         # Used as a second-order decorator
@@ -529,13 +526,11 @@ class Client(abc.ABC):
         Returns:
             :obj:`None`
         """
-        for mapping in self._commands.values():
+        for mapping in self._command_invocation_mapping.values():
             for collection in mapping.values():
                 collection.remove(command)
 
-        self._deferred_commands = [cmd for cmd in self._deferred_commands if cmd is not command]
-        localized_commands = [item for item in self._localized_commands if item[1] is not command]
-        self._localized_commands = localized_commands
+        self._registered_commands.pop(command, None)
 
     async def load_extensions(self, *import_paths: str) -> None:
         """
@@ -758,32 +753,47 @@ class Client(abc.ABC):
         Returns:
             :obj:`None`
         """
-        if self._localized_commands and self.localization_provider is localization.localization_unsupported:
-            raise RuntimeError("some commands are marked as localized but no localization provider is available")
+        for command, data in self._registered_commands.items():
+            if data == "defer":
+                if self.deferred_registration_callback is None:
+                    raise RuntimeError(
+                        "one or more commands marked as deferred but no 'deferred_registration_callback' was provided"
+                    )
+                deferred_registration_data = await utils.maybe_await(self.deferred_registration_callback(command))
+                if deferred_registration_data is None:
+                    continue
 
-        for guilds, command in self._localized_commands:
+                register_in, globally = set(deferred_registration_data[0]), deferred_registration_data[1]
+                if globally:
+                    register_in.add(constants.GLOBAL_COMMAND_KEY)
+            else:
+                register_in = data
+
             builder = await command.as_command_builder(self.default_locale, self.localization_provider)
+            if isinstance(command, groups.Group):
+                all_commands: dict[tuple[str, ...], type[commands.CommandBase]] = {}
 
-            for guild in guilds:
-                self._commands[guild][builder.name].put(command)
+                for subcommand_or_subgroup in command.subcommands.values():
+                    subcommand_or_subgroup_option = await subcommand_or_subgroup.to_command_option(
+                        self.default_locale, self.localization_provider
+                    )
 
-        if self._deferred_commands and self.deferred_registration_callback is None:
-            raise RuntimeError("some commands have deferred registration but no callback is available")
+                    if isinstance(subcommand_or_subgroup, groups.SubGroup):
+                        for subcommand in subcommand_or_subgroup.subcommands.values():
+                            subcommand_option = await subcommand.to_command_option(
+                                self.default_locale, self.localization_provider
+                            )
+                            all_commands[(builder.name, subcommand_or_subgroup_option.name, subcommand_option.name)] = (
+                                subcommand
+                            )
+                    else:
+                        all_commands[(builder.name, subcommand_or_subgroup_option.name)] = subcommand_or_subgroup
+            else:
+                all_commands = {(builder.name,): command}
 
-        for command in self._deferred_commands:
-            builder = await command.as_command_builder(self.default_locale, self.localization_provider)
-
-            assert self.deferred_registration_callback is not None
-            output = await utils.maybe_await(self.deferred_registration_callback(command))
-            if output is None:
-                continue
-
-            guilds, global_ = set(output[0]), output[1]
-            if global_:
-                guilds.add(constants.GLOBAL_COMMAND_KEY)
-
-            for guild in guilds:
-                self._commands[guild][builder.name].put(command)
+            for snowflake in register_in:
+                for command_path, actual_command in all_commands.items():
+                    self._command_invocation_mapping[snowflake][command_path].put(actual_command)
 
         await sync.sync_application_commands(self)
 
@@ -823,33 +833,27 @@ class Client(abc.ABC):
             command_path.append(subcommand.name)
             options = subcommand.options or []
 
-        global_commands = self._commands.get(constants.GLOBAL_COMMAND_KEY, {}).get(interaction.command_name)
-        guild_commands = self._commands.get(interaction.registered_guild_id or constants.GLOBAL_COMMAND_KEY, {}).get(
-            interaction.command_name
+        global_commands = self._command_invocation_mapping.get(constants.GLOBAL_COMMAND_KEY, {}).get(
+            tuple(command_path)
         )
+        guild_commands = self._command_invocation_mapping.get(
+            interaction.registered_guild_id or constants.GLOBAL_COMMAND_KEY, {}
+        ).get(tuple(command_path))
 
         root_commands = guild_commands if interaction.registered_guild_id is not None else global_commands
         if root_commands is None:
             LOGGER.debug("ignoring interaction received for unknown command - %r", interaction.command_name)
             return
 
-        root_command = {
+        command = {
             int(hikari.CommandType.SLASH): root_commands.slash,
             int(hikari.CommandType.USER): root_commands.user,
             int(hikari.CommandType.MESSAGE): root_commands.message,
         }[int(interaction.command_type)]
 
-        if root_command is None:
+        if command is None:
             LOGGER.debug("ignoring interaction received for unknown command - %r", " ".join(command_path))
             return
-
-        if isinstance(root_command, groups.Group):
-            command = root_command.resolve_subcommand(command_path[1:])
-            if command is None:
-                LOGGER.debug("ignoring interaction received for unknown command - %r", " ".join(command_path))
-                return
-        else:
-            command = root_command
 
         return options, command
 
@@ -898,7 +902,6 @@ class Client(abc.ABC):
             return
 
         options, command = out
-
         if not options:
             LOGGER.debug("no options resolved from autocomplete interaction - ignoring")
             return

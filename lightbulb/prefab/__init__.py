@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from lightbulb.prefab.checks import *
+from lightbulb.prefab.cooldowns import *
 
 __all__ = [
     "NotOwner",
@@ -27,4 +28,7 @@ __all__ = [
     "has_permissions",
     "BotMissingRequiredPermissions",
     "bot_has_permissions",
+    "OnCooldown",
+    "fixed_window",
+    "sliding_window",
 ]

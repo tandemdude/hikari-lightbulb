@@ -41,7 +41,8 @@ class NotOwner(Exception):
 async def owner_only(_: execution.ExecutionPipeline, ctx: context.Context) -> None:
     """
     Hook that checks whether the user invoking the command is an owner of the bot. This takes into account
-    both the owner and the team that owns the bot's application. Raises :obj:`~NotOwner` when it fails.
+    both the owner and the team that owns the bot's application. Raises :obj:`~NotOwner` when it fails. This hook is
+    run during the ``CHECKS`` execution step.
     """
     if ctx.client._owner_ids is None:
         owner_ids: set[hikari.Snowflakeish] = set()
@@ -69,7 +70,7 @@ class MissingRequiredPermission(Exception):
 def has_permissions(permissions: hikari.Permissions, /, *, fail_in_dm: bool = True) -> execution.ExecutionHook:
     """
     Creates a hook that checks whether the user invoking the command has all the given permissions. The created hook
-    raises :obj:`~MissingRequiredPermissions` when it fails.
+    raises :obj:`~MissingRequiredPermissions` when it fails. This hook is run during the ``CHECKS`` execution step.
 
     Args:
         permissions: The permissions that the user should have.
@@ -115,7 +116,7 @@ class BotMissingRequiredPermissions(Exception):
 def bot_has_permissions(permissions: hikari.Permissions, /, *, fail_in_dm: bool = True) -> execution.ExecutionHook:
     """
     Creates a hook that checks whether the bot has all the given permissions. The created hook raises
-    :obj:`~BotMissingRequiredPermissions` when it fails.
+    :obj:`~BotMissingRequiredPermissions` when it fails. This hook is run during the ``CHECKS`` execution step.
 
     Args:
         permissions: The permissions that the bot should have.

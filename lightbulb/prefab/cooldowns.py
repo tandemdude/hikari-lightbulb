@@ -1,0 +1,170 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2023-present tandemdude
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+__all__ = ["OnCooldown", "fixed_window", "sliding_window"]
+
+import collections
+import time
+import typing as t
+
+import hikari
+
+from lightbulb import context
+from lightbulb import utils
+from lightbulb.commands import execution
+from lightbulb.internal import types
+
+BucketCallable: t.TypeAlias = t.Callable[[context.Context], types.MaybeAwaitable[hikari.Snowflakeish]]
+
+_PROVIDED_BUCKETS: dict[str, BucketCallable] = {
+    "global": lambda _: 0,
+    "user": lambda ctx: ctx.user.id,
+    "channel": lambda ctx: ctx.channel_id,
+    "guild": lambda ctx: ctx.guild_id or ctx.channel_id,
+}
+
+
+class OnCooldown(Exception):
+    """Exception raised when a user attempts to invoke command, but it is on cooldown."""
+
+    def __init__(self, remaining: float) -> None:
+        self.remaining: float = remaining
+        """The remaining time in seconds before the command can be invoked again."""
+
+
+class _FixedWindow:
+    __slots__ = ("_window_length", "_allowed_invocations", "_bucket", "_invocations")
+
+    class _InvocationData:
+        __slots__ = ("n", "expires")
+
+        def __init__(self, n: int = 0, expires: float = -1) -> None:
+            self.n = n
+            self.expires = expires
+
+    def __init__(self, window_length: float, allowed_invocations: int, bucket: BucketCallable) -> None:
+        self._window_length = window_length
+        self._allowed_invocations = allowed_invocations
+        self._bucket = bucket
+        self._invocations: dict[hikari.Snowflakeish, _FixedWindow._InvocationData] = collections.defaultdict(
+            _FixedWindow._InvocationData
+        )
+
+    async def __call__(self, _: execution.ExecutionPipeline, ctx: context.Context) -> None:
+        data = self._invocations[await utils.maybe_await(self._bucket(ctx))]
+        if data.expires < (now := time.perf_counter()):
+            data.expires = now + self._window_length
+            data.n += 1
+            return
+
+        data.n += 1
+        if data.n > self._allowed_invocations:
+            raise OnCooldown(data.expires - now)
+
+
+class _SlidingWindow:
+    __slots__ = ("_window_length", "_allowed_invocations", "_bucket", "_invocations")
+
+    def __init__(self, window_length: float, allowed_invocations: int, bucket: BucketCallable) -> None:
+        self._window_length = window_length
+        self._allowed_invocations = allowed_invocations
+        self._bucket = bucket
+        self._invocations: dict[hikari.Snowflakeish, list[float]] = collections.defaultdict(list)
+
+    async def __call__(self, _: execution.ExecutionPipeline, ctx: context.Context) -> None:
+        invocations = self._invocations[hash := await utils.maybe_await(self._bucket(ctx))]
+
+        interval = (now := time.perf_counter()) - self._window_length
+        usages_in_window = [usage for usage in invocations[::-1] if usage > interval]
+        if len(usages_in_window) + 1 > self._allowed_invocations:
+            raise OnCooldown(self._window_length - (now - usages_in_window[0]))
+
+        self._invocations[hash] = [*usages_in_window, now]
+
+
+def fixed_window(
+    window_length: float,
+    allowed_invocations: int,
+    bucket: t.Literal["global", "user", "channel", "guild"] | BucketCallable,
+) -> execution.ExecutionHook:
+    """
+    Creates a hook that applies a cooldown to command invocations using the :abbr:`fixed-window (The fixed-window
+    rate limit algorithm tracks requests within a static time window. New request is allowed once the window
+    resets.)` cooldown algorithm. The created hook raises :obj:`OnCooldown` when the cooldown is exceeded.
+    This hook run during the ``COOLDOWNS`` execution step.
+
+    You can pass one of ``"global"``, ``"user"``, ``"channel"`` or ``"guild"`` to the ``bucket`` parameter, or
+    a synchronous or asynchronous function to be used to resolve the bucket hash to apply the cooldown to.
+
+    - ``"global"`` - every invocation of the command shares a common cooldown
+    - ``"user"`` - cooldown is applied individually for each user
+    - ``"channel"`` - cooldown is applied individually for each channel
+    - ``"guild"`` - cooldown is applied individually for each guild. If in DMs, the cooldown is applied individually to
+      each DM.
+
+    Args:
+        window_length: The length of the cooldown window.
+        allowed_invocations: The number of invocations allowed within one window.
+        bucket: The bucket that should be used to classify invocations.
+
+    Returns:
+        The created hook.
+    """
+    return execution.hook(execution.ExecutionSteps.COOLDOWNS, skip_when_failed=True)(
+        _FixedWindow(
+            window_length, allowed_invocations, _PROVIDED_BUCKETS[bucket] if isinstance(bucket, str) else bucket
+        )
+    )
+
+
+def sliding_window(
+    window_length: float,
+    allowed_invocations: int,
+    bucket: t.Literal["global", "user", "channel", "guild"] | BucketCallable,
+) -> execution.ExecutionHook:
+    """
+    Creates a hook that applies a cooldown to command invocations using the :abbr:`sliding-window (The sliding-window
+    rate limit algorithm tracks request timestamps and permits new requests within a moving time window.
+    A new request is allowed once the oldest request drops out of the window.)` cooldown algorithm. The
+    created hook raises :obj:`OnCooldown` when the cooldown is exceeded. This hook is run during the ``COOLDOWNS``
+    execution step.
+
+    You can pass one of ``"global"``, ``"user"``, ``"channel"`` or ``"guild"`` to the ``bucket`` parameter, or
+    a synchronous or asynchronous function to be used to resolve the bucket hash to apply the cooldown to.
+
+    - ``"global"`` - every invocation of the command shares a common cooldown
+    - ``"user"`` - cooldown is applied individually for each user
+    - ``"channel"`` - cooldown is applied individually for each channel
+    - ``"guild"`` - cooldown is applied individually for each guild. If in DMs, the cooldown is applied individually to
+      each DM.
+
+    Args:
+        window_length: The length of the cooldown window.
+        allowed_invocations: The number of invocations allowed within one window.
+        bucket: The bucket that should be used to classify invocations.
+
+    Returns:
+        The created hook.
+    """
+    return execution.hook(execution.ExecutionSteps.COOLDOWNS, skip_when_failed=True)(
+        _SlidingWindow(
+            window_length, allowed_invocations, _PROVIDED_BUCKETS[bucket] if isinstance(bucket, str) else bucket
+        )
+    )

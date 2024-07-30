@@ -142,39 +142,42 @@ class Package:
             if module_lines:
                 lines.extend(["**Submodules:**", "", ".. toctree::", "    :maxdepth: 1", "", *sorted(module_lines), ""])
 
-            if self.is_root:
-                # Include a list of exported members from the root package
+            # Include a list of exported members in each package
+            root_module = importlib.import_module(package_name)
+
+            root_members: list[str] = []
+            for member in sorted(getattr(root_module, "__all__", [])):
+                item = getattr(root_module, member)
+                if inspect.ismodule(item):
+                    root_members.append(f"- :doc:`{member} <api-references/{'/'.join(item.__name__.split('.'))}>`")
+                elif inspect.isclass(item):
+                    root_members.append(f"- :class:`~{item.__module__}.{member}`")
+                elif inspect.isfunction(item):
+                    root_members.append(
+                        f"- :{'meth' if inspect.ismethod(item) else 'func'}:`~{item.__module__}.{member}`"
+                    )
+                else:
+                    root_members.append(f"- :obj:`~lightbulb.{member}`")
+
+            if root_members:
                 # fmt: off
                 lines.extend([
-                    ".. tip::",
-                    f"    The following members are exported to the top level of the library and so can be accessed "
-                    f"    using ``{package_name}.<member>`` instead of requiring you to use the full import path.",
+                    "++++++++++++++++",
+                    "Exported Members",
+                    "++++++++++++++++",
+                    "",
+                    "The following members are exported to the top level of this package and so can be accessed "
+                    f"using ``{package_name}.<member>`` instead of requiring you to use the full import path.",
                     "",
                 ])
                 # fmt: on
 
-                root_module = importlib.import_module(package_name)
-
-                root_members: list[str] = []
-                for member in sorted(root_module.__all__):
-                    item = getattr(root_module, member)
-                    if inspect.ismodule(item):
-                        root_members.append(f"- :doc:`{member} <api-references/{'/'.join(item.__name__.split('.'))}>`")
-                    elif inspect.isclass(item):
-                        root_members.append(f"- :class:`~{item.__module__}.{member}`")
-                    elif inspect.isfunction(item):
-                        root_members.append(
-                            f"- :{'meth' if inspect.ismethod(item) else 'func'}:`~{item.__module__}.{member}`"
-                        )
-                    else:
-                        root_members.append(f"- :obj:`~lightbulb.{member}`")
-
                 n_exported_table_columns = 3
-                lines.extend(["    .. list-table::", ""])
+                lines.extend([".. list-table::", ""])
                 for i, elem in enumerate(root_members):
-                    lines.append(f"        {' ' if i % n_exported_table_columns else '*'} {elem}")
+                    lines.append(f"    {' ' if i % n_exported_table_columns else '*'} {elem}")
                 if n_last_row := (len(root_members) % n_exported_table_columns):
-                    lines.extend(["          -" for _ in range(n_exported_table_columns - n_last_row)])
+                    lines.extend(["      -" for _ in range(n_exported_table_columns - n_last_row)])
                 lines.append("")
 
             fp.write("\n".join(lines).strip())

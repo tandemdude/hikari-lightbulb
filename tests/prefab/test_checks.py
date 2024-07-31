@@ -60,7 +60,7 @@ class TestOwnerOnly:
     @pytest.mark.asyncio
     async def test_gets_correct_owner_ids_from_application(self, application: hikari.Application) -> None:
         client: lightbulb.Client = mock.Mock(_owner_ids=None)
-        client.rest.fetch_application = mock.AsyncMock(return_value=application)
+        client._ensure_application = mock.AsyncMock(return_value=application)
 
         ctx = mock.Mock(spec=lightbulb.Context, client=client)
         ctx.user.id = 123

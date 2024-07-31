@@ -1,0 +1,23 @@
+name: Fragment Check
+on: [pull_request]
+
+jobs:
+  fragment-check:
+    name: Fragment check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check changelog fragment exists
+        run: |
+          PR_NUMBER=${{ github.event.number }}
+
+          if [ -n "$(compgen -G "fragments/${PR_NUMBER}.*.md")" ]; then
+            echo "Fragment exists"
+            exit 0
+          fi
+
+          echo "Fragment does not exist"
+          exit 1

@@ -64,7 +64,13 @@ def slotscheck(session: nox.Session) -> None:
 @nox.session()
 def test(session: nox.Session) -> None:
     session.install(".[localization,crontrigger,dev.test]")
-    session.run("python", "-m", "pytest", "tests")
+
+    args = ["python", "-m", "pytest"]
+    if session.posargs:
+        args.extend(["--cov", "lightbulb"])
+    args.append("tests")
+
+    session.run(*args)
 
 
 @nox.session(reuse_venv=True)

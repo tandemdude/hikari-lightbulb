@@ -77,25 +77,9 @@ jobs:
       - name: Run pytest
         run: |
           pip install nox
-          nox -s test
+          nox -s test -- cov
 
-  fragment-check:
-    name: Fragment check
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Check changelog fragment exists
-        run: |
-          PR_NUMBER=${{ github.event.number }}
-          
-          if [ -n "$(compgen -G "fragments/${PR_NUMBER}.*.md")" ]; then
-            echo "Fragment exists"
-            exit 0
-          fi
-
-          echo "Fragment does not exist"
-          exit 1
+      - name: Upload to CodeCov
+        uses: codecov/codecov-action@v4.0.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}

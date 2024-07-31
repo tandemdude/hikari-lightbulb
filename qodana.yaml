@@ -8,6 +8,8 @@ version: "1.0"
 profile:
   name: qodana.starter
 
+bootstrap: pip install .[localization,crontrigger]
+
 #Enable inspections
 #include:
 #  - name: <SomeEnabledInspectionId>
@@ -26,4 +28,4 @@ profile:
 #  - id: <plugin.id> #(plugin id can be found at https://plugins.jetbrains.com)
 
 #Specify Qodana linter for analysis (Applied in CI/CD pipeline)
-linter: jetbrains/qodana-python:latest
+linter: jetbrains/qodana-python-community:latest

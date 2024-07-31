@@ -115,6 +115,17 @@ class TestStandaloneContainer:
         factory.assert_called_once()
 
     @pytest.mark.asyncio
+    async def test_overriden_factory_dependency_used(self) -> None:
+        registry = di.Registry()
+        registry.register_factory(object, lambda: object())
+
+        value = object()
+        async with di.Container(registry) as container:
+            container.add_factory(object, lambda: value)
+
+            assert (await container.get(object)) is value
+
+    @pytest.mark.asyncio
     async def test_teardown_not_called_if_dependency_never_supplied(self) -> None:
         teardown = mock.Mock()
 

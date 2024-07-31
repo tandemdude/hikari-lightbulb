@@ -162,12 +162,7 @@ reportIncompatibleMethodOverride = "none"  # This relies on ordering for keyword
 reportOverlappingOverload = "none" # Type-Vars in last overloads may interfere
 reportIncompatibleVariableOverride = "none" # Cannot overwrite abstract properties using attrs
 reportPrivateUsage = "none" # Too annoying
-
-# Attrs validators will always be unknown
-# https://github.com/python-attrs/attrs/issues/795
-reportUnknownMemberType = "warning"
-reportUntypedFunctionDecorator = "warning"
-reportOptionalMemberAccess = "warning"
+reportUnknownMemberType = "warning" # NetworkX is untyped :/
 
 [tool.pytest.ini_options]
 filterwarnings = [

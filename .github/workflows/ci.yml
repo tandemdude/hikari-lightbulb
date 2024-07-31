@@ -77,7 +77,7 @@ jobs:
       - name: Run pytest
         run: |
           pip install ".[localization,crontrigger,dev.test]"
-          pytest --cov lightbulb tests
+          pytest --cov lightbulb --cov-report=xml tests
 
       - name: Upload to CodeCov
         uses: codecov/codecov-action@v4.0.1

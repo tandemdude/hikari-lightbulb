@@ -55,6 +55,7 @@ if t.TYPE_CHECKING:
 
 P = t.ParamSpec("P")
 R = t.TypeVar("R")
+AsyncFnT = t.TypeVar("AsyncFnT", bound=t.Callable[..., t.Awaitable[t.Any]])
 
 DI_ENABLED: t.Final[bool] = os.environ.get("LIGHTBULB_DI_DISABLED", "false").lower() != "true"
 DI_CONTAINER: contextvars.ContextVar[container.Container | None] = contextvars.ContextVar(
@@ -334,13 +335,21 @@ class AutoInjecting:
         return await utils.maybe_await(self._func(*args, **new_kwargs))
 
 
+@t.overload
+def with_di(func: AsyncFnT) -> AsyncFnT: ...
+
+
+@t.overload
+def with_di(func: t.Callable[P, types.MaybeAwaitable[R]]) -> t.Callable[P, t.Awaitable[R]]: ...
+
+
 def with_di(func: t.Callable[P, types.MaybeAwaitable[R]]) -> t.Callable[P, t.Awaitable[R]]:
     """
-    Decorator that enables dependency injection on the decorated asynchronous function. If dependency injection
+    Decorator that enables dependency injection on the decorated function. If dependency injection
     has been disabled globally then this function does nothing and simply returns the object that was passed in.
 
     Args:
-        func: The asynchronous function to enable dependency injection for.
+        func: The function to enable dependency injection for.
 
     Returns:
         The function with dependency injection enabled, or the same function if DI has been disabled globally.

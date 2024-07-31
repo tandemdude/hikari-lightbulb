@@ -20,7 +20,7 @@
 # SOFTWARE.
 from __future__ import annotations
 
-__all__ = ["SubGroup", "Group"]
+__all__ = ["Group", "SubGroup"]
 
 import abc
 import dataclasses
@@ -28,11 +28,11 @@ import typing as t
 
 import hikari
 
+from lightbulb.commands import commands
 from lightbulb.commands import utils
 
 if t.TYPE_CHECKING:
     from lightbulb import localization
-    from lightbulb.commands import commands
 
 CommandT = t.TypeVar("CommandT", bound=type["commands.CommandBase"])
 SubGroupCommandMappingT = dict[str, type["commands.CommandBase"]]
@@ -110,6 +110,23 @@ class SubGroup(GroupMixin):
     """The parent group of the subgroup."""
 
     _commands: SubGroupCommandMappingT = dataclasses.field(init=False, hash=False, repr=False, default_factory=dict)
+    _command_data: commands.CommandData = dataclasses.field(init=False, hash=False, repr=False)
+
+    def __post_init__(self) -> None:
+        cdata = commands.CommandData(
+            hikari.CommandType.SLASH,
+            self.name,
+            self.description,
+            self.localize,
+            self.parent.nsfw,
+            self.parent.dm_enabled,
+            self.parent.default_member_permissions,
+            [],
+            {},
+            "",
+        )
+        cdata.parent = self.parent
+        object.__setattr__(self, "_command_data", cdata)
 
     @property
     def subcommands(self) -> SubGroupCommandMappingT:
@@ -175,6 +192,22 @@ class Group(GroupMixin):
     """The default permissions required to use the group in a guild."""
 
     _commands: GroupCommandMappingT = dataclasses.field(init=False, hash=False, repr=False, default_factory=dict)
+    _command_data: commands.CommandData = dataclasses.field(init=False, hash=False, repr=False)
+
+    def __post_init__(self) -> None:
+        cdata = commands.CommandData(
+            hikari.CommandType.SLASH,
+            self.name,
+            self.description,
+            self.localize,
+            self.nsfw,
+            self.dm_enabled,
+            self.default_member_permissions,
+            [],
+            {},
+            "",
+        )
+        object.__setattr__(self, "_command_data", cdata)
 
     @property
     def subcommands(self) -> GroupCommandMappingT:

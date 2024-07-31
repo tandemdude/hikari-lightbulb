@@ -83,6 +83,7 @@ line-length = 120
 target-version = "py310"
 
 [tool.ruff.lint]
+preview = true
 select = [
     "E",     # pycodestyle errors
     "W",     # pycodestyle warnings
@@ -110,6 +111,8 @@ fixable = [
     "F401",  # unused import
     "F404",  # late __future__ import
     "F541",  # f-string with no placeholders
+    "RUF022",  # __all__ is not sorted
+    "RUF023",  # {}.__slots__ is not sorted
 ]
 ignore = [
     "D212",  # Multi-line docstring summary should start at the first line
@@ -126,8 +129,10 @@ force-single-line = true
 # F403 (Star import used) - hopefully we're sensible enough to know what objects modules contain
 # F405 (Import via star) - everything is imported to top-level
 "__init__.py" = ["F401", "F403", "F405"]
-# N802 Function name should be lowercase - tests are special ;)
-"tests/*.py" = ["N802"]
+
+# N802 (Function name should be lowercase)
+# RUF029 (Function is declared async but does not use async/await)
+"tests/*.py" = ["N802", "RUF029"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

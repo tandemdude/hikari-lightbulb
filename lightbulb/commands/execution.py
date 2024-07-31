@@ -33,7 +33,7 @@ from lightbulb.internal import types
 if t.TYPE_CHECKING:
     from lightbulb import context as context_
 
-__all__ = ["ExecutionStep", "ExecutionSteps", "ExecutionHook", "ExecutionPipeline", "hook", "invoke"]
+__all__ = ["ExecutionHook", "ExecutionPipeline", "ExecutionStep", "ExecutionSteps", "hook", "invoke"]
 
 ExecutionHookFunc: t.TypeAlias = t.Callable[
     't.Concatenate["ExecutionPipeline", "context_.Context", ...]', types.MaybeAwaitable[None]
@@ -140,12 +140,12 @@ class ExecutionPipeline:
 
     __slots__ = (
         "_context",
-        "_remaining",
-        "_hooks",
-        "_current_step",
         "_current_hook",
+        "_current_step",
         "_hook_failures",
+        "_hooks",
         "_invocation_failure",
+        "_remaining",
     )
 
     def __init__(self, context: context_.Context, order: t.Sequence[ExecutionStep]) -> None:

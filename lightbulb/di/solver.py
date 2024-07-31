@@ -23,15 +23,15 @@ from __future__ import annotations
 __all__ = [
     "DI_ENABLED",
     "INJECTED",
+    "AutoInjecting",
+    "AutocompleteContainer",
+    "CommandContainer",
     "Context",
     "Contexts",
     "DefaultContainer",
-    "CommandContainer",
-    "AutocompleteContainer",
+    "DependencyInjectionManager",
     "ListenerContainer",
     "TaskContainer",
-    "DependencyInjectionManager",
-    "AutoInjecting",
     "with_di",
 ]
 
@@ -131,7 +131,7 @@ _CONTAINER_TYPE_BY_CONTEXT = {
 class DependencyInjectionManager:
     """Class which contains dependency injection functionality."""
 
-    __slots__ = ("_registries", "_default_container")
+    __slots__ = ("_default_container", "_registries")
 
     def __init__(self) -> None:
         self._registries: dict[Context, registry.Registry] = collections.defaultdict(registry.Registry)
@@ -275,7 +275,7 @@ class AutoInjecting:
         :meth:`~lightbulb.commands.execution.invoke`
     """
 
-    __slots__ = ("_func", "_self", "_pos_or_kw_params", "_kw_only_params")
+    __slots__ = ("_func", "_kw_only_params", "_pos_or_kw_params", "_self")
 
     def __init__(
         self,

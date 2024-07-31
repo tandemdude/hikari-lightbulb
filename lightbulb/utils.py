@@ -29,6 +29,7 @@ from lightbulb.internal import marker
 
 if t.TYPE_CHECKING:
     from lightbulb.commands import commands
+    from lightbulb.commands import groups
     from lightbulb.internal import types
 
 T = t.TypeVar("T")
@@ -49,12 +50,14 @@ Example:
 """
 
 
-def get_command_data(command: commands.CommandBase | type[commands.CommandBase]) -> commands.CommandData:
+def get_command_data(
+    command: commands.CommandBase | type[commands.CommandBase] | groups.Group | groups.SubGroup,
+) -> commands.CommandData:
     """
-    Utility method to get the command data dataclass for a command instance or command class.
+    Utility method to get the command data dataclass for a command instance, command class, group, or subgroup.
 
     Args:
-        command: The command instance or command class to get the command data for.
+        command: The command instance, command class, group, or subgroup to get the command data for.
 
     Returns:
         :obj:`~lightbulb.commands.commands.CommandData`: Command data dataclass for the given command.

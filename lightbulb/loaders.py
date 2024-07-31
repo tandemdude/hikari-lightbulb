@@ -82,7 +82,7 @@ class Loadable(abc.ABC):
 
 class _CommandLoadable(Loadable):
     # TODO - check this is correctly idempotent
-    __slots__ = ("_command", "_guilds", "_global", "_defer_guilds")
+    __slots__ = ("_command", "_defer_guilds", "_global", "_guilds")
 
     def __init__(
         self,
@@ -107,7 +107,7 @@ class _CommandLoadable(Loadable):
 
 
 class _ListenerLoadable(Loadable):
-    __slots__ = ("_callback", "_wrapped_callback", "_event_types")
+    __slots__ = ("_callback", "_event_types", "_wrapped_callback")
 
     def __init__(self, callback: t.Callable[[EventT], t.Awaitable[None]], *event_types: type[EventT]) -> None:
         self._callback = callback
@@ -188,7 +188,7 @@ class Loader:
             :obj:`False`, the loader **will not** be loaded and none of its features will be added to the client.
     """
 
-    __slots__ = ("_should_load_hook", "_loadables")
+    __slots__ = ("_loadables", "_should_load_hook")
 
     def __init__(self, should_load_hook: t.Callable[[], types.MaybeAwaitable[bool]] = lambda: True) -> None:
         self._should_load_hook = should_load_hook

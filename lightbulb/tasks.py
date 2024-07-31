@@ -20,7 +20,7 @@
 # SOFTWARE.
 from __future__ import annotations
 
-__all__ = ["uniformtrigger", "crontrigger", "TaskExecutionData", "Task"]
+__all__ = ["Task", "TaskExecutionData", "crontrigger", "uniformtrigger"]
 
 import asyncio
 import contextlib
@@ -162,19 +162,19 @@ class Task:
     """
 
     __slots__ = [
-        "_func",
-        "_trigger",
         "_auto_start",
+        "_client",
+        "_func",
         "_max_failures",
         "_max_invocations",
+        "_task",
+        "_trigger",
+        "cancelled",
         "invocation_count",
         "last_invocation_length",
         "last_invoked_at",
         "started",
         "stopped",
-        "cancelled",
-        "_task",
-        "_client",
     ]
 
     def __init__(

@@ -19,12 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 __all__ = [
-    "NotOwner",
-    "owner_only",
-    "MissingRequiredPermission",
-    "has_permissions",
     "BotMissingRequiredPermissions",
+    "MissingRequiredPermission",
+    "NotOwner",
     "bot_has_permissions",
+    "has_permissions",
+    "owner_only",
 ]
 
 import hikari
@@ -47,7 +47,8 @@ async def owner_only(_: execution.ExecutionPipeline, ctx: context.Context) -> No
     if ctx.client._owner_ids is None:
         owner_ids: set[hikari.Snowflakeish] = set()
 
-        app = await ctx.client.rest.fetch_application()
+        app = await ctx.client._ensure_application()
+
         owner_ids.add(app.owner.id)
         if app.team is not None:
             owner_ids.update(app.team.members.keys())
@@ -91,7 +92,7 @@ def has_permissions(permissions: hikari.Permissions, /, *, fail_in_dm: bool = Tr
     """
 
     @execution.hook(execution.ExecutionSteps.CHECKS, skip_when_failed=True)
-    async def _has_permissions(_: execution.ExecutionPipeline, ctx: context.Context) -> None:
+    def _has_permissions(_: execution.ExecutionPipeline, ctx: context.Context) -> None:
         if ctx.member is None:
             if fail_in_dm:
                 raise MissingRequiredPermission(permissions, hikari.Permissions.NONE)
@@ -137,7 +138,7 @@ def bot_has_permissions(permissions: hikari.Permissions, /, *, fail_in_dm: bool 
     """
 
     @execution.hook(execution.ExecutionSteps.CHECKS, skip_when_failed=True)
-    async def _bot_has_permissions(_: execution.ExecutionPipeline, ctx: context.Context) -> None:
+    def _bot_has_permissions(_: execution.ExecutionPipeline, ctx: context.Context) -> None:
         if ctx.interaction.app_permissions is None:
             if fail_in_dm:
                 raise BotMissingRequiredPermissions(permissions, hikari.Permissions.NONE)

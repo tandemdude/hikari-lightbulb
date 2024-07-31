@@ -104,25 +104,25 @@ class Client(abc.ABC):
     """
 
     __slots__ = (
-        "rest",
-        "default_enabled_guilds",
-        "execution_step_order",
-        "default_locale",
-        "localization_provider",
-        "delete_unknown_commands",
-        "deferred_registration_callback",
-        "hooks",
-        "_di",
-        "_localization",
-        "_registered_commands",
+        "_application",
         "_command_invocation_mapping",
         "_created_commands",
+        "_di",
         "_error_handlers",
-        "_application",
         "_extensions",
-        "_tasks",
-        "_started",
+        "_localization",
         "_owner_ids",
+        "_registered_commands",
+        "_started",
+        "_tasks",
+        "default_enabled_guilds",
+        "default_locale",
+        "deferred_registration_callback",
+        "delete_unknown_commands",
+        "execution_step_order",
+        "hooks",
+        "localization_provider",
+        "rest",
     )
 
     def __init__(
@@ -160,7 +160,7 @@ class Client(abc.ABC):
         self._created_commands: dict[hikari.Snowflakeish, t.Collection[hikari.PartialCommand]] = {}
 
         self._error_handlers: dict[int, list[lb_types.ErrorHandler]] = {}
-        self._application: t.Optional[hikari.PartialApplication] = None
+        self._application: t.Optional[hikari.Application] = None
         self._extensions: set[str] = set()
         self._tasks: set[tasks.Task] = set()
 
@@ -741,7 +741,7 @@ class Client(abc.ABC):
 
             LOGGER.info("extension %r reloaded successfully", path)
 
-    async def _ensure_application(self) -> hikari.PartialApplication:
+    async def _ensure_application(self) -> hikari.Application:
         if self._application is not None:
             return self._application
 

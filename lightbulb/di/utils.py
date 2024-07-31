@@ -20,7 +20,7 @@
 # SOFTWARE.
 from __future__ import annotations
 
-__all__ = ["get_dependency_id", "resolve_dependency_id_for_all_parameters", "populate_graph_for_dependency"]
+__all__ = ["get_dependency_id", "populate_graph_for_dependency", "resolve_dependency_id_for_all_parameters"]
 
 import inspect
 import sys

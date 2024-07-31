@@ -22,17 +22,17 @@ from __future__ import annotations
 
 __all__ = [
     "Choice",
-    "OptionData",
     "Option",
-    "string",
-    "integer",
-    "boolean",
-    "number",
-    "user",
-    "channel",
-    "role",
-    "mentionable",
+    "OptionData",
     "attachment",
+    "boolean",
+    "channel",
+    "integer",
+    "mentionable",
+    "number",
+    "role",
+    "string",
+    "user",
 ]
 
 import dataclasses

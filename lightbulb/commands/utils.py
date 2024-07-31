@@ -21,7 +21,7 @@
 # SOFTWARE.
 from __future__ import annotations
 
-__all__ = ["localize_value", "localize_name_and_description"]
+__all__ = ["localize_name_and_description", "localize_value"]
 
 import typing as t
 

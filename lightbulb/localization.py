@@ -20,7 +20,7 @@
 # SOFTWARE.
 from __future__ import annotations
 
-__all__ = ["localization_unsupported", "DictLocalizationProvider", "GnuLocalizationProvider"]
+__all__ = ["DictLocalizationProvider", "GnuLocalizationProvider", "localization_unsupported"]
 
 import collections
 import dataclasses

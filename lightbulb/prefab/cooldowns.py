@@ -50,10 +50,10 @@ class OnCooldown(Exception):
 
 
 class _FixedWindow:
-    __slots__ = ("_window_length", "_allowed_invocations", "_bucket", "_invocations")
+    __slots__ = ("_allowed_invocations", "_bucket", "_invocations", "_window_length")
 
     class _InvocationData:
-        __slots__ = ("n", "expires")
+        __slots__ = ("expires", "n")
 
         def __init__(self, n: int = 0, expires: float = -1) -> None:
             self.n = n
@@ -80,7 +80,7 @@ class _FixedWindow:
 
 
 class _SlidingWindow:
-    __slots__ = ("_window_length", "_allowed_invocations", "_bucket", "_invocations")
+    __slots__ = ("_allowed_invocations", "_bucket", "_invocations", "_window_length")
 
     def __init__(self, window_length: float, allowed_invocations: int, bucket: BucketCallable) -> None:
         self._window_length = window_length

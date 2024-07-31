@@ -21,9 +21,9 @@
 from __future__ import annotations
 
 __all__ = [
-    "DependencyInjectionException",
-    "ContainerClosedException",
     "CircularDependencyException",
+    "ContainerClosedException",
+    "DependencyInjectionException",
     "DependencyNotSatisfiableException",
     "RegistryFrozenException",
 ]

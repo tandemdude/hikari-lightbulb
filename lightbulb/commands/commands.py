@@ -37,7 +37,7 @@ if t.TYPE_CHECKING:
     from lightbulb import localization
     from lightbulb.commands import groups
 
-__all__ = ["CommandData", "CommandMeta", "CommandBase", "UserCommand", "MessageCommand", "SlashCommand"]
+__all__ = ["CommandBase", "CommandData", "CommandMeta", "MessageCommand", "SlashCommand", "UserCommand"]
 
 T = t.TypeVar("T")
 D = t.TypeVar("D")

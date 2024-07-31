@@ -48,7 +48,7 @@ class Container:
         parent: The parent container. Defaults to None.
     """
 
-    __slots__ = ("_registry", "_parent", "_closed", "_graph", "_instances")
+    __slots__ = ("_closed", "_graph", "_instances", "_parent", "_registry")
 
     def __init__(self, registry: registry_.Registry, *, parent: Container | None = None) -> None:
         self._registry = registry

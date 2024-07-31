@@ -58,7 +58,7 @@ class Registry:
         being registered. The registry is unfrozen once all containers providing from a registry have been closed.
     """
 
-    __slots__ = ("_graph", "_active_containers")
+    __slots__ = ("_active_containers", "_graph")
 
     def __init__(self) -> None:
         self._graph: nx.DiGraph[str] = nx.DiGraph()

@@ -32,6 +32,7 @@ from lightbulb.commands import execution
 from lightbulb.internal import types
 
 BucketCallable: t.TypeAlias = t.Callable[[context.Context], types.MaybeAwaitable[hikari.Snowflakeish]]
+Bucket: t.TypeAlias = t.Union[t.Literal["global", "user", "channel", "guild"], BucketCallable]
 
 _PROVIDED_BUCKETS: dict[str, BucketCallable] = {
     "global": lambda _: 0,
@@ -137,7 +138,7 @@ def fixed_window(
 def sliding_window(
     window_length: float,
     allowed_invocations: int,
-    bucket: t.Literal["global", "user", "channel", "guild"] | BucketCallable,
+    bucket: Bucket,
 ) -> execution.ExecutionHook:
     """
     Creates a hook that applies a cooldown to command invocations using the :abbr:`sliding-window (The sliding-window

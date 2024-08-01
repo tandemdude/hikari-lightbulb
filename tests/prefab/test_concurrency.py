@@ -18,22 +18,34 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""Subpackage providing common hooks and utilities you can use in your own bot."""
+from unittest import mock
 
-from lightbulb.prefab.checks import *
-from lightbulb.prefab.concurrency import *
-from lightbulb.prefab.cooldowns import *
+import pytest
 
-__all__ = [
-    "BotMissingRequiredPermissions",
-    "MaxConcurrencyReached",
-    "MissingRequiredPermission",
-    "NotOwner",
-    "OnCooldown",
-    "bot_has_permissions",
-    "fixed_window",
-    "has_permissions",
-    "max_concurrency",
-    "owner_only",
-    "sliding_window",
-]
+from lightbulb.prefab import concurrency
+
+
+class TestMaxConcurrency:
+    @pytest.mark.asyncio
+    async def test_allows_invocations_under_limit(self) -> None:
+        incr, _ = concurrency.max_concurrency(2, "global")
+        await incr(mock.Mock(), mock.Mock())
+
+    @pytest.mark.asyncio
+    async def test_blocks_invocations_over_limit(self) -> None:
+        incr, _ = concurrency.max_concurrency(1, "global")
+        await incr(mock.Mock(), mock.Mock())
+
+        with pytest.raises(concurrency.MaxConcurrencyReached):
+            await incr(mock.Mock(), mock.Mock())
+
+    @pytest.mark.asyncio
+    async def test_allows_invocation_after_complete(self) -> None:
+        incr, decr = concurrency.max_concurrency(1, "global")
+        await incr(mock.Mock(), mock.Mock())
+
+        with pytest.raises(concurrency.MaxConcurrencyReached):
+            await incr(mock.Mock(), mock.Mock())
+        await decr(mock.Mock(), mock.Mock())
+
+        await incr(mock.Mock(), mock.Mock())

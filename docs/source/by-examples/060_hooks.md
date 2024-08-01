@@ -149,3 +149,17 @@ client = lightbulb.client_from_app(..., hooks=[only_me])
 class YourCommand(...):
     ...
 ```
+
+---
+
+## Built-in Hooks
+
+Lightbulb provides a few hooks for common use-cases so that you don't have to implement them yourself. They can be
+found in the {obj}`lightbulb.prefab` subpackage. See the api reference for details
+on what is available.
+
+These include:
+
+- Checks
+- Cooldowns (using fixed-window or sliding-window algorithms)
+- Max concurrency (limiting the number of command invocations happening at once)

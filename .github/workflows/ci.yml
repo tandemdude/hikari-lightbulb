@@ -43,6 +43,11 @@ jobs:
           pip install nox
           nox -s typecheck
 
+      - name: Verify type-completeness
+        run: |
+          pip install ".[dev.typecheck]"
+          pyright --verifytypes lightbulb --ignoreexternal
+
   slotscheck:
     name: Slotscheck
     runs-on: ubuntu-latest

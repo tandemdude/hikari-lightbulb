@@ -75,18 +75,19 @@ intersphinx_mapping = {
 # a list of builtin themes.
 #
 html_theme = "furo"
-html_theme_options = {
-    "announcement": "<b>Testers Wanted - Report issues on discord</b>"
-    "<br>Release V3 is now in Alpha - <a href='https://hikari-lightbulb.readthedocs.io/en/v3/'>docs</a>"
-}
+html_title = f"v{version}"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
-html_logo = "_static/logo.png"
+html_css_files = ["theme_overrides.css"]
+html_theme_options = {
+    "light_logo": "lightbulb_logo_light.svg",
+    "dark_logo": "lightbulb_logo_dark.svg",
+}
 
-ogp_image = "_static/logo.png"
+ogp_image = "_static/lightbulb_logo_new.svg"
 ogp_site_name = "Hikari Lightbulb Documentation"
 
 add_module_names = False

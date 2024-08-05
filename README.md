@@ -1,13 +1,14 @@
-> [!TIP]
-> V3 is now in Alpha. It is a complete rewrite of the entire library, and we are looking for feedback. If you are
-> going to write a new bot using Lightbulb, maybe consider using V3 instead of V2.
-> 
-> Report any bugs or issues, and ask for help in the discord channel.
-> The documentation can be found [here](https://hikari-lightbulb.readthedocs.io/en/v3/)
+<p align="center">
+    <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="/docs/source/_static/lightbulb_logo_dark.svg">
+        <source media="(prefers-color-scheme: light)" srcset="/docs/source/_static/lightbulb_logo_light.svg">
+        <img alt="Hikari-Lightbulb logo" src="/docs/source/_static/lightbulb_logo_light.svg" width="50%">
+    </picture>
+</p>
 
 [![PyPI](https://img.shields.io/pypi/v/hikari-lightbulb)](https://pypi.org/project/hikari-lightbulb)
 
-# Lightbulb
+# Overview
 Lightbulb is designed to be an easy-to-use command handler library that integrates with the
 Discord API wrapper library for Python, Hikari.
 

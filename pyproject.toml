@@ -73,6 +73,21 @@ title_format = "v{version} ({project_date})"
 issue_format = "[#{issue}](https://github.com/tandemdude/hikari-lightbulb/issues/{issue})"
 orphan_prefix = "+"
 
+[tool.towncrier.fragment.feature]
+name = "Features"
+
+[tool.towncrier.fragment.bugfix]
+name = "Bugfixes"
+
+[tool.towncrier.fragment.doc]
+name = "Documentation"
+
+[tool.towncrier.fragment.removal]
+name = "Deprecations and Removals"
+
+[tool.towncrier.fragment.misc]
+name = "Miscellaneous"
+
 [tool.black]
 line-length     = 120
 target-version  = ["py310"]

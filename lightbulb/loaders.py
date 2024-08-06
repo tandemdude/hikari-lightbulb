@@ -25,6 +25,9 @@ __all__ = ["Loadable", "Loader"]
 import abc
 import logging
 import typing as t
+from collections.abc import Awaitable
+from collections.abc import Callable
+from collections.abc import Sequence
 
 import hikari
 
@@ -87,7 +90,7 @@ class _CommandLoadable(Loadable):
     def __init__(
         self,
         command: types.CommandOrGroup,
-        guilds: t.Sequence[hikari.Snowflakeish] | None,
+        guilds: Sequence[hikari.Snowflakeish] | None,
         global_: bool | None,
         defer_guilds: bool,
     ) -> None:
@@ -109,11 +112,11 @@ class _CommandLoadable(Loadable):
 class _ListenerLoadable(Loadable):
     __slots__ = ("_callback", "_event_types", "_wrapped_callback")
 
-    def __init__(self, callback: t.Callable[[EventT], t.Awaitable[None]], *event_types: type[EventT]) -> None:
+    def __init__(self, callback: Callable[[EventT], Awaitable[None]], *event_types: type[EventT]) -> None:
         self._callback = callback
         self._event_types = event_types
 
-        self._wrapped_callback: t.Callable[..., t.Awaitable[t.Any]] | None = None
+        self._wrapped_callback: Callable[..., Awaitable[t.Any]] | None = None
 
     async def load(self, client: client_.Client) -> None:
         em = getattr(getattr(client, "_app", None), "event_manager", None)
@@ -190,7 +193,7 @@ class Loader:
 
     __slots__ = ("_loadables", "_should_load_hook")
 
-    def __init__(self, should_load_hook: t.Callable[[], types.MaybeAwaitable[bool]] = lambda: True) -> None:
+    def __init__(self, should_load_hook: Callable[[], types.MaybeAwaitable[bool]] = lambda: True) -> None:
         self._should_load_hook = should_load_hook
         self._loadables: list[Loadable] = []
 
@@ -239,18 +242,18 @@ class Loader:
 
     @t.overload
     def command(
-        self, *, guilds: t.Sequence[hikari.Snowflakeish] | None = None, global_: bool | None = None
-    ) -> t.Callable[[CommandOrGroupT], CommandOrGroupT]: ...
+        self, *, guilds: Sequence[hikari.Snowflakeish] | None = None, global_: bool | None = None
+    ) -> Callable[[CommandOrGroupT], CommandOrGroupT]: ...
 
     @t.overload
-    def command(self, *, defer_guilds: t.Literal[True]) -> t.Callable[[CommandOrGroupT], CommandOrGroupT]: ...
+    def command(self, *, defer_guilds: t.Literal[True]) -> Callable[[CommandOrGroupT], CommandOrGroupT]: ...
 
     @t.overload
     def command(
         self,
         command: CommandOrGroupT,
         *,
-        guilds: t.Sequence[hikari.Snowflakeish] | None = None,
+        guilds: Sequence[hikari.Snowflakeish] | None = None,
         global_: bool | None = None,
     ) -> CommandOrGroupT: ...
 
@@ -261,10 +264,10 @@ class Loader:
         self,
         command: CommandOrGroupT | None = None,
         *,
-        guilds: t.Sequence[hikari.Snowflakeish] | None = None,
+        guilds: Sequence[hikari.Snowflakeish] | None = None,
         global_: bool | None = None,
         defer_guilds: bool = False,
-    ) -> CommandOrGroupT | t.Callable[[CommandOrGroupT], CommandOrGroupT]:
+    ) -> CommandOrGroupT | Callable[[CommandOrGroupT], CommandOrGroupT]:
         """
         Register a command or group with this loader.
 
@@ -317,9 +320,7 @@ class Loader:
 
     def listener(
         self, *event_types: type[EventT]
-    ) -> t.Callable[
-        [t.Callable["t.Concatenate[EventT, ...]", t.Awaitable[None]]], t.Callable[[EventT], t.Awaitable[None]]
-    ]:
+    ) -> Callable[[Callable["t.Concatenate[EventT, ...]", Awaitable[None]]], Callable[[EventT], Awaitable[None]]]:
         """
         Decorator to register a listener with this loader. Also enables dependency injection on the listener
         callback.
@@ -344,23 +345,23 @@ class Loader:
             raise ValueError("you must specify at least one event type")
 
         def _inner(
-            callback: t.Callable["t.Concatenate[EventT, ...]", t.Awaitable[None]],
-        ) -> t.Callable[[EventT], t.Awaitable[None]]:
-            wrapped = t.cast(t.Callable[[EventT], t.Awaitable[None]], di.with_di(callback))
+            callback: Callable["t.Concatenate[EventT, ...]", Awaitable[None]],
+        ) -> Callable[[EventT], Awaitable[None]]:
+            wrapped = t.cast(Callable[[EventT], Awaitable[None]], di.with_di(callback))
             self.add(_ListenerLoadable(wrapped, *event_types))
             return wrapped
 
         return _inner
 
     @t.overload
-    def error_handler(self, *, priority: int = 0) -> t.Callable[[ErrorHandlerT], ErrorHandlerT]: ...
+    def error_handler(self, *, priority: int = 0) -> Callable[[ErrorHandlerT], ErrorHandlerT]: ...
 
     @t.overload
     def error_handler(self, func: ErrorHandlerT, *, priority: int = 0) -> ErrorHandlerT: ...
 
     def error_handler(
         self, func: ErrorHandlerT | None = None, *, priority: int = 0
-    ) -> ErrorHandlerT | t.Callable[[ErrorHandlerT], ErrorHandlerT]:
+    ) -> ErrorHandlerT | Callable[[ErrorHandlerT], ErrorHandlerT]:
         """
         Register an error handler function to call when an :obj:`~lightbulb.commands.execution.ExecutionPipeline` fails.
         Also enables dependency injection for the error handler function.
@@ -386,7 +387,7 @@ class Loader:
 
     def task(
         self, trigger: tasks.Trigger, /, auto_start: bool = True, max_failures: int = 1, max_invocations: int = -1
-    ) -> t.Callable[[tasks.TaskFunc], tasks.Task]:
+    ) -> Callable[[tasks.TaskFunc], tasks.Task]:
         """
         Second order decorator to register a repeating task with this loader. Task functions will have
         dependency injection enabled on them automatically. Task functions **must** be asynchronous.

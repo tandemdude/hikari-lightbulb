@@ -20,10 +20,13 @@
 # SOFTWARE.
 from __future__ import annotations
 
-import collections.abc
 import dataclasses
 import logging
 import typing as t
+from collections.abc import Iterable
+from collections.abc import Mapping
+from collections.abc import MutableMapping
+from collections.abc import Sequence
 
 import hikari
 
@@ -75,9 +78,9 @@ class CommandData:
     default_member_permissions: hikari.UndefinedOr[hikari.Permissions] = dataclasses.field(repr=False)
     """The default permissions required to use the command in a guild. This field is ignored for subcommands."""
 
-    hooks: t.Sequence[execution.ExecutionHook] = dataclasses.field(hash=False, repr=False)
+    hooks: Sequence[execution.ExecutionHook] = dataclasses.field(hash=False, repr=False)
     """Hooks to run prior to the invoke method being executed."""
-    options: t.Mapping[str, options_.OptionData[t.Any]] = dataclasses.field(hash=False, repr=False)
+    options: Mapping[str, options_.OptionData[t.Any]] = dataclasses.field(hash=False, repr=False)
     """Map of option name to option data for the command options."""
     invoke_method: str = dataclasses.field(hash=False, repr=False)
     """The attribute name of the invoke method for the command."""
@@ -122,8 +125,8 @@ class CommandData:
             :obj:`hikari.api.special_endpoints.CommandBuilder`: The builder object for this command data.
         """
         name, description = self.name, self.description
-        name_localizations: t.Mapping[hikari.Locale, str] = {}
-        description_localizations: t.Mapping[hikari.Locale, str] = {}
+        name_localizations: Mapping[hikari.Locale, str] = {}
+        description_localizations: Mapping[hikari.Locale, str] = {}
 
         if self.localize:
             (
@@ -171,8 +174,8 @@ class CommandData:
             )
 
         name, description = self.name, self.description
-        name_localizations: t.Mapping[hikari.Locale, str] = {}
-        description_localizations: t.Mapping[hikari.Locale, str] = {}
+        name_localizations: Mapping[hikari.Locale, str] = {}
+        description_localizations: Mapping[hikari.Locale, str] = {}
 
         if self.localize:
             (
@@ -257,12 +260,12 @@ class CommandMeta(type):
         )
 
         raw_hooks: t.Any = kwargs.pop("hooks", None)
-        if raw_hooks is not None and not isinstance(raw_hooks, collections.abc.Iterable):
+        if raw_hooks is not None and not isinstance(raw_hooks, Iterable):
             raise TypeError("'hooks' must be an iterable")
 
         # Don't want to use a set for deduplicating because we want to preserve ordering
         hooks: list[t.Any] = []
-        for hook in t.cast(t.Iterable[t.Any], raw_hooks or []):
+        for hook in t.cast(Iterable[t.Any], raw_hooks or []):
             if hook in hooks:
                 continue
             hooks.append(hook)
@@ -270,7 +273,7 @@ class CommandMeta(type):
         if hooks and not any((isinstance(h, execution.ExecutionHook) for h in hooks)):
             raise TypeError("all hooks must be an instance of ExecutionHook")
 
-        options: t.Dict[str, options_.OptionData[t.Any]] = {}
+        options: dict[str, options_.OptionData[t.Any]] = {}
         invoke_method: str | None = None
         # Iterate through new class attributes to find options and invoke method
         for name, item in attrs.items():
@@ -309,7 +312,7 @@ class CommandBase:
 
     _command_data: t.ClassVar[CommandData]
     _current_context: context_.Context | None
-    _resolved_option_cache: t.MutableMapping[str, t.Any]
+    _resolved_option_cache: MutableMapping[str, t.Any]
 
     def __new__(cls, *args: t.Any, **kwargs: t.Any) -> CommandBase:
         new = super().__new__(cls, *args, **kwargs)

@@ -50,7 +50,7 @@ class CommandCollection:
 
     def put(
         self,
-        command: t.Type[commands.CommandBase],
+        command: type[commands.CommandBase],
     ) -> None:
         """
         Add a command to the collection. Automatically places it in the correct attribute. If a second
@@ -71,7 +71,7 @@ class CommandCollection:
         else:
             raise TypeError("unsupported command passed")
 
-    def remove(self, command: groups.Group | t.Type[commands.CommandBase]) -> None:
+    def remove(self, command: groups.Group | type[commands.CommandBase]) -> None:
         """
         Remove a command from the collection. Does nothing if the command is not present in this collection.
 

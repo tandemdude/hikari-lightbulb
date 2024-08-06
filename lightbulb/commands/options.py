@@ -46,15 +46,20 @@ from lightbulb.commands import utils as cmd_utils
 from lightbulb.internal.utils import non_undefined_or
 
 if t.TYPE_CHECKING:
+    from collections.abc import Awaitable
+    from collections.abc import Callable
+    from collections.abc import Mapping
+    from collections.abc import Sequence
+
     from lightbulb import commands
     from lightbulb import context
     from lightbulb import localization
 
-    AutocompleteProvider = t.Callable[[context.AutocompleteContext[context.T]], t.Awaitable[t.Any]]
+    AutocompleteProvider = Callable[[context.AutocompleteContext[context.T]], Awaitable[t.Any]]
 
 T = t.TypeVar("T")
 D = t.TypeVar("D")
-CtxMenuOptionReturnT = t.Union[hikari.User, hikari.Message]
+CtxMenuOptionReturn: t.TypeAlias = t.Union[hikari.User, hikari.Message]
 
 
 @dataclasses.dataclass(slots=True, frozen=True)
@@ -87,9 +92,9 @@ class OptionData(t.Generic[D]):
 
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED
     """The default value for the option."""
-    choices: hikari.UndefinedOr[t.Sequence[Choice[t.Any]]] = hikari.UNDEFINED
+    choices: hikari.UndefinedOr[Sequence[Choice[t.Any]]] = hikari.UNDEFINED
     """The choices for the option."""
-    channel_types: hikari.UndefinedOr[t.Sequence[hikari.ChannelType]] = hikari.UNDEFINED
+    channel_types: hikari.UndefinedOr[Sequence[hikari.ChannelType]] = hikari.UNDEFINED
     """The channel types for the option."""
 
     min_value: hikari.UndefinedOr[int | float] = hikari.UNDEFINED
@@ -149,8 +154,8 @@ class OptionData(t.Generic[D]):
             The created command option.
         """
         name, description = self.name, self.description
-        name_localizations: t.Mapping[hikari.Locale, str] = {}
-        description_localizations: t.Mapping[hikari.Locale, str] = {}
+        name_localizations: Mapping[hikari.Locale, str] = {}
+        description_localizations: Mapping[hikari.Locale, str] = {}
 
         if self.localize:
             (
@@ -231,7 +236,7 @@ class Option(t.Generic[T, D]):
         return instance._resolve_option(self)
 
 
-class ContextMenuOption(Option[CtxMenuOptionReturnT, CtxMenuOptionReturnT]):
+class ContextMenuOption(Option[CtxMenuOptionReturn, CtxMenuOptionReturn]):
     """
     Special implementation of :obj:`~Option` to handle context menu command targets given that
     they do not count as an "option" and the ID is instead given through the ``target`` field on the
@@ -247,7 +252,7 @@ class ContextMenuOption(Option[CtxMenuOptionReturnT, CtxMenuOptionReturnT]):
 
     __slots__ = ("_type",)
 
-    def __init__(self, type_: type[CtxMenuOptionReturnT]) -> None:
+    def __init__(self, type_: type[CtxMenuOptionReturn]) -> None:
         self._type = type_
         super().__init__(
             OptionData(
@@ -266,7 +271,7 @@ class ContextMenuOption(Option[CtxMenuOptionReturnT, CtxMenuOptionReturnT]):
         self, instance: commands.MessageCommand | None, owner: type[commands.MessageCommand]
     ) -> hikari.Message: ...
 
-    def __get__(self, instance: commands.CommandBase | None, owner: type[commands.CommandBase]) -> CtxMenuOptionReturnT:
+    def __get__(self, instance: commands.CommandBase | None, owner: type[commands.CommandBase]) -> CtxMenuOptionReturn:
         if instance is None or getattr(instance, "_current_context", None) is None:
             return self._unbound_default
 
@@ -293,7 +298,7 @@ def string(
     *,
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
-    choices: hikari.UndefinedOr[t.Sequence[Choice[str]]] = hikari.UNDEFINED,
+    choices: hikari.UndefinedOr[Sequence[Choice[str]]] = hikari.UNDEFINED,
     min_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     max_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     autocomplete: hikari.UndefinedOr[AutocompleteProvider[str]] = hikari.UNDEFINED,
@@ -343,7 +348,7 @@ def integer(
     *,
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
-    choices: hikari.UndefinedOr[t.Sequence[Choice[int]]] = hikari.UNDEFINED,
+    choices: hikari.UndefinedOr[Sequence[Choice[int]]] = hikari.UNDEFINED,
     min_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     max_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     autocomplete: hikari.UndefinedOr[AutocompleteProvider[int]] = hikari.UNDEFINED,
@@ -430,7 +435,7 @@ def number(
     *,
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
-    choices: hikari.UndefinedOr[t.Sequence[Choice[float]]] = hikari.UNDEFINED,
+    choices: hikari.UndefinedOr[Sequence[Choice[float]]] = hikari.UNDEFINED,
     min_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
     max_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
     autocomplete: hikari.UndefinedOr[AutocompleteProvider[float]] = hikari.UNDEFINED,
@@ -517,7 +522,7 @@ def channel(
     *,
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
-    channel_types: hikari.UndefinedOr[t.Sequence[hikari.ChannelType]] = hikari.UNDEFINED,
+    channel_types: hikari.UndefinedOr[Sequence[hikari.ChannelType]] = hikari.UNDEFINED,
 ) -> hikari.PartialChannel | D:
     """
     A channel option.

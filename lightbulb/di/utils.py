@@ -27,6 +27,8 @@ import sys
 import typing as t
 
 if t.TYPE_CHECKING:
+    from collections.abc import Callable
+
     import networkx as nx
 
     from lightbulb.internal import types
@@ -46,7 +48,7 @@ def get_dependency_id(dependency_type: type[t.Any]) -> str:
     return f"{dependency_type.__module__}.{getattr(dependency_type, '__qualname__', dependency_type.__name__)}"
 
 
-def resolve_dependency_id_for_all_parameters(func: t.Callable[..., types.MaybeAwaitable[t.Any]]) -> dict[str, str]:
+def resolve_dependency_id_for_all_parameters(func: Callable[..., types.MaybeAwaitable[t.Any]]) -> dict[str, str]:
     """
     Parse all parameters of the given callable and find the dependency ID that should be used when
     injecting values into each parameter.
@@ -83,8 +85,8 @@ def resolve_dependency_id_for_all_parameters(func: t.Callable[..., types.MaybeAw
 def populate_graph_for_dependency(
     graph: nx.DiGraph[str],
     dependency_id: str,
-    factory: t.Callable[..., types.MaybeAwaitable[t.Any]],
-    teardown: t.Callable[..., types.MaybeAwaitable[None]] | None,
+    factory: Callable[..., types.MaybeAwaitable[t.Any]],
+    teardown: Callable[..., types.MaybeAwaitable[None]] | None,
     **extra_data: t.Any,
 ) -> None:
     """

@@ -23,10 +23,12 @@ from __future__ import annotations
 __all__ = ["AutocompleteContext", "Context", "RestContext"]
 
 import asyncio
-import collections.abc
 import dataclasses
 import os
 import typing as t
+from collections.abc import Callable
+from collections.abc import Mapping
+from collections.abc import Sequence
 
 import hikari
 from hikari import files
@@ -39,10 +41,10 @@ if t.TYPE_CHECKING:
 
 T = t.TypeVar("T", int, str, float)
 AutocompleteResponse: t.TypeAlias = t.Union[
-    t.Sequence[special_endpoints.AutocompleteChoiceBuilder],
-    t.Sequence[T],
-    t.Mapping[str, T],
-    t.Sequence[tuple[str, T]],
+    Sequence[special_endpoints.AutocompleteChoiceBuilder],
+    Sequence[T],
+    Mapping[str, T],
+    Sequence[tuple[str, T]],
 ]
 
 INITIAL_RESPONSE_IDENTIFIER: t.Final[int] = -1
@@ -57,7 +59,7 @@ class AutocompleteContext(t.Generic[T]):
 
     interaction: hikari.AutocompleteInteraction
     """The interaction for the autocomplete invocation."""
-    options: t.Sequence[hikari.AutocompleteInteractionOption]
+    options: Sequence[hikari.AutocompleteInteractionOption]
     """The options provided with the autocomplete interaction."""
 
     command: type[commands.CommandBase]
@@ -102,16 +104,12 @@ class AutocompleteContext(t.Generic[T]):
         return next(filter(lambda opt: opt.name == option._localized_name, self.options), None)
 
     @staticmethod
-    def _normalise_choices(choices: AutocompleteResponse[T]) -> t.Sequence[special_endpoints.AutocompleteChoiceBuilder]:
-        if isinstance(choices, collections.abc.Mapping):
+    def _normalise_choices(choices: AutocompleteResponse[T]) -> Sequence[special_endpoints.AutocompleteChoiceBuilder]:
+        if isinstance(choices, Mapping):
             return [hikari.impl.AutocompleteChoiceBuilder(name=k, value=v) for k, v in choices.items()]
 
         def _to_command_choice(
-            item: t.Union[
-                special_endpoints.AutocompleteChoiceBuilder,
-                tuple[str, T],
-                T,
-            ],
+            item: special_endpoints.AutocompleteChoiceBuilder | tuple[str, T] | T,
         ) -> special_endpoints.AutocompleteChoiceBuilder:
             if isinstance(item, special_endpoints.AutocompleteChoiceBuilder):
                 return item
@@ -139,7 +137,7 @@ class AutocompleteContext(t.Generic[T]):
 
 @dataclasses.dataclass(slots=True)
 class RestAutocompleteContext(AutocompleteContext[T]):
-    _initial_response_callback: t.Callable[
+    _initial_response_callback: Callable[
         [hikari.api.InteractionAutocompleteBuilder],
         None,
     ]
@@ -158,7 +156,7 @@ class Context:
 
     interaction: hikari.CommandInteraction
     """The interaction for the command invocation."""
-    options: t.Sequence[hikari.CommandInteractionOption]
+    options: Sequence[hikari.CommandInteractionOption]
     """The options to use for the command invocation."""
 
     command: commands.CommandBase
@@ -201,11 +199,11 @@ class Context:
         content: hikari.UndefinedNoneOr[t.Any] = hikari.UNDEFINED,
         *,
         attachment: hikari.UndefinedNoneOr[hikari.Resourceish | hikari.Attachment] = hikari.UNDEFINED,
-        attachments: hikari.UndefinedNoneOr[t.Sequence[hikari.Resourceish | hikari.Attachment]] = hikari.UNDEFINED,
+        attachments: hikari.UndefinedNoneOr[Sequence[hikari.Resourceish | hikari.Attachment]] = hikari.UNDEFINED,
         component: hikari.UndefinedNoneOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
-        components: hikari.UndefinedNoneOr[t.Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
+        components: hikari.UndefinedNoneOr[Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
         embed: hikari.UndefinedNoneOr[hikari.Embed] = hikari.UNDEFINED,
-        embeds: hikari.UndefinedNoneOr[t.Sequence[hikari.Embed]] = hikari.UNDEFINED,
+        embeds: hikari.UndefinedNoneOr[Sequence[hikari.Embed]] = hikari.UNDEFINED,
         mentions_everyone: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
         user_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialUser] | bool] = hikari.UNDEFINED,
         role_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialRole] | bool] = hikari.UNDEFINED,
@@ -298,11 +296,11 @@ class Context:
         flags: int | hikari.MessageFlag | hikari.UndefinedType = hikari.UNDEFINED,
         tts: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
         attachment: hikari.UndefinedOr[hikari.Resourceish] = hikari.UNDEFINED,
-        attachments: hikari.UndefinedOr[t.Sequence[hikari.Resourceish]] = hikari.UNDEFINED,
+        attachments: hikari.UndefinedOr[Sequence[hikari.Resourceish]] = hikari.UNDEFINED,
         component: hikari.UndefinedOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
-        components: hikari.UndefinedOr[t.Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
+        components: hikari.UndefinedOr[Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
         embed: hikari.UndefinedOr[hikari.Embed] = hikari.UNDEFINED,
-        embeds: hikari.UndefinedOr[t.Sequence[hikari.Embed]] = hikari.UNDEFINED,
+        embeds: hikari.UndefinedOr[Sequence[hikari.Embed]] = hikari.UNDEFINED,
         mentions_everyone: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
         user_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialUser] | bool] = hikari.UNDEFINED,
         role_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialRole] | bool] = hikari.UNDEFINED,
@@ -350,7 +348,7 @@ class Context:
         title: str,
         custom_id: str,
         component: hikari.UndefinedOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
-        components: hikari.UndefinedOr[t.Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
+        components: hikari.UndefinedOr[Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
     ) -> None:
         """
         Create a modal response to the interaction that this context represents.
@@ -379,11 +377,11 @@ class Context:
         flags: int | hikari.MessageFlag | hikari.UndefinedType = hikari.UNDEFINED,
         tts: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
         attachment: hikari.UndefinedOr[hikari.Resourceish] = hikari.UNDEFINED,
-        attachments: hikari.UndefinedOr[t.Sequence[hikari.Resourceish]] = hikari.UNDEFINED,
+        attachments: hikari.UndefinedOr[Sequence[hikari.Resourceish]] = hikari.UNDEFINED,
         component: hikari.UndefinedOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
-        components: hikari.UndefinedOr[t.Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
+        components: hikari.UndefinedOr[Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
         embed: hikari.UndefinedOr[hikari.Embed] = hikari.UNDEFINED,
-        embeds: hikari.UndefinedOr[t.Sequence[hikari.Embed]] = hikari.UNDEFINED,
+        embeds: hikari.UndefinedOr[Sequence[hikari.Embed]] = hikari.UNDEFINED,
         mentions_everyone: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
         user_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialUser] | bool] = hikari.UNDEFINED,
         role_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialRole] | bool] = hikari.UNDEFINED,
@@ -469,7 +467,7 @@ class Context:
 
 @dataclasses.dataclass(slots=True)
 class RestContext(Context):
-    _initial_response_callback: t.Callable[
+    _initial_response_callback: Callable[
         [hikari.api.InteractionResponseBuilder],
         None,
     ]
@@ -479,7 +477,7 @@ class RestContext(Context):
         title: str,
         custom_id: str,
         component: hikari.UndefinedOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
-        components: hikari.UndefinedOr[t.Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
+        components: hikari.UndefinedOr[Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
     ) -> None:
         if component is hikari.UNDEFINED and components is hikari.UNDEFINED:
             raise ValueError("either 'component' or 'components' must be provided")
@@ -504,11 +502,11 @@ class RestContext(Context):
         flags: int | hikari.MessageFlag | hikari.UndefinedType = hikari.UNDEFINED,
         tts: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
         attachment: hikari.UndefinedOr[hikari.Resourceish] = hikari.UNDEFINED,
-        attachments: hikari.UndefinedOr[t.Sequence[hikari.Resourceish]] = hikari.UNDEFINED,
+        attachments: hikari.UndefinedOr[Sequence[hikari.Resourceish]] = hikari.UNDEFINED,
         component: hikari.UndefinedOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
-        components: hikari.UndefinedOr[t.Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
+        components: hikari.UndefinedOr[Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
         embed: hikari.UndefinedOr[hikari.Embed] = hikari.UNDEFINED,
-        embeds: hikari.UndefinedOr[t.Sequence[hikari.Embed]] = hikari.UNDEFINED,
+        embeds: hikari.UndefinedOr[Sequence[hikari.Embed]] = hikari.UNDEFINED,
         mentions_everyone: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
         user_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialUser] | bool] = hikari.UNDEFINED,
         role_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialRole] | bool] = hikari.UNDEFINED,
@@ -531,7 +529,7 @@ class RestContext(Context):
         components_ = [*(components or []), *([component] if component else [])]
         embeds_ = [*(embeds or []), *([embed] if embed else [])]
 
-        bld: t.Union[hikari.api.InteractionDeferredBuilder, hikari.api.InteractionMessageBuilder]
+        bld: hikari.api.InteractionDeferredBuilder | hikari.api.InteractionMessageBuilder
         if response_type is hikari.ResponseType.MESSAGE_CREATE:
             bld = special_endpoints_impl.InteractionMessageBuilder(
                 response_type,

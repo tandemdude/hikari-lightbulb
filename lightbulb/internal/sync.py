@@ -36,6 +36,8 @@ from lightbulb.internal import constants
 from lightbulb.internal.utils import non_undefined_or
 
 if t.TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from lightbulb import client as client_
 
 LOGGER = logging.getLogger(__name__)
@@ -148,7 +150,7 @@ def _get_commands_to_set(
     existing: dict[str, _CommandBuilderCollection],
     registered: dict[str, _CommandBuilderCollection],
     delete_unknown: bool,
-) -> t.Sequence[hikari.api.CommandBuilder] | None:
+) -> Sequence[hikari.api.CommandBuilder] | None:
     created, deleted, updated, unchanged = 0, 0, 0, 0
 
     commands_to_set: list[hikari.api.CommandBuilder] = []

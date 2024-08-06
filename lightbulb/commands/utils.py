@@ -29,6 +29,8 @@ from lightbulb import exceptions
 from lightbulb import utils
 
 if t.TYPE_CHECKING:
+    from collections.abc import Mapping
+
     import hikari
 
     from lightbulb import localization
@@ -36,7 +38,7 @@ if t.TYPE_CHECKING:
 
 async def localize_value(
     value: str, default_locale: hikari.Locale, localization_provider: localization.LocalizationProvider
-) -> tuple[str, t.Mapping[hikari.Locale, str]]:
+) -> tuple[str, Mapping[hikari.Locale, str]]:
     """
     Get the value, and localized values for the given string, using the provided localization provider.
 
@@ -49,7 +51,7 @@ async def localize_value(
         The string localized to the default locale, and a dictionary containing the localized values for all
         the remaining locales.
     """
-    localizations: t.Mapping[hikari.Locale, str] = await utils.maybe_await(localization_provider(value))
+    localizations: Mapping[hikari.Locale, str] = await utils.maybe_await(localization_provider(value))
     localized_value = localizations.get(default_locale, None)
     if localized_value is None:
         raise exceptions.LocalizationFailedException(f"failed to resolve key {value!r} for default locale")
@@ -62,7 +64,7 @@ async def localize_name_and_description(
     description: str | None,
     default_locale: hikari.Locale,
     localization_provider: localization.LocalizationProvider,
-) -> tuple[str, str, t.Mapping[hikari.Locale, str], t.Mapping[hikari.Locale, str]]:
+) -> tuple[str, str, Mapping[hikari.Locale, str], Mapping[hikari.Locale, str]]:
     """
     Helper method to resolve the localizations for the name and description of a command
     using the given localization provider.
@@ -80,7 +82,7 @@ async def localize_name_and_description(
     localized_name, name_localizations = await localize_value(name, default_locale, localization_provider)
 
     localized_description = ""
-    description_localizations: t.Mapping[hikari.Locale, str] = {}
+    description_localizations: Mapping[hikari.Locale, str] = {}
     if description is not None:
         localized_description, description_localizations = await localize_value(
             description, default_locale, localization_provider

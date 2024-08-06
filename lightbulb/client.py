@@ -51,6 +51,12 @@ from lightbulb.internal import utils as i_utils
 
 if t.TYPE_CHECKING:
     import types
+    from collections.abc import AsyncGenerator
+    from collections.abc import Callable
+    from collections.abc import Collection
+    from collections.abc import Coroutine
+    from collections.abc import Mapping
+    from collections.abc import Sequence
 
     from lightbulb.commands import options as options_
 
@@ -128,39 +134,39 @@ class Client(abc.ABC):
     def __init__(
         self,
         rest: hikari.api.RESTClient,
-        default_enabled_guilds: t.Sequence[hikari.Snowflakeish],
-        execution_step_order: t.Sequence[execution.ExecutionStep],
+        default_enabled_guilds: Sequence[hikari.Snowflakeish],
+        execution_step_order: Sequence[execution.ExecutionStep],
         default_locale: hikari.Locale,
         localization_provider: localization.LocalizationProvider,
         delete_unknown_commands: bool,
         deferred_registration_callback: lb_types.DeferredRegistrationCallback | None,
-        hooks: t.Sequence[execution.ExecutionHook],
+        hooks: Sequence[execution.ExecutionHook],
     ) -> None:
         super().__init__()
 
         self.rest: hikari.api.RESTClient = rest
-        self.default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = default_enabled_guilds
-        self.execution_step_order: t.Sequence[execution.ExecutionStep] = execution_step_order
+        self.default_enabled_guilds: Sequence[hikari.Snowflakeish] = default_enabled_guilds
+        self.execution_step_order: Sequence[execution.ExecutionStep] = execution_step_order
         self.default_locale: hikari.Locale = default_locale
         self.localization_provider: localization.LocalizationProvider = localization_provider
         self.delete_unknown_commands: bool = delete_unknown_commands
         self.deferred_registration_callback: lb_types.DeferredRegistrationCallback | None = (
             deferred_registration_callback
         )
-        self.hooks: t.Sequence[execution.ExecutionHook] = hooks
+        self.hooks: Sequence[execution.ExecutionHook] = hooks
 
         self._di = di_.DependencyInjectionManager()
 
         self._registered_commands: dict[
-            lb_types.CommandOrGroup, t.Collection[hikari.Snowflakeish] | t.Literal["defer"]
+            lb_types.CommandOrGroup, Collection[hikari.Snowflakeish] | t.Literal["defer"]
         ] = {}
         self._command_invocation_mapping: dict[
             hikari.Snowflakeish, dict[tuple[str, ...], i_utils.CommandCollection]
         ] = collections.defaultdict(lambda: collections.defaultdict(i_utils.CommandCollection))
-        self._created_commands: dict[hikari.Snowflakeish, t.Collection[hikari.PartialCommand]] = {}
+        self._created_commands: dict[hikari.Snowflakeish, Collection[hikari.PartialCommand]] = {}
 
         self._error_handlers: dict[int, list[lb_types.ErrorHandler]] = {}
-        self._application: t.Optional[hikari.Application] = None
+        self._application: hikari.Application | None = None
         self._extensions: set[str] = set()
         self._tasks: set[tasks.Task] = set()
 
@@ -182,7 +188,7 @@ class Client(abc.ABC):
         return self._di
 
     @property
-    def created_commands(self) -> t.Mapping[hikari.Snowflakeish, t.Collection[hikari.PartialCommand]]:
+    def created_commands(self) -> Mapping[hikari.Snowflakeish, Collection[hikari.PartialCommand]]:
         """
         Mapping of guild ID to commands that were created in that guild during command syncing.
 
@@ -231,7 +237,7 @@ class Client(abc.ABC):
     @t.overload
     def task(
         self, trigger: tasks.Trigger, /, auto_start: bool = True, max_failures: int = 1, max_invocations: int = -1
-    ) -> t.Callable[[tasks.TaskFunc], tasks.Task]: ...
+    ) -> Callable[[tasks.TaskFunc], tasks.Task]: ...
     @t.overload
     def task(self, task: tasks.Task, /) -> tasks.Task: ...
 
@@ -242,7 +248,7 @@ class Client(abc.ABC):
         auto_start: bool = True,
         max_failures: int = 1,
         max_invocations: int = -1,
-    ) -> t.Callable[[tasks.TaskFunc], tasks.Task] | tasks.Task:
+    ) -> Callable[[tasks.TaskFunc], tasks.Task] | tasks.Task:
         """
         Second order decorator to register a repeating task with the client. Task functions will have
         dependency injection enabled on them automatically. Task functions **must** be asynchronous.
@@ -313,14 +319,14 @@ class Client(abc.ABC):
         self._tasks.remove(task)
 
     @t.overload
-    def error_handler(self, *, priority: int = 0) -> t.Callable[[ErrorHandlerT], ErrorHandlerT]: ...
+    def error_handler(self, *, priority: int = 0) -> Callable[[ErrorHandlerT], ErrorHandlerT]: ...
 
     @t.overload
     def error_handler(self, func: ErrorHandlerT, *, priority: int = 0) -> ErrorHandlerT: ...
 
     def error_handler(
         self, func: ErrorHandlerT | None = None, *, priority: int = 0
-    ) -> ErrorHandlerT | t.Callable[[ErrorHandlerT], ErrorHandlerT]:
+    ) -> ErrorHandlerT | Callable[[ErrorHandlerT], ErrorHandlerT]:
         """
         Register an error handler function to call when an :obj:`~lightbulb.commands.execution.ExecutionPipeline` fails.
         Also enables dependency injection for the error handler function.
@@ -374,18 +380,18 @@ class Client(abc.ABC):
 
     @t.overload
     def register(
-        self, *, guilds: t.Sequence[hikari.Snowflakeish] | None = None, global_: bool | None = None
-    ) -> t.Callable[[CommandOrGroupT], CommandOrGroupT]: ...
+        self, *, guilds: Sequence[hikari.Snowflakeish] | None = None, global_: bool | None = None
+    ) -> Callable[[CommandOrGroupT], CommandOrGroupT]: ...
 
     @t.overload
-    def register(self, *, defer_guilds: t.Literal[True]) -> t.Callable[[CommandOrGroupT], CommandOrGroupT]: ...
+    def register(self, *, defer_guilds: t.Literal[True]) -> Callable[[CommandOrGroupT], CommandOrGroupT]: ...
 
     @t.overload
     def register(
         self,
         command: CommandOrGroupT,
         *,
-        guilds: t.Sequence[hikari.Snowflakeish] | None = None,
+        guilds: Sequence[hikari.Snowflakeish] | None = None,
         global_: bool | None = None,
     ) -> CommandOrGroupT: ...
 
@@ -396,10 +402,10 @@ class Client(abc.ABC):
         self,
         command: CommandOrGroupT | None = None,
         *,
-        guilds: t.Sequence[hikari.Snowflakeish] | None = None,
+        guilds: Sequence[hikari.Snowflakeish] | None = None,
         global_: bool | None = None,
         defer_guilds: bool = False,
-    ) -> CommandOrGroupT | t.Callable[[CommandOrGroupT], CommandOrGroupT]:
+    ) -> CommandOrGroupT | Callable[[CommandOrGroupT], CommandOrGroupT]:
         """
         Register a command or group with this client instance.
 
@@ -802,7 +808,7 @@ class Client(abc.ABC):
 
     @staticmethod
     def _get_subcommand(
-        options: t.Sequence[OptionT],
+        options: Sequence[OptionT],
     ) -> OptionT | None:
         subcommand = filter(
             lambda o: o.type in (hikari.OptionType.SUB_COMMAND, hikari.OptionType.SUB_COMMAND_GROUP), options
@@ -812,18 +818,18 @@ class Client(abc.ABC):
     @t.overload
     def _resolve_options_and_command(
         self, interaction: hikari.AutocompleteInteraction
-    ) -> tuple[t.Sequence[hikari.AutocompleteInteractionOption], type[commands.CommandBase]] | None: ...
+    ) -> tuple[Sequence[hikari.AutocompleteInteractionOption], type[commands.CommandBase]] | None: ...
 
     @t.overload
     def _resolve_options_and_command(
         self, interaction: hikari.CommandInteraction
-    ) -> tuple[t.Sequence[hikari.CommandInteractionOption], type[commands.CommandBase]] | None: ...
+    ) -> tuple[Sequence[hikari.CommandInteractionOption], type[commands.CommandBase]] | None: ...
 
     def _resolve_options_and_command(
         self, interaction: hikari.AutocompleteInteraction | hikari.CommandInteraction
     ) -> (
         tuple[
-            t.Sequence[hikari.AutocompleteInteractionOption] | t.Sequence[hikari.CommandInteractionOption],
+            Sequence[hikari.AutocompleteInteractionOption] | Sequence[hikari.CommandInteractionOption],
             type[commands.CommandBase],
         ]
         | None
@@ -863,7 +869,7 @@ class Client(abc.ABC):
     def build_autocomplete_context(
         self,
         interaction: hikari.AutocompleteInteraction,
-        options: t.Sequence[hikari.AutocompleteInteractionOption],
+        options: Sequence[hikari.AutocompleteInteractionOption],
         command_cls: type[commands.CommandBase],
     ) -> context_.AutocompleteContext[t.Any]:
         """
@@ -927,7 +933,7 @@ class Client(abc.ABC):
     def build_command_context(
         self,
         interaction: hikari.CommandInteraction,
-        options: t.Sequence[hikari.CommandInteractionOption],
+        options: Sequence[hikari.CommandInteractionOption],
         command_cls: type[commands.CommandBase],
     ) -> context_.Context:
         """
@@ -1025,8 +1031,8 @@ class GatewayEnabledClient(Client):
         async def wrap_listener(
             event: hikari.Event,
             *,
-            func: t.Callable[..., t.Coroutine[t.Any, t.Any, None]],
-            arg_resolver: t.Callable[[hikari.Event], t.Sequence[t.Any]],
+            func: Callable[..., Coroutine[t.Any, t.Any, None]],
+            arg_resolver: Callable[[hikari.Event], Sequence[t.Any]],
         ) -> None:
             return await func(*arg_resolver(event))
 
@@ -1091,15 +1097,15 @@ class RestEnabledClient(Client):
     def build_rest_autocomplete_context(
         self,
         interaction: hikari.AutocompleteInteraction,
-        options: t.Sequence[hikari.AutocompleteInteractionOption],
+        options: Sequence[hikari.AutocompleteInteractionOption],
         command_cls: type[commands.CommandBase],
-        response_callback: t.Callable[[hikari.api.InteractionResponseBuilder], None],
+        response_callback: Callable[[hikari.api.InteractionResponseBuilder], None],
     ) -> context_.AutocompleteContext[t.Any]:
         return context_.RestAutocompleteContext(self, interaction, options, command_cls, response_callback)
 
     async def handle_rest_autocomplete_interaction(
         self, interaction: hikari.AutocompleteInteraction
-    ) -> t.AsyncGenerator[hikari.api.InteractionAutocompleteBuilder, t.Any]:
+    ) -> AsyncGenerator[hikari.api.InteractionAutocompleteBuilder, t.Any]:
         if not self._started:
             LOGGER.debug("ignoring autocomplete interaction received before the client was started")
             return
@@ -1115,7 +1121,7 @@ class RestEnabledClient(Client):
             return
 
         initial_response_ready = asyncio.Event()
-        initial_response: t.Optional[hikari.api.InteractionResponseBuilder] = None
+        initial_response: hikari.api.InteractionResponseBuilder | None = None
 
         def set_response(response: hikari.api.InteractionResponseBuilder) -> None:
             nonlocal initial_response, initial_response_ready
@@ -1153,15 +1159,15 @@ class RestEnabledClient(Client):
     def build_rest_command_context(
         self,
         interaction: hikari.CommandInteraction,
-        options: t.Sequence[hikari.CommandInteractionOption],
+        options: Sequence[hikari.CommandInteractionOption],
         command_cls: type[commands.CommandBase],
-        response_callback: t.Callable[[hikari.api.InteractionResponseBuilder], None],
+        response_callback: Callable[[hikari.api.InteractionResponseBuilder], None],
     ) -> context_.Context:
         return context_.RestContext(self, interaction, options, command_cls(), response_callback)
 
     async def handle_rest_application_command_interaction(
         self, interaction: hikari.CommandInteraction
-    ) -> t.AsyncGenerator[
+    ) -> AsyncGenerator[
         hikari.api.InteractionDeferredBuilder
         | hikari.api.InteractionMessageBuilder
         | hikari.api.InteractionModalBuilder,
@@ -1178,7 +1184,7 @@ class RestEnabledClient(Client):
         options, command = out
 
         initial_response_ready = asyncio.Event()
-        initial_response: t.Optional[hikari.api.InteractionResponseBuilder] = None
+        initial_response: hikari.api.InteractionResponseBuilder | None = None
 
         def set_response(response: hikari.api.InteractionResponseBuilder) -> None:
             nonlocal initial_response, initial_response_ready
@@ -1209,34 +1215,34 @@ class RestEnabledClient(Client):
 @t.overload
 def client_from_app(
     app: GatewayClientAppT,
-    default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (),
-    execution_step_order: t.Sequence[execution.ExecutionStep] = DEFAULT_EXECUTION_STEP_ORDER,
+    default_enabled_guilds: Sequence[hikari.Snowflakeish] = (),
+    execution_step_order: Sequence[execution.ExecutionStep] = DEFAULT_EXECUTION_STEP_ORDER,
     default_locale: hikari.Locale = hikari.Locale.EN_US,
     localization_provider: localization.LocalizationProvider = localization.localization_unsupported,
     delete_unknown_commands: bool = True,
     deferred_registration_callback: lb_types.DeferredRegistrationCallback | None = None,
-    hooks: t.Sequence[execution.ExecutionHook] = (),
+    hooks: Sequence[execution.ExecutionHook] = (),
 ) -> GatewayEnabledClient: ...
 @t.overload
 def client_from_app(
     app: RestClientAppT,
-    default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (),
-    execution_step_order: t.Sequence[execution.ExecutionStep] = DEFAULT_EXECUTION_STEP_ORDER,
+    default_enabled_guilds: Sequence[hikari.Snowflakeish] = (),
+    execution_step_order: Sequence[execution.ExecutionStep] = DEFAULT_EXECUTION_STEP_ORDER,
     default_locale: hikari.Locale = hikari.Locale.EN_US,
     localization_provider: localization.LocalizationProvider = localization.localization_unsupported,
     delete_unknown_commands: bool = True,
     deferred_registration_callback: lb_types.DeferredRegistrationCallback | None = None,
-    hooks: t.Sequence[execution.ExecutionHook] = (),
+    hooks: Sequence[execution.ExecutionHook] = (),
 ) -> RestEnabledClient: ...
 def client_from_app(
     app: GatewayClientAppT | RestClientAppT,
-    default_enabled_guilds: t.Sequence[hikari.Snowflakeish] = (),
-    execution_step_order: t.Sequence[execution.ExecutionStep] = DEFAULT_EXECUTION_STEP_ORDER,
+    default_enabled_guilds: Sequence[hikari.Snowflakeish] = (),
+    execution_step_order: Sequence[execution.ExecutionStep] = DEFAULT_EXECUTION_STEP_ORDER,
     default_locale: hikari.Locale = hikari.Locale.EN_US,
     localization_provider: localization.LocalizationProvider = localization.localization_unsupported,
     delete_unknown_commands: bool = True,
     deferred_registration_callback: lb_types.DeferredRegistrationCallback | None = None,
-    hooks: t.Sequence[execution.ExecutionHook] = (),
+    hooks: Sequence[execution.ExecutionHook] = (),
 ) -> Client:
     """
     Create and return the appropriate client implementation from the given application.

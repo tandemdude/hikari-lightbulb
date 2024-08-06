@@ -31,10 +31,15 @@ from lightbulb.internal import constants
 from lightbulb.internal import types
 
 if t.TYPE_CHECKING:
+    from collections.abc import Awaitable
+    from collections.abc import Callable
+    from collections.abc import Sequence
+
     from lightbulb import context as context_
 
 __all__ = ["ExecutionHook", "ExecutionPipeline", "ExecutionStep", "ExecutionSteps", "hook", "invoke"]
 
+# Annoyingly can't replace this with 'Callable' because the concatenate I use isn't supported
 ExecutionHookFunc: t.TypeAlias = t.Callable[
     't.Concatenate["ExecutionPipeline", "context_.Context", ...]', types.MaybeAwaitable[None]
 ]
@@ -53,7 +58,7 @@ class ExecutionStep:
     name: str
     """The name of the execution step"""
 
-    __all_steps: t.ClassVar[t.Set[str]] = set()
+    __all_steps: t.ClassVar[set[str]] = set()
 
     def __post_init__(self) -> None:
         if self.name in ExecutionStep.__all_steps:
@@ -148,7 +153,7 @@ class ExecutionPipeline:
         "_remaining",
     )
 
-    def __init__(self, context: context_.Context, order: t.Sequence[ExecutionStep]) -> None:
+    def __init__(self, context: context_.Context, order: Sequence[ExecutionStep]) -> None:
         self._context = context
         self._remaining = list(order)
 
@@ -258,7 +263,7 @@ class ExecutionPipeline:
             )
 
 
-def hook(step: ExecutionStep, skip_when_failed: bool = False) -> t.Callable[[ExecutionHookFunc], ExecutionHook]:
+def hook(step: ExecutionStep, skip_when_failed: bool = False) -> Callable[[ExecutionHookFunc], ExecutionHook]:
     """
     Second order decorator to convert a function into an execution hook for the given
     step. Also enables dependency injection on the decorated function.
@@ -304,8 +309,8 @@ def hook(step: ExecutionStep, skip_when_failed: bool = False) -> t.Callable[[Exe
 
 
 def invoke(
-    func: t.Callable[..., t.Awaitable[t.Any]],
-) -> t.Callable[[context_.Context], t.Awaitable[t.Any]]:
+    func: Callable[..., Awaitable[t.Any]],
+) -> Callable[[context_.Context], Awaitable[t.Any]]:
     """
     First order decorator to mark a method as the invocation method to be used for the command. Also enables
     dependency injection on the decorated method. The decorated method **must** have the first parameter (non-self)

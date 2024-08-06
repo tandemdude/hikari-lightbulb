@@ -32,6 +32,9 @@ from lightbulb.commands import commands
 from lightbulb.commands import utils
 
 if t.TYPE_CHECKING:
+    from collections.abc import Callable
+    from collections.abc import Mapping
+
     from lightbulb import localization
 
 CommandT = t.TypeVar("CommandT", bound=type["commands.CommandBase"])
@@ -47,12 +50,12 @@ class GroupMixin(abc.ABC):
     _commands: SubGroupCommandMappingT | GroupCommandMappingT
 
     @t.overload
-    def register(self) -> t.Callable[[CommandT], CommandT]: ...
+    def register(self) -> Callable[[CommandT], CommandT]: ...
 
     @t.overload
     def register(self, command: CommandT) -> CommandT: ...
 
-    def register(self, command: CommandT | None = None) -> CommandT | t.Callable[[CommandT], CommandT]:
+    def register(self, command: CommandT | None = None) -> CommandT | Callable[[CommandT], CommandT]:
         """
         Register a command as a subcommand for this group. Can be used as a first or second order decorator,
         or called with the command to register.
@@ -142,8 +145,8 @@ class SubGroup(GroupMixin):
             :obj:`hikari.CommandOption`: The subgroup option for this subgroup.
         """
         name, description = self.name, self.description
-        name_localizations: t.Mapping[hikari.Locale, str] = {}
-        description_localizations: t.Mapping[hikari.Locale, str] = {}
+        name_localizations: Mapping[hikari.Locale, str] = {}
+        description_localizations: Mapping[hikari.Locale, str] = {}
 
         if self.localize:
             (
@@ -241,8 +244,8 @@ class Group(GroupMixin):
             :obj:`hikari.api.CommandBuilder`: The builder object for this group.
         """
         name, description = self.name, self.description
-        name_localizations: t.Mapping[hikari.Locale, str] = {}
-        description_localizations: t.Mapping[hikari.Locale, str] = {}
+        name_localizations: Mapping[hikari.Locale, str] = {}
+        description_localizations: Mapping[hikari.Locale, str] = {}
 
         if self.localize:
             (

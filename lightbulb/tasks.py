@@ -29,6 +29,8 @@ import datetime
 import logging
 import time
 import typing as t
+from collections.abc import Awaitable
+from collections.abc import Callable
 
 from lightbulb import di
 from lightbulb import utils
@@ -37,8 +39,8 @@ from lightbulb.internal import types
 if t.TYPE_CHECKING:
     from lightbulb import client
 
-TaskFunc: t.TypeAlias = t.Callable[..., t.Awaitable[t.Any]]
-Trigger: t.TypeAlias = t.Callable[["TaskExecutionData"], types.MaybeAwaitable[float]]
+TaskFunc: t.TypeAlias = Callable[..., Awaitable[t.Any]]
+Trigger: t.TypeAlias = Callable[["TaskExecutionData"], types.MaybeAwaitable[float]]
 
 LOGGER = logging.getLogger(__name__)
 
@@ -57,7 +59,7 @@ class TaskExecutionData:
 
 def uniformtrigger(
     seconds: int = 0, minutes: int = 0, hours: int = 0, wait_first: bool = True
-) -> t.Callable[[TaskExecutionData], float]:
+) -> Callable[[TaskExecutionData], float]:
     """
     Generates a trigger function that returns uniform intervals from the given arguments. At least one
     of ``seconds``, ``minutes``, and ``hours`` must be specified. If multiple are specified then the
@@ -100,7 +102,7 @@ def uniformtrigger(
     return _trigger
 
 
-def crontrigger(tab: str) -> t.Callable[[TaskExecutionData], float]:
+def crontrigger(tab: str) -> Callable[[TaskExecutionData], float]:
     """
     Generates a crontab-based task trigger. Tasks will be run dependent on the given crontab. You can use a tool
     such as `crontab.guru <https://crontab.guru/>`_ to aid in creating an appropriate crontab.

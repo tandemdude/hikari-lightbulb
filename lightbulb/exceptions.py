@@ -30,6 +30,8 @@ __all__ = [
 import typing as t
 
 if t.TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from lightbulb import context as context_
     from lightbulb.commands import execution
 
@@ -60,19 +62,19 @@ class ExecutionPipelineFailedException(ExecutionException):
 
     def __init__(
         self,
-        failed_hooks_with_exceptions: t.Sequence[tuple[execution.ExecutionHook, Exception]],
+        failed_hooks_with_exceptions: Sequence[tuple[execution.ExecutionHook, Exception]],
         invocation_failure: Exception | None,
         pipeline: execution.ExecutionPipeline,
         context: context_.Context,
     ) -> None:
         super().__init__(f"execution of command {context.command_data.qualified_name!r} failed")
 
-        self.failed_hooks: t.Sequence[execution.ExecutionHook] = [item[0] for item in failed_hooks_with_exceptions]
+        self.failed_hooks: Sequence[execution.ExecutionHook] = [item[0] for item in failed_hooks_with_exceptions]
         """
         The hooks that failed during command execution.
         The corresponding exception can be found at the same index in ``hook_failures``.
         """
-        self.hook_failures: t.Sequence[Exception] = [item[1] for item in failed_hooks_with_exceptions]
+        self.hook_failures: Sequence[Exception] = [item[1] for item in failed_hooks_with_exceptions]
         """The exceptions caused by hook failures during command execution."""
         self.invocation_failure: Exception | None = invocation_failure
         """
@@ -84,7 +86,7 @@ class ExecutionPipelineFailedException(ExecutionException):
         self.context: context_.Context = context
         """The context that caused the pipeline to fail."""
 
-        self.causes: t.Sequence[Exception] = [e for e in [*self.hook_failures, invocation_failure] if e is not None]
+        self.causes: Sequence[Exception] = [e for e in [*self.hook_failures, invocation_failure] if e is not None]
         """All the exceptions raised during command execution."""
 
         if len(self.causes) == 1:

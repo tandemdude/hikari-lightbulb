@@ -26,14 +26,16 @@ import collections
 import dataclasses
 import pathlib
 import typing as t
+from collections.abc import Callable
+from collections.abc import Mapping
 
 import hikari
 
 from lightbulb import exceptions
 from lightbulb.internal import types
 
-LocalizationMapping: t.TypeAlias = t.Mapping[hikari.Locale, str]
-LocalizationProvider: t.TypeAlias = t.Callable[[str], types.MaybeAwaitable[LocalizationMapping]]
+LocalizationMapping: t.TypeAlias = Mapping[hikari.Locale, str]
+LocalizationProvider: t.TypeAlias = Callable[[str], types.MaybeAwaitable[LocalizationMapping]]
 
 
 def localization_unsupported(_: str) -> t.NoReturn:
@@ -54,7 +56,7 @@ def localization_unsupported(_: str) -> t.NoReturn:
 class DictLocalizationProvider:
     """Basic localization provider that supplies localizations from a single dictionary."""
 
-    localizations: t.Mapping[hikari.Locale, t.Mapping[str, str]]
+    localizations: Mapping[hikari.Locale, Mapping[str, str]]
     """Mapping containing the localizations that can be provided."""
 
     def __call__(self, key: str) -> LocalizationMapping:

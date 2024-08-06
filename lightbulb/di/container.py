@@ -33,6 +33,7 @@ from lightbulb.di import utils as di_utils
 
 if t.TYPE_CHECKING:
     import types
+    from collections.abc import Callable
 
     from lightbulb.internal import types as lb_types
 
@@ -99,9 +100,9 @@ class Container:
     def add_factory(
         self,
         typ: type[T],
-        factory: t.Callable[..., lb_types.MaybeAwaitable[T]],
+        factory: Callable[..., lb_types.MaybeAwaitable[T]],
         *,
-        teardown: t.Callable[[T], lb_types.MaybeAwaitable[None]] | None = None,
+        teardown: Callable[[T], lb_types.MaybeAwaitable[None]] | None = None,
     ) -> None:
         """
         Adds the given factory as an ephemeral dependency to this container. This dependency is only accessible
@@ -129,7 +130,7 @@ class Container:
         typ: type[T],
         value: T,
         *,
-        teardown: t.Callable[[T], lb_types.MaybeAwaitable[None]] | None = None,
+        teardown: Callable[[T], lb_types.MaybeAwaitable[None]] | None = None,
     ) -> None:
         """
         Adds the given value as an ephemeral dependency to this container. This dependency is only accessible

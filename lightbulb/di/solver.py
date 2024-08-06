@@ -43,6 +43,9 @@ import logging
 import os
 import sys
 import typing as t
+from collections.abc import AsyncIterator
+from collections.abc import Awaitable
+from collections.abc import Callable
 
 from lightbulb import utils
 from lightbulb.di import container
@@ -55,7 +58,7 @@ if t.TYPE_CHECKING:
 
 P = t.ParamSpec("P")
 R = t.TypeVar("R")
-AsyncFnT = t.TypeVar("AsyncFnT", bound=t.Callable[..., t.Awaitable[t.Any]])
+AsyncFnT = t.TypeVar("AsyncFnT", bound=Callable[..., Awaitable[t.Any]])
 
 DI_ENABLED: t.Final[bool] = os.environ.get("LIGHTBULB_DI_DISABLED", "false").lower() != "true"
 DI_CONTAINER: contextvars.ContextVar[container.Container | None] = contextvars.ContextVar(
@@ -158,7 +161,7 @@ class DependencyInjectionManager:
         return self._registries[context]
 
     @contextlib.asynccontextmanager
-    async def enter_context(self, context: Context = Contexts.DEFAULT, /) -> t.AsyncIterator[container.Container]:
+    async def enter_context(self, context: Context = Contexts.DEFAULT, /) -> AsyncIterator[container.Container]:
         """
         Context manager that ensures a dependency injection context is available for the nested operations.
 
@@ -232,7 +235,7 @@ class DependencyInjectionManager:
 CANNOT_INJECT = object()
 
 
-def _parse_injectable_params(func: t.Callable[..., t.Any]) -> tuple[list[tuple[str, t.Any]], dict[str, t.Any]]:
+def _parse_injectable_params(func: Callable[..., t.Any]) -> tuple[list[tuple[str, t.Any]], dict[str, t.Any]]:
     positional_or_keyword_params: list[tuple[str, t.Any]] = []
     keyword_only_params: dict[str, t.Any] = {}
 
@@ -279,7 +282,7 @@ class AutoInjecting:
 
     def __init__(
         self,
-        func: t.Callable[..., t.Awaitable[t.Any]],
+        func: Callable[..., Awaitable[t.Any]],
         self_: t.Any = None,
         _cached_pos_or_kw_params: list[tuple[str, t.Any]] | None = None,
         _cached_kw_only_params: dict[str, t.Any] | None = None,
@@ -340,10 +343,10 @@ def with_di(func: AsyncFnT) -> AsyncFnT: ...
 
 
 @t.overload
-def with_di(func: t.Callable[P, types.MaybeAwaitable[R]]) -> t.Callable[P, t.Awaitable[R]]: ...
+def with_di(func: Callable[P, types.MaybeAwaitable[R]]) -> Callable[P, Awaitable[R]]: ...
 
 
-def with_di(func: t.Callable[P, types.MaybeAwaitable[R]]) -> t.Callable[P, t.Awaitable[R]]:
+def with_di(func: Callable[P, types.MaybeAwaitable[R]]) -> Callable[P, Awaitable[R]]:
     """
     Decorator that enables dependency injection on the decorated function. If dependency injection
     has been disabled globally then this function does nothing and simply returns the object that was passed in.

@@ -30,6 +30,8 @@ from lightbulb.di import exceptions
 from lightbulb.di import utils as di_utils
 
 if t.TYPE_CHECKING:
+    from collections.abc import Callable
+
     from lightbulb.di import container
     from lightbulb.internal import types
 
@@ -82,7 +84,7 @@ class Registry:
         typ: type[T],
         value: T,
         *,
-        teardown: t.Callable[[T], types.MaybeAwaitable[None]] | None = None,
+        teardown: Callable[[T], types.MaybeAwaitable[None]] | None = None,
     ) -> None:
         """
         Registers a pre-existing value as a dependency.
@@ -104,9 +106,9 @@ class Registry:
     def register_factory(
         self,
         typ: type[T],
-        factory: t.Callable[..., types.MaybeAwaitable[T]],
+        factory: Callable[..., types.MaybeAwaitable[T]],
         *,
-        teardown: t.Callable[[T], types.MaybeAwaitable[None]] | None = None,
+        teardown: Callable[[T], types.MaybeAwaitable[None]] | None = None,
     ) -> None:
         """
         Registers a factory for creating a dependency.

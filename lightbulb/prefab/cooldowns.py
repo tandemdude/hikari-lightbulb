@@ -23,6 +23,7 @@ __all__ = ["OnCooldown", "fixed_window", "sliding_window"]
 import collections
 import time
 import typing as t
+from collections.abc import Callable
 
 import hikari
 
@@ -31,7 +32,7 @@ from lightbulb import utils
 from lightbulb.commands import execution
 from lightbulb.internal import types
 
-BucketCallable: t.TypeAlias = t.Callable[[context.Context], types.MaybeAwaitable[hikari.Snowflakeish]]
+BucketCallable: t.TypeAlias = Callable[[context.Context], types.MaybeAwaitable[hikari.Snowflakeish]]
 Bucket: t.TypeAlias = t.Union[t.Literal["global", "user", "channel", "guild"], BucketCallable]
 
 _PROVIDED_BUCKETS: dict[str, BucketCallable] = {

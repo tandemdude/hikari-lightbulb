@@ -87,7 +87,7 @@ html_theme_options = {
     "dark_logo": "lightbulb_logo_dark.svg",
 }
 
-ogp_image = "_static/lightbulb_logo_new.svg"
+ogp_image = "_static/lightbulb_logo_dark.svg"
 ogp_site_name = "Hikari Lightbulb Documentation"
 
 add_module_names = False

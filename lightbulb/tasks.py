@@ -120,7 +120,7 @@ def crontrigger(tab: str) -> Callable[[TaskExecutionData], float]:
         This trigger is not available unless you have the ``croniter`` requirement installed. For convenience, you
         can install this using the '[crontrigger]' option when installing Lightbulb.
 
-        E.g. ``pip install hikari-lightbulb[crontab]``
+        E.g. ``pip install hikari-lightbulb[crontrigger]``
 
     Example:
 

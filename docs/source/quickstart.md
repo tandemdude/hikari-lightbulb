@@ -5,7 +5,7 @@ Lightbulb can be installed using pip:
 :::{prompt}
 :language: bash
 
-pip install hikari-lightbulb
+pip install --pre hikari-lightbulb
 :::
 
 :::{important}

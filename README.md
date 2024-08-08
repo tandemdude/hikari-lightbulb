@@ -1,3 +1,6 @@
+> [!NOTE]
+> This branch is for Lightbulb **version 3**. If you are looking for the V2 code you should switch to the `v2` branch instead.  
+
 <p align="center">
     <picture>
         <source media="(prefers-color-scheme: dark)" srcset="/docs/source/_static/lightbulb_logo_dark.svg">
@@ -19,7 +22,7 @@ all the utilities and functions you need to help make this job easier.
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install Lightbulb.
 
 ```bash
-pip install hikari-lightbulb
+pip install --pre hikari-lightbulb
 ```
 
 ## Usage

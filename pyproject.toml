@@ -40,7 +40,7 @@ crontrigger = ["croniter>=3.0.3, <4"]
 dev = ["nox==2024.4.15"]
 "dev.docs" = [
     "sphinx>=7.4.7, <8",
-    "furo==2024.7.18",
+    "furo==2024.8.6",
     "myst-parser>=3.0.1, <4",
     "sphinx-copybutton>=0.5.2, <1",
     "sphinx-inline-tabs==2023.4.21",

@@ -39,7 +39,7 @@ localization = ["polib>=1.2.0, <2"]
 crontrigger = ["croniter>=3.0.3, <4"]
 dev = ["nox==2024.4.15"]
 "dev.docs" = [
-    "sphinx>=7.4.7, <8",
+    "sphinx>=7.4.7, <9",
     "furo==2024.8.6",
     "myst-parser>=3.0.1, <4",
     "sphinx-copybutton>=0.5.2, <1",

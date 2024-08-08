@@ -47,7 +47,7 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Bump version, update changelog"
-          file_pattern: "lightbulb/*.py fragments/*.md docs/source/changelogs/*.md"
+          file_pattern: "lightbulb/*.py docs/source/changelogs/*.md"
 
       - name: Upload to PyPI
         env:

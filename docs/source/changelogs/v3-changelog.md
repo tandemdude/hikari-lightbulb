@@ -8,6 +8,18 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## # v3.0.0a9 (2024-08-08)
+### Features
+
+- Add `prefab` subpackage containing some simple built-in hooks. More will continue to be added.
+- `utils.get_command_data()` now works for groups and subgroups.
+
+### Miscellaneous
+
+- Switch to using types from `collections.abc` instead of `typing` wherever possible.
+
+----
+
 ## v3.0.0a8 (2024-07-29)
 
 ### Features

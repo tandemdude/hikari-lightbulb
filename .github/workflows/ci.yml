@@ -82,9 +82,16 @@ jobs:
       - name: Run pytest
         run: |
           pip install ".[localization,crontrigger,dev.test]"
-          pytest --cov lightbulb --cov-report=xml tests
+          pytest --cov lightbulb --cov-report=xml --junitxml=junit.xml tests
 
-      - name: Upload to CodeCov
+      - name: Upload coverage to CodeCov
+        if: ${{ !cancelled() }}
         uses: codecov/codecov-action@v4.0.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

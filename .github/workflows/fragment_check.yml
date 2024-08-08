@@ -5,6 +5,7 @@ jobs:
   fragment-check:
     name: Fragment check
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
 
     steps:
       - name: Checkout code

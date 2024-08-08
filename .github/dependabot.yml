@@ -9,4 +9,4 @@ updates:
     reviewers:
       - tandemdude
     rebase-strategy: auto
-    target-branch: development
+    target-branch: master

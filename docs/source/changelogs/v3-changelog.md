@@ -21,7 +21,6 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 ----
 
 ## v3.0.0a8 (2024-07-29)
-
 ### Features
 
 - Add `hooks` parameter to `client_from_app` - allowing commands to inherit common hooks from the client. ([#430](https://github.com/tandemdude/hikari-lightbulb/issues/430))
@@ -46,7 +45,6 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 ----
 
 ## v3.0.0a7 (2024-07-23)
-
 ### Features
 
 - Dependency injection system has been completely rewritten to make it much more flexible and powerful. See the
@@ -63,7 +61,6 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 ----
 
 ## v3.0.0a6 (2024-07-18)
-
 ### Features
 
 - Add support for unloading and atomic reloading of extensions.
@@ -81,7 +78,6 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 ----
 
 ## v3.0.0a5 (2024-07-13)
-
 ### Features
 
 - Refactor `ExecutionPipelineFailedException` to make writing error handlers more intuitive.
@@ -93,7 +89,6 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 ----
 
 ## v3.0.0a4 (2024-07-02)
-
 ### Features
 
 - Add `ephemeral` convenience argument to `Context.respond`.
@@ -102,7 +97,6 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 ----
 
 ## v3.0.0a3 (2024-06-28)
-
 ### Features
 
 - Add `PRE_INVOKE` execution step to default execution step order.
@@ -115,7 +109,6 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 ----
 
 ## v3.0.0a2 (2024-06-20)
-
 ### Features
 
 - A [plugin](https://plugins.jetbrains.com/plugin/24669-hikari-lightbulb-support) for IntelliJ-based IDEs has been 
@@ -135,7 +128,6 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 ----
 
 ## v3.0.0a1 (2024-06-09)
-
 ### Features
 
 - Add `lightbulb.INJECTED` flag for dependency injection typing improvements ([#424](https://github.com/tandemdude/hikari-lightbulb/issues/424))

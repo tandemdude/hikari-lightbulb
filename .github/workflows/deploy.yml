@@ -39,7 +39,7 @@ jobs:
 
       - name: Generate Changelogs
         run: |
-          pip install .[dev.changelog]
+          pip install ".[dev.changelog]"
           towncrier build --yes --version ${{ steps.update-version.outputs.VERSION }}
           python scripts/deploy/populate_changelog.py CHANGES.md docs/source/changelogs/v3-changelog.md
 

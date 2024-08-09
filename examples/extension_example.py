@@ -17,20 +17,18 @@
 # along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
 import lightbulb
 
-example_plugin = lightbulb.Plugin("ExamplePlugin")
+loader = lightbulb.Loader()
 
 
-@example_plugin.command()
-@lightbulb.command("ping", "Checks that the bot is alive")
-@lightbulb.implements(lightbulb.PrefixCommand, lightbulb.SlashCommand)
-async def ping(ctx: lightbulb.Context) -> None:
-    """Checks that the bot is alive"""
-    await ctx.respond("Pong!")
+@loader.command
+class Greet(
+    lightbulb.SlashCommand,
+    name="greet",
+    description="Greets the specified user",
+):
+    user = lightbulb.user("user", "User to greet")
 
-
-def load(bot):
-    bot.add_plugin(example_plugin)
-
-
-def unload(bot):
-    bot.remove_plugin(example_plugin)
+    @lightbulb.invoke
+    async def invoke(self, ctx: lightbulb.Context) -> None:
+        """Greets the specified user"""
+        await ctx.respond(f"Hello, {self.user.mention}!")

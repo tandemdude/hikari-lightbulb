@@ -19,39 +19,52 @@ import hikari
 
 import lightbulb
 
-bot = lightbulb.BotApp(prefix="!", token="YOUR_TOKEN", intents=hikari.Intents.ALL_UNPRIVILEGED)
+bot = hikari.GatewayBot(token="...")
+client = lightbulb.client_from_app(bot)
+
+bot.subscribe(hikari.StartingEvent, client.start)
 
 
-@bot.listen(hikari.ShardReadyEvent)
-async def ready_listener(_):
-    print("The bot is ready!")
+@client.register()
+class Ping(
+    lightbulb.SlashCommand,
+    name="ping",
+    description="Checks that the bot is alive",
+):
+    @lightbulb.invoke
+    async def invoke(self, ctx: lightbulb.Context) -> None:
+        """Checks that the bot is alive"""
+        await ctx.respond("Pong!")
 
 
-@bot.command()
-@lightbulb.command("ping", "Checks that the bot is alive")
-@lightbulb.implements(lightbulb.PrefixCommand)
-async def ping(ctx: lightbulb.Context) -> None:
-    """Checks that the bot is alive"""
-    await ctx.respond("Pong!")
+@client.register()
+class Echo(
+    lightbulb.SlashCommand,
+    name="echo",
+    description="Repeats the user's input",
+):
+    text = lightbulb.string("text", "Text to repeat")
+
+    @lightbulb.invoke
+    async def invoke(self, ctx: lightbulb.Context) -> None:
+        """Repeats the user's input"""
+        await ctx.respond(self.text)
 
 
-@bot.command()
-@lightbulb.option("num2", "Second number", int)
-@lightbulb.option("num1", "First number", int)
-@lightbulb.command("add", "Adds the two given numbers together")
-@lightbulb.implements(lightbulb.PrefixCommand)
-async def add(ctx: lightbulb.Context) -> None:
-    """Adds the two given numbers together"""
-    num1, num2 = ctx.options.num1, ctx.options.num2
-    await ctx.respond(f"{num1} + {num2} = {num1 + num2}")
+@client.register()
+class Add(
+    lightbulb.SlashCommand,
+    name="add",
+    description="Adds the two given numbers together",
+):
+    # Order of options go from top to bottom
+    num1 = lightbulb.integer("num1", "First number")
+    num2 = lightbulb.integer("num2", "Second number")
 
-
-@bot.command()
-@lightbulb.option("user", "User to greet", hikari.User)
-@lightbulb.command("greet", "Greets the specified user")
-@lightbulb.implements(lightbulb.PrefixCommand)
-async def greet(ctx: lightbulb.Context) -> None:
-    await ctx.respond(f"Hello {ctx.options.user.mention}!")
+    @lightbulb.invoke
+    async def invoke(self, ctx: lightbulb.Context) -> None:
+        """Adds the two given numbers together"""
+        await ctx.respond(f"{self.num1} + {self.num2} = {self.num1 + self.num2}")
 
 
 bot.run()

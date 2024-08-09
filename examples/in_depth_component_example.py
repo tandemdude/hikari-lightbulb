@@ -55,7 +55,7 @@ COLORS: t.Mapping[str, t.Tuple[int, str]] = {
 }
 
 
-async def generate_rows(bot: lightbulb.BotApp) -> t.Iterable[MessageActionRowBuilder]:
+async def generate_rows(bot: hikari.GatwayBot) -> t.Iterable[MessageActionRowBuilder]:
     """Generate 2 action rows with 4 buttons each."""
 
     # This will hold our action rows of buttons. The limit
@@ -103,7 +103,7 @@ async def generate_rows(bot: lightbulb.BotApp) -> t.Iterable[MessageActionRowBui
 
 
 async def handle_responses(
-    bot: lightbulb.BotApp,
+    bot: hikari.GatewayBot,
     author: hikari.User,
     message: hikari.Message,
 ) -> None:
@@ -180,29 +180,35 @@ async def handle_responses(
 
 
 # Instantiate the bot.
-bot = lightbulb.BotApp(token="YOUR_TOKEN", prefix="!")
+bot = hikari.GatewayBot(token="...")
+client = lightbulb.client_from_app(bot)
+# Ensure the client starts once the bot is run
+bot.subscribe(hikari.StartingEvent, client.start)
 
 
-# Create the message command.
-@bot.command()
-@lightbulb.command("rgb", "Get facts on different colors!", guilds=[1234])
-@lightbulb.implements(lightbulb.PrefixCommand, lightbulb.SlashCommand)
-async def rgb_command(ctx: lightbulb.Context) -> None:
-    """Get facts on different colors!"""
+@client.register(guilds=[1234])
+class RGB(
+    lightbulb.SlashCommand,
+    name="rgb",
+    description="Get facts on different colors!",
+):
+    @lightbulb.invoke
+    async def invoke(self, ctx: lightbulb.Context) -> None:
+        """Get facts on different colors!"""
 
-    # Generate the action rows.
-    rows = await generate_rows(ctx.bot)
+        # Generate the action rows.
+        rows = await generate_rows(ctx.bot)
 
-    # Send the initial response with our action rows, and save the
-    # message for handling interaction responses.
-    response = await ctx.respond(
-        hikari.Embed(title="Pick a color"),
-        components=rows,
-    )
-    message = await response.message()
+        # Send the initial response with our action rows, and save the
+        # message for handling interaction responses.
+        response = await ctx.respond(
+            hikari.Embed(title="Pick a color"),
+            components=rows,
+        )
+        message = await response.message()
 
-    # Handle interaction responses to the initial message.
-    await handle_responses(ctx.bot, ctx.author, message)
+        # Handle interaction responses to the initial message.
+        await handle_responses(ctx.bot, ctx.author, message)
 
 
 # Run the bot.

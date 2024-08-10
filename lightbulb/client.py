@@ -111,12 +111,14 @@ class Client(abc.ABC):
 
     __slots__ = (
         "_application",
+        "_asyncio_tasks",
         "_command_invocation_mapping",
         "_created_commands",
         "_di",
         "_error_handlers",
         "_extensions",
         "_localization",
+        "_menu_queues",
         "_owner_ids",
         "_registered_commands",
         "_started",
@@ -168,7 +170,11 @@ class Client(abc.ABC):
         self._error_handlers: dict[int, list[lb_types.ErrorHandler]] = {}
         self._application: hikari.Application | None = None
         self._extensions: set[str] = set()
+
         self._tasks: set[tasks.Task] = set()
+        self._menu_queues: set[asyncio.Queue[hikari.ComponentInteraction]] = set()
+
+        self._asyncio_tasks: set[asyncio.Task[t.Any]] = set()
 
         self.di.registry_for(di_.Contexts.DEFAULT).register_value(hikari.api.RESTClient, self.rest)
         self.di.registry_for(di_.Contexts.DEFAULT).register_value(Client, self)
@@ -195,6 +201,12 @@ class Client(abc.ABC):
         Global commands are stored at the key :data:`lightbulb.internal.constants.GLOBAL_COMMAND_KEY`.
         """
         return self._created_commands
+
+    def _safe_create_task(self, coro: Coroutine[None, None, T]) -> asyncio.Task[T]:
+        task = asyncio.create_task(coro)
+        self._asyncio_tasks.add(task)
+        task.add_done_callback(lambda tsk: self._asyncio_tasks.remove(tsk))
+        return task
 
     async def start(self, *_: t.Any) -> None:
         """
@@ -792,11 +804,11 @@ class Client(abc.ABC):
                             subcommand_option = await subcommand.to_command_option(
                                 self.default_locale, self.localization_provider
                             )
-                            all_commands[(builder.name, subcommand_or_subgroup_option.name, subcommand_option.name)] = (
+                            all_commands[(builder.name, subcommand_or_subgroup_option.name, subcommand_option.name)] = (  # noqa: RUF031
                                 subcommand
                             )
                     else:
-                        all_commands[(builder.name, subcommand_or_subgroup_option.name)] = subcommand_or_subgroup
+                        all_commands[(builder.name, subcommand_or_subgroup_option.name)] = subcommand_or_subgroup  # noqa: RUF031
             else:
                 all_commands = {(builder.name,): command}
 
@@ -992,11 +1004,20 @@ class Client(abc.ABC):
         LOGGER.debug("invoking command - %r", command._command_data.qualified_name)
         await self._execute_command_context(context)
 
+    async def handle_component_interaction(self, interaction: hikari.ComponentInteraction) -> None:
+        if not self._started:
+            LOGGER.debug("ignoring component interaction received before the client was started")
+            return
+
+        await asyncio.gather(*(q.put(interaction) for q in self._menu_queues))
+
     async def handle_interaction_create(self, interaction: hikari.PartialInteraction) -> None:
         if isinstance(interaction, hikari.AutocompleteInteraction):
             await self.handle_autocomplete_interaction(interaction)
         elif isinstance(interaction, hikari.CommandInteraction):
             await self.handle_application_command_interaction(interaction)
+        elif isinstance(interaction, hikari.ComponentInteraction):
+            await self.handle_component_interaction(interaction)
 
 
 class GatewayEnabledClient(Client):
@@ -1163,7 +1184,13 @@ class RestEnabledClient(Client):
         command_cls: type[commands.CommandBase],
         response_callback: Callable[[hikari.api.InteractionResponseBuilder], None],
     ) -> context_.Context:
-        return context_.RestContext(self, interaction, options, command_cls(), response_callback)
+        return context_.RestContext(
+            client=self,
+            interaction=interaction,
+            options=options,
+            command=command_cls(),
+            _initial_response_callback=response_callback,
+        )
 
     async def handle_rest_application_command_interaction(
         self, interaction: hikari.CommandInteraction

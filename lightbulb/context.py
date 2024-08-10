@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+#
+# api_ref_gen::add_autodoc_option::inherited-members
+#
 # Copyright (c) 2023-present tandemdude
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,6 +25,7 @@ from __future__ import annotations
 
 __all__ = ["AutocompleteContext", "Context", "RestContext"]
 
+import abc
 import asyncio
 import dataclasses
 import os
@@ -40,6 +44,7 @@ if t.TYPE_CHECKING:
     from lightbulb import commands
 
 T = t.TypeVar("T", int, str, float)
+RespondableInteractionT = t.TypeVar("RespondableInteractionT", hikari.CommandInteraction, hikari.ComponentInteraction)
 AutocompleteResponse: t.TypeAlias = t.Union[
     Sequence[special_endpoints.AutocompleteChoiceBuilder],
     Sequence[T],
@@ -147,51 +152,14 @@ class RestAutocompleteContext(AutocompleteContext[T]):
         self._initial_response_callback(special_endpoints_impl.InteractionAutocompleteBuilder(normalised_choices))
 
 
-@dataclasses.dataclass(slots=True)
-class Context:
-    """Dataclass representing the context for a single command invocation."""
-
-    client: client_.Client
-    """The client that created the context."""
-
-    interaction: hikari.CommandInteraction
-    """The interaction for the command invocation."""
-    options: Sequence[hikari.CommandInteractionOption]
-    """The options to use for the command invocation."""
-
-    command: commands.CommandBase
-    """Command instance for the command invocation."""
-
+@dataclasses.dataclass(slots=True, kw_only=True)
+class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
     _response_lock: asyncio.Lock = dataclasses.field(init=False, default_factory=asyncio.Lock)
     _initial_response_sent: bool = dataclasses.field(init=False, default=False)
 
-    def __post_init__(self) -> None:
-        self.command._set_context(self)
-
     @property
-    def guild_id(self) -> hikari.Snowflake | None:
-        """The ID of the guild that the command was invoked in. :obj:`None` if the invocation occurred in DM."""
-        return self.interaction.guild_id
-
-    @property
-    def channel_id(self) -> hikari.Snowflake:
-        """The ID of the channel that the command was invoked in."""
-        return self.interaction.channel_id
-
-    @property
-    def user(self) -> hikari.User:
-        """The user that invoked the command."""
-        return self.interaction.user
-
-    @property
-    def member(self) -> hikari.InteractionMember | None:
-        """The member that invoked the command, if it was invoked in a guild."""
-        return self.interaction.member
-
-    @property
-    def command_data(self) -> commands.CommandData:
-        """The metadata for the invoked command."""
-        return self.command._command_data
+    @abc.abstractmethod
+    def interaction(self) -> RespondableInteractionT: ...
 
     async def edit_response(
         self,
@@ -290,7 +258,7 @@ class Context:
 
     async def _create_initial_response(
         self,
-        response_type: t.Literal[hikari.ResponseType.MESSAGE_CREATE, hikari.ResponseType.DEFERRED_MESSAGE_CREATE],
+        response_type: hikari.ResponseType,
         content: hikari.UndefinedOr[t.Any] = hikari.UNDEFINED,
         *,
         flags: int | hikari.MessageFlag | hikari.UndefinedType = hikari.UNDEFINED,
@@ -306,7 +274,7 @@ class Context:
         role_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialRole] | bool] = hikari.UNDEFINED,
     ) -> hikari.Snowflakeish:
         await self.interaction.create_initial_response(
-            response_type,
+            response_type,  # type: ignore[reportArgumentType]
             content,
             flags=flags,
             tts=tts,
@@ -321,27 +289,6 @@ class Context:
             role_mentions=role_mentions,
         )
         return INITIAL_RESPONSE_IDENTIFIER
-
-    async def defer(self, ephemeral: bool = False) -> None:
-        """
-        Defer the creation of a response for the interaction that this context represents.
-
-        Args:
-            ephemeral: Whether to defer ephemerally (message only visible to the user that triggered
-                the command).
-
-        Returns:
-            :obj:`None`
-        """
-        async with self._response_lock:
-            if self._initial_response_sent:
-                return
-
-            await self._create_initial_response(
-                hikari.ResponseType.DEFERRED_MESSAGE_CREATE,
-                flags=hikari.MessageFlag.EPHEMERAL if ephemeral else hikari.MessageFlag.NONE,
-            )
-            self._initial_response_sent = True
 
     async def respond_with_modal(
         self,
@@ -361,12 +308,36 @@ class Context:
 
         Returns:
             :obj:`None`
+
+        Raises:
+            :obj:`RuntimeError`: If an initial response has already been sent.
+        """
+        async with self._response_lock:
+            if self._initial_response_sent:
+                raise RuntimeError("cannot respond with a modal if an initial response has already been sent")
+
+            await self.interaction.create_modal_response(title, custom_id, component, components)
+            self._initial_response_sent = True
+
+    async def defer(self, *, ephemeral: bool = False) -> None:
+        """
+        Defer the creation of a response for the interaction that this context represents.
+
+        Args:
+            ephemeral: Whether to defer ephemerally (message only visible to the user that triggered
+                the command).
+
+        Returns:
+            :obj:`None`
         """
         async with self._response_lock:
             if self._initial_response_sent:
                 return
 
-            await self.interaction.create_modal_response(title, custom_id, component, components)
+            await self._create_initial_response(
+                hikari.ResponseType.DEFERRED_MESSAGE_CREATE,
+                flags=hikari.MessageFlag.EPHEMERAL if ephemeral else hikari.MessageFlag.NONE,
+            )
             self._initial_response_sent = True
 
     async def respond(
@@ -465,7 +436,51 @@ class Context:
                 ).id
 
 
-@dataclasses.dataclass(slots=True)
+@dataclasses.dataclass(slots=True, kw_only=True)
+class Context(MessageResponseMixin[hikari.CommandInteraction]):
+    """Dataclass representing the context for a single command invocation."""
+
+    client: client_.Client
+    """The client that created the context."""
+
+    interaction: hikari.CommandInteraction
+    """The interaction for the command invocation."""
+    options: Sequence[hikari.CommandInteractionOption]
+    """The options to use for the command invocation."""
+
+    command: commands.CommandBase
+    """Command instance for the command invocation."""
+
+    def __post_init__(self) -> None:
+        self.command._set_context(self)
+
+    @property
+    def guild_id(self) -> hikari.Snowflake | None:
+        """The ID of the guild that the command was invoked in. :obj:`None` if the invocation occurred in DM."""
+        return self.interaction.guild_id
+
+    @property
+    def channel_id(self) -> hikari.Snowflake:
+        """The ID of the channel that the command was invoked in."""
+        return self.interaction.channel_id
+
+    @property
+    def user(self) -> hikari.User:
+        """The user that invoked the command."""
+        return self.interaction.user
+
+    @property
+    def member(self) -> hikari.InteractionMember | None:
+        """The member that invoked the command, if it was invoked in a guild."""
+        return self.interaction.member
+
+    @property
+    def command_data(self) -> commands.CommandData:
+        """The metadata for the invoked command."""
+        return self.command._command_data
+
+
+@dataclasses.dataclass(slots=True, kw_only=True)
 class RestContext(Context):
     _initial_response_callback: Callable[
         [hikari.api.InteractionResponseBuilder],

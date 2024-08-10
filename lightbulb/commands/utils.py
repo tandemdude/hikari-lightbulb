@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# api_reference_gen::ignore
 # Copyright (c) 2023-present tandemdude
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy

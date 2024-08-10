@@ -157,11 +157,20 @@ convention = "google"
 strict-imports = true
 require-superclass = true
 require-subclass = true
+# The classes from ChannelSelect to Context are only due to a dataclasses slots
+# bug with Python 3.10 - they can be removed once the minimum Python version is bumped to 3.11
 exclude-classes = """
 (
     ^lightbulb\\.commands\\.commands:CommandMeta$ |
     ^lightbulb\\.context:RestAutocompleteContext$ |
-    ^lightbulb\\.context:RestContext$
+    ^lightbulb\\.context:RestContext$ |
+    ^lightbulb\\.components\\.menus:ChannelSelect$ |
+    ^lightbulb\\.components\\.menus:MentionableSelect$ |
+    ^lightbulb\\.components\\.menus:MenuContext$ |
+    ^lightbulb\\.components\\.menus:RoleSelect$ |
+    ^lightbulb\\.components\\.menus:TextSelect$ |
+    ^lightbulb\\.components\\.menus:UserSelect$ |
+    ^lightbulb\\.context:Context$
 )
 """
 

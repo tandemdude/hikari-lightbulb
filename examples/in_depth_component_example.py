@@ -1,20 +1,23 @@
 # -*- coding: utf-8 -*-
-# Copyright © tandemdude 2020-present
+# Copyright (c) 2023-present tandemdude
 #
-# This file is part of Lightbulb.
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-# Lightbulb is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
 #
-# Lightbulb is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
 import typing as t
 
@@ -186,18 +189,18 @@ client = lightbulb.client_from_app(bot)
 bot.subscribe(hikari.StartingEvent, client.start)
 
 
-@client.register(guilds=[1234])
+@client.register()
 class RGB(
     lightbulb.SlashCommand,
     name="rgb",
     description="Get facts on different colors!",
 ):
     @lightbulb.invoke
-    async def invoke(self, ctx: lightbulb.Context) -> None:
+    async def invoke(self, ctx: lightbulb.Context, bot: hikari.GatwayBot) -> None:
         """Get facts on different colors!"""
 
         # Generate the action rows.
-        rows = await generate_rows(ctx.bot)
+        rows = await generate_rows(bot)
 
         # Send the initial response with our action rows, and save the
         # message for handling interaction responses.
@@ -208,7 +211,7 @@ class RGB(
         message = await response.message()
 
         # Handle interaction responses to the initial message.
-        await handle_responses(ctx.bot, ctx.author, message)
+        await handle_responses(bot, ctx.author, message)
 
 
 # Run the bot.

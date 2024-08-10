@@ -1,57 +1,74 @@
 # -*- coding: utf-8 -*-
-# Copyright © tandemdude 2020-present
+# Copyright (c) 2023-present tandemdude
 #
-# This file is part of Lightbulb.
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-# Lightbulb is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
 #
-# Lightbulb is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with Lightbulb. If not, see <https://www.gnu.org/licenses/>.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import hikari
 
 import lightbulb
 
-bot = lightbulb.BotApp(prefix="!", token="YOUR_TOKEN", intents=hikari.Intents.ALL_UNPRIVILEGED)
+bot = hikari.GatewayBot(token="...")
+client = lightbulb.client_from_app(bot)
+
+bot.subscribe(hikari.StartingEvent, client.start)
 
 
-@bot.listen(hikari.ShardReadyEvent)
-async def ready_listener(_):
-    print("The bot is ready!")
+@client.register()
+class Ping(
+    lightbulb.SlashCommand,
+    name="ping",
+    description="Checks that the bot is alive",
+):
+    @lightbulb.invoke
+    async def invoke(self, ctx: lightbulb.Context) -> None:
+        """Checks that the bot is alive"""
+        await ctx.respond("Pong!")
 
 
-@bot.command()
-@lightbulb.command("ping", "Checks that the bot is alive")
-@lightbulb.implements(lightbulb.PrefixCommand)
-async def ping(ctx: lightbulb.Context) -> None:
-    """Checks that the bot is alive"""
-    await ctx.respond("Pong!")
+@client.register()
+class Echo(
+    lightbulb.SlashCommand,
+    name="echo",
+    description="Repeats the user's input",
+):
+    text = lightbulb.string("text", "Text to repeat")
+
+    @lightbulb.invoke
+    async def invoke(self, ctx: lightbulb.Context) -> None:
+        """Repeats the user's input"""
+        await ctx.respond(self.text)
 
 
-@bot.command()
-@lightbulb.option("num2", "Second number", int)
-@lightbulb.option("num1", "First number", int)
-@lightbulb.command("add", "Adds the two given numbers together")
-@lightbulb.implements(lightbulb.PrefixCommand)
-async def add(ctx: lightbulb.Context) -> None:
-    """Adds the two given numbers together"""
-    num1, num2 = ctx.options.num1, ctx.options.num2
-    await ctx.respond(f"{num1} + {num2} = {num1 + num2}")
+@client.register()
+class Add(
+    lightbulb.SlashCommand,
+    name="add",
+    description="Adds the two given numbers together",
+):
+    # Order of options go from top to bottom
+    num1 = lightbulb.integer("num1", "First number")
+    num2 = lightbulb.integer("num2", "Second number")
 
-
-@bot.command()
-@lightbulb.option("user", "User to greet", hikari.User)
-@lightbulb.command("greet", "Greets the specified user")
-@lightbulb.implements(lightbulb.PrefixCommand)
-async def greet(ctx: lightbulb.Context) -> None:
-    await ctx.respond(f"Hello {ctx.options.user.mention}!")
+    @lightbulb.invoke
+    async def invoke(self, ctx: lightbulb.Context) -> None:
+        """Adds the two given numbers together"""
+        await ctx.respond(f"{self.num1} + {self.num2} = {self.num1 + self.num2}")
 
 
 bot.run()

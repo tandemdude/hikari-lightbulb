@@ -54,8 +54,6 @@ if t.TYPE_CHECKING:
     from collections.abc import Awaitable
     from collections.abc import Callable
 
-    import typing_extensions as t_ex
-
     from lightbulb import client as client_
 
     ValidSelectOptions: t.TypeAlias = t.Union[Sequence["TextSelectOption"], Sequence[str], Sequence[tuple[str, str]]]
@@ -375,87 +373,23 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
         )
 
 
-class Menu(Sequence[special_endpoints.ComponentBuilder]):
+class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBuilder]):
     __slots__ = ("__current_row", "__rows")
 
-    _MAX_ROWS: t.Final[int] = 5
     _MAX_BUTTONS_PER_ROW: t.Final[int] = 5
 
-    __current_row: int
-    __rows: list[list[base.BaseComponent[special_endpoints.MessageActionRowBuilder]]]
-
-    @t.overload
-    def __getitem__(self, item: int) -> special_endpoints.ComponentBuilder: ...
-
-    @t.overload
-    def __getitem__(self, item: slice) -> Sequence[special_endpoints.ComponentBuilder]: ...
-
-    def __getitem__(
-        self, item: int | slice
-    ) -> special_endpoints.ComponentBuilder | Sequence[special_endpoints.ComponentBuilder]:
-        return self._build().__getitem__(item)
-
-    def __len__(self) -> int:
-        return sum(1 for row in self._rows if row)
-
-    def _build(self) -> Sequence[special_endpoints.ComponentBuilder]:
-        built_rows: list[special_endpoints.ComponentBuilder] = []
-        for row in self._rows:
-            if not row:
-                continue
-
-            bld = special_endpoints_impl.MessageActionRowBuilder()
-            for component in row:
-                bld = component.add_to_row(bld)
-            built_rows.append(bld)
-        return built_rows
-
     @property
-    def _current_row(self) -> int:
-        try:
-            return self.__current_row
-        except AttributeError:
-            self.__current_row = 0
-        return self.__current_row
+    def _max_rows(self) -> int:
+        return 5
 
-    @property
-    def _rows(self) -> list[list[base.BaseComponent[special_endpoints.MessageActionRowBuilder]]]:
-        try:
-            return self.__rows
-        except AttributeError:
-            self.__rows = [[] for _ in range(self._MAX_ROWS)]
-        return self.__rows
+    def _make_action_row(self) -> special_endpoints.MessageActionRowBuilder:
+        return special_endpoints_impl.MessageActionRowBuilder()
 
     def _current_row_full(self) -> bool:
         return bool(
             len(self._rows[self._current_row]) >= self._MAX_BUTTONS_PER_ROW
             or ((r := self._rows[self._current_row]) and isinstance(r[0], Select))
         )
-
-    def clear_rows(self) -> t_ex.Self:
-        self._rows.clear()
-        return self
-
-    def clear_current_row(self) -> t_ex.Self:
-        self._rows[self._current_row].clear()
-        return self
-
-    def next_row(self) -> t_ex.Self:
-        if self._current_row + 1 >= self._MAX_ROWS:
-            raise RuntimeError("the maximum number of rows has been reached")
-        self.__current_row += 1
-        return self
-
-    def previous_row(self) -> t_ex.Self:
-        self.__current_row = max(0, self.__current_row - 1)
-        return self
-
-    def add(self, component: MessageComponentT) -> MessageComponentT:
-        if self._current_row_full():
-            self.next_row()
-
-        self._rows[self._current_row].append(component)
-        return component
 
     def add_interactive_button(
         self,

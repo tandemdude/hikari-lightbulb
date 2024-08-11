@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+#
+# api_ref_gen::add_autodoc_option::inherited-members
+#
 # Copyright (c) 2023-present tandemdude
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -27,7 +30,6 @@ import asyncio
 import dataclasses
 import typing as t
 import uuid
-from collections.abc import Sequence
 
 import async_timeout
 import hikari
@@ -37,8 +39,6 @@ from hikari.impl import special_endpoints as special_endpoints_impl
 from lightbulb.components import base
 
 if t.TYPE_CHECKING:
-    import typing_extensions as t_ex
-
     from lightbulb import client as client_
 
 ModalComponentT = t.TypeVar("ModalComponentT", bound=base.BaseComponent[special_endpoints.ModalActionRowBuilder])
@@ -101,86 +101,18 @@ class ModalContext(base.MessageResponseMixinWithEdit[hikari.ModalInteraction]):
         return None
 
 
-class Modal(abc.ABC, Sequence[special_endpoints.ComponentBuilder]):
-    _MAX_ROWS: t.Final[int] = 5
-
-    __current_row: int
-    __rows: list[list[base.BaseComponent[special_endpoints.ModalActionRowBuilder]]]
-
-    @abc.abstractmethod
-    async def on_submit(self, ctx: ModalContext) -> None: ...
-
-    @t.overload
-    def __getitem__(self, item: int) -> special_endpoints.ComponentBuilder: ...
-
-    @t.overload
-    def __getitem__(self, item: slice) -> Sequence[special_endpoints.ComponentBuilder]: ...
-
-    def __getitem__(
-        self, item: int | slice
-    ) -> special_endpoints.ComponentBuilder | Sequence[special_endpoints.ComponentBuilder]:
-        return self._build().__getitem__(item)
-
-    def __len__(self) -> int:
-        return sum(1 for row in self._rows if row)
-
-    def _build(self) -> Sequence[special_endpoints.ComponentBuilder]:
-        built_rows: list[special_endpoints.ComponentBuilder] = []
-        for row in self._rows:
-            if not row:
-                continue
-
-            bld = special_endpoints_impl.ModalActionRowBuilder()
-            for component in row:
-                bld = component.add_to_row(bld)
-            built_rows.append(bld)
-        return built_rows
-
+class Modal(base.BuildableComponentContainer[special_endpoints.ModalActionRowBuilder], abc.ABC):
     @property
-    def _current_row(self) -> int:
-        try:
-            return self.__current_row
-        except AttributeError:
-            self.__current_row = 0
-        return self.__current_row
+    def _max_rows(self) -> int:
+        return 5
 
-    @property
-    def _rows(self) -> list[list[base.BaseComponent[special_endpoints.ModalActionRowBuilder]]]:
-        try:
-            return self.__rows
-        except AttributeError:
-            self.__rows = [[] for _ in range(self._MAX_ROWS)]
-        return self.__rows
+    def _make_action_row(self) -> special_endpoints.ModalActionRowBuilder:
+        return special_endpoints_impl.ModalActionRowBuilder()
 
     def _current_row_full(self) -> bool:
         # Currently, you are only allowed a single component within each row
         # Maybe Discord will change this in the future
         return bool(self._rows[self._current_row])
-
-    def clear_rows(self) -> t_ex.Self:
-        self._rows.clear()
-        return self
-
-    def clear_current_row(self) -> t_ex.Self:
-        self._rows[self._current_row].clear()
-        return self
-
-    def next_row(self) -> t_ex.Self:
-        if self._current_row + 1 >= self._MAX_ROWS:
-            raise RuntimeError("the maximum number of rows has been reached")
-        self.__current_row += 1
-        return self
-
-    def previous_row(self) -> t_ex.Self:
-        self.__current_row = max(0, self.__current_row - 1)
-        return self
-
-    def add(self, component: ModalComponentT) -> ModalComponentT:
-        if self._current_row_full():
-            self.next_row()
-
-        self._rows[self._current_row].append(component)
-        return component
 
     def add_short_text_input(
         self,
@@ -248,3 +180,6 @@ class Modal(abc.ABC, Sequence[special_endpoints.ComponentBuilder]):
         finally:
             # Unregister queue from client
             client._modal_queues.remove(queue)
+
+    @abc.abstractmethod
+    async def on_submit(self, ctx: ModalContext) -> None: ...

@@ -20,10 +20,11 @@
 # SOFTWARE.
 from __future__ import annotations
 
-__all__ = ["BaseComponent"]
+__all__ = ["BaseComponent", "BuildableComponentContainer", "MessageResponseMixinWithEdit"]
 
 import abc
 import typing as t
+from collections.abc import Sequence
 
 import hikari
 from hikari.api import special_endpoints
@@ -32,9 +33,10 @@ from lightbulb import context
 from lightbulb.internal import constants
 
 if t.TYPE_CHECKING:
-    from collections.abc import Sequence
+    import typing_extensions as t_ex
 
 RowT = t.TypeVar("RowT", special_endpoints.MessageActionRowBuilder, special_endpoints.ModalActionRowBuilder)
+BaseComponentT = t.TypeVar("BaseComponentT", bound="BaseComponent[t.Any]")
 
 
 class BaseComponent(abc.ABC, t.Generic[RowT]):
@@ -192,3 +194,87 @@ class MessageResponseMixinWithEdit(context.MessageResponseMixin[context.Responda
                         role_mentions=role_mentions,
                     )
                 ).id
+
+
+class BuildableComponentContainer(abc.ABC, Sequence[special_endpoints.ComponentBuilder], t.Generic[RowT]):
+    __slots__ = ("__current_row", "__rows")
+
+    __current_row: int
+    __rows: list[list[BaseComponent[RowT]]]
+
+    @property
+    def _current_row(self) -> int:
+        try:
+            return self.__current_row
+        except AttributeError:
+            self.__current_row = 0
+        return self.__current_row
+
+    @property
+    def _rows(self) -> list[list[BaseComponent[RowT]]]:
+        try:
+            return self.__rows
+        except AttributeError:
+            self.__rows = [[] for _ in range(self._max_rows)]
+        return self.__rows
+
+    @t.overload
+    def __getitem__(self, item: int) -> special_endpoints.ComponentBuilder: ...
+
+    @t.overload
+    def __getitem__(self, item: slice) -> Sequence[special_endpoints.ComponentBuilder]: ...
+
+    def __getitem__(
+        self, item: int | slice
+    ) -> special_endpoints.ComponentBuilder | Sequence[special_endpoints.ComponentBuilder]:
+        return self._build().__getitem__(item)
+
+    def __len__(self) -> int:
+        return sum(1 for row in self._rows if row)
+
+    def _build(self) -> Sequence[special_endpoints.ComponentBuilder]:
+        built_rows: list[special_endpoints.ComponentBuilder] = []
+        for row in self._rows:
+            if not row:
+                continue
+
+            bld = self._make_action_row()
+            for component in row:
+                bld = component.add_to_row(bld)
+            built_rows.append(bld)
+        return built_rows
+
+    def clear_rows(self) -> t_ex.Self:
+        self._rows.clear()
+        return self
+
+    def clear_current_row(self) -> t_ex.Self:
+        self._rows[self._current_row].clear()
+        return self
+
+    def next_row(self) -> t_ex.Self:
+        if self._current_row + 1 >= self._max_rows:
+            raise RuntimeError("the maximum number of rows has been reached")
+        self.__current_row += 1
+        return self
+
+    def previous_row(self) -> t_ex.Self:
+        self.__current_row = max(0, self.__current_row - 1)
+        return self
+
+    def add(self, component: BaseComponentT) -> BaseComponentT:
+        if self._current_row_full():
+            self.next_row()
+
+        self._rows[self._current_row].append(component)
+        return component
+
+    @property
+    @abc.abstractmethod
+    def _max_rows(self) -> int: ...
+
+    @abc.abstractmethod
+    def _make_action_row(self) -> RowT: ...
+
+    @abc.abstractmethod
+    def _current_row_full(self) -> bool: ...

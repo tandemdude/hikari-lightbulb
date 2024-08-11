@@ -65,12 +65,20 @@ MessageComponentT = t.TypeVar("MessageComponentT", bound=base.BaseComponent[spec
 
 @dataclasses.dataclass(slots=True, kw_only=True)
 class InteractiveButton(base.BaseComponent[special_endpoints.MessageActionRowBuilder]):
+    """Dataclass representing an interactive button."""
+
     style: hikari.ButtonStyle
+    """The style of the button."""
     custom_id: str
+    """The custom id of the button."""
     label: hikari.UndefinedOr[str]
+    """The label for the button."""
     emoji: hikari.UndefinedOr[hikari.Snowflakeish | str | hikari.Emoji]
+    """The emoji for the button."""
     disabled: bool
+    """Whether the button is disabled."""
     callback: ComponentCallback
+    """The callback method to call when the button is pressed."""
 
     def add_to_row(self, row: special_endpoints.MessageActionRowBuilder) -> special_endpoints.MessageActionRowBuilder:
         return row.add_interactive_button(
@@ -84,10 +92,16 @@ class InteractiveButton(base.BaseComponent[special_endpoints.MessageActionRowBui
 
 @dataclasses.dataclass(slots=True, kw_only=True)
 class LinkButton(base.BaseComponent[special_endpoints.MessageActionRowBuilder]):
+    """Dataclass representing a link button."""
+
     url: str
+    """The url the button links to."""
     label: hikari.UndefinedOr[str]
+    """The label for the button."""
     emoji: hikari.UndefinedOr[hikari.Snowflakeish | str | hikari.Emoji]
+    """The emoji for the button."""
     disabled: bool
+    """Whether the button is disabled."""
 
     @property
     def custom_id(self) -> str:
@@ -104,26 +118,44 @@ class LinkButton(base.BaseComponent[special_endpoints.MessageActionRowBuilder]):
 
 @dataclasses.dataclass(slots=True, kw_only=True)
 class Select(t.Generic[T], base.BaseComponent[special_endpoints.MessageActionRowBuilder], abc.ABC):
+    """Dataclass representing a generic select menu."""
+
     custom_id: str
+    """The custom id of the select menu."""
     placeholder: hikari.UndefinedOr[str]
+    """The placeholder for the select menu."""
     min_values: int
+    """The minimum number of items that can be selected."""
     max_values: int
+    """The maximum number of items that can be selected."""
     disabled: bool
+    """Whether the select menu is disabled."""
     callback: ComponentCallback
+    """The callback method to call when the select menu is submitted."""
 
 
 @dataclasses.dataclass(slots=True)
 class TextSelectOption:
+    """Dataclass representing an option for a text select menu."""
+
     label: str
+    """The label for the option."""
     value: str
+    """The value of the option."""
     description: hikari.UndefinedOr[str] = hikari.UNDEFINED
+    """The description of the option."""
     emoji: hikari.UndefinedOr[hikari.Snowflakeish | str | hikari.Emoji] = hikari.UNDEFINED
+    """The emoji for the option."""
     default: bool = False
+    """Whether this option should be set as selected by default."""
 
 
 @dataclasses.dataclass(slots=True, kw_only=True)
 class TextSelect(Select[str]):
+    """Dataclass representing a select menu with text options."""
+
     options: ValidSelectOptions
+    """The options for the select menu."""
 
     def add_to_row(self, row: special_endpoints.MessageActionRowBuilder) -> special_endpoints.MessageActionRowBuilder:
         normalised_options: list[TextSelectOption] = []
@@ -152,6 +184,8 @@ class TextSelect(Select[str]):
 
 @dataclasses.dataclass(slots=True, kw_only=True)
 class UserSelect(Select[hikari.User]):
+    """Dataclass representing a select menu with user options."""
+
     def add_to_row(self, row: special_endpoints.MessageActionRowBuilder) -> special_endpoints.MessageActionRowBuilder:
         return row.add_select_menu(
             hikari.ComponentType.USER_SELECT_MENU,
@@ -165,6 +199,8 @@ class UserSelect(Select[hikari.User]):
 
 @dataclasses.dataclass(slots=True, kw_only=True)
 class RoleSelect(Select[hikari.Role]):
+    """Dataclass representing a select menu with role options."""
+
     def add_to_row(self, row: special_endpoints.MessageActionRowBuilder) -> special_endpoints.MessageActionRowBuilder:
         return row.add_select_menu(
             hikari.ComponentType.ROLE_SELECT_MENU,
@@ -178,6 +214,8 @@ class RoleSelect(Select[hikari.Role]):
 
 @dataclasses.dataclass(slots=True, kw_only=True)
 class MentionableSelect(Select[hikari.Snowflake]):
+    """Dataclass representing a select menu with snowflake options."""
+
     def add_to_row(self, row: special_endpoints.MessageActionRowBuilder) -> special_endpoints.MessageActionRowBuilder:
         return row.add_select_menu(
             hikari.ComponentType.MENTIONABLE_SELECT_MENU,
@@ -191,7 +229,10 @@ class MentionableSelect(Select[hikari.Snowflake]):
 
 @dataclasses.dataclass(slots=True, kw_only=True)
 class ChannelSelect(Select[hikari.PartialChannel]):
+    """Dataclass representing a select menu with channel options."""
+
     channel_types: hikari.UndefinedOr[Sequence[hikari.ChannelType]]
+    """Channel types permitted to be shown as options."""
 
     def add_to_row(self, row: special_endpoints.MessageActionRowBuilder) -> special_endpoints.MessageActionRowBuilder:
         return row.add_channel_menu(
@@ -206,9 +247,16 @@ class ChannelSelect(Select[hikari.PartialChannel]):
 
 @dataclasses.dataclass(slots=True, kw_only=True)
 class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]):
+    """Dataclass representing the context for an invocation of a component that belongs to a menu."""
+
     menu: Menu
+    """The menu that this context is for."""
     interaction: hikari.ComponentInteraction
+    """The interaction that this context is for."""
     component: base.BaseComponent[special_endpoints.MessageActionRowBuilder]
+    """The component that triggered the interaction for this context."""
+
+    _timeout: async_timeout.Timeout = dataclasses.field(repr=False)
 
     _should_stop_menu: bool = dataclasses.field(init=False, default=False, repr=False)
     _should_re_resolve_custom_ids: bool = dataclasses.field(init=False, default=False, repr=False)
@@ -234,9 +282,31 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
         return self.interaction.member
 
     def stop_interacting(self) -> None:
+        """Stop receiving interactions for the linked menu."""
         self._should_stop_menu = True
 
+    def extend_timeout(self, length: float) -> None:
+        """
+        Extend the menu's timeout by the given length.
+
+        Args:
+            length: The number of seconds to extend the timeout for.
+
+        Returns:
+            :obj:`None`
+        """
+        self._timeout.shift(length)
+
     def selected_values_for(self, select: Select[T]) -> Sequence[T]:
+        """
+        Get the values the user selected for the given select menu.
+
+        Args:
+            select: The select menu component to get the selected values for.
+
+        Returns:
+            The selected values.
+        """
         if self.interaction.custom_id != select.custom_id:
             return ()
 
@@ -374,6 +444,8 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
 
 
 class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBuilder]):
+    """Class representing a component menu."""
+
     __slots__ = ("__current_row", "__rows")
 
     _MAX_BUTTONS_PER_ROW: t.Final[int] = 5
@@ -401,6 +473,27 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         emoji: hikari.UndefinedOr[hikari.Snowflakeish | str | hikari.Emoji] = hikari.UNDEFINED,
         disabled: bool = False,
     ) -> InteractiveButton:
+        """
+        Add an interactive button to this menu.
+
+        Args:
+            style: The style of the button.
+            on_press: The asynchronous function to call when the button is pressed.
+            custom_id: The custom ID for the button. Only specify this when you are creating a persistent
+                menu. If unspecified, one will be generated for you.
+            label: The label for the button.
+            emoji: The emoji for the button.
+            disabled: Whether the button is disabled.
+
+        Returns:
+            The created button.
+
+        Raises:
+            :obj:`ValueError`: When neither ``label`` nor ``emoji`` are specified.
+        """
+        if label is hikari.UNDEFINED and emoji is hikari.UNDEFINED:
+            raise ValueError("at least one of 'label' and 'emoji' must be specified")
+
         return self.add(
             InteractiveButton(
                 style=style,
@@ -420,6 +513,24 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         emoji: hikari.UndefinedOr[hikari.Snowflakeish | str | hikari.Emoji] = hikari.UNDEFINED,
         disabled: bool = False,
     ) -> LinkButton:
+        """
+        Add a link button to this menu.
+
+        Args:
+            url: The url the button should link to.
+            label: The label for the button.
+            emoji: The emoji for the button.
+            disabled: Whether the button is disabled.
+
+        Returns:
+            The created button.
+
+        Raises:
+            :obj:`ValueError`: When neither ``label`` nor ``emoji`` are specified.
+        """
+        if label is hikari.UNDEFINED and emoji is hikari.UNDEFINED:
+            raise ValueError("at least one of 'label' and 'emoji' must be specified")
+
         return self.add(LinkButton(url=url, label=label, emoji=emoji, disabled=disabled))
 
     def add_text_select(
@@ -433,6 +544,22 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         max_values: int = 1,
         disabled: bool = False,
     ) -> TextSelect:
+        """
+        Add a text select menu to this menu.
+
+        Args:
+            options: The options for the select menu.
+            on_select: The asynchronous function to call when the select menu is submitted.
+            custom_id: The custom ID for the select menu. Only specify this when you are creating a persistent
+                menu. If unspecified, one will be generated for you.
+            placeholder: The placeholder string for the select menu.
+            min_values: The minimum number of values that can be selected.
+            max_values: The maximum number of values that can be selected.
+            disabled: Whether the select menu is disabled.
+
+        Returns:
+            The created select menu.
+        """
         return self.add(
             TextSelect(
                 custom_id=custom_id or str(uuid.uuid4()),
@@ -455,6 +582,21 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         max_values: int = 1,
         disabled: bool = False,
     ) -> UserSelect:
+        """
+        Add a user select menu to this menu.
+
+        Args:
+            on_select: The asynchronous function to call when the select menu is submitted.
+            custom_id: The custom ID for the select menu. Only specify this when you are creating a persistent
+                menu. If unspecified, one will be generated for you.
+            placeholder: The placeholder string for the select menu.
+            min_values: The minimum number of values that can be selected.
+            max_values: The maximum number of values that can be selected.
+            disabled: Whether the select menu is disabled.
+
+        Returns:
+            The created select menu.
+        """
         return self.add(
             UserSelect(
                 custom_id=custom_id or str(uuid.uuid4()),
@@ -476,6 +618,21 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         max_values: int = 1,
         disabled: bool = False,
     ) -> RoleSelect:
+        """
+        Add a role select menu to this menu.
+
+        Args:
+            on_select: The asynchronous function to call when the select menu is submitted.
+            custom_id: The custom ID for the select menu. Only specify this when you are creating a persistent
+                menu. If unspecified, one will be generated for you.
+            placeholder: The placeholder string for the select menu.
+            min_values: The minimum number of values that can be selected.
+            max_values: The maximum number of values that can be selected.
+            disabled: Whether the select menu is disabled.
+
+        Returns:
+            The created select menu.
+        """
         return self.add(
             RoleSelect(
                 custom_id=custom_id or str(uuid.uuid4()),
@@ -497,6 +654,21 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         max_values: int = 1,
         disabled: bool = False,
     ) -> MentionableSelect:
+        """
+        Add a 'mentionable object' select menu to this menu.
+
+        Args:
+            on_select: The asynchronous function to call when the select menu is submitted.
+            custom_id: The custom ID for the select menu. Only specify this when you are creating a persistent
+                menu. If unspecified, one will be generated for you.
+            placeholder: The placeholder string for the select menu.
+            min_values: The minimum number of values that can be selected.
+            max_values: The maximum number of values that can be selected.
+            disabled: Whether the select menu is disabled.
+
+        Returns:
+            The created select menu.
+        """
         return self.add(
             MentionableSelect(
                 custom_id=custom_id or str(uuid.uuid4()),
@@ -519,6 +691,22 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         disabled: bool = False,
         channel_types: hikari.UndefinedOr[Sequence[hikari.ChannelType]] = hikari.UNDEFINED,
     ) -> ChannelSelect:
+        """
+        Add a channel select menu to this menu.
+
+        Args:
+            on_select: The asynchronous function to call when the select menu is submitted.
+            custom_id: The custom ID for the select menu. Only specify this when you are creating a persistent
+                menu. If unspecified, one will be generated for you.
+            placeholder: The placeholder string for the select menu.
+            min_values: The minimum number of values that can be selected.
+            max_values: The maximum number of values that can be selected.
+            disabled: Whether the select menu is disabled.
+            channel_types: The channel types allowed to be selected.
+
+        Returns:
+            The created select menu.
+        """
         return self.add(
             ChannelSelect(
                 custom_id=custom_id or str(uuid.uuid4()),
@@ -539,7 +727,11 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         client._menu_queues.add(queue)
         try:
             stopped: bool = False
-            async with async_timeout.timeout(timeout):
+            async with async_timeout.timeout(timeout) as tm:
+                # TODO - consider whether individual interactions should be processed in parallel
+                #        instead of waiting for the previous callback to finish before checking the queue again.
+                # TODO - This could potentially present a race condition where the menu has been stopped but some
+                #        interactions linger that never get responses in the current state.
                 while not stopped:
                     if re_resolve_custom_ids:
                         all_custom_ids = {
@@ -552,7 +744,7 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
                         continue
 
                     component = all_custom_ids[interaction.custom_id]
-                    context = MenuContext(menu=self, interaction=interaction, component=component)
+                    context = MenuContext(menu=self, interaction=interaction, component=component, _timeout=tm)
 
                     callback: t.Callable[[MenuContext], t.Awaitable[None]] = getattr(component, "callback")
                     await callback(context)
@@ -570,6 +762,23 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         wait: bool = False,
         timeout: float | None = None,  # noqa: ASYNC109
     ) -> asyncio.Task[None]:
+        """
+        Attach this menu to the given client, starting it. You may optionally wait for the menu to finish and/or
+        provide a timeout, after which an :obj:`asyncio.TimeoutError` will be raised.
+
+        Args:
+            client: The client to attach the menu to.
+            wait: Whether to wait for the menu to finish.
+            timeout: The amount of time in seconds before the menu will time out.
+
+        Returns:
+            The created task. This allows you to await it later in case you want to perform some logic before
+            waiting for the menu to finish.
+
+        Raises:
+            :obj:`asyncio.TimeoutError`: If the timeout is exceeded, and ``wait=True``. If you wait on the returned
+                task instead, you are expected to check for an exception yourself.
+        """
         task = client._safe_create_task(self._run_menu(client, timeout))
         if wait:
             await task

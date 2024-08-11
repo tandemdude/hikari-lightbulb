@@ -40,17 +40,34 @@ BaseComponentT = t.TypeVar("BaseComponentT", bound="BaseComponent[t.Any]")
 
 
 class BaseComponent(abc.ABC, t.Generic[RowT]):
+    """Abstract base class for a component that can be added to an action row builder."""
+
     __slots__ = ()
 
     @property
     @abc.abstractmethod
-    def custom_id(self) -> str: ...
+    def custom_id(self) -> str:
+        """The custom ID for this component."""
 
     @abc.abstractmethod
-    def add_to_row(self, row: RowT) -> RowT: ...
+    def add_to_row(self, row: RowT) -> RowT:
+        """
+        Add this component to the given action row builder, and return the updated builder.
+
+        Args:
+            row: The row to add the component to.
+
+        Returns:
+            The updated builder.
+        """
 
 
 class MessageResponseMixinWithEdit(context.MessageResponseMixin[context.RespondableInteractionT], abc.ABC):
+    """
+    Abstract mixin derived from ``MessageResponseMixin`` that additionally allows creating an initial response of
+    type :obj:`hikari.interactions.base_interactions.ResponseType.MESSAGE_UPDATE` (and the deferred variant).
+    """
+
     __slots__ = ()
 
     async def defer(self, *, ephemeral: bool = False, edit: bool = False) -> None:
@@ -102,7 +119,7 @@ class MessageResponseMixinWithEdit(context.MessageResponseMixin[context.Responda
         Args:
             content: The message contents.
             ephemeral: Whether the message should be ephemeral (only visible to the user that triggered the command).
-                This is just a convenience argument - passing `flags=hikari.MessageFlag.EPHEMERAL` will function
+                This is just a convenience argument - passing ``flags=hikari.MessageFlag.EPHEMERAL`` will function
                 the same way.
             edit: Whether the response should cause an edit instead of creating a new message.
             attachment: The message attachment.
@@ -124,17 +141,17 @@ class MessageResponseMixinWithEdit(context.MessageResponseMixin[context.Responda
         Note:
             This documentation does not contain a full description of the parameters as they would just
             be copy-pasted from the hikari documentation. See
-            :obj:`~hikari.interactions.base_interactions.MessageResponseMixin.create_initial_response` for a more
+            :meth:`~hikari.interactions.base_interactions.MessageResponseMixin.create_initial_response` for a more
             detailed description.
 
         Note:
-            If this is **not** creating an initial response and ``edit`` is :obj:True`, then this will **always** edit
+            If this is **not** creating an initial response and ``edit`` is :obj:`True`, then this will **always** edit
             the initial response, not the most recently created response.
 
         See Also:
-            :meth:`~MenuContext.edit_response`
-            :meth:`~MenuContext.delete_response`
-            :meth:`~MenuContext.fetch_response`
+            :meth:`~lightbulb.context.MessageResponseMixin.edit_response`
+            :meth:`~lightbulb.context.MessageResponseMixin.delete_response`
+            :meth:`~lightbulb.context.MessageResponseMixin.fetch_response`
         """
         if ephemeral:
             flags = (flags or hikari.MessageFlag.NONE) | hikari.MessageFlag.EPHEMERAL
@@ -197,6 +214,13 @@ class MessageResponseMixinWithEdit(context.MessageResponseMixin[context.Responda
 
 
 class BuildableComponentContainer(abc.ABC, Sequence[special_endpoints.ComponentBuilder], t.Generic[RowT]):
+    """
+    Abstract base class allowing subclasses to be used as containers for :obj:`~BaseComponent`s, as well
+    as being passed to the ``components=`` kwarg of respond methods.
+
+    This class does not require ``super().__init__()`` to be called within subclasses.
+    """
+
     __slots__ = ("__current_row", "__rows")
 
     __current_row: int
@@ -245,24 +269,37 @@ class BuildableComponentContainer(abc.ABC, Sequence[special_endpoints.ComponentB
         return built_rows
 
     def clear_rows(self) -> t_ex.Self:
+        """Remove all components from this container."""
         self._rows.clear()
         return self
 
     def clear_current_row(self) -> t_ex.Self:
+        """Remove all components from the current row."""
         self._rows[self._current_row].clear()
         return self
 
     def next_row(self) -> t_ex.Self:
+        """Move the current row pointer to the next row."""
         if self._current_row + 1 >= self._max_rows:
             raise RuntimeError("the maximum number of rows has been reached")
         self.__current_row += 1
         return self
 
     def previous_row(self) -> t_ex.Self:
+        """Move the current row pointer back to the previous row."""
         self.__current_row = max(0, self.__current_row - 1)
         return self
 
     def add(self, component: BaseComponentT) -> BaseComponentT:
+        """
+        Adds the given component to the container.
+
+        Args:
+            component: The component to add.
+
+        Returns:
+            The added component.
+        """
         if self._current_row_full():
             self.next_row()
 
@@ -271,10 +308,13 @@ class BuildableComponentContainer(abc.ABC, Sequence[special_endpoints.ComponentB
 
     @property
     @abc.abstractmethod
-    def _max_rows(self) -> int: ...
+    def _max_rows(self) -> int:
+        """The maximum number of rows allowed for this container."""
 
     @abc.abstractmethod
-    def _make_action_row(self) -> RowT: ...
+    def _make_action_row(self) -> RowT:
+        """Create and return an instance of the row type needed for the components to be added to."""
 
     @abc.abstractmethod
-    def _current_row_full(self) -> bool: ...
+    def _current_row_full(self) -> bool:
+        """Whether the current row is full. Used during layout to know when to advance to the next row."""

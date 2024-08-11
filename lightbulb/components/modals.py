@@ -46,14 +46,24 @@ ModalComponentT = t.TypeVar("ModalComponentT", bound=base.BaseComponent[special_
 
 @dataclasses.dataclass(slots=True, kw_only=True)
 class TextInput(base.BaseComponent[special_endpoints.ModalActionRowBuilder]):
+    """Dataclass representing a text input."""
+
     custom_id: str
+    """The custom id of the text input."""
     style: hikari.TextInputStyle
+    """The style of the text input."""
     label: str
+    """The label for the text input."""
     min_length: int
+    """The minimum length of the inputted text."""
     max_length: int
+    """The maximum length of the inputted text."""
     required: bool
+    """Whether the text input is required to be filled."""
     value: hikari.UndefinedOr[str]
+    """The default value of the text input."""
     placeholder: hikari.UndefinedOr[str]
+    """The placeholder value for the text input."""
 
     def add_to_row(self, row: special_endpoints.ModalActionRowBuilder) -> special_endpoints.ModalActionRowBuilder:
         return row.add_text_input(
@@ -70,8 +80,12 @@ class TextInput(base.BaseComponent[special_endpoints.ModalActionRowBuilder]):
 
 @dataclasses.dataclass(slots=True, kw_only=True)
 class ModalContext(base.MessageResponseMixinWithEdit[hikari.ModalInteraction]):
+    """Dataclass representing the context for a modal interaction."""
+
     modal: Modal
+    """The modal this context is for."""
     interaction: hikari.ModalInteraction
+    """The interaction this context is for."""
 
     @property
     def guild_id(self) -> hikari.Snowflake | None:
@@ -94,6 +108,15 @@ class ModalContext(base.MessageResponseMixinWithEdit[hikari.ModalInteraction]):
         return self.interaction.member
 
     def value_for(self, input: TextInput) -> str | None:
+        """
+        Get the submitted value for the given text input component.
+
+        Args:
+            input: The text input component to get the value for.
+
+        Returns:
+            The value submitted for the given text input component, or :obj:`None` if no value was submitted.
+        """
         for row in self.interaction.components:
             for component in row:
                 if component.custom_id == input.custom_id:
@@ -102,6 +125,8 @@ class ModalContext(base.MessageResponseMixinWithEdit[hikari.ModalInteraction]):
 
 
 class Modal(base.BuildableComponentContainer[special_endpoints.ModalActionRowBuilder], abc.ABC):
+    """Class representing a modal."""
+
     @property
     def _max_rows(self) -> int:
         return 5
@@ -125,6 +150,23 @@ class Modal(base.BuildableComponentContainer[special_endpoints.ModalActionRowBui
         value: hikari.UndefinedOr[str] = hikari.UNDEFINED,
         placeholder: hikari.UndefinedOr[str] = hikari.UNDEFINED,
     ) -> TextInput:
+        """
+        Add a short text input component to this modal.
+
+        Args:
+            label: The label for the text input.
+            custom_id: The custom ID for the text input. You probably never want to specify this as it should
+                be unique across all modals that your application creates. If unspecified, one will be generated
+                for you.
+            min_length: The minimum length of the inputted text.
+            max_length: The maximum length of the inputted text.
+            required: Whether the text input is required to be filled.
+            value: The default value of the text input.
+            placeholder: The placeholder value for the text input.
+
+        Returns:
+            The created text input component.
+        """
         return self.add(
             TextInput(
                 custom_id=custom_id or str(uuid.uuid4()),
@@ -149,6 +191,23 @@ class Modal(base.BuildableComponentContainer[special_endpoints.ModalActionRowBui
         value: hikari.UndefinedOr[str] = hikari.UNDEFINED,
         placeholder: hikari.UndefinedOr[str] = hikari.UNDEFINED,
     ) -> TextInput:
+        """
+        Add a paragraph text input component to this modal.
+
+        Args:
+            label: The label for the text input.
+            custom_id: The custom ID for the text input. You probably never want to specify this as it should
+                be unique across all modals that your application creates. If unspecified, one will be generated
+                for you.
+            min_length: The minimum length of the inputted text.
+            max_length: The maximum length of the inputted text.
+            required: Whether the text input is required to be filled.
+            value: The default value of the text input.
+            placeholder: The placeholder value for the text input.
+
+        Returns:
+            The created text input component.
+        """
         return self.add(
             TextInput(
                 custom_id=custom_id or str(uuid.uuid4()),
@@ -163,6 +222,20 @@ class Modal(base.BuildableComponentContainer[special_endpoints.ModalActionRowBui
         )
 
     async def attach(self, client: client_.Client, custom_id: str, *, timeout: float = 30) -> None:  # noqa: ASYNC109
+        """
+        Attach this modal to the given client, starting the interaction listener for it.
+
+        Args:
+            client: The client to attach this modal to.
+            custom_id: The custom ID used when sending the modal response.
+            timeout: The number of seconds to wait for the correct modal interaction before timing out.
+
+        Returns:
+            :obj:`None`
+
+        Raises:
+            :obj:`asyncio.TimeoutError`: If the timeout is exceeded.
+        """
         queue: asyncio.Queue[hikari.ModalInteraction] = asyncio.Queue()
         client._modal_queues.add(queue)
         try:
@@ -182,4 +255,13 @@ class Modal(base.BuildableComponentContainer[special_endpoints.ModalActionRowBui
             client._modal_queues.remove(queue)
 
     @abc.abstractmethod
-    async def on_submit(self, ctx: ModalContext) -> None: ...
+    async def on_submit(self, ctx: ModalContext) -> None:
+        """
+        The method to call when the modal is submitted. This **must** be overridden by subclasses.
+
+        Args:
+            ctx: The context for the modal submission.
+
+        Returns:
+            :obj:`None`
+        """

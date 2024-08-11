@@ -1117,6 +1117,7 @@ class RestEnabledClient(Client):
 
         app.interaction_server.set_listener(hikari.AutocompleteInteraction, self.handle_rest_autocomplete_interaction)
         app.interaction_server.set_listener(hikari.CommandInteraction, self.handle_rest_application_command_interaction)
+        # TODO - make RESTBot compatible with component and modal handler
 
         if isinstance(app, hikari.RESTBot):
             self.di.registry_for(di_.Contexts.DEFAULT).register_value(hikari.RESTBot, app)

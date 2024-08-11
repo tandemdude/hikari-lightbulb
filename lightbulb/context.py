@@ -23,7 +23,7 @@
 # SOFTWARE.
 from __future__ import annotations
 
-__all__ = ["AutocompleteContext", "Context", "RestContext"]
+__all__ = ["AutocompleteContext", "Context", "MessageResponseMixin", "RestContext"]
 
 import abc
 import asyncio
@@ -156,12 +156,15 @@ class RestAutocompleteContext(AutocompleteContext[T]):
 
 @dataclasses.dataclass(slots=True, kw_only=True)
 class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
+    """Abstract mixin for contexts that allow creating responses to interactions."""
+
     _response_lock: asyncio.Lock = dataclasses.field(init=False, default_factory=asyncio.Lock)
     _initial_response_sent: bool = dataclasses.field(init=False, default=False)
 
     @property
     @abc.abstractmethod
-    def interaction(self) -> RespondableInteractionT: ...
+    def interaction(self) -> RespondableInteractionT:
+        """The interaction that this context is for."""
 
     async def edit_response(
         self,
@@ -200,7 +203,7 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
         Note:
             This documentation does not contain a full description of the parameters as they would just
             be copy-pasted from the hikari documentation. See
-            :obj:`~hikari.interactions.base_interactions.MessageResponseMixin.edit_initial_response` for a more
+            :meth:`~hikari.interactions.base_interactions.MessageResponseMixin.edit_initial_response` for a more
             detailed description.
         """
         if response_id == constants.INITIAL_RESPONSE_IDENTIFIER:
@@ -336,7 +339,7 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
         Args:
             content: The message contents.
             ephemeral: Whether the message should be ephemeral (only visible to the user that triggered the command).
-                This is just a convenience argument - passing `flags=hikari.MessageFlag.EPHEMERAL` will function
+                This is just a convenience argument - passing ``flags=hikari.MessageFlag.EPHEMERAL`` will function
                 the same way.
             attachment: The message attachment.
             attachments: The message attachments.
@@ -357,13 +360,13 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
         Note:
             This documentation does not contain a full description of the parameters as they would just
             be copy-pasted from the hikari documentation. See
-            :obj:`~hikari.interactions.base_interactions.MessageResponseMixin.create_initial_response` for a more
+            :meth:`~hikari.interactions.base_interactions.MessageResponseMixin.create_initial_response` for a more
             detailed description.
 
         See Also:
-            :meth:`~Context.edit_response`
-            :meth:`~Context.delete_response`
-            :meth:`~Context.fetch_response`
+            :meth:`~MessageResponseMixin.edit_response`
+            :meth:`~MessageResponseMixin.delete_response`
+            :meth:`~MessageResponseMixin.fetch_response`
         """
         if ephemeral:
             flags = (flags or hikari.MessageFlag.NONE) | hikari.MessageFlag.EPHEMERAL
@@ -496,21 +499,6 @@ class RestContext(Context):
         component: hikari.UndefinedOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
         components: hikari.UndefinedOr[Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
     ) -> None:
-        """
-        Create a modal response to the interaction that this context represents.
-
-        Args:
-            title: The title that will show up in the modal.
-            custom_id: Developer set custom ID used for identifying interactions with this modal.
-            component: A component builder to send in this modal.
-            components: A sequence of component builders to send in this modal.
-
-        Returns:
-            :obj:`None`
-
-        Raises:
-            :obj:`RuntimeError`: If an initial response has already been sent.
-        """
         if component is hikari.UNDEFINED and components is hikari.UNDEFINED:
             raise ValueError("either 'component' or 'components' must be provided")
 
@@ -519,7 +507,7 @@ class RestContext(Context):
 
         async with self._response_lock:
             if self._initial_response_sent:
-                return
+                raise RuntimeError("cannot respond with a modal if an initial response has already been sent")
 
             self._initial_response_callback(
                 special_endpoints_impl.InteractionModalBuilder(title, custom_id, list(components))

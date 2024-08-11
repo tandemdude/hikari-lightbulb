@@ -170,6 +170,8 @@ exclude-classes = """
     ^lightbulb\\.components\\.menus:RoleSelect$ |
     ^lightbulb\\.components\\.menus:TextSelect$ |
     ^lightbulb\\.components\\.menus:UserSelect$ |
+    ^lightbulb\\.components\\.modals:Modal$ |
+    ^lightbulb\\.components\\.modals:ModalContext$ |
     ^lightbulb\\.context:Context$
 )
 """

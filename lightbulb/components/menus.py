@@ -48,7 +48,6 @@ import hikari
 from hikari.api import special_endpoints
 from hikari.impl import special_endpoints as special_endpoints_impl
 
-from lightbulb import context
 from lightbulb.components import base
 
 if t.TYPE_CHECKING:
@@ -64,8 +63,6 @@ if t.TYPE_CHECKING:
 
 T = t.TypeVar("T")
 MessageComponentT = t.TypeVar("MessageComponentT", bound=base.BaseComponent[special_endpoints.MessageActionRowBuilder])
-
-INITIAL_RESPONSE_IDENTIFIER: t.Final[int] = -1
 
 
 @dataclasses.dataclass(slots=True, kw_only=True)
@@ -210,7 +207,7 @@ class ChannelSelect(Select[hikari.PartialChannel]):
 
 
 @dataclasses.dataclass(slots=True, kw_only=True)
-class MenuContext(context.MessageResponseMixin[hikari.ComponentInteraction]):
+class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]):
     menu: Menu
     interaction: hikari.ComponentInteraction
     component: base.BaseComponent[special_endpoints.MessageActionRowBuilder]
@@ -266,29 +263,33 @@ class MenuContext(context.MessageResponseMixin[hikari.ComponentInteraction]):
 
         return resolved
 
-    async def defer(self, *, ephemeral: bool = False, edit: bool = False) -> None:
+    async def respond_with_modal(
+        self,
+        title: str,
+        custom_id: str,
+        component: hikari.UndefinedOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
+        components: hikari.UndefinedOr[Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
+    ) -> None:
         """
-        Defer the creation of a response for the interaction that this context represents.
+        Create a modal response to the interaction that this context represents.
 
         Args:
-            ephemeral: Whether to defer ephemerally (message only visible to the user that triggered
-                the command).
-            edit: Whether the eventual response should cause an edit instead of creating a new message.
+            title: The title that will show up in the modal.
+            custom_id: Developer set custom ID used for identifying interactions with this modal.
+            component: A component builder to send in this modal.
+            components: A sequence of component builders to send in this modal.
 
         Returns:
             :obj:`None`
+
+        Raises:
+            :obj:`RuntimeError`: If an initial response has already been sent.
         """
         async with self._response_lock:
             if self._initial_response_sent:
-                return
+                raise RuntimeError("cannot respond with a modal if an initial response has already been sent")
 
-            response_type = (
-                hikari.ResponseType.DEFERRED_MESSAGE_UPDATE if edit else hikari.ResponseType.DEFERRED_MESSAGE_CREATE
-            )
-            await self._create_initial_response(
-                response_type,
-                flags=hikari.MessageFlag.EPHEMERAL if ephemeral else hikari.MessageFlag.NONE,
-            )
+            await self.interaction.create_modal_response(title, custom_id, component, components)
             self._initial_response_sent = True
 
     async def respond(
@@ -353,67 +354,25 @@ class MenuContext(context.MessageResponseMixin[hikari.ComponentInteraction]):
             :meth:`~MenuContext.delete_response`
             :meth:`~MenuContext.fetch_response`
         """
-        if ephemeral:
-            flags = (flags or hikari.MessageFlag.NONE) | hikari.MessageFlag.EPHEMERAL
-
         if rebuild_menu:
             components = components if components is not hikari.UNDEFINED else self.menu
 
-        async with self._response_lock:
-            if not self._initial_response_sent:
-                await self._create_initial_response(
-                    hikari.ResponseType.MESSAGE_UPDATE if edit else hikari.ResponseType.MESSAGE_CREATE,
-                    content,
-                    flags=flags,
-                    tts=tts,
-                    attachment=attachment,
-                    attachments=attachments,
-                    component=component,
-                    components=components,
-                    embed=embed,
-                    embeds=embeds,
-                    mentions_everyone=mentions_everyone,
-                    user_mentions=user_mentions,
-                    role_mentions=role_mentions,
-                )
-                self._initial_response_sent = True
-                return INITIAL_RESPONSE_IDENTIFIER
-            else:
-                if edit:
-                    return (
-                        await self.edit_response(
-                            INITIAL_RESPONSE_IDENTIFIER,
-                            content,
-                            attachment=attachment,
-                            attachments=attachments,
-                            component=component,
-                            components=components,
-                            embed=embed,
-                            embeds=embeds,
-                            mentions_everyone=mentions_everyone,
-                            user_mentions=user_mentions,
-                            role_mentions=role_mentions,
-                        )
-                    ).id
-                # This will automatically cause a response if the initial response was deferred previously.
-                # I am not sure if this is intentional by discord however so, we may want to look into changing
-                # this to actually edit the initial response if it was previously deferred.
-                return (
-                    await self.interaction.execute(
-                        content,
-                        flags=flags,
-                        tts=tts,
-                        attachment=attachment,
-                        attachments=attachments,
-                        component=component,
-                        components=components,
-                        embed=embed,
-                        embeds=embeds,
-                        mentions_everyone=mentions_everyone,
-                        user_mentions=user_mentions,
-                        role_mentions=role_mentions,
-                    )
-                ).id
+        return await super().respond(
+            content,
+            ephemeral=ephemeral,
+            edit=edit,
+            flags=flags,
+            tts=tts,
+            attachment=attachment,
+            attachments=attachments,
+            component=component,
+            components=components,
+            embed=embed,
+            embeds=embeds,
+            mentions_everyone=mentions_everyone,
+            user_mentions=user_mentions,
+            role_mentions=role_mentions,
+        )
 
 
 class Menu(Sequence[special_endpoints.ComponentBuilder]):
@@ -475,6 +434,10 @@ class Menu(Sequence[special_endpoints.ComponentBuilder]):
 
     def clear_rows(self) -> t_ex.Self:
         self._rows.clear()
+        return self
+
+    def clear_current_row(self) -> t_ex.Self:
+        self._rows[self._current_row].clear()
         return self
 
     def next_row(self) -> t_ex.Self:

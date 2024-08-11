@@ -20,7 +20,10 @@
 # SOFTWARE.
 __all__ = ["COMMAND_INVOKE_METHOD_MARKER", "GLOBAL_COMMAND_KEY"]
 
-COMMAND_INVOKE_METHOD_MARKER = "__lb_command_invoke_method__"
+import typing as t
+
+COMMAND_INVOKE_METHOD_MARKER: t.Final[str] = "__lb_command_invoke_method__"
 """Name of the marker attribute set to mark a method as the invocation method for a command."""
-GLOBAL_COMMAND_KEY = 0
+GLOBAL_COMMAND_KEY: t.Final[int] = 0
 """The value used to store global commands on the client instance."""
+INITIAL_RESPONSE_IDENTIFIER: t.Final[int] = -1

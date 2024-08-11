@@ -30,8 +30,11 @@ __all__ = [
     "MentionableSelect",
     "Menu",
     "MenuContext",
+    "Modal",
+    "ModalContext",
     "RoleSelect",
     "Select",
+    "TextInput",
     "TextSelect",
     "UserSelect",
 ]

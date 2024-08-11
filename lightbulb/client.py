@@ -119,6 +119,7 @@ class Client(abc.ABC):
         "_extensions",
         "_localization",
         "_menu_queues",
+        "_modal_queues",
         "_owner_ids",
         "_registered_commands",
         "_started",
@@ -173,6 +174,7 @@ class Client(abc.ABC):
 
         self._tasks: set[tasks.Task] = set()
         self._menu_queues: set[asyncio.Queue[hikari.ComponentInteraction]] = set()
+        self._modal_queues: set[asyncio.Queue[hikari.ModalInteraction]] = set()
 
         self._asyncio_tasks: set[asyncio.Task[t.Any]] = set()
 
@@ -1011,6 +1013,13 @@ class Client(abc.ABC):
 
         await asyncio.gather(*(q.put(interaction) for q in self._menu_queues))
 
+    async def handle_modal_interaction(self, interaction: hikari.ModalInteraction) -> None:
+        if not self._started:
+            LOGGER.debug("ignoring modal interaction received before the client was started")
+            return
+
+        await asyncio.gather(*(q.put(interaction) for q in self._modal_queues))
+
     async def handle_interaction_create(self, interaction: hikari.PartialInteraction) -> None:
         if isinstance(interaction, hikari.AutocompleteInteraction):
             await self.handle_autocomplete_interaction(interaction)
@@ -1018,6 +1027,8 @@ class Client(abc.ABC):
             await self.handle_application_command_interaction(interaction)
         elif isinstance(interaction, hikari.ComponentInteraction):
             await self.handle_component_interaction(interaction)
+        elif isinstance(interaction, hikari.ModalInteraction):
+            await self.handle_modal_interaction(interaction)
 
 
 class GatewayEnabledClient(Client):

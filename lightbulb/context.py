@@ -39,20 +39,22 @@ from hikari import files
 from hikari.api import special_endpoints
 from hikari.impl import special_endpoints as special_endpoints_impl
 
+from lightbulb.internal import constants
+
 if t.TYPE_CHECKING:
     from lightbulb import client as client_
     from lightbulb import commands
 
 T = t.TypeVar("T", int, str, float)
-RespondableInteractionT = t.TypeVar("RespondableInteractionT", hikari.CommandInteraction, hikari.ComponentInteraction)
+RespondableInteractionT = t.TypeVar(
+    "RespondableInteractionT", hikari.CommandInteraction, hikari.ComponentInteraction, hikari.ModalInteraction
+)
 AutocompleteResponse: t.TypeAlias = t.Union[
     Sequence[special_endpoints.AutocompleteChoiceBuilder],
     Sequence[T],
     Mapping[str, T],
     Sequence[tuple[str, T]],
 ]
-
-INITIAL_RESPONSE_IDENTIFIER: t.Final[int] = -1
 
 
 @dataclasses.dataclass(slots=True)
@@ -201,7 +203,7 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
             :obj:`~hikari.interactions.base_interactions.MessageResponseMixin.edit_initial_response` for a more
             detailed description.
         """
-        if response_id == INITIAL_RESPONSE_IDENTIFIER:
+        if response_id == constants.INITIAL_RESPONSE_IDENTIFIER:
             return await self.interaction.edit_initial_response(
                 content,
                 attachment=attachment,
@@ -238,7 +240,7 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
         Returns:
             :obj:`None`
         """
-        if response_id == INITIAL_RESPONSE_IDENTIFIER:
+        if response_id == constants.INITIAL_RESPONSE_IDENTIFIER:
             return await self.interaction.delete_initial_response()
         return await self.interaction.delete_message(response_id)
 
@@ -252,7 +254,7 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
         Returns:
             :obj:`~hikari.messages.Message`: The message for the response with the given identifier.
         """
-        if response_id == INITIAL_RESPONSE_IDENTIFIER:
+        if response_id == constants.INITIAL_RESPONSE_IDENTIFIER:
             return await self.interaction.fetch_initial_response()
         return await self.interaction.fetch_message(response_id)
 
@@ -288,36 +290,7 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
             user_mentions=user_mentions,
             role_mentions=role_mentions,
         )
-        return INITIAL_RESPONSE_IDENTIFIER
-
-    async def respond_with_modal(
-        self,
-        title: str,
-        custom_id: str,
-        component: hikari.UndefinedOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
-        components: hikari.UndefinedOr[Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
-    ) -> None:
-        """
-        Create a modal response to the interaction that this context represents.
-
-        Args:
-            title: The title that will show up in the modal.
-            custom_id: Developer set custom ID used for identifying interactions with this modal.
-            component: A component builder to send in this modal.
-            components: A sequence of component builders to send in this modal.
-
-        Returns:
-            :obj:`None`
-
-        Raises:
-            :obj:`RuntimeError`: If an initial response has already been sent.
-        """
-        async with self._response_lock:
-            if self._initial_response_sent:
-                raise RuntimeError("cannot respond with a modal if an initial response has already been sent")
-
-            await self.interaction.create_modal_response(title, custom_id, component, components)
-            self._initial_response_sent = True
+        return constants.INITIAL_RESPONSE_IDENTIFIER
 
     async def defer(self, *, ephemeral: bool = False) -> None:
         """
@@ -413,7 +386,7 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
                     role_mentions=role_mentions,
                 )
                 self._initial_response_sent = True
-                return INITIAL_RESPONSE_IDENTIFIER
+                return constants.INITIAL_RESPONSE_IDENTIFIER
             else:
                 # This will automatically cause a response if the initial response was deferred previously.
                 # I am not sure if this is intentional by discord however so, we may want to look into changing
@@ -479,6 +452,35 @@ class Context(MessageResponseMixin[hikari.CommandInteraction]):
         """The metadata for the invoked command."""
         return self.command._command_data
 
+    async def respond_with_modal(
+        self,
+        title: str,
+        custom_id: str,
+        component: hikari.UndefinedOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
+        components: hikari.UndefinedOr[Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
+    ) -> None:
+        """
+        Create a modal response to the interaction that this context represents.
+
+        Args:
+            title: The title that will show up in the modal.
+            custom_id: Developer set custom ID used for identifying interactions with this modal.
+            component: A component builder to send in this modal.
+            components: A sequence of component builders to send in this modal.
+
+        Returns:
+            :obj:`None`
+
+        Raises:
+            :obj:`RuntimeError`: If an initial response has already been sent.
+        """
+        async with self._response_lock:
+            if self._initial_response_sent:
+                raise RuntimeError("cannot respond with a modal if an initial response has already been sent")
+
+            await self.interaction.create_modal_response(title, custom_id, component, components)
+            self._initial_response_sent = True
+
 
 @dataclasses.dataclass(slots=True, kw_only=True)
 class RestContext(Context):
@@ -494,6 +496,21 @@ class RestContext(Context):
         component: hikari.UndefinedOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
         components: hikari.UndefinedOr[Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
     ) -> None:
+        """
+        Create a modal response to the interaction that this context represents.
+
+        Args:
+            title: The title that will show up in the modal.
+            custom_id: Developer set custom ID used for identifying interactions with this modal.
+            component: A component builder to send in this modal.
+            components: A sequence of component builders to send in this modal.
+
+        Returns:
+            :obj:`None`
+
+        Raises:
+            :obj:`RuntimeError`: If an initial response has already been sent.
+        """
         if component is hikari.UNDEFINED and components is hikari.UNDEFINED:
             raise ValueError("either 'component' or 'components' must be provided")
 
@@ -564,4 +581,4 @@ class RestContext(Context):
             raise TypeError("unexpected response_type passed")
 
         self._initial_response_callback(bld)
-        return INITIAL_RESPONSE_IDENTIFIER
+        return constants.INITIAL_RESPONSE_IDENTIFIER

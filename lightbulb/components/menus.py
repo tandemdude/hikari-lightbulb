@@ -446,7 +446,7 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
 class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBuilder]):
     """Class representing a component menu."""
 
-    __slots__ = ("__current_row", "__rows")
+    __slots__ = ()
 
     _MAX_BUTTONS_PER_ROW: t.Final[int] = 5
 

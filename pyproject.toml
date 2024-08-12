@@ -164,12 +164,6 @@ exclude-classes = """
     ^lightbulb\\.commands\\.commands:CommandMeta$ |
     ^lightbulb\\.context:RestAutocompleteContext$ |
     ^lightbulb\\.context:RestContext$ |
-    ^lightbulb\\.components\\.menus:ChannelSelect$ |
-    ^lightbulb\\.components\\.menus:MentionableSelect$ |
-    ^lightbulb\\.components\\.menus:MenuContext$ |
-    ^lightbulb\\.components\\.menus:RoleSelect$ |
-    ^lightbulb\\.components\\.menus:TextSelect$ |
-    ^lightbulb\\.components\\.menus:UserSelect$ |
     ^lightbulb\\.components\\.modals:Modal$ |
     ^lightbulb\\.components\\.modals:ModalContext$ |
     ^lightbulb\\.context:Context$

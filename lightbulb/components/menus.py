@@ -62,23 +62,41 @@ if t.TYPE_CHECKING:
 T = t.TypeVar("T")
 MessageComponentT = t.TypeVar("MessageComponentT", bound=base.BaseComponent[special_endpoints.MessageActionRowBuilder])
 
+Emojiish: t.TypeAlias = t.Union[hikari.Snowflakeish, str, hikari.Emoji]
 
-@dataclasses.dataclass(slots=True, kw_only=True)
+
 class InteractiveButton(base.BaseComponent[special_endpoints.MessageActionRowBuilder]):
-    """Dataclass representing an interactive button."""
+    """Class representing an interactive button."""
 
-    style: hikari.ButtonStyle
-    """The style of the button."""
-    custom_id: str
-    """The custom id of the button."""
-    label: hikari.UndefinedOr[str]
-    """The label for the button."""
-    emoji: hikari.UndefinedOr[hikari.Snowflakeish | str | hikari.Emoji]
-    """The emoji for the button."""
-    disabled: bool
-    """Whether the button is disabled."""
-    callback: ComponentCallback
-    """The callback method to call when the button is pressed."""
+    __slots__ = ("_custom_id", "callback", "disabled", "emoji", "label", "style")
+
+    def __init__(
+        self,
+        style: hikari.ButtonStyle,
+        custom_id: str,
+        label: hikari.UndefinedOr[str],
+        emoji: hikari.UndefinedOr[Emojiish],
+        disabled: bool,
+        callback: ComponentCallback,
+    ) -> None:
+        self.style: hikari.ButtonStyle = style
+        """The style of the button."""
+
+        self._custom_id: str = custom_id
+
+        self.label: hikari.UndefinedOr[str] = label
+        """The label for the button."""
+        self.emoji: hikari.UndefinedOr[Emojiish] = emoji
+        """The emoji for the button."""
+        self.disabled: bool = disabled
+        """Whether the button is disabled."""
+        self.callback: ComponentCallback = callback
+        """The callback method to call when the button is pressed."""
+
+    @property
+    def custom_id(self) -> str:
+        """The custom id of the button."""
+        return self._custom_id
 
     def add_to_row(self, row: special_endpoints.MessageActionRowBuilder) -> special_endpoints.MessageActionRowBuilder:
         return row.add_interactive_button(
@@ -90,18 +108,22 @@ class InteractiveButton(base.BaseComponent[special_endpoints.MessageActionRowBui
         )
 
 
-@dataclasses.dataclass(slots=True, kw_only=True)
 class LinkButton(base.BaseComponent[special_endpoints.MessageActionRowBuilder]):
     """Dataclass representing a link button."""
 
-    url: str
-    """The url the button links to."""
-    label: hikari.UndefinedOr[str]
-    """The label for the button."""
-    emoji: hikari.UndefinedOr[hikari.Snowflakeish | str | hikari.Emoji]
-    """The emoji for the button."""
-    disabled: bool
-    """Whether the button is disabled."""
+    __slots__ = ("disabled", "emoji", "label", "url")
+
+    def __init__(
+        self, url: str, label: hikari.UndefinedOr[str], emoji: hikari.UndefinedOr[Emojiish], disabled: bool
+    ) -> None:
+        self.url: str = url
+        """The url the button links to."""
+        self.label: hikari.UndefinedOr[str] = label
+        """The label for the button."""
+        self.emoji: hikari.UndefinedOr[Emojiish] = emoji
+        """The emoji for the button."""
+        self.disabled: bool = disabled
+        """Whether the button is disabled."""
 
     @property
     def custom_id(self) -> str:
@@ -116,46 +138,83 @@ class LinkButton(base.BaseComponent[special_endpoints.MessageActionRowBuilder]):
         )
 
 
-@dataclasses.dataclass(slots=True, kw_only=True)
 class Select(t.Generic[T], base.BaseComponent[special_endpoints.MessageActionRowBuilder], abc.ABC):
     """Dataclass representing a generic select menu."""
 
-    custom_id: str
-    """The custom id of the select menu."""
-    placeholder: hikari.UndefinedOr[str]
-    """The placeholder for the select menu."""
-    min_values: int
-    """The minimum number of items that can be selected."""
-    max_values: int
-    """The maximum number of items that can be selected."""
-    disabled: bool
-    """Whether the select menu is disabled."""
-    callback: ComponentCallback
-    """The callback method to call when the select menu is submitted."""
+    __slots__ = ("_custom_id", "callback", "disabled", "max_values", "min_values", "placeholder")
+
+    def __init__(
+        self,
+        custom_id: str,
+        placeholder: hikari.UndefinedOr[str],
+        min_values: int,
+        max_values: int,
+        disabled: bool,
+        callback: ComponentCallback,
+    ) -> None:
+        self._custom_id: str = custom_id
+
+        self.placeholder: hikari.UndefinedOr[str] = placeholder
+        """The placeholder for the select menu."""
+        self.min_values: int = min_values
+        """The minimum number of items that can be selected."""
+        self.max_values: int = max_values
+        """The maximum number of items that can be selected."""
+        self.disabled: bool = disabled
+        """Whether the select menu is disabled."""
+        self.callback: ComponentCallback = callback
+        """The callback method to call when the select menu is submitted."""
+
+    @property
+    def custom_id(self) -> str:
+        """The custom id of the select menu."""
+        return self._custom_id
 
 
-@dataclasses.dataclass(slots=True)
 class TextSelectOption:
-    """Dataclass representing an option for a text select menu."""
+    """Class representing an option for a text select menu."""
 
-    label: str
-    """The label for the option."""
-    value: str
-    """The value of the option."""
-    description: hikari.UndefinedOr[str] = hikari.UNDEFINED
-    """The description of the option."""
-    emoji: hikari.UndefinedOr[hikari.Snowflakeish | str | hikari.Emoji] = hikari.UNDEFINED
-    """The emoji for the option."""
-    default: bool = False
-    """Whether this option should be set as selected by default."""
+    __slots__ = ("default", "description", "emoji", "label", "value")
+
+    def __init__(
+        self,
+        label: str,
+        value: str,
+        description: hikari.UndefinedOr[str] = hikari.UNDEFINED,
+        emoji: hikari.UndefinedOr[Emojiish] = hikari.UNDEFINED,
+        default: bool = False,
+    ) -> None:
+        self.label: str = label
+        """The label for the option."""
+        self.value: str = value
+        """The value of the option."""
+        self.description: hikari.UndefinedOr[str] = description
+        """The description of the option."""
+        self.emoji: hikari.UndefinedOr[Emojiish] = emoji
+        """The emoji for the option."""
+        self.default: bool = default
+        """Whether this option should be set as selected by default."""
 
 
-@dataclasses.dataclass(slots=True, kw_only=True)
 class TextSelect(Select[str]):
-    """Dataclass representing a select menu with text options."""
+    """Class representing a select menu with text options."""
 
-    options: ValidSelectOptions
-    """The options for the select menu."""
+    __slots__ = ("options",)
+
+    def __init__(
+        self,
+        custom_id: str,
+        placeholder: hikari.UndefinedOr[str],
+        min_values: int,
+        max_values: int,
+        disabled: bool,
+        callback: ComponentCallback,
+        options: ValidSelectOptions,
+    ) -> None:
+        super().__init__(custom_id, placeholder, min_values, max_values, disabled, callback)
+
+        self.options: ValidSelectOptions = options
+        """The options for the select menu."""
 
     def add_to_row(self, row: special_endpoints.MessageActionRowBuilder) -> special_endpoints.MessageActionRowBuilder:
         normalised_options: list[TextSelectOption] = []
@@ -182,9 +241,10 @@ class TextSelect(Select[str]):
         return bld.parent
 
 
-@dataclasses.dataclass(slots=True, kw_only=True)
 class UserSelect(Select[hikari.User]):
-    """Dataclass representing a select menu with user options."""
+    """Class representing a select menu with user options."""
+
+    __slots__ = ()
 
     def add_to_row(self, row: special_endpoints.MessageActionRowBuilder) -> special_endpoints.MessageActionRowBuilder:
         return row.add_select_menu(
@@ -197,9 +257,10 @@ class UserSelect(Select[hikari.User]):
         )
 
 
-@dataclasses.dataclass(slots=True, kw_only=True)
 class RoleSelect(Select[hikari.Role]):
-    """Dataclass representing a select menu with role options."""
+    """Class representing a select menu with role options."""
+
+    __slots__ = ()
 
     def add_to_row(self, row: special_endpoints.MessageActionRowBuilder) -> special_endpoints.MessageActionRowBuilder:
         return row.add_select_menu(
@@ -212,9 +273,10 @@ class RoleSelect(Select[hikari.Role]):
         )
 
 
-@dataclasses.dataclass(slots=True, kw_only=True)
 class MentionableSelect(Select[hikari.Snowflake]):
-    """Dataclass representing a select menu with snowflake options."""
+    """Class representing a select menu with snowflake options."""
+
+    __slots__ = ()
 
     def add_to_row(self, row: special_endpoints.MessageActionRowBuilder) -> special_endpoints.MessageActionRowBuilder:
         return row.add_select_menu(
@@ -227,12 +289,25 @@ class MentionableSelect(Select[hikari.Snowflake]):
         )
 
 
-@dataclasses.dataclass(slots=True, kw_only=True)
 class ChannelSelect(Select[hikari.PartialChannel]):
-    """Dataclass representing a select menu with channel options."""
+    """Class representing a select menu with channel options."""
 
-    channel_types: hikari.UndefinedOr[Sequence[hikari.ChannelType]]
-    """Channel types permitted to be shown as options."""
+    __slots__ = ("channel_types",)
+
+    def __init__(
+        self,
+        custom_id: str,
+        placeholder: hikari.UndefinedOr[str],
+        min_values: int,
+        max_values: int,
+        disabled: bool,
+        callback: ComponentCallback,
+        channel_types: hikari.UndefinedOr[Sequence[hikari.ChannelType]],
+    ) -> None:
+        super().__init__(custom_id, placeholder, min_values, max_values, disabled, callback)
+
+        self.channel_types: hikari.UndefinedOr[Sequence[hikari.ChannelType]] = channel_types
+        """Channel types permitted to be shown as options."""
 
     def add_to_row(self, row: special_endpoints.MessageActionRowBuilder) -> special_endpoints.MessageActionRowBuilder:
         return row.add_channel_menu(

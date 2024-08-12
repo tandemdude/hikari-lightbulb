@@ -44,26 +44,43 @@ if t.TYPE_CHECKING:
 ModalComponentT = t.TypeVar("ModalComponentT", bound=base.BaseComponent[special_endpoints.ModalActionRowBuilder])
 
 
-@dataclasses.dataclass(slots=True, kw_only=True)
 class TextInput(base.BaseComponent[special_endpoints.ModalActionRowBuilder]):
-    """Dataclass representing a text input."""
+    """Class representing a text input."""
 
-    custom_id: str
-    """The custom id of the text input."""
-    style: hikari.TextInputStyle
-    """The style of the text input."""
-    label: str
-    """The label for the text input."""
-    min_length: int
-    """The minimum length of the inputted text."""
-    max_length: int
-    """The maximum length of the inputted text."""
-    required: bool
-    """Whether the text input is required to be filled."""
-    value: hikari.UndefinedOr[str]
-    """The default value of the text input."""
-    placeholder: hikari.UndefinedOr[str]
-    """The placeholder value for the text input."""
+    __slots__ = ("_custom_id", "label", "max_length", "min_length", "placeholder", "required", "style", "value")
+
+    def __init__(
+        self,
+        custom_id: str,
+        style: hikari.TextInputStyle,
+        label: str,
+        min_length: int,
+        max_length: int,
+        required: bool,
+        value: hikari.UndefinedOr[str],
+        placeholder: hikari.UndefinedOr[str],
+    ) -> None:
+        self._custom_id: str = custom_id
+
+        self.style: hikari.TextInputStyle = style
+        """The style of the text input."""
+        self.label: str = label
+        """The label for the text input."""
+        self.min_length: int = min_length
+        """The minimum length of the inputted text."""
+        self.max_length: int = max_length
+        """The maximum length of the inputted text."""
+        self.required: bool = required
+        """Whether the text input is required to be filled."""
+        self.value: hikari.UndefinedOr[str] = value
+        """The default value of the text input."""
+        self.placeholder: hikari.UndefinedOr[str] = placeholder
+        """The placeholder value for the text input."""
+
+    @property
+    def custom_id(self) -> str:
+        """The custom id of the text input."""
+        return self._custom_id
 
     def add_to_row(self, row: special_endpoints.ModalActionRowBuilder) -> special_endpoints.ModalActionRowBuilder:
         return row.add_text_input(

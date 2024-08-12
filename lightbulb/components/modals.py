@@ -144,6 +144,8 @@ class ModalContext(base.MessageResponseMixinWithEdit[hikari.ModalInteraction]):
 class Modal(base.BuildableComponentContainer[special_endpoints.ModalActionRowBuilder], abc.ABC):
     """Class representing a modal."""
 
+    __slots__ = ()
+
     @property
     def _max_rows(self) -> int:
         return 5

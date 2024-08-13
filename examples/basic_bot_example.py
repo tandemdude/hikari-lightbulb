@@ -18,7 +18,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 import hikari
 
 import lightbulb
@@ -37,7 +36,7 @@ class Ping(
 ):
     @lightbulb.invoke
     async def invoke(self, ctx: lightbulb.Context) -> None:
-        """Checks that the bot is alive"""
+        """Checks that the bot is alive."""
         await ctx.respond("Pong!")
 
 
@@ -51,7 +50,7 @@ class Echo(
 
     @lightbulb.invoke
     async def invoke(self, ctx: lightbulb.Context) -> None:
-        """Repeats the user's input"""
+        """Repeats the user's input."""
         await ctx.respond(self.text)
 
 
@@ -67,8 +66,9 @@ class Add(
 
     @lightbulb.invoke
     async def invoke(self, ctx: lightbulb.Context) -> None:
-        """Adds the two given numbers together"""
+        """Adds the two given numbers together."""
         await ctx.respond(f"{self.num1} + {self.num2} = {self.num1 + self.num2}")
 
 
-bot.run()
+if __name__ == "__main__":
+    bot.run()

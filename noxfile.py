@@ -20,11 +20,14 @@
 # SOFTWARE.
 
 import os
+import typing as t
+from collections.abc import Callable
 
 import nox
 from nox import options
 
 SCRIPT_PATHS = [
+    os.path.join(".", "examples"),
     os.path.join(".", "lightbulb"),
     os.path.join(".", "scripts"),
     os.path.join(".", "tests"),
@@ -35,33 +38,43 @@ SCRIPT_PATHS = [
 options.sessions = ["format_fix", "typecheck", "slotscheck", "test"]
 
 
-@nox.session()
+def nox_session(**kwargs: t.Any) -> Callable[[Callable[[nox.Session], None]], Callable[[nox.Session], None]]:
+    kwargs.setdefault("venv_backend", "uv|virtualenv")
+    kwargs.setdefault("reuse_venv", True)
+
+    def inner(func: Callable[[nox.Session], None]) -> Callable[[nox.Session], None]:
+        return nox.session(**kwargs)(func)
+
+    return inner
+
+
+@nox_session()
 def format_fix(session: nox.Session) -> None:
     session.install(".[localization,crontrigger,dev.format]")
     session.run("python", "-m", "ruff", "format", *SCRIPT_PATHS)
     session.run("python", "-m", "ruff", "check", "--fix", *SCRIPT_PATHS)
 
 
-@nox.session()
+@nox_session()
 def format_check(session: nox.Session) -> None:
     session.install(".[localization,crontrigger,dev.format]")
     session.run("python", "-m", "ruff", "format", *SCRIPT_PATHS, "--check")
     session.run("python", "-m", "ruff", "check", "--output-format", "github", *SCRIPT_PATHS)
 
 
-@nox.session()
+@nox_session()
 def typecheck(session: nox.Session) -> None:
     session.install(".[localization,crontrigger,dev.typecheck]")
     session.run("python", "-m", "pyright")
 
 
-@nox.session()
+@nox_session()
 def slotscheck(session: nox.Session) -> None:
     session.install(".[localization,crontrigger,dev.slotscheck]")
     session.run("python", "-m", "slotscheck", "-m", "lightbulb")
 
 
-@nox.session()
+@nox_session()
 def test(session: nox.Session) -> None:
     session.install(".[localization,crontrigger,dev.test]")
 
@@ -73,7 +86,7 @@ def test(session: nox.Session) -> None:
     session.run(*args)
 
 
-@nox.session(reuse_venv=True)
+@nox_session()
 def sphinx(session: nox.Session) -> None:
     session.install(".[localization,crontrigger,dev.docs]")
     session.run("python", "./scripts/docs/api_reference_generator.py")

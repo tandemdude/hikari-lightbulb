@@ -164,7 +164,7 @@ exclude-classes = """
 """
 
 [tool.pyright]
-include = ["lightbulb"]
+include = ["lightbulb", "examples"]
 exclude = ["docs", ".github"]
 pythonVersion = "3.10"
 typeCheckingMode = "strict"

@@ -35,6 +35,7 @@ import hikari
 from hikari.api import special_endpoints
 from hikari.impl import special_endpoints as special_endpoints_impl
 
+from lightbulb import context
 from lightbulb.components import base
 
 if t.TYPE_CHECKING:
@@ -94,7 +95,7 @@ class TextInput(base.BaseComponent[special_endpoints.ModalActionRowBuilder]):
         )
 
 
-class ModalContext(base.MessageResponseMixinWithEdit[hikari.ModalInteraction]):
+class ModalContext(context.MessageResponseMixin[hikari.ModalInteraction]):
     """Class representing the context for a modal interaction."""
 
     __slots__ = ("_interaction", "modal")

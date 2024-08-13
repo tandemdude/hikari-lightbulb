@@ -35,8 +35,6 @@ class.
 
 .. dropdown:: Example
 
-    Creating a menu.
-
     .. code-block:: python
 
         import lightbulb
@@ -72,8 +70,6 @@ that you store this component within an instance variable so that you can modify
 the menu's appearance.
 
 .. dropdown:: Example
-
-    Adding a component to a menu.
 
     .. code-block:: python
 
@@ -112,10 +108,9 @@ injection.
 
 .. dropdown:: Example
 
-    Attaching the menu to a client instance within a command.
-
     .. code-block:: python
 
+        import asyncio
         import lightbulb
 
         class MyMenu(lightbulb.components.Menu):
@@ -190,7 +185,99 @@ You can get the selected values for a select menu using the
 Modal Handling
 --------------
 
-bar
+Creating a Modal
+^^^^^^^^^^^^^^^^
+
+Modals are handled in a very similar way to components. Instead of subclassing ``Menu``, you will instead
+have to subclass :obj:`~lightbulb.components.modals.Modal`.
+
+.. dropdown:: Example
+
+    .. code-block:: python
+
+        import lightbulb
+
+        class MyModal(lightbulb.components.Modal):
+            def __init__(self) -> None:
+                ...
+
+Adding Components to Modals
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Like menus, you can add components to modals using the relevant methods:
+
+- :meth:`~lightbulb.components.modals.Modal.add_short_text_input`
+- :meth:`~lightbulb.components.modals.Modal.add_paragraph_text_input`
+
+Just like menus, the modal will lay the added components out into rows automatically. You can use the same methods
+``next_row``, ``previous_row``, etc. to further customise how the layout is created.
+
+When you add a component, the created component object is returned. You should store this within an instance variable
+- it will be needed later in order to get the submitted value from the modal context.
+
+.. important::
+    Your modal subclass **must** implement the ``on_submit`` method. This will be called when an interaction for
+    the modal is received and should perform any logic you require.
+
+.. dropdown:: Example
+
+    .. code-block:: python
+
+        import lightbulb
+
+        class MyModal(lightbulb.components.Modal):
+            def __init__(self) -> None:
+                self.text = self.add_short_text_input("Enter some text")
+
+            async def on_submit(self, ctx: lightbulb.components.ModalContext) -> None:
+                await ctx.respond(f"submitted: {ctx.value_for(self.text)}")
+
+Running Modals
+^^^^^^^^^^^^^^
+
+Sending a modal with a response is similar to using a menu - you should pass the modal instance to the ``components=``
+argument of ``respond_with_modal`` of the context or interaction.
+
+Like menus, you need the Lightbulb :obj:`~lightbulb.client.Client` instance in order for it to listen for the
+relevant interaction. However, unlike menus, when attaching a modal to the client it will **always** wait for the
+interaction to be received before continuing. You must also pass a timeout after which an :obj:`asyncio.TimeoutError`
+will be raised - if you do not pass a timeout, it will default to 30 seconds.
+
+When attaching a modal to the client, you must pass the same custom ID you used when sending the modal response,
+otherwise Lightbulb will not be able to resolve the correct interaction for the modal submission.
+
+To get your ``Client`` instance within a command, you can use dependency injection as seen in the following example.
+Check the "Dependencies" guide within the by-example section of the documentation for more details about dependency
+injection.
+
+.. dropdown:: Example
+
+    .. code-block:: python
+
+        import asyncio
+        import uuid
+        import lightbulb
+
+        class MyModal(lightbulb.components.Modal):
+            def __init__(self) -> None:
+                self.text = self.add_short_text_input("Enter some text")
+
+            async def on_submit(self, ctx: lightbulb.components.ModalContext) -> None:
+                await ctx.respond(f"submitted: {ctx.value_for(self.text)}")
+
+        class MyCommand(lightbulb.SlashCommand, name="test", description="test"):
+            @lightbulb.invoke
+            async def invoke(self, ctx: lightbulb.Context, client: lightbulb.Client) -> None:
+                modal = MyModal()
+
+                # Using a uuid as the custom ID for this modal means it is very unlikely that there will
+                # be any custom ID conflicts - if you used a set value instead then it may pick up a submission
+                # from a previous or future invocation of this command
+                await ctx.respond_with_modal("Test Modal", c_id := str(uuid.uuid4()), components=modal)
+                try:
+                    await modal.attach(client, c_id)
+                except asyncio.TimeoutError:
+                    await ctx.respond("Modal timed out")
 
 ----
 """

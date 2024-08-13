@@ -897,7 +897,7 @@ class Client(abc.ABC):
         Returns:
             :obj:`~lightbulb.context.AutocompleteContext`: The built context.
         """
-        return context_.AutocompleteContext(self, interaction, options, command_cls)
+        return context_.AutocompleteContext(client=self, interaction=interaction, options=options, command=command_cls)
 
     async def _execute_autocomplete_context(
         self, context: context_.AutocompleteContext[t.Any], autocomplete_provider: options_.AutocompleteProvider[t.Any]
@@ -1134,7 +1134,13 @@ class RestEnabledClient(Client):
         command_cls: type[commands.CommandBase],
         response_callback: Callable[[hikari.api.InteractionResponseBuilder], None],
     ) -> context_.AutocompleteContext[t.Any]:
-        return context_.RestAutocompleteContext(self, interaction, options, command_cls, response_callback)
+        return context_.RestAutocompleteContext(
+            client=self,
+            interaction=interaction,
+            options=options,
+            command=command_cls,
+            _initial_response_callback=response_callback,
+        )
 
     async def handle_rest_autocomplete_interaction(
         self, interaction: hikari.AutocompleteInteraction

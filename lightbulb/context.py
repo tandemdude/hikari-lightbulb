@@ -27,7 +27,6 @@ __all__ = ["AutocompleteContext", "Context", "MessageResponseMixin", "RestContex
 
 import abc
 import asyncio
-import dataclasses
 import os
 import typing as t
 from collections.abc import Callable
@@ -57,22 +56,28 @@ AutocompleteResponse: t.TypeAlias = t.Union[
 ]
 
 
-@dataclasses.dataclass(slots=True)
 class AutocompleteContext(t.Generic[T]):
-    """Dataclass representing the context for an autocomplete interaction."""
+    """Class representing the context for an autocomplete interaction."""
 
-    client: client_.Client
-    """The client that created the context."""
+    __slots__ = ("_focused", "client", "command", "interaction", "options")
 
-    interaction: hikari.AutocompleteInteraction
-    """The interaction for the autocomplete invocation."""
-    options: Sequence[hikari.AutocompleteInteractionOption]
-    """The options provided with the autocomplete interaction."""
+    def __init__(
+        self,
+        client: client_.Client,
+        interaction: hikari.AutocompleteInteraction,
+        options: Sequence[hikari.AutocompleteInteractionOption],
+        command: type[commands.CommandBase],
+    ) -> None:
+        self.client: client_.Client = client
+        """The client that created the context."""
+        self.interaction: hikari.AutocompleteInteraction = interaction
+        """The interaction for the autocomplete invocation."""
+        self.options: Sequence[hikari.AutocompleteInteractionOption] = options
+        """The options provided with the autocomplete interaction."""
+        self.command: type[commands.CommandBase] = command
+        """Command class for the autocomplete invocation."""
 
-    command: type[commands.CommandBase]
-    """Command class for the autocomplete invocation."""
-
-    _focused: hikari.AutocompleteInteractionOption | None = dataclasses.field(init=False, default=None)
+        self._focused: hikari.AutocompleteInteractionOption | None = None
 
     @property
     def focused(self) -> hikari.AutocompleteInteractionOption:
@@ -142,24 +147,35 @@ class AutocompleteContext(t.Generic[T]):
         await self.interaction.create_response(normalised_choices)
 
 
-@dataclasses.dataclass(slots=True)
 class RestAutocompleteContext(AutocompleteContext[T]):
-    _initial_response_callback: Callable[
-        [hikari.api.InteractionAutocompleteBuilder],
-        None,
-    ]
+    __slots__ = ("_initial_response_callback",)
+
+    def __init__(
+        self,
+        *args: t.Any,
+        _initial_response_callback: Callable[
+            [hikari.api.InteractionAutocompleteBuilder],
+            None,
+        ],
+        **kwargs: t.Any,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._initial_response_callback = _initial_response_callback
 
     async def respond(self, choices: AutocompleteResponse[T]) -> None:
         normalised_choices = self._normalise_choices(choices)
         self._initial_response_callback(special_endpoints_impl.InteractionAutocompleteBuilder(normalised_choices))
 
 
-@dataclasses.dataclass(slots=True, kw_only=True)
 class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
     """Abstract mixin for contexts that allow creating responses to interactions."""
 
-    _response_lock: asyncio.Lock = dataclasses.field(init=False, default_factory=asyncio.Lock)
-    _initial_response_sent: bool = dataclasses.field(init=False, default=False)
+    __slots__ = ("_initial_response_sent", "_response_lock")
+
+    def __init__(self) -> None:
+        self._response_lock: asyncio.Lock = asyncio.Lock()
+        self._initial_response_sent: bool = False
 
     @property
     @abc.abstractmethod
@@ -412,23 +428,34 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
                 ).id
 
 
-@dataclasses.dataclass(slots=True, kw_only=True)
 class Context(MessageResponseMixin[hikari.CommandInteraction]):
-    """Dataclass representing the context for a single command invocation."""
+    """Class representing the context for a single command invocation."""
 
-    client: client_.Client
-    """The client that created the context."""
+    __slots__ = ("_interaction", "client", "command", "options")
 
-    interaction: hikari.CommandInteraction
-    """The interaction for the command invocation."""
-    options: Sequence[hikari.CommandInteractionOption]
-    """The options to use for the command invocation."""
+    def __init__(
+        self,
+        client: client_.Client,
+        interaction: hikari.CommandInteraction,
+        options: Sequence[hikari.CommandInteractionOption],
+        command: commands.CommandBase,
+    ) -> None:
+        super().__init__()
 
-    command: commands.CommandBase
-    """Command instance for the command invocation."""
+        self.client: client_.Client = client
+        """The client that created the context."""
+        self._interaction: hikari.CommandInteraction = interaction
+        self.options: Sequence[hikari.CommandInteractionOption] = options
+        """The options to use for the command invocation."""
+        self.command: commands.CommandBase = command
+        """Command instance for the command invocation."""
 
-    def __post_init__(self) -> None:
         self.command._set_context(self)
+
+    @property
+    def interaction(self) -> hikari.CommandInteraction:
+        """The interaction for the command invocation."""
+        return self._interaction
 
     @property
     def guild_id(self) -> hikari.Snowflake | None:
@@ -485,12 +512,21 @@ class Context(MessageResponseMixin[hikari.CommandInteraction]):
             self._initial_response_sent = True
 
 
-@dataclasses.dataclass(slots=True, kw_only=True)
 class RestContext(Context):
-    _initial_response_callback: Callable[
-        [hikari.api.InteractionResponseBuilder],
-        None,
-    ]
+    __slots__ = ("_initial_response_callback",)
+
+    def __init__(
+        self,
+        *args: t.Any,
+        _initial_response_callback: Callable[
+            [hikari.api.InteractionResponseBuilder],
+            None,
+        ],
+        **kwargs: t.Any,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._initial_response_callback = _initial_response_callback
 
     async def respond_with_modal(
         self,

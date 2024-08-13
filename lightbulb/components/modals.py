@@ -27,7 +27,6 @@ __all__ = ["Modal", "ModalContext", "TextInput"]
 
 import abc
 import asyncio
-import dataclasses
 import typing as t
 import uuid
 
@@ -95,14 +94,22 @@ class TextInput(base.BaseComponent[special_endpoints.ModalActionRowBuilder]):
         )
 
 
-@dataclasses.dataclass(slots=True, kw_only=True)
 class ModalContext(base.MessageResponseMixinWithEdit[hikari.ModalInteraction]):
-    """Dataclass representing the context for a modal interaction."""
+    """Class representing the context for a modal interaction."""
 
-    modal: Modal
-    """The modal this context is for."""
-    interaction: hikari.ModalInteraction
-    """The interaction this context is for."""
+    __slots__ = ("_interaction", "modal")
+
+    def __init__(self, modal: Modal, interaction: hikari.ModalInteraction) -> None:
+        super().__init__()
+
+        self.modal: Modal = modal
+        """The modal this context is for."""
+        self._interaction: hikari.ModalInteraction = interaction
+
+    @property
+    def interaction(self) -> hikari.ModalInteraction:
+        """The interaction this context is for."""
+        return self._interaction
 
     @property
     def guild_id(self) -> hikari.Snowflake | None:

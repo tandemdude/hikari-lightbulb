@@ -157,16 +157,9 @@ convention = "google"
 strict-imports = true
 require-superclass = true
 require-subclass = true
-# The classes from MenuContext to Context are only due to a dataclasses slots
-# bug with Python 3.10 - they can be removed once the minimum Python version is bumped to 3.11
 exclude-classes = """
 (
-    ^lightbulb\\.commands\\.commands:CommandMeta$ |
-    ^lightbulb\\.context:RestAutocompleteContext$ |
-    ^lightbulb\\.context:RestContext$ |
-    ^lightbulb\\.components\\.menus:MenuContext$ |
-    ^lightbulb\\.components\\.modals:ModalContext$ |
-    ^lightbulb\\.context:Context$
+    ^lightbulb\\.commands\\.commands:CommandMeta$
 )
 """
 

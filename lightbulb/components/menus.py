@@ -38,7 +38,6 @@ __all__ = [
 
 import abc
 import asyncio
-import dataclasses
 import typing as t
 import uuid
 from collections.abc import Sequence
@@ -273,7 +272,7 @@ class RoleSelect(Select[hikari.Role]):
         )
 
 
-class MentionableSelect(Select[hikari.Snowflake]):
+class MentionableSelect(Select[hikari.Unique]):
     """Class representing a select menu with snowflake options."""
 
     __slots__ = ()
@@ -320,21 +319,34 @@ class ChannelSelect(Select[hikari.PartialChannel]):
         )
 
 
-@dataclasses.dataclass(slots=True, kw_only=True)
 class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]):
-    """Dataclass representing the context for an invocation of a component that belongs to a menu."""
+    """Class representing the context for an invocation of a component that belongs to a menu."""
 
-    menu: Menu
-    """The menu that this context is for."""
-    interaction: hikari.ComponentInteraction
-    """The interaction that this context is for."""
-    component: base.BaseComponent[special_endpoints.MessageActionRowBuilder]
-    """The component that triggered the interaction for this context."""
+    __slots__ = ("_interaction", "_should_re_resolve_custom_ids", "_should_stop_menu", "_timeout", "component", "menu")
 
-    _timeout: async_timeout.Timeout = dataclasses.field(repr=False)
+    def __init__(
+        self,
+        menu: Menu,
+        interaction: hikari.ComponentInteraction,
+        component: base.BaseComponent[special_endpoints.MessageActionRowBuilder],
+        _timeout: async_timeout.Timeout,
+    ) -> None:
+        super().__init__()
 
-    _should_stop_menu: bool = dataclasses.field(init=False, default=False, repr=False)
-    _should_re_resolve_custom_ids: bool = dataclasses.field(init=False, default=False, repr=False)
+        self.menu: Menu = menu
+        """The menu that this context is for."""
+        self._interaction: hikari.ComponentInteraction = interaction
+        self.component: base.BaseComponent[special_endpoints.MessageActionRowBuilder] = component
+        """The component that triggered the interaction for this context."""
+
+        self._timeout: async_timeout.Timeout = _timeout
+        self._should_stop_menu: bool = False
+        self._should_re_resolve_custom_ids: bool = False
+
+    @property
+    def interaction(self) -> hikari.ComponentInteraction:
+        """The interaction that this context is for."""
+        return self._interaction
 
     @property
     def guild_id(self) -> hikari.Snowflake | None:

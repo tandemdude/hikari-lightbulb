@@ -18,7 +18,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 import lightbulb
 
 loader = lightbulb.Loader()
@@ -34,5 +33,5 @@ class Greet(
 
     @lightbulb.invoke
     async def invoke(self, ctx: lightbulb.Context) -> None:
-        """Greets the specified user"""
+        """Greets the specified user."""
         await ctx.respond(f"Hello, {self.user.mention}!")

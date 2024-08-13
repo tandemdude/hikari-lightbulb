@@ -18,7 +18,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 import datetime
 
 import hikari
@@ -48,7 +47,7 @@ class Ban(
 
     @lightbulb.invoke
     async def invoke(self, ctx: lightbulb.Context, rest: hikari.api.RESTClient) -> None:
-        """Ban a user from the server with an optional reason"""
+        """Ban a user from the server with an optional reason."""
         if not ctx.guild_id:
             await ctx.respond("This command can only be used in a guild.")
             return
@@ -73,7 +72,7 @@ class Purge(
 
     @lightbulb.invoke
     async def invoke(self, ctx: lightbulb.Context, rest: hikari.api.RESTClient) -> None:
-        """Purge a certain amount of messages from a channel"""
+        """Purge a certain amount of messages from a channel."""
         if not ctx.guild_id:
             await ctx.respond("This command can only be used in a server.")
             return
@@ -94,4 +93,5 @@ class Purge(
             await ctx.respond("Could not find any messages younger than 14 days!")
 
 
-bot.run()
+if __name__ == "__main__":
+    bot.run()

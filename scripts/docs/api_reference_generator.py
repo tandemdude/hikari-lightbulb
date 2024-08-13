@@ -18,13 +18,22 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import collections
 import importlib
 import inspect
 import os
 import pathlib
+import re
 import typing as t
 
 API_REFERENCES_DIRECTORY = "docs", "source", "api-references"
+
+# Regex to match special modifiers that can change the output when writing reST
+#
+# Implemented modifiers:
+# - api_ref_gen::ignore - ignores the current file, does not output a reST file
+# - api_ref_gen::add_autodoc_option::<option> - adds a directive to the '.. automodule::' block for this module
+MODIFIER_DIRECTIVE_REGEX = re.compile(r"^#\s*api_ref_gen::(?P<directive>\w+)(?:::(?P<parameter>.+))?$")
 
 
 def is_package(path: pathlib.Path) -> bool:
@@ -36,11 +45,17 @@ class Module:
         self.path = path
 
     def write(self) -> bool:
-        # Ignore the module if it contains a generation ignore comment in the first 10 lines
+        # Find the modifier directives in the file
+        modifiers: dict[str, list[str | None]] = collections.defaultdict(list)
         with open(self.path) as module:
-            content = module.readlines(10)
-            if any("# api_reference_gen::ignore" in line for line in content):
-                return False
+            content = module.readlines()
+            for line in content[:10]:
+                if match := MODIFIER_DIRECTIVE_REGEX.fullmatch(line.strip()):
+                    modifiers[match.group("directive")].append(match.group("parameter"))
+
+        # Skip ignored files
+        if "ignore" in modifiers:
+            return False
 
         parts = self.path.parts
 
@@ -49,18 +64,19 @@ class Module:
 
         with open(os.path.join(api_reference_dir_path, parts[-1].replace(".py", ".rst")), "w") as fp:
             module_name = ".".join(parts)[:-3]
-            fp.write(
-                "\n".join(
-                    [
-                        "=" * len(module_name),
-                        module_name,
-                        "=" * len(module_name),
-                        "",
-                        f".. automodule:: {module_name}",
-                        "    :members:",
-                    ]
-                )
-            )
+
+            lines = [
+                "=" * len(module_name),
+                module_name,
+                "=" * len(module_name),
+                "",
+                f".. automodule:: {module_name}",
+                "    :members:",
+            ]
+            for extra_option in set(filter(None, modifiers["add_autodoc_option"])):
+                lines.append(f"    :{extra_option}:")
+
+            fp.write("\n".join(lines))
 
         return True
 

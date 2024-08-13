@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+#
+# api_ref_gen::add_autodoc_option::inherited-members
+#
 # Copyright (c) 2023-present tandemdude
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,10 +23,10 @@
 # SOFTWARE.
 from __future__ import annotations
 
-__all__ = ["AutocompleteContext", "Context", "RestContext"]
+__all__ = ["AutocompleteContext", "Context", "MessageResponseMixin", "RestContext"]
 
+import abc
 import asyncio
-import dataclasses
 import os
 import typing as t
 from collections.abc import Callable
@@ -35,11 +38,16 @@ from hikari import files
 from hikari.api import special_endpoints
 from hikari.impl import special_endpoints as special_endpoints_impl
 
+from lightbulb.internal import constants
+
 if t.TYPE_CHECKING:
     from lightbulb import client as client_
     from lightbulb import commands
 
 T = t.TypeVar("T", int, str, float)
+RespondableInteractionT = t.TypeVar(
+    "RespondableInteractionT", hikari.CommandInteraction, hikari.ComponentInteraction, hikari.ModalInteraction
+)
 AutocompleteResponse: t.TypeAlias = t.Union[
     Sequence[special_endpoints.AutocompleteChoiceBuilder],
     Sequence[T],
@@ -47,25 +55,29 @@ AutocompleteResponse: t.TypeAlias = t.Union[
     Sequence[tuple[str, T]],
 ]
 
-INITIAL_RESPONSE_IDENTIFIER: t.Final[int] = -1
 
-
-@dataclasses.dataclass(slots=True)
 class AutocompleteContext(t.Generic[T]):
-    """Dataclass representing the context for an autocomplete interaction."""
+    """Class representing the context for an autocomplete interaction."""
 
-    client: client_.Client
-    """The client that created the context."""
+    __slots__ = ("_focused", "client", "command", "interaction", "options")
 
-    interaction: hikari.AutocompleteInteraction
-    """The interaction for the autocomplete invocation."""
-    options: Sequence[hikari.AutocompleteInteractionOption]
-    """The options provided with the autocomplete interaction."""
+    def __init__(
+        self,
+        client: client_.Client,
+        interaction: hikari.AutocompleteInteraction,
+        options: Sequence[hikari.AutocompleteInteractionOption],
+        command: type[commands.CommandBase],
+    ) -> None:
+        self.client: client_.Client = client
+        """The client that created the context."""
+        self.interaction: hikari.AutocompleteInteraction = interaction
+        """The interaction for the autocomplete invocation."""
+        self.options: Sequence[hikari.AutocompleteInteractionOption] = options
+        """The options provided with the autocomplete interaction."""
+        self.command: type[commands.CommandBase] = command
+        """Command class for the autocomplete invocation."""
 
-    command: type[commands.CommandBase]
-    """Command class for the autocomplete invocation."""
-
-    _focused: hikari.AutocompleteInteractionOption | None = dataclasses.field(init=False, default=None)
+        self._focused: hikari.AutocompleteInteractionOption | None = None
 
     @property
     def focused(self) -> hikari.AutocompleteInteractionOption:
@@ -135,63 +147,40 @@ class AutocompleteContext(t.Generic[T]):
         await self.interaction.create_response(normalised_choices)
 
 
-@dataclasses.dataclass(slots=True)
 class RestAutocompleteContext(AutocompleteContext[T]):
-    _initial_response_callback: Callable[
-        [hikari.api.InteractionAutocompleteBuilder],
-        None,
-    ]
+    __slots__ = ("_initial_response_callback",)
+
+    def __init__(
+        self,
+        *args: t.Any,
+        _initial_response_callback: Callable[
+            [hikari.api.InteractionAutocompleteBuilder],
+            None,
+        ],
+        **kwargs: t.Any,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._initial_response_callback = _initial_response_callback
 
     async def respond(self, choices: AutocompleteResponse[T]) -> None:
         normalised_choices = self._normalise_choices(choices)
         self._initial_response_callback(special_endpoints_impl.InteractionAutocompleteBuilder(normalised_choices))
 
 
-@dataclasses.dataclass(slots=True)
-class Context:
-    """Dataclass representing the context for a single command invocation."""
+class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
+    """Abstract mixin for contexts that allow creating responses to interactions."""
 
-    client: client_.Client
-    """The client that created the context."""
+    __slots__ = ("_initial_response_sent", "_response_lock")
 
-    interaction: hikari.CommandInteraction
-    """The interaction for the command invocation."""
-    options: Sequence[hikari.CommandInteractionOption]
-    """The options to use for the command invocation."""
-
-    command: commands.CommandBase
-    """Command instance for the command invocation."""
-
-    _response_lock: asyncio.Lock = dataclasses.field(init=False, default_factory=asyncio.Lock)
-    _initial_response_sent: bool = dataclasses.field(init=False, default=False)
-
-    def __post_init__(self) -> None:
-        self.command._set_context(self)
+    def __init__(self) -> None:
+        self._response_lock: asyncio.Lock = asyncio.Lock()
+        self._initial_response_sent: bool = False
 
     @property
-    def guild_id(self) -> hikari.Snowflake | None:
-        """The ID of the guild that the command was invoked in. :obj:`None` if the invocation occurred in DM."""
-        return self.interaction.guild_id
-
-    @property
-    def channel_id(self) -> hikari.Snowflake:
-        """The ID of the channel that the command was invoked in."""
-        return self.interaction.channel_id
-
-    @property
-    def user(self) -> hikari.User:
-        """The user that invoked the command."""
-        return self.interaction.user
-
-    @property
-    def member(self) -> hikari.InteractionMember | None:
-        """The member that invoked the command, if it was invoked in a guild."""
-        return self.interaction.member
-
-    @property
-    def command_data(self) -> commands.CommandData:
-        """The metadata for the invoked command."""
-        return self.command._command_data
+    @abc.abstractmethod
+    def interaction(self) -> RespondableInteractionT:
+        """The interaction that this context is for."""
 
     async def edit_response(
         self,
@@ -230,10 +219,10 @@ class Context:
         Note:
             This documentation does not contain a full description of the parameters as they would just
             be copy-pasted from the hikari documentation. See
-            :obj:`~hikari.interactions.base_interactions.MessageResponseMixin.edit_initial_response` for a more
+            :meth:`~hikari.interactions.base_interactions.MessageResponseMixin.edit_initial_response` for a more
             detailed description.
         """
-        if response_id == INITIAL_RESPONSE_IDENTIFIER:
+        if response_id == constants.INITIAL_RESPONSE_IDENTIFIER:
             return await self.interaction.edit_initial_response(
                 content,
                 attachment=attachment,
@@ -270,7 +259,7 @@ class Context:
         Returns:
             :obj:`None`
         """
-        if response_id == INITIAL_RESPONSE_IDENTIFIER:
+        if response_id == constants.INITIAL_RESPONSE_IDENTIFIER:
             return await self.interaction.delete_initial_response()
         return await self.interaction.delete_message(response_id)
 
@@ -284,13 +273,13 @@ class Context:
         Returns:
             :obj:`~hikari.messages.Message`: The message for the response with the given identifier.
         """
-        if response_id == INITIAL_RESPONSE_IDENTIFIER:
+        if response_id == constants.INITIAL_RESPONSE_IDENTIFIER:
             return await self.interaction.fetch_initial_response()
         return await self.interaction.fetch_message(response_id)
 
     async def _create_initial_response(
         self,
-        response_type: t.Literal[hikari.ResponseType.MESSAGE_CREATE, hikari.ResponseType.DEFERRED_MESSAGE_CREATE],
+        response_type: hikari.ResponseType,
         content: hikari.UndefinedOr[t.Any] = hikari.UNDEFINED,
         *,
         flags: int | hikari.MessageFlag | hikari.UndefinedType = hikari.UNDEFINED,
@@ -306,7 +295,7 @@ class Context:
         role_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialRole] | bool] = hikari.UNDEFINED,
     ) -> hikari.Snowflakeish:
         await self.interaction.create_initial_response(
-            response_type,
+            response_type,  # type: ignore[reportArgumentType]
             content,
             flags=flags,
             tts=tts,
@@ -320,9 +309,9 @@ class Context:
             user_mentions=user_mentions,
             role_mentions=role_mentions,
         )
-        return INITIAL_RESPONSE_IDENTIFIER
+        return constants.INITIAL_RESPONSE_IDENTIFIER
 
-    async def defer(self, ephemeral: bool = False) -> None:
+    async def defer(self, *, ephemeral: bool = False) -> None:
         """
         Defer the creation of a response for the interaction that this context represents.
 
@@ -341,32 +330,6 @@ class Context:
                 hikari.ResponseType.DEFERRED_MESSAGE_CREATE,
                 flags=hikari.MessageFlag.EPHEMERAL if ephemeral else hikari.MessageFlag.NONE,
             )
-            self._initial_response_sent = True
-
-    async def respond_with_modal(
-        self,
-        title: str,
-        custom_id: str,
-        component: hikari.UndefinedOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
-        components: hikari.UndefinedOr[Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
-    ) -> None:
-        """
-        Create a modal response to the interaction that this context represents.
-
-        Args:
-            title: The title that will show up in the modal.
-            custom_id: Developer set custom ID used for identifying interactions with this modal.
-            component: A component builder to send in this modal.
-            components: A sequence of component builders to send in this modal.
-
-        Returns:
-            :obj:`None`
-        """
-        async with self._response_lock:
-            if self._initial_response_sent:
-                return
-
-            await self.interaction.create_modal_response(title, custom_id, component, components)
             self._initial_response_sent = True
 
     async def respond(
@@ -392,7 +355,7 @@ class Context:
         Args:
             content: The message contents.
             ephemeral: Whether the message should be ephemeral (only visible to the user that triggered the command).
-                This is just a convenience argument - passing `flags=hikari.MessageFlag.EPHEMERAL` will function
+                This is just a convenience argument - passing ``flags=hikari.MessageFlag.EPHEMERAL`` will function
                 the same way.
             attachment: The message attachment.
             attachments: The message attachments.
@@ -413,13 +376,13 @@ class Context:
         Note:
             This documentation does not contain a full description of the parameters as they would just
             be copy-pasted from the hikari documentation. See
-            :obj:`~hikari.interactions.base_interactions.MessageResponseMixin.create_initial_response` for a more
+            :meth:`~hikari.interactions.base_interactions.MessageResponseMixin.create_initial_response` for a more
             detailed description.
 
         See Also:
-            :meth:`~Context.edit_response`
-            :meth:`~Context.delete_response`
-            :meth:`~Context.fetch_response`
+            :meth:`~MessageResponseMixin.edit_response`
+            :meth:`~MessageResponseMixin.delete_response`
+            :meth:`~MessageResponseMixin.fetch_response`
         """
         if ephemeral:
             flags = (flags or hikari.MessageFlag.NONE) | hikari.MessageFlag.EPHEMERAL
@@ -442,7 +405,7 @@ class Context:
                     role_mentions=role_mentions,
                 )
                 self._initial_response_sent = True
-                return INITIAL_RESPONSE_IDENTIFIER
+                return constants.INITIAL_RESPONSE_IDENTIFIER
             else:
                 # This will automatically cause a response if the initial response was deferred previously.
                 # I am not sure if this is intentional by discord however so, we may want to look into changing
@@ -465,12 +428,105 @@ class Context:
                 ).id
 
 
-@dataclasses.dataclass(slots=True)
+class Context(MessageResponseMixin[hikari.CommandInteraction]):
+    """Class representing the context for a single command invocation."""
+
+    __slots__ = ("_interaction", "client", "command", "options")
+
+    def __init__(
+        self,
+        client: client_.Client,
+        interaction: hikari.CommandInteraction,
+        options: Sequence[hikari.CommandInteractionOption],
+        command: commands.CommandBase,
+    ) -> None:
+        super().__init__()
+
+        self.client: client_.Client = client
+        """The client that created the context."""
+        self._interaction: hikari.CommandInteraction = interaction
+        self.options: Sequence[hikari.CommandInteractionOption] = options
+        """The options to use for the command invocation."""
+        self.command: commands.CommandBase = command
+        """Command instance for the command invocation."""
+
+        self.command._set_context(self)
+
+    @property
+    def interaction(self) -> hikari.CommandInteraction:
+        """The interaction for the command invocation."""
+        return self._interaction
+
+    @property
+    def guild_id(self) -> hikari.Snowflake | None:
+        """The ID of the guild that the command was invoked in. :obj:`None` if the invocation occurred in DM."""
+        return self.interaction.guild_id
+
+    @property
+    def channel_id(self) -> hikari.Snowflake:
+        """The ID of the channel that the command was invoked in."""
+        return self.interaction.channel_id
+
+    @property
+    def user(self) -> hikari.User:
+        """The user that invoked the command."""
+        return self.interaction.user
+
+    @property
+    def member(self) -> hikari.InteractionMember | None:
+        """The member that invoked the command, if it was invoked in a guild."""
+        return self.interaction.member
+
+    @property
+    def command_data(self) -> commands.CommandData:
+        """The metadata for the invoked command."""
+        return self.command._command_data
+
+    async def respond_with_modal(
+        self,
+        title: str,
+        custom_id: str,
+        component: hikari.UndefinedOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
+        components: hikari.UndefinedOr[Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
+    ) -> None:
+        """
+        Create a modal response to the interaction that this context represents.
+
+        Args:
+            title: The title that will show up in the modal.
+            custom_id: Developer set custom ID used for identifying interactions with this modal.
+            component: A component builder to send in this modal.
+            components: A sequence of component builders to send in this modal.
+
+        Returns:
+            :obj:`None`
+
+        Raises:
+            :obj:`RuntimeError`: If an initial response has already been sent.
+        """
+        async with self._response_lock:
+            if self._initial_response_sent:
+                raise RuntimeError("cannot respond with a modal if an initial response has already been sent")
+
+            await self.interaction.create_modal_response(title, custom_id, component, components)
+            self._initial_response_sent = True
+
+
 class RestContext(Context):
-    _initial_response_callback: Callable[
-        [hikari.api.InteractionResponseBuilder],
-        None,
-    ]
+    __slots__ = ("_initial_response_callback",)
+
+    def __init__(
+        self,
+        *args: t.Any,
+        _initial_response_callback: Callable[
+            [hikari.api.InteractionResponseBuilder],
+            None,
+        ],
+        **kwargs: t.Any,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._initial_response_callback = _initial_response_callback
 
     async def respond_with_modal(
         self,
@@ -487,7 +543,7 @@ class RestContext(Context):
 
         async with self._response_lock:
             if self._initial_response_sent:
-                return
+                raise RuntimeError("cannot respond with a modal if an initial response has already been sent")
 
             self._initial_response_callback(
                 special_endpoints_impl.InteractionModalBuilder(title, custom_id, list(components))
@@ -549,4 +605,4 @@ class RestContext(Context):
             raise TypeError("unexpected response_type passed")
 
         self._initial_response_callback(bld)
-        return INITIAL_RESPONSE_IDENTIFIER
+        return constants.INITIAL_RESPONSE_IDENTIFIER

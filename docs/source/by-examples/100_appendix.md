@@ -12,4 +12,6 @@ documentation for the {obj}`components subpackage <lightbulb.components>`.
 
 ## Scheduled and Repeating Tasks
 
-TODO
+Lightbulb supports scheduled and repeating tasks through the ``@Client.task`` and ``@Loader.task`` decorators. This
+allows you to run logic every set interval, schedule it for a specific time, or anything else using unique triggers.
+For more on this as well as a usage guide, see the documentation for the {obj}`tasks module <lightbulb.tasks>`.

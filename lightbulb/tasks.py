@@ -18,6 +18,67 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+"""
+This module implements simple asynchronous tasks that run alongside the Lightbulb client.
+
+----
+
+Usage Guide
+-----------
+
+Creating Tasks
+^^^^^^^^^^^^^^
+
+Tasks can be created using one of the provided decorators:
+
+- :meth:`@client.task() <lightbulb.client.Client.task>`
+- :meth:`@loader.task() <lightbulb.loaders.Loader.task>`
+
+When creating a task, you must pass a trigger callable that will be used to know when and how often the task
+should be invoked.
+
+Built-in Triggers
+^^^^^^^^^^^^^^^^^
+
+Lightbulb has two built-in triggers that you can use for your own tasks. These are
+:obj:`~lightbulb.tasks.uniformtrigger` and :obj:`~lightbulb.tasks.crontrigger`.
+
+**uniformtrigger**
+
+When used, this trigger will invoke the task at the given uniform interval. I.e. if you set the interval to
+10 seconds, the task will be invoked every 10 seconds. The countdown before each invocation will start once
+the previous invocation has finished.
+
+**crontrigger**
+
+.. important::
+    To use this trigger you need to install Lightbulb with the optional dependency ``[crontrigger]``
+
+When used, this trigger invokes the task following the given crontab. For example, you could use this trigger
+to schedule the task to run every day at 10am. This trigger's schedule is always calculated from UTC.
+
+Custom Triggers
+^^^^^^^^^^^^^^^
+
+Creating your own custom trigger is easy. A trigger is any callable that takes a single parameter - this will be
+an instance of :obj:`~lightbulb.tasks.TaskExecutionData` - and returns a float. This will be called after every
+invocation of the task in order to calculate how much time to wait until the next task invocation.
+
+The task execution data object contains some information you can use if you wish to set next the interval based on
+when the task was last invoked, or how long the last invocation took.
+
+Running Tasks
+^^^^^^^^^^^^^
+
+Tasks registered to the client will be run automatically once the client's ``start`` method has been called. Any
+tasks registered after the client has already been started will be run immediately. If, when creating your task,
+you pass ``auto_start=False``, then you will instead need to call the task's start method manually.
+
+If the task is registered to a loader, once the loader is removed from the client the task will be cancelled.
+
+----
+"""
+
 from __future__ import annotations
 
 __all__ = ["Task", "TaskExecutionData", "crontrigger", "uniformtrigger"]

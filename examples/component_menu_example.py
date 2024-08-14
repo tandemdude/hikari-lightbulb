@@ -46,19 +46,18 @@ class ConfirmationMenu(lightbulb.components.Menu):
 
         self.confirmed: bool = False
 
-    async def on_cancel(self, ctx: lightbulb.components.MenuContext) -> None:
+    async def predicate(self, ctx: lightbulb.components.MenuContext) -> bool:
         if ctx.user.id != self.member.id:
             await ctx.respond("You are not permitted to use this menu", ephemeral=True)
-            return
+            return False
 
+        return True
+
+    async def on_cancel(self, ctx: lightbulb.components.MenuContext) -> None:
         await ctx.respond("Cancelled", edit=True, components=[])
         ctx.stop_interacting()
 
     async def on_confirm(self, ctx: lightbulb.components.MenuContext) -> None:
-        if ctx.user.id != self.member.id:
-            await ctx.respond("You are not permitted to use this menu", ephemeral=True)
-            return
-
         await ctx.respond("Confirmed", edit=True, components=[])
         self.confirmed = True
         ctx.stop_interacting()
@@ -69,11 +68,14 @@ class RoleSelectorMenu(lightbulb.components.Menu):
         self.member = member
         self.select = self.add_text_select(list(ASSIGNABLE_ROLES.keys()), self.on_select, placeholder="Select a Role")
 
-    async def on_select(self, ctx: lightbulb.components.MenuContext) -> None:
+    async def predicate(self, ctx: lightbulb.components.MenuContext) -> bool:
         if ctx.user.id != self.member.id:
             await ctx.respond("You are not permitted to use this menu", ephemeral=True)
-            return
+            return False
 
+        return True
+
+    async def on_select(self, ctx: lightbulb.components.MenuContext) -> None:
         selected_values = ctx.selected_values_for(self.select)
         # We know there will only be one selected value because 'min_values' and 'max_values'
         # are both set to 1 for the select component

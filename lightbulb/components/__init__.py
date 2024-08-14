@@ -146,8 +146,9 @@ injection.
 
 .. warning::
     There are no checks added to menus by default to ensure that only one user can interact with any menu. If you
-    wish to restrict a menu to only a single user (or add other checks) you should pass any state to the menu
-    constructor and run your check at the top of each component callback.
+    wish to restrict a menu to only a single user (or add other checks) you should override the
+    :meth:`~lightbulb.components.menus.Menu.predicate` method of your menu class. This can be used to
+    prevent invocation of button (or select) logic to disallowed users.
 
 .. important::
     It is recommended that you create a new instance of your menu every time you send it for the first time - otherwise

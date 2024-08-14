@@ -833,8 +833,9 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
                     component = all_custom_ids[interaction.custom_id]
                     context = MenuContext(menu=self, interaction=interaction, component=component, _timeout=tm)
 
-                    callback: t.Callable[[MenuContext], t.Awaitable[None]] = getattr(component, "callback")
-                    await callback(context)
+                    if await self.predicate(context):
+                        callback: t.Callable[[MenuContext], t.Awaitable[None]] = getattr(component, "callback")
+                        await callback(context)
 
                     stopped = context._should_stop_menu
                     re_resolve_custom_ids = context._should_re_resolve_custom_ids
@@ -872,3 +873,22 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
             if (exc := task.exception()) is not None and not isinstance(exc, asyncio.CancelledError):
                 raise exc
         return task
+
+    async def predicate(self, ctx: MenuContext) -> bool:
+        """
+        The interaction predicate for this menu. This will be called **before** the appropriate
+        component callback function is called, and should return a boolean indicating whether to
+        continue and invoke the callback.
+
+        You could use this to check that the correct user has pressed a button, has the correct
+        permissions, or anything else you'd need to check before running component logic.
+
+        By default, the implementation of this function always returns :obj:`True` and performs no logic.
+
+        Args:
+            ctx: The context for this component invocation.
+
+        Returns:
+            Boolean indicating whether the component callback function should be called.
+        """
+        return True

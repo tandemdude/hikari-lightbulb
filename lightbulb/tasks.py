@@ -183,6 +183,12 @@ def crontrigger(tab: str) -> Callable[[TaskExecutionData], float]:
 
         E.g. ``pip install hikari-lightbulb[crontrigger]``
 
+    Warning:
+        If the task execution takes longer than the interval specified by the crontab, the next execution will
+        take place at the next suitable time after the execution completed. For example, if you specify the task
+        should run at every 5th minute, but the execution at the 0th minute takes 6 minutes - the task would next 
+        be executed at the 10th minute instead of the 5th minute.
+
     Example:
 
         .. code-block:: python
@@ -197,14 +203,10 @@ def crontrigger(tab: str) -> Callable[[TaskExecutionData], float]:
     except ImportError:
         raise RuntimeError("crontrigger not available - install Lightbulb with the '[crontrigger]' option to enable")
 
-    cron: croniter.croniter | None = None
+    cron: croniter.croniter = croniter.croniter(tab)
 
     def _trigger(_: TaskExecutionData) -> float:
-        nonlocal cron
-        if cron is None:
-            cron = croniter.croniter(tab, datetime.datetime.now(datetime.timezone.utc))
-
-        diff = cron.get_next(datetime.datetime) - datetime.datetime.now(datetime.timezone.utc)
+        diff = cron.get_next(datetime.datetime, now := datetime.datetime.now(datetime.timezone.utc)) - now
         return diff.total_seconds()
 
     return _trigger

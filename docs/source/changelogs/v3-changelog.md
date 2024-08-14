@@ -8,7 +8,7 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
-## # v3.0.0a9 (2024-08-08)
+## v3.0.0a9 (2024-08-08)
 ### Features
 
 - Add `prefab` subpackage containing some simple built-in hooks. More will continue to be added.

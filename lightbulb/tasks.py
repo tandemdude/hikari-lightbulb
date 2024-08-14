@@ -186,7 +186,7 @@ def crontrigger(tab: str) -> Callable[[TaskExecutionData], float]:
     Warning:
         If the task execution takes longer than the interval specified by the crontab, the next execution will
         take place at the next suitable time after the execution completed. For example, if you specify the task
-        should run at every 5th minute, but the execution at the 0th minute takes 6 minutes - the task would next 
+        should run at every 5th minute, but the execution at the 0th minute takes 6 minutes - the task would next
         be executed at the 10th minute instead of the 5th minute.
 
     Example:

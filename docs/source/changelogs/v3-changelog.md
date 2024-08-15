@@ -8,6 +8,22 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a10 (2024-08-15)
+### Documentation
+
+- Update code examples for version 3 from version 2. ([#436](https://github.com/tandemdude/hikari-lightbulb/issues/436))
+
+### Features
+
+- Add a component and modal handler implementation. You can use these to more easily handle the creation and execution
+  of message components, as well as submitted modal forms. ([#438](https://github.com/tandemdude/hikari-lightbulb/issues/438))
+
+### Deprecations and Removals
+
+- The `ephemeral` argument for `Context.defer()` is now keyword-only.
+
+----
+
 ## v3.0.0a9 (2024-08-08)
 ### Features
 

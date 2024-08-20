@@ -175,7 +175,8 @@ Lightbulb registers some dependencies for you by default for each of the differe
 | `lightbulb.Client`      | `lightbulb.Context`           | `lightbulb.AutocompleteContext` |
 | `hikari.api.RESTClient` | `lightbulb.ExecutionPipeline` |                                 |
 
-Additionally, when using either `hikari.GatewayBot` or `hikari.RESTBot`:
+Additionally, when using either `hikari.GatewayBot` or `hikari.RESTBot`, the following dependencies are registered
+for the `DEFAULT` context:
 
 :::{tab} GatewayBot
 - `hikari.GatewayBot`

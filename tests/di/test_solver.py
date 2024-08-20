@@ -236,3 +236,25 @@ class TestMethodInjection:
 
         async with manager.enter_context(lightbulb.di.Contexts.DEFAULT):
             await m("bar")
+
+
+class TestDependencyInjectionManager:
+    @pytest.mark.asyncio
+    async def test_default_container_not_closed_once_default_context_exited(self) -> None:
+        manager = lightbulb.di.DependencyInjectionManager()
+
+        async with manager.enter_context(lightbulb.di.Contexts.DEFAULT):
+            pass
+
+        assert manager.default_container is not None
+        assert not manager.default_container._closed
+
+    @pytest.mark.asyncio
+    async def test_default_container_not_closed_once_sub_context_exited(self) -> None:
+        manager = lightbulb.di.DependencyInjectionManager()
+
+        async with manager.enter_context(lightbulb.di.Contexts.COMMAND):
+            pass
+
+        assert manager.default_container is not None
+        assert not manager.default_container._closed

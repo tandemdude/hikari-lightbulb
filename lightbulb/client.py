@@ -185,6 +185,12 @@ class Client(abc.ABC):
 
         self._owner_ids: set[hikari.Snowflakeish] | None = None
 
+    def _safe_create_task(self, coro: Coroutine[None, None, T]) -> asyncio.Task[T]:
+        task = asyncio.create_task(coro)
+        self._asyncio_tasks.add(task)
+        task.add_done_callback(lambda tsk: self._asyncio_tasks.remove(tsk))
+        return task
+
     @property
     @abc.abstractmethod
     def app(self) -> hikari.RESTAware:
@@ -196,6 +202,50 @@ class Client(abc.ABC):
         return self._di
 
     @property
+    def registered_commands(self) -> Sequence[lb_types.CommandOrGroup]:
+        """
+        Sequence of the command classes and group instances registered to this client. This will not
+        contain any subcommands or subgroups.
+
+        Note:
+            This **may** contain commands that have not yet been synced with discord.
+        """
+        return [c for c in self._registered_commands]
+
+    @property
+    def invokable_commands(self) -> Mapping[hikari.Snowflakeish, Mapping[tuple[str, ...], i_utils.CommandCollection]]:
+        """
+        Mapping of guild ID to mapping of qualified command path to command(s) (slash, message, and user) that can
+        be invoked for that command path.
+
+        Example:
+
+            If the following global commands are registered:
+
+            .. code-block::
+
+                /command
+                /group
+                ├── subcommand
+                └── subgroup
+                    └── subsubcommand
+
+            This would return the following mapping:
+
+            .. code-block:: python
+
+                {0: {
+                    ("command",): CommandCollection(slash=Command, message=None, user=None),
+                    ("group", "subcommand"): CommandCollection(slash=Subcommand, message=None, user=None),
+                    ("group", "subgroup", "subsubcommand"): CommandCollection(slash=Subsubcommand, message=None, user=None),
+                }}
+
+        Note:
+            This **may** contain commands that have not yet been synced with discord.
+        """  # noqa: E501
+        return self._command_invocation_mapping
+
+    @property
     def created_commands(self) -> Mapping[hikari.Snowflakeish, Collection[hikari.PartialCommand]]:
         """
         Mapping of guild ID to commands that were created in that guild during command syncing.
@@ -203,12 +253,6 @@ class Client(abc.ABC):
         Global commands are stored at the key :data:`lightbulb.internal.constants.GLOBAL_COMMAND_KEY`.
         """
         return self._created_commands
-
-    def _safe_create_task(self, coro: Coroutine[None, None, T]) -> asyncio.Task[T]:
-        task = asyncio.create_task(coro)
-        self._asyncio_tasks.add(task)
-        task.add_done_callback(lambda tsk: self._asyncio_tasks.remove(tsk))
-        return task
 
     async def start(self, *_: t.Any) -> None:
         """

@@ -187,37 +187,41 @@ class DependencyInjectionManager:
             have to worry about this, but it is something to consider. The type-hint does not reflect this
             to prevent your type-checker complaining about not checking for :obj:`None`.
         """
-        if DI_ENABLED:
-            initial_token, initial = None, DI_CONTAINER.get(None)
-            if initial is None:
-                if self._default_container is None:
-                    self._default_container = container.Container(self._registries[Contexts.DEFAULT])
-                    self._default_container.add_value(DefaultContainer, self._default_container)
-
-                initial_token = DI_CONTAINER.set(self._default_container)
-
-            ctx_token: contextvars.Token[container.Container | None] | None = None
-            if context != Contexts.DEFAULT:
-                new_container = container.Container(self._registries[context], parent=DI_CONTAINER.get())
-                new_container.add_value(_CONTAINER_TYPE_BY_CONTEXT[context], new_container)
-                ctx_token = DI_CONTAINER.set(new_container)
-
-            try:
-                if (ct := DI_CONTAINER.get(None)) is not None:
-                    async with ct:
-                        yield ct
-            finally:
-                if ctx_token is not None:
-                    DI_CONTAINER.reset(ctx_token)
-                if initial_token is not None:
-                    DI_CONTAINER.reset(initial_token)
-        else:
+        if not DI_ENABLED:
             # I'm not sure how to deal with this - but I definitely don't want to hint the return type
             # as optional because that adds annoying assertions further down the line for users
             #
             # I think I should just account for this internally within the library and document the
             # behaviour - chances are almost all users will never come across this
             yield None  # type: ignore
+            return
+
+        initial_token, initial = None, DI_CONTAINER.get(None)
+        if initial is None:
+            if self._default_container is None:
+                self._default_container = container.Container(self._registries[Contexts.DEFAULT])
+                self._default_container.add_value(DefaultContainer, self._default_container)
+
+            initial_token = DI_CONTAINER.set(self._default_container)
+
+        ctx_token: contextvars.Token[container.Container | None] | None = None
+        if context != Contexts.DEFAULT:
+            new_container = container.Container(self._registries[context], parent=DI_CONTAINER.get())
+            new_container.add_value(_CONTAINER_TYPE_BY_CONTEXT[context], new_container)
+            ctx_token = DI_CONTAINER.set(new_container)
+
+        try:
+            if (ct := DI_CONTAINER.get(None)) is not None:
+                if ct is self.default_container:
+                    yield ct
+                else:
+                    async with ct:
+                        yield ct
+        finally:
+            if ctx_token is not None:
+                DI_CONTAINER.reset(ctx_token)
+            if initial_token is not None:
+                DI_CONTAINER.reset(initial_token)
 
     async def close(self) -> None:
         """

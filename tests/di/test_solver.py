@@ -258,3 +258,17 @@ class TestDependencyInjectionManager:
 
         assert manager.default_container is not None
         assert not manager.default_container._closed
+
+    @pytest.mark.asyncio
+    async def test_default_container_closed_once_manager_closed(self) -> None:
+        manager = lightbulb.di.DependencyInjectionManager()
+
+        async with manager.enter_context(lightbulb.di.Contexts.COMMAND):
+            pass
+
+        assert manager.default_container is not None
+        default_container = manager.default_container
+
+        await manager.close()
+        assert default_container._closed
+        assert manager.default_container is None

@@ -414,3 +414,20 @@ class TestContainerWithParent:
 
         async with di.Container(r1) as r1, di.Container(r2, parent=r1) as r2:
             assert object in r2
+
+    @pytest.mark.asyncio
+    async def test_parent_dependency_returns_default_if_given_and_depends_on_child_dependency(self) -> None:
+        def f(_: A) -> object:
+            return object()
+
+        parent_registry = di.Registry()
+        parent_registry.register_factory(B, f)
+
+        child_registry = di.Registry()
+        child_registry.register_factory(A, lambda: object())
+
+        async with (
+            di.Container(parent_registry) as pc,
+            di.Container(child_registry, parent=pc) as cc,
+        ):
+            assert await cc.get(B, default=None) is None

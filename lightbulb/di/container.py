@@ -240,8 +240,6 @@ class Container:
                 for sub_dependency_id, param_name in node_data["factory_params"].items():
                     sub_dependency = await node_data["container"]._get(sub_dependency_id, allow_missing=allow_missing)
                     if sub_dependency is _MISSING:
-                        # I'm not sure that this branch can actually be hit, but I'm going to leave it here
-                        # just in case...
                         return _MISSING
 
                     sub_dependencies[param_name] = sub_dependency

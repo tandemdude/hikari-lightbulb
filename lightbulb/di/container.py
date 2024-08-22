@@ -30,6 +30,7 @@ from lightbulb import utils
 from lightbulb.di import exceptions
 from lightbulb.di import registry as registry_
 from lightbulb.di import utils as di_utils
+from lightbulb.internal import marker
 
 if t.TYPE_CHECKING:
     import types
@@ -38,6 +39,9 @@ if t.TYPE_CHECKING:
     from lightbulb.internal import types as lb_types
 
 T = t.TypeVar("T")
+D = t.TypeVar("D")
+
+_MISSING = marker.Marker("MISSING")
 
 
 class Container:
@@ -154,7 +158,7 @@ class Container:
             self._graph.remove_edges_from(list(self._graph.out_edges(dependency_id)))
         self._graph.add_node(dependency_id, container=self, teardown=teardown)
 
-    async def _get(self, dependency_id: str) -> t.Any:
+    async def _get(self, dependency_id: str, *, allow_missing: bool = False) -> t.Any:
         if self._closed:
             raise exceptions.ContainerClosedException
 
@@ -162,6 +166,8 @@ class Container:
 
         data = self._graph.nodes.get(dependency_id)
         if data is None or data.get("container") is None:
+            if allow_missing:
+                return _MISSING
             raise exceptions.DependencyNotSatisfiableException
 
         existing_dependency = data["container"]._instances.get(dependency_id)
@@ -183,6 +189,9 @@ class Container:
 
         for dep_id in creation_order:
             if (container := self._graph.nodes[dep_id].get("container")) is None:
+                if allow_missing:
+                    return _MISSING
+
                 raise exceptions.DependencyNotSatisfiableException(
                     f"could not create dependency {dep_id!r} - not provided by this or a parent container"
                 )
@@ -206,7 +215,13 @@ class Container:
             sub_dependencies: dict[str, t.Any] = {}
             try:
                 for sub_dependency_id, param_name in node_data["factory_params"].items():
-                    sub_dependencies[param_name] = await node_data["container"]._get(sub_dependency_id)
+                    sub_dependency = await node_data["container"]._get(sub_dependency_id, allow_missing=allow_missing)
+                    if sub_dependency is _MISSING:
+                        # I'm not sure that this branch can actually be hit, but I'm going to leave it here
+                        # just in case...
+                        return _MISSING
+
+                    sub_dependencies[param_name] = sub_dependency
             except exceptions.DependencyNotSatisfiableException as e:
                 raise exceptions.DependencyNotSatisfiableException(
                     f"could not create dependency {dep_id!r} - failed creating sub-dependency"
@@ -217,12 +232,19 @@ class Container:
 
         return self._graph.nodes[dependency_id]["container"]._instances[dependency_id]
 
-    async def get(self, typ: type[T]) -> T:
+    @t.overload
+    async def get(self, typ: type[T], /) -> T: ...
+    @t.overload
+    async def get(self, typ: type[T], /, *, default: D) -> T | D: ...
+
+    async def get(self, typ: type[T], /, *, default: D = _MISSING) -> T | D:
         """
         Get a dependency from this container, instantiating it and sub-dependencies if necessary.
 
         Args:
             typ: The type used when registering the dependency.
+            default: The default value to return if the dependency is not satisfiable. If not provided, this will
+                raise a :obj:`~lightbulb.di.exceptions.DependencyNotSatisfiableException`.
 
         Returns:
             The dependency for the given type.
@@ -235,4 +257,9 @@ class Container:
                 for any other reason.
         """
         dependency_id = di_utils.get_dependency_id(typ)
-        return t.cast(T, await self._get(dependency_id))
+
+        dependency = await self._get(dependency_id, allow_missing=default is not _MISSING)
+        if dependency is _MISSING:
+            return default
+
+        return t.cast(T, dependency)

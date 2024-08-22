@@ -23,7 +23,8 @@ import typing as t
 import pytest
 
 import lightbulb
-from lightbulb.di.solver import CANNOT_INJECT
+from lightbulb.di import solver
+from lightbulb.di.solver import ParamInfo
 from lightbulb.di.solver import _parse_injectable_params
 
 
@@ -32,7 +33,7 @@ class TestSignatureParsing:
         def m(foo: object, /) -> None: ...
 
         pos, kw = _parse_injectable_params(m)
-        assert pos[0][1] is CANNOT_INJECT and len(kw) == 0
+        assert not pos[0].injectable and len(kw) == 0
 
     def test_parses_var_positional_arg_correctly(self) -> None:
         def m(*foo: object) -> None: ...
@@ -50,24 +51,33 @@ class TestSignatureParsing:
         def m(foo: object = object()) -> None: ...
 
         pos, kw = _parse_injectable_params(m)
-        assert pos[0][1] is CANNOT_INJECT and len(kw) == 0
+        assert not pos[0].injectable and len(kw) == 0
 
     def test_parses_args_with_no_annotation_correctly(self) -> None:
         def m(foo) -> None:  # type: ignore[unknownParameterType]
             ...
 
         pos, kw = _parse_injectable_params(m)  # type: ignore[unknownArgumentType]
-        assert pos[0][1] is CANNOT_INJECT and len(kw) == 0
+        assert not pos[0].injectable and len(kw) == 0
 
     def test_parses_args_correctly(self) -> None:
         def m(
-            foo: str, bar: int = lightbulb.di.INJECTED, *, baz: float, bork: bool = lightbulb.di.INJECTED
+            foo: str,
+            bar: int | float = lightbulb.di.INJECTED,
+            *,
+            baz: float | None,
+            bork: t.Union[bool, object] = lightbulb.di.INJECTED,
+            qux: t.Optional[object] = lightbulb.di.INJECTED,
         ) -> None: ...
 
         pos, kw = _parse_injectable_params(m)
 
-        assert pos == [("foo", str), ("bar", int)]
-        assert kw == {"baz": float, "bork": bool}
+        assert pos == [ParamInfo("foo", (str,), False, True), ParamInfo("bar", (int, float), False, True)]
+        assert kw == [
+            ParamInfo("baz", (float,), True, True),
+            ParamInfo("bork", (bool, object), False, True),
+            ParamInfo("qux", (object,), True, True),
+        ]
 
 
 class TestMethodInjection:
@@ -237,6 +247,90 @@ class TestMethodInjection:
         async with manager.enter_context(lightbulb.di.Contexts.DEFAULT):
             await m("bar")
 
+    @pytest.mark.asyncio
+    async def test_None_provided_if_dependency_not_available_for_optional_parameter(self) -> None:
+        manager = lightbulb.di.DependencyInjectionManager()
+
+        @lightbulb.di.with_di
+        async def m(foo: object | None = lightbulb.di.INJECTED) -> None:
+            assert foo is None
+
+        async with manager.enter_context(lightbulb.di.Contexts.DEFAULT):
+            await m()
+
+    @pytest.mark.asyncio
+    async def test_second_dependency_provided_if_first_not_available(self) -> None:
+        manager = lightbulb.di.DependencyInjectionManager()
+
+        value = object()
+        manager.registry_for(lightbulb.di.Contexts.DEFAULT).register_value(object, value)
+
+        @lightbulb.di.with_di
+        async def m(foo: str | object = lightbulb.di.INJECTED) -> None:
+            assert foo is value
+
+        async with manager.enter_context(lightbulb.di.Contexts.DEFAULT):
+            await m()
+
+    @pytest.mark.asyncio
+    async def test_first_dependency_provided_if_both_are_available(self) -> None:
+        manager = lightbulb.di.DependencyInjectionManager()
+
+        manager.registry_for(lightbulb.di.Contexts.DEFAULT).register_value(str, "bar")
+        manager.registry_for(lightbulb.di.Contexts.DEFAULT).register_value(object, object())
+
+        @lightbulb.di.with_di
+        async def m(foo: str | object = lightbulb.di.INJECTED) -> None:
+            assert foo == "bar"
+
+        async with manager.enter_context(lightbulb.di.Contexts.DEFAULT):
+            await m()
+
+    @pytest.mark.asyncio
+    async def test_None_provided_if_no_dependencies_available(self) -> None:
+        manager = lightbulb.di.DependencyInjectionManager()
+
+        @lightbulb.di.with_di
+        async def m(foo: str | object | None = lightbulb.di.INJECTED) -> None:
+            assert foo is None
+
+        async with manager.enter_context(lightbulb.di.Contexts.DEFAULT):
+            await m()
+
+    @pytest.mark.asyncio
+    async def test_exception_raised_when_no_dependencies_available(self) -> None:
+        manager = lightbulb.di.DependencyInjectionManager()
+
+        @lightbulb.di.with_di
+        async def m(foo: str | object = lightbulb.di.INJECTED) -> None: ...
+
+        with pytest.raises(lightbulb.di.DependencyNotSatisfiableException):
+            async with manager.enter_context(lightbulb.di.Contexts.DEFAULT):
+                await m()
+
+
+class TestLazyInjecting:
+    def test_getattr_passes_through_to_function(self) -> None:
+        @lightbulb.di.with_di
+        def m() -> None: ...
+
+        assert m.__name__ == "m"
+
+    def test_setattr_passes_through_to_function(self) -> None:
+        def m() -> None: ...
+
+        fn = lightbulb.di.with_di(m)
+        fn.__lb_foo__ = "bar"  # type: ignore[reportFunctionMemberAccess]
+
+        assert m.__lb_foo__ == "bar"  # type: ignore[reportFunctionMemberAccess]
+
+    def test___get___within_class_does_not_assign_self(self) -> None:
+        class Foo:
+            @lightbulb.di.with_di
+            def m(self) -> None: ...
+
+        assert Foo.m._self is None  # type: ignore[reportFunctionMemberAccess]
+
 
 class TestDependencyInjectionManager:
     @pytest.mark.asyncio
@@ -272,3 +366,15 @@ class TestDependencyInjectionManager:
         await manager.close()
         assert default_container._closed
         assert manager.default_container is None
+
+
+class TestWithDiDecorator:
+    def test_does_not_enable_injection_when_injection_already_enabled(self) -> None:
+        method = lightbulb.di.with_di(lambda: None)
+        assert lightbulb.di.with_di(method) is method
+
+    def test_does_not_enable_injection_when_injection_globally_disabled(self) -> None:
+        solver.DI_ENABLED = False
+        method = lambda: None  # noqa: E731
+        assert lightbulb.di.with_di(method) is method
+        solver.DI_ENABLED = True

@@ -348,3 +348,22 @@ class TestContainerWithParent:
             async with di.Container(registry) as c:
                 pass
             await c.get(object)
+
+    @pytest.mark.asyncio
+    async def test_get_with_default_when_dependency_not_available_returns_default(self) -> None:
+        registry = di.Registry()
+
+        async with di.Container(registry) as c:
+            assert await c.get(object, default=None) is None
+
+    @pytest.mark.asyncio
+    async def test_get_with_default_when_sub_dependency_not_available_returns_default(self) -> None:
+        registry = di.Registry()
+
+        def f1(_: str) -> object:
+            return object()
+
+        registry.register_factory(object, f1)
+
+        async with di.Container(registry) as c:
+            assert await c.get(object, default=None) is None

@@ -42,10 +42,12 @@ import inspect
 import logging
 import os
 import sys
+import types
 import typing as t
 from collections.abc import AsyncIterator
 from collections.abc import Awaitable
 from collections.abc import Callable
+from collections.abc import Sequence
 
 from lightbulb import utils
 from lightbulb.di import container
@@ -54,7 +56,7 @@ from lightbulb.di import registry
 from lightbulb.internal import marker
 
 if t.TYPE_CHECKING:
-    from lightbulb.internal import types
+    from lightbulb.internal import types as lb_types
 
 P = t.ParamSpec("P")
 R = t.TypeVar("R")
@@ -236,12 +238,24 @@ class DependencyInjectionManager:
             self._default_container = None
 
 
-CANNOT_INJECT = object()
+class ParamInfo(t.NamedTuple):
+    name: str
+    types: Sequence[t.Any]
+    optional: bool
+    injectable: bool
 
 
-def _parse_injectable_params(func: Callable[..., t.Any]) -> tuple[list[tuple[str, t.Any]], dict[str, t.Any]]:
-    positional_or_keyword_params: list[tuple[str, t.Any]] = []
-    keyword_only_params: dict[str, t.Any] = {}
+def _get_requested_types(annotation: t.Any) -> tuple[Sequence[t.Any], bool]:
+    if t.get_origin(annotation) in (t.Union, types.UnionType):
+        args = t.get_args(annotation)
+
+        return tuple(a for a in args if a is not types.NoneType), types.NoneType in args
+    return (annotation,), False
+
+
+def _parse_injectable_params(func: Callable[..., t.Any]) -> tuple[list[ParamInfo], list[ParamInfo]]:
+    positional_or_keyword_params: list[ParamInfo] = []
+    keyword_only_params: list[ParamInfo] = []
 
     parameters = inspect.signature(func, locals={"lightbulb": sys.modules["lightbulb"]}, eval_str=True).parameters
     for parameter in parameters.values():
@@ -254,15 +268,19 @@ def _parse_injectable_params(func: Callable[..., t.Any]) -> tuple[list[tuple[str
             # If it has a default that isn't INJECTED
             or ((default := parameter.default) is not inspect.Parameter.empty and default is not INJECTED)
         ):
+            # We need to know about ALL pos-or-kw arguments so that we can exclude ones passed in
+            # when the injection-enabled function is called - this isn't the same for kw-only args
             if parameter.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
-                positional_or_keyword_params.append((parameter.name, CANNOT_INJECT))
+                positional_or_keyword_params.append(ParamInfo(parameter.name, (), False, False))
             continue
 
+        requested_types, optional = _get_requested_types(parameter.annotation)
+        param_info = ParamInfo(parameter.name, requested_types, optional, True)
         if parameter.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD:
-            positional_or_keyword_params.append((parameter.name, parameter.annotation))
+            positional_or_keyword_params.append(param_info)
         else:
             # It has to be a keyword-only parameter
-            keyword_only_params[parameter.name] = parameter.annotation
+            keyword_only_params.append(param_info)
 
     return positional_or_keyword_params, keyword_only_params
 
@@ -288,8 +306,8 @@ class AutoInjecting:
         self,
         func: Callable[..., Awaitable[t.Any]],
         self_: t.Any = None,
-        _cached_pos_or_kw_params: list[tuple[str, t.Any]] | None = None,
-        _cached_kw_only_params: dict[str, t.Any] | None = None,
+        _cached_pos_or_kw_params: list[ParamInfo] | None = None,
+        _cached_kw_only_params: list[ParamInfo] | None = None,
     ) -> None:
         self._func = func
         self._self: t.Any = self_
@@ -320,22 +338,41 @@ class AutoInjecting:
 
         di_container: container.Container | None = DI_CONTAINER.get(None)
 
-        injectables = {
-            name: type
-            for name, type in self._pos_or_kw_params[len(args) + (self._self is not None) :]
-            if name not in new_kwargs
-        }
-        injectables.update({name: type for name, type in self._kw_only_params.items() if name not in new_kwargs})
-
-        for name, type in injectables.items():
-            # Skip any arguments that we can't inject
-            if type is CANNOT_INJECT:
+        maybe_injectables = [*self._pos_or_kw_params[len(args) + (self._self is not None) :], *self._kw_only_params]
+        for param in maybe_injectables:
+            # Skip any parameters we already have a value for, or is not valid to be injected
+            if param.name in new_kwargs or not param.injectable:
                 continue
 
             if di_container is None:
                 raise exceptions.DependencyNotSatisfiableException("no DI context is available")
 
-            new_kwargs[name] = await di_container.get(type)
+            # Resolve the dependency, or None if the dependency is unsatisfied and is optional
+            if len(param.types) == 1:
+                default_kwarg = {"default": None} if param.optional else {}
+                new_kwargs[param.name] = await di_container.get(param.types[0], **default_kwarg)
+                continue
+
+            for i, type in enumerate(param.types):
+                resolved = await di_container.get(type, default=None)
+
+                # Check if this is the last type to check, and we couldn't resolve a dependency for it
+                if resolved is None and i == (len(param.types) - 1):
+                    # If this dependency is optional then set value to 'None'
+                    if param.optional:
+                        new_kwargs[param.name] = None
+                        break
+                    # We can't supply this dependency, so raise an exception
+                    raise exceptions.DependencyNotSatisfiableException(
+                        f"could not satisfy any dependencies for types {param.types}"
+                    )
+
+                # We couldn't supply this type, so continue and check the next one
+                if resolved is None:
+                    continue
+                # We could supply this type, set the parameter to the dependency and skip to the next parameter
+                new_kwargs[param.name] = resolved
+                break
 
         if self._self is not None:
             return await utils.maybe_await(self._func(self._self, *args, **new_kwargs))
@@ -347,10 +384,10 @@ def with_di(func: AsyncFnT) -> AsyncFnT: ...
 
 
 @t.overload
-def with_di(func: Callable[P, types.MaybeAwaitable[R]]) -> Callable[P, Awaitable[R]]: ...
+def with_di(func: Callable[P, lb_types.MaybeAwaitable[R]]) -> Callable[P, Awaitable[R]]: ...
 
 
-def with_di(func: Callable[P, types.MaybeAwaitable[R]]) -> Callable[P, Awaitable[R]]:
+def with_di(func: Callable[P, lb_types.MaybeAwaitable[R]]) -> Callable[P, Awaitable[R]]:
     """
     Decorator that enables dependency injection on the decorated function. If dependency injection
     has been disabled globally then this function does nothing and simply returns the object that was passed in.

@@ -82,6 +82,17 @@ class Container:
 
         self.add_value(Container, self)
 
+    def __contains__(self, item: type[t.Any]) -> bool:
+        dep_id = di_utils.get_dependency_id(item)
+        if dep_id not in self._graph:
+            return False
+
+        container = self._graph.nodes[dep_id]["container"]
+        if dep_id in container._instances:
+            return True
+
+        return container._graph.nodes[dep_id].get("factory") is not None
+
     async def __aenter__(self) -> Container:
         return self
 

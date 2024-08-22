@@ -383,10 +383,8 @@ Lightbulb will enable dependency injection on a specific subset of your methods 
 
 These are listed below:
 - {meth}`@lightbulb.invoke <lightbulb.commands.execution.invoke>`
-- {meth}`@Client.register <lightbulb.client.Client.register>`
 - {meth}`@Client.error_handler <lightbulb.client.Client.error_handler>`
 - {meth}`@Client.task <lightbulb.client.Client.task>`
-- {meth}`@Loader.command <lightbulb.loaders.Loader.command>` (due to it calling `Client.register` internally)
 - {meth}`@Loader.listener <lightbulb.loaders.Loader.listener>`
 - {meth}`@Loader.task <lightbulb.loaders.Loader.task>`
 

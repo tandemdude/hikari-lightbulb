@@ -247,6 +247,84 @@ class TestStandaloneContainer:
             async with di.Container(registry) as container:
                 await container.get(B)
 
+    @pytest.mark.asyncio
+    async def test_non_direct_circular_dependency_raises_exception(self) -> None:
+        # fmt: off
+        def f_a(_: B) -> object: return object()
+
+        def f_b(_: A) -> object: return object()
+
+        # fmt: on
+
+        registry = di.Registry()
+        registry.register_factory(A, f_a)
+        registry.register_factory(B, f_b)
+
+        with pytest.raises(di.CircularDependencyException):
+            async with di.Container(registry) as c:
+                await c.get(A)
+
+    @pytest.mark.asyncio
+    async def test_get_transient_dependency_raises_exception(self) -> None:
+        def f_a(_: B) -> object:
+            return object()
+
+        registry = di.Registry()
+        registry.register_factory(A, f_a)
+
+        with pytest.raises(di.DependencyNotSatisfiableException):
+            async with di.Container(registry) as c:
+                await c.get(B)
+
+    @pytest.mark.asyncio
+    async def test_get_from_closed_container_raises_exception(self) -> None:
+        registry = di.Registry()
+        registry.register_factory(object, lambda: object())
+
+        with pytest.raises(di.ContainerClosedException):
+            async with di.Container(registry) as c:
+                pass
+            await c.get(object)
+
+    @pytest.mark.asyncio
+    async def test_get_with_default_when_dependency_not_available_returns_default(self) -> None:
+        registry = di.Registry()
+
+        async with di.Container(registry) as c:
+            assert await c.get(object, default=None) is None
+
+    @pytest.mark.asyncio
+    async def test_get_with_default_when_sub_dependency_not_available_returns_default(self) -> None:
+        registry = di.Registry()
+
+        def f1(_: str) -> object:
+            return object()
+
+        registry.register_factory(object, f1)
+
+        async with di.Container(registry) as c:
+            assert await c.get(object, default=None) is None
+
+    @pytest.mark.asyncio
+    async def test__contains__returns_true_when_dependency_known_by_value(self) -> None:
+        registry = di.Registry()
+        async with di.Container(registry) as container:
+            container.add_value(object, object())
+            assert object in container
+
+    @pytest.mark.asyncio
+    async def test__contains__returns_true_when_dependency_known_by_factory(self) -> None:
+        registry = di.Registry()
+        async with di.Container(registry) as container:
+            container.add_factory(object, lambda: object())
+            assert object in container
+
+    @pytest.mark.asyncio
+    async def test__contains__returns_false_when_dependency_not_known(self) -> None:
+        registry = di.Registry()
+        async with di.Container(registry) as container:
+            assert object not in container
+
 
 class TestContainerWithParent:
     @pytest.mark.asyncio
@@ -313,57 +391,11 @@ class TestContainerWithParent:
                 await cc.get(B)
 
     @pytest.mark.asyncio
-    async def test_non_direct_circular_dependency_raises_exception(self) -> None:
-        # fmt: off
-        def f_a(_: B) -> object: return object()
-        def f_b(_: A) -> object: return object()
-        # fmt: on
+    async def test__contains__returns_true_when_dependency_known_by_parent(self) -> None:
+        r1 = di.Registry()
+        r1.register_value(object, object())
 
-        registry = di.Registry()
-        registry.register_factory(A, f_a)
-        registry.register_factory(B, f_b)
+        r2 = di.Registry()
 
-        with pytest.raises(di.CircularDependencyException):
-            async with di.Container(registry) as c:
-                await c.get(A)
-
-    @pytest.mark.asyncio
-    async def test_get_transient_dependency_raises_exception(self) -> None:
-        def f_a(_: B) -> object:
-            return object()
-
-        registry = di.Registry()
-        registry.register_factory(A, f_a)
-
-        with pytest.raises(di.DependencyNotSatisfiableException):
-            async with di.Container(registry) as c:
-                await c.get(B)
-
-    @pytest.mark.asyncio
-    async def test_get_from_closed_container_raises_exception(self) -> None:
-        registry = di.Registry()
-        registry.register_factory(object, lambda: object())
-
-        with pytest.raises(di.ContainerClosedException):
-            async with di.Container(registry) as c:
-                pass
-            await c.get(object)
-
-    @pytest.mark.asyncio
-    async def test_get_with_default_when_dependency_not_available_returns_default(self) -> None:
-        registry = di.Registry()
-
-        async with di.Container(registry) as c:
-            assert await c.get(object, default=None) is None
-
-    @pytest.mark.asyncio
-    async def test_get_with_default_when_sub_dependency_not_available_returns_default(self) -> None:
-        registry = di.Registry()
-
-        def f1(_: str) -> object:
-            return object()
-
-        registry.register_factory(object, f1)
-
-        async with di.Container(registry) as c:
-            assert await c.get(object, default=None) is None
+        async with di.Container(r1) as r1, di.Container(r2, parent=r1) as r2:
+            assert object in r2

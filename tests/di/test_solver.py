@@ -324,7 +324,7 @@ class TestLazyInjecting:
 
         assert m.__lb_foo__ == "bar"  # type: ignore[reportFunctionMemberAccess]
 
-    def test___get___within_class_does_not_assign_self(self) -> None:
+    def test__get__within_class_does_not_assign_self(self) -> None:
         class Foo:
             @lightbulb.di.with_di
             def m(self) -> None: ...

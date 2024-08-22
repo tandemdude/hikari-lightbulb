@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import types
 import typing as t
 
 import pytest
@@ -70,3 +71,13 @@ class TestRegistry:
         registry = di.Registry()
         T = t.NewType("T", object)
         assert T not in registry
+
+    def test_cannot_register_dependency_by_value_for_NoneType(self) -> None:
+        registry = di.Registry()
+        with pytest.raises(ValueError):
+            registry.register_value(types.NoneType, None)
+
+    def test_cannot_register_dependency_by_factory_for_NoneType(self) -> None:
+        registry = di.Registry()
+        with pytest.raises(ValueError):
+            registry.register_factory(types.NoneType, lambda: None)

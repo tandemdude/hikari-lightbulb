@@ -22,6 +22,7 @@ from __future__ import annotations
 
 __all__ = ["Container"]
 
+import types
 import typing as t
 
 import networkx as nx
@@ -33,7 +34,6 @@ from lightbulb.di import utils as di_utils
 from lightbulb.internal import marker
 
 if t.TYPE_CHECKING:
-    import types
     from collections.abc import Callable
 
     from lightbulb.internal import types as lb_types
@@ -131,9 +131,15 @@ class Container:
         Returns:
             :obj:`None`
 
+        Raises:
+            :obj:`ValueError`: When attempting to add a dependency for ``NoneType``.
+
         See Also:
             :meth:`lightbulb.di.registry.Registry.add_factory` for factory and teardown function spec.
         """
+        if typ is types.NoneType:
+            raise ValueError("cannot register type 'NoneType' - 'None' is used for optional dependencies")
+
         dependency_id = di_utils.get_dependency_id(typ)
 
         if dependency_id in self._graph:
@@ -159,9 +165,15 @@ class Container:
         Returns:
             :obj:`None`
 
+        Raises:
+            :obj:`ValueError`: When attempting to add a dependency for ``NoneType``.
+
         See Also:
             :meth:`lightbulb.di.registry.Registry.add_value` for teardown function spec.
         """
+        if typ is types.NoneType:
+            raise ValueError("cannot register type 'NoneType' - 'None' is used for optional dependencies")
+
         dependency_id = di_utils.get_dependency_id(typ)
         self._instances[dependency_id] = value
 

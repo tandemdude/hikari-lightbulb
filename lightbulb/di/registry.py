@@ -22,6 +22,7 @@ from __future__ import annotations
 
 __all__ = ["Registry"]
 
+import types
 import typing as t
 
 import networkx as nx
@@ -33,7 +34,7 @@ if t.TYPE_CHECKING:
     from collections.abc import Callable
 
     from lightbulb.di import container
-    from lightbulb.internal import types
+    from lightbulb.internal import types as lb_types
 
 T = t.TypeVar("T")
 
@@ -84,7 +85,7 @@ class Registry:
         typ: type[T],
         value: T,
         *,
-        teardown: Callable[[T], types.MaybeAwaitable[None]] | None = None,
+        teardown: Callable[[T], lb_types.MaybeAwaitable[None]] | None = None,
     ) -> None:
         """
         Registers a pre-existing value as a dependency.
@@ -100,15 +101,16 @@ class Registry:
 
         Raises:
             :obj:`lightbulb.di.exceptions.RegistryFrozenException`: If the registry is frozen.
+            :obj:`ValueError`: When attempting to register a dependency for ``NoneType``.
         """
         self.register_factory(typ, lambda: value, teardown=teardown)
 
     def register_factory(
         self,
         typ: type[T],
-        factory: Callable[..., types.MaybeAwaitable[T]],
+        factory: Callable[..., lb_types.MaybeAwaitable[T]],
         *,
-        teardown: Callable[[T], types.MaybeAwaitable[None]] | None = None,
+        teardown: Callable[[T], lb_types.MaybeAwaitable[None]] | None = None,
     ) -> None:
         """
         Registers a factory for creating a dependency.
@@ -127,9 +129,13 @@ class Registry:
         Raises:
             :obj:`lightbulb.di.exceptions.RegistryFrozenException`: If the registry is frozen.
             :obj:`lightbulb.di.exceptions.CircularDependencyException`: If the factory requires itself as a dependency.
+            :obj:`ValueError`: When attempting to register a dependency for ``NoneType``.
         """
         if self._active_containers:
             raise exceptions.RegistryFrozenException
+
+        if typ is types.NoneType:
+            raise ValueError("cannot register type 'NoneType' - 'None' is used for optional dependencies")
 
         dependency_id = di_utils.get_dependency_id(typ)
 

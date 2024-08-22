@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import inspect
+import types
 import typing as t
 from unittest import mock
 
@@ -324,6 +325,20 @@ class TestStandaloneContainer:
         registry = di.Registry()
         async with di.Container(registry) as container:
             assert object not in container
+
+    @pytest.mark.asyncio
+    async def test_cannot_register_dependency_by_value_for_NoneType(self) -> None:
+        registry = di.Registry()
+        with pytest.raises(ValueError):
+            async with di.Container(registry) as container:
+                container.add_value(types.NoneType, None)
+
+    @pytest.mark.asyncio
+    async def test_cannot_register_dependency_by_factory_for_NoneType(self) -> None:
+        registry = di.Registry()
+        with pytest.raises(ValueError):
+            async with di.Container(registry) as container:
+                container.add_factory(types.NoneType, lambda: None)
 
 
 class TestContainerWithParent:

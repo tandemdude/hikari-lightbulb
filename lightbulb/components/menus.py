@@ -322,10 +322,19 @@ class ChannelSelect(Select[hikari.PartialChannel]):
 class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]):
     """Class representing the context for an invocation of a component that belongs to a menu."""
 
-    __slots__ = ("_interaction", "_should_re_resolve_custom_ids", "_should_stop_menu", "_timeout", "component", "menu")
+    __slots__ = (
+        "_interaction",
+        "_should_re_resolve_custom_ids",
+        "_should_stop_menu",
+        "_timeout",
+        "client",
+        "component",
+        "menu",
+    )
 
     def __init__(
         self,
+        client: client_.Client,
         menu: Menu,
         interaction: hikari.ComponentInteraction,
         component: base.BaseComponent[special_endpoints.MessageActionRowBuilder],
@@ -333,6 +342,8 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
     ) -> None:
         super().__init__()
 
+        self.client: client_.Client = client
+        """The client that is handling interactions for this context."""
         self.menu: Menu = menu
         """The menu that this context is for."""
         self._interaction: hikari.ComponentInteraction = interaction
@@ -831,7 +842,9 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
                         continue
 
                     component = all_custom_ids[interaction.custom_id]
-                    context = MenuContext(menu=self, interaction=interaction, component=component, _timeout=tm)
+                    context = MenuContext(
+                        client=client, menu=self, interaction=interaction, component=component, _timeout=tm
+                    )
 
                     if await self.predicate(context):
                         callback: t.Callable[[MenuContext], t.Awaitable[None]] = getattr(component, "callback")

@@ -98,11 +98,13 @@ class TextInput(base.BaseComponent[special_endpoints.ModalActionRowBuilder]):
 class ModalContext(context.MessageResponseMixin[hikari.ModalInteraction]):
     """Class representing the context for a modal interaction."""
 
-    __slots__ = ("_interaction", "modal")
+    __slots__ = ("_interaction", "client", "modal")
 
-    def __init__(self, modal: Modal, interaction: hikari.ModalInteraction) -> None:
+    def __init__(self, client: client_.Client, modal: Modal, interaction: hikari.ModalInteraction) -> None:
         super().__init__()
 
+        self.client: client_.Client = client
+        """The client that is handling interactions for this context."""
         self.modal: Modal = modal
         """The modal this context is for."""
         self._interaction: hikari.ModalInteraction = interaction
@@ -273,7 +275,7 @@ class Modal(base.BuildableComponentContainer[special_endpoints.ModalActionRowBui
                     if interaction.custom_id != custom_id:
                         continue
 
-                    context = ModalContext(modal=self, interaction=interaction)
+                    context = ModalContext(client=client, modal=self, interaction=interaction)
                     await self.on_submit(context)
 
                     stopped = True

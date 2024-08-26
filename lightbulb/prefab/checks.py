@@ -21,11 +21,17 @@
 __all__ = [
     "BotMissingRequiredPermissions",
     "MissingRequiredPermission",
+    "MissingRequiredRoles",
     "NotOwner",
     "bot_has_permissions",
     "has_permissions",
+    "has_roles",
     "owner_only",
 ]
+
+import typing as t
+from collections.abc import Iterable
+from collections.abc import Sequence
 
 import hikari
 
@@ -150,3 +156,55 @@ def bot_has_permissions(permissions: hikari.Permissions, /, *, fail_in_dm: bool 
             )
 
     return _bot_has_permissions
+
+
+class MissingRequiredRoles(Exception):
+    """Exception raised when the user invoking the command is missing one or more required roles."""
+
+    def __init__(self, role_ids: Sequence[hikari.Snowflakeish]) -> None:
+        self.role_ids: Sequence[hikari.Snowflakeish] = role_ids
+        """The IDs of the roles the user is missing."""
+
+
+def has_roles(
+    *role_ids: hikari.Snowflakeish | Iterable[hikari.Snowflakeish],
+    mode: t.Literal["all", "any"] = "all",
+    fail_in_dm: bool = True,
+) -> execution.ExecutionHook:
+    """
+    Creates a hook that checks whether the user invoking the command has a correct subset of the given roles.
+
+    Args:
+        *role_ids: The IDs of the role(s) that the user should have.
+        mode: Whether the user is required to have all the given roles, or any subset of them.
+        fail_in_dm: Whether this hook should fail if the command is invoked within a DM. Defaults to :obj:`True`.
+
+    Returns:
+        The created hook.
+
+    Example:
+
+        .. code-block:: python
+
+            class YourCommand(
+                ...,
+                hooks=[lightbulb.prefab.has_roles(123, 456, 789, mode="any")]
+            ):
+                ...
+    """
+    flattened_role_ids = [elem for item in role_ids for elem in (item if isinstance(item, Iterable) else [item])]
+
+    @execution.hook(execution.ExecutionSteps.CHECKS, skip_when_failed=True)
+    def _has_roles(_: execution.ExecutionPipeline, ctx: context.Context) -> None:
+        if ctx.member is None:
+            if fail_in_dm:
+                raise MissingRequiredRoles(flattened_role_ids)
+            return
+
+        missing = set(flattened_role_ids).difference(ctx.member.role_ids)
+        if mode == "all" and missing:
+            raise MissingRequiredRoles(list(missing))
+        elif mode == "any" and len(missing) == len(role_ids):
+            raise MissingRequiredRoles(flattened_role_ids)
+
+    return _has_roles

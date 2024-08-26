@@ -162,7 +162,9 @@ class Container:
 
         data = self._graph.nodes.get(dependency_id)
         if data is None or data.get("container") is None:
-            raise exceptions.DependencyNotSatisfiableException
+            raise exceptions.DependencyNotSatisfiableException(
+                f"could not create dependency {dependency_id!r} - not provided by this or a parent container"
+            )
 
         existing_dependency = data["container"]._instances.get(dependency_id)
         if existing_dependency is not None:

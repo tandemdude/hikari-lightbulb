@@ -188,3 +188,7 @@ class TestHasRoles:
     async def test_passes_when_in_dm_and_fail_in_dm_false(self, context: lightbulb.Context) -> None:
         context.member = None  # type: ignore[reportAttributeAccessIssue]
         await lightbulb.prefab.has_roles(123, 456, 789, fail_in_dm=False)(mock.Mock(), context)
+
+    @pytest.mark.asyncio
+    async def test_passes_when_role_ids_passed_in_as_iterable(self, context: lightbulb.Context) -> None:
+        await lightbulb.prefab.has_roles([123, 456, 789])(mock.Mock(), context)

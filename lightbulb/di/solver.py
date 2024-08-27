@@ -46,6 +46,7 @@ import typing as t
 from collections.abc import AsyncIterator
 from collections.abc import Awaitable
 from collections.abc import Callable
+from collections.abc import Coroutine
 
 from lightbulb import utils
 from lightbulb.di import container
@@ -58,7 +59,7 @@ if t.TYPE_CHECKING:
 
 P = t.ParamSpec("P")
 R = t.TypeVar("R")
-AsyncFnT = t.TypeVar("AsyncFnT", bound=Callable[..., Awaitable[t.Any]])
+AsyncFnT = t.TypeVar("AsyncFnT", bound=Callable[..., Coroutine[t.Any, t.Any, t.Any]])
 
 DI_ENABLED: t.Final[bool] = os.environ.get("LIGHTBULB_DI_DISABLED", "false").lower() != "true"
 DI_CONTAINER: contextvars.ContextVar[container.Container | None] = contextvars.ContextVar(
@@ -342,15 +343,7 @@ class AutoInjecting:
         return await utils.maybe_await(self._func(*args, **new_kwargs))
 
 
-@t.overload
-def with_di(func: AsyncFnT) -> AsyncFnT: ...
-
-
-@t.overload
-def with_di(func: Callable[P, types.MaybeAwaitable[R]]) -> Callable[P, Awaitable[R]]: ...
-
-
-def with_di(func: Callable[P, types.MaybeAwaitable[R]]) -> Callable[P, Awaitable[R]]:
+def with_di(func: Callable[P, types.MaybeAwaitable[R]]) -> Callable[P, Coroutine[t.Any, t.Any, R]]:
     """
     Decorator that enables dependency injection on the decorated function. If dependency injection
     has been disabled globally then this function does nothing and simply returns the object that was passed in.

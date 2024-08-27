@@ -408,7 +408,7 @@ class Client(abc.ABC):
             sorted_handlers = sorted(self._error_handlers.items(), key=lambda item: item[0], reverse=True)
             self._error_handlers = {k: v for k, v in sorted_handlers}
 
-            return wrapped
+            return t.cast(ErrorHandlerT, wrapped)
 
         def _inner(func_: ErrorHandlerT) -> ErrorHandlerT:
             return self.error_handler(func_, priority=priority)
@@ -1027,7 +1027,7 @@ class Client(abc.ABC):
 
                 handled = False
                 while all_handlers and not handled:
-                    handled = await (all_handlers.pop(0))(ex)
+                    handled = await utils.maybe_await((all_handlers.pop(0))(ex))
 
                 if not handled:
                     LOGGER.error(

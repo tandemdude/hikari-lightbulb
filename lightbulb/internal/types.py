@@ -26,7 +26,6 @@ __all__ = [
 ]
 
 import typing as t
-from collections.abc import Awaitable
 from collections.abc import Callable
 from collections.abc import Iterable
 
@@ -39,12 +38,12 @@ if t.TYPE_CHECKING:
 
 T = t.TypeVar("T")
 
-MaybeAwaitable: t.TypeAlias = t.Union[T, Awaitable[T]]
+MaybeAwaitable: t.TypeAlias = t.Union[T, t.Coroutine[t.Any, t.Any, T]]
 """TypeAlias for an item that might be able to be awaited."""
 CommandOrGroup: t.TypeAlias = t.Union["groups.Group", type["commands.CommandBase"]]
 # Annoyingly can't replace this with 'Callable' because the concatenate I use isn't supported
 ErrorHandler: t.TypeAlias = t.Callable[
-    "t.Concatenate[exceptions.ExecutionPipelineFailedException, ...]", Awaitable[bool]
+    "t.Concatenate[exceptions.ExecutionPipelineFailedException, ...]", MaybeAwaitable[bool]
 ]
 DeferredRegistrationCallback: t.TypeAlias = Callable[
     [CommandOrGroup], MaybeAwaitable[tuple[Iterable[hikari.Snowflakeish], bool] | None]

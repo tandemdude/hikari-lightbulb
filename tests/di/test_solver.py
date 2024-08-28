@@ -321,7 +321,7 @@ class TestDependencyInjectionManager:
         solver._NOOP_CONTAINER.add_factory(object, object)
 
 
-class TestLazyInjecting:
+class TestAutoInjecting:
     def test_setattr_passes_through_to_wrapped_function(self) -> None:
         wrapped = lightbulb.di.with_di(func := lambda: "foo")
         setattr(wrapped, "__lb_test__", "bar")

@@ -25,7 +25,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
-dependencies = ["hikari>=2.0.0.dev126, <3", "networkx>=3.3, <4", "async-timeout>=4, <5"]
+dependencies = ["hikari~=2.0.0", "networkx>=3.3, <4", "async-timeout>=4, <5"]
 dynamic = ["version", "description"]
 
 [project.urls]

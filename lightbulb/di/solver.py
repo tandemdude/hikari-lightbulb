@@ -43,10 +43,6 @@ import logging
 import os
 import sys
 import typing as t
-from collections.abc import AsyncIterator
-from collections.abc import Awaitable
-from collections.abc import Callable
-from collections.abc import Coroutine
 
 from lightbulb import utils
 from lightbulb.di import container
@@ -55,11 +51,16 @@ from lightbulb.di import registry
 from lightbulb.internal import marker
 
 if t.TYPE_CHECKING:
-    from lightbulb.internal import types
+    from collections.abc import AsyncIterator
+    from collections.abc import Awaitable
+    from collections.abc import Callable
+    from collections.abc import Coroutine
+
+    from lightbulb.internal import types as lb_types
 
 P = t.ParamSpec("P")
 R = t.TypeVar("R")
-AsyncFnT = t.TypeVar("AsyncFnT", bound=Callable[..., Coroutine[t.Any, t.Any, t.Any]])
+T = t.TypeVar("T")
 
 DI_ENABLED: t.Final[bool] = os.environ.get("LIGHTBULB_DI_DISABLED", "false").lower() != "true"
 DI_CONTAINER: contextvars.ContextVar[container.Container | None] = contextvars.ContextVar(
@@ -132,6 +133,32 @@ _CONTAINER_TYPE_BY_CONTEXT = {
 }
 
 
+class _NoOpContainer(container.Container):
+    __slots__ = ()
+
+    def add_factory(
+        self,
+        typ: type[T],
+        factory: Callable[..., lb_types.MaybeAwaitable[T]],
+        *,
+        teardown: Callable[[T], lb_types.MaybeAwaitable[None]] | None = None,
+    ) -> None: ...
+
+    def add_value(
+        self,
+        typ: type[T],
+        value: T,
+        *,
+        teardown: Callable[[T], lb_types.MaybeAwaitable[None]] | None = None,
+    ) -> None: ...
+
+    def _get(self, dependency_id: str) -> t.Any:
+        raise exceptions.DependencyNotSatisfiableException("dependency injection is globally disabled")
+
+
+_NOOP_CONTAINER = _NoOpContainer(registry.Registry(), tag=Contexts.DEFAULT)
+
+
 class DependencyInjectionManager:
     """Class which contains dependency injection functionality."""
 
@@ -167,9 +194,8 @@ class DependencyInjectionManager:
         Context manager that ensures a dependency injection context is available for the nested operations.
 
         Args:
-            context: The context to enter. If you are trying to enter a non-default (:obj:`~DiContext.DEFAULT`) context,
-                the default context will be entered first to ensure its dependencies are available. Defaults to
-                :obj:`~DiContext.DEFAULT`.
+            context: The context to enter. If a container for the given context already exists, it will be returned
+                and a new container will not be created.
 
         Yields:
             :obj:`~lightbulb.di.container.Container`: The container that has been entered.
@@ -179,8 +205,20 @@ class DependencyInjectionManager:
             .. code-block:: python
 
                 # Enter a specific context ('client' is your lightbulb.Client instance)
-                with client.di.enter_context(lightbulb.di.DiContext.COMMAND):
+                async with client.di.enter_context(lightbulb.di.Contexts.COMMAND):
                     await some_function_that_needs_dependencies()
+
+        Note:
+            If you want to enter multiple contexts - i.e. a command context that requires the default context to
+            be available first - you should call this once for each context that is needed.
+
+            .. code-block:: python
+
+                async with (
+                    client.di.enter_context(lightbulb.di.Contexts.DEFAULT),
+                    client.di.enter_context(lightbulb.di.Contexts.COMMAND)
+                ):
+                    ...
 
         Warning:
             If you have disabled dependency injection using the ``LIGHTBULB_DI_DISABLED`` environment variable,
@@ -189,40 +227,52 @@ class DependencyInjectionManager:
             to prevent your type-checker complaining about not checking for :obj:`None`.
         """
         if not DI_ENABLED:
-            # I'm not sure how to deal with this - but I definitely don't want to hint the return type
-            # as optional because that adds annoying assertions further down the line for users
-            #
-            # I think I should just account for this internally within the library and document the
-            # behaviour - chances are almost all users will never come across this
-            yield None  # type: ignore
+            # Return a container that will never register dependencies and cannot have dependencies
+            # retrieved from it - it will always raise an error if someone tries to use DI while it is
+            # globally disabled.
+            yield _NOOP_CONTAINER
             return
 
-        initial_token, initial = None, DI_CONTAINER.get(None)
-        if initial is None:
-            if self._default_container is None:
-                self._default_container = container.Container(self._registries[Contexts.DEFAULT])
-                self._default_container.add_value(DefaultContainer, self._default_container)
+        LOGGER.debug("attempting to enter context %r", context)
 
-            initial_token = DI_CONTAINER.set(self._default_container)
+        new_container: container.Container | None = None
+        created: bool = False
 
-        ctx_token: contextvars.Token[container.Container | None] | None = None
-        if context != Contexts.DEFAULT:
-            new_container = container.Container(self._registries[context], parent=DI_CONTAINER.get())
+        token, value = None, DI_CONTAINER.get(None)
+        if value is not None:
+            LOGGER.debug("searching for existing container for context %r", context)
+            this = value
+            while this:
+                if this._tag == context:
+                    new_container = this
+                    LOGGER.debug("existing container found for context %r", context)
+                    break
+
+                this = this._parent
+
+        if new_container is None:
+            LOGGER.debug("creating new container for context %r", context)
+
+            new_container = container.Container(self._registries[context], parent=value, tag=context)
             new_container.add_value(_CONTAINER_TYPE_BY_CONTEXT[context], new_container)
-            ctx_token = DI_CONTAINER.set(new_container)
+
+            if context == Contexts.DEFAULT:
+                self._default_container = new_container
+
+            created = True
+
+        token = DI_CONTAINER.set(new_container)
+        LOGGER.debug("entered context %r", context)
 
         try:
-            if (ct := DI_CONTAINER.get(None)) is not None:
-                if ct is self.default_container:
-                    yield ct
-                else:
-                    async with ct:
-                        yield ct
+            if new_container is self._default_container or not created:
+                yield new_container
+            else:
+                async with new_container:
+                    yield new_container
         finally:
-            if ctx_token is not None:
-                DI_CONTAINER.reset(ctx_token)
-            if initial_token is not None:
-                DI_CONTAINER.reset(initial_token)
+            DI_CONTAINER.reset(token)
+            LOGGER.debug("cleared context %r", context)
 
     async def close(self) -> None:
         """
@@ -237,7 +287,7 @@ class DependencyInjectionManager:
             self._default_container = None
 
 
-CANNOT_INJECT = object()
+CANNOT_INJECT: t.Final[t.Any] = marker.Marker("CANNOT_INJECT")
 
 
 def _parse_injectable_params(func: Callable[..., t.Any]) -> tuple[list[tuple[str, t.Any]], dict[str, t.Any]]:
@@ -336,6 +386,7 @@ class AutoInjecting:
             if di_container is None:
                 raise exceptions.DependencyNotSatisfiableException("no DI context is available")
 
+            LOGGER.debug("requesting dependency for type %r", type)
             new_kwargs[name] = await di_container.get(type)
 
         if self._self is not None:
@@ -343,7 +394,7 @@ class AutoInjecting:
         return await utils.maybe_await(self._func(*args, **new_kwargs))
 
 
-def with_di(func: Callable[P, types.MaybeAwaitable[R]]) -> Callable[P, Coroutine[t.Any, t.Any, R]]:
+def with_di(func: Callable[P, lb_types.MaybeAwaitable[R]]) -> Callable[P, Coroutine[t.Any, t.Any, R]]:
     """
     Decorator that enables dependency injection on the decorated function. If dependency injection
     has been disabled globally then this function does nothing and simply returns the object that was passed in.

@@ -35,6 +35,7 @@ if t.TYPE_CHECKING:
     import types
     from collections.abc import Callable
 
+    from lightbulb.di import solver
     from lightbulb.internal import types as lb_types
 
 T = t.TypeVar("T")
@@ -49,12 +50,15 @@ class Container:
         parent: The parent container. Defaults to None.
     """
 
-    __slots__ = ("_closed", "_graph", "_instances", "_parent", "_registry")
+    __slots__ = ("_closed", "_graph", "_instances", "_parent", "_registry", "_tag")
 
-    def __init__(self, registry: registry_.Registry, *, parent: Container | None = None) -> None:
+    def __init__(
+        self, registry: registry_.Registry, *, parent: Container | None = None, tag: solver.Context | None = None
+    ) -> None:
         self._registry = registry
         self._registry._freeze(self)
         self._parent = parent
+        self._tag = tag
 
         self._closed = False
 

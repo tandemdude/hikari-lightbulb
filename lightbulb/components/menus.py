@@ -55,11 +55,13 @@ if t.TYPE_CHECKING:
 
     from lightbulb import client as client_
 
-    ValidSelectOptions: t.TypeAlias = t.Union[Sequence["TextSelectOption"], Sequence[str], Sequence[tuple[str, str]]]
+    ValidSelectOptions: t.TypeAlias = t.Union[Sequence["TextSelectOption"],
+                                              Sequence[str], Sequence[tuple[str, str]]]
     ComponentCallback: t.TypeAlias = Callable[["MenuContext"], Awaitable[None]]
 
 T = t.TypeVar("T")
-MessageComponentT = t.TypeVar("MessageComponentT", bound=base.BaseComponent[special_endpoints.MessageActionRowBuilder])
+MessageComponentT = t.TypeVar(
+    "MessageComponentT", bound=base.BaseComponent[special_endpoints.MessageActionRowBuilder])
 
 Emojiish: t.TypeAlias = t.Union[hikari.Snowflakeish, str, hikari.Emoji]
 
@@ -67,7 +69,8 @@ Emojiish: t.TypeAlias = t.Union[hikari.Snowflakeish, str, hikari.Emoji]
 class InteractiveButton(base.BaseComponent[special_endpoints.MessageActionRowBuilder]):
     """Class representing an interactive button."""
 
-    __slots__ = ("_custom_id", "callback", "disabled", "emoji", "label", "style")
+    __slots__ = ("_custom_id", "callback", "disabled",
+                 "emoji", "label", "style")
 
     def __init__(
         self,
@@ -140,7 +143,8 @@ class LinkButton(base.BaseComponent[special_endpoints.MessageActionRowBuilder]):
 class Select(t.Generic[T], base.BaseComponent[special_endpoints.MessageActionRowBuilder], abc.ABC):
     """Dataclass representing a generic select menu."""
 
-    __slots__ = ("_custom_id", "callback", "disabled", "max_values", "min_values", "placeholder")
+    __slots__ = ("_custom_id", "callback", "disabled",
+                 "max_values", "min_values", "placeholder")
 
     def __init__(
         self,
@@ -222,7 +226,8 @@ class TextSelect(Select[str]):
             if isinstance(option, str):
                 normalised_options.append(TextSelectOption(option, option))
             elif isinstance(option, tuple):
-                normalised_options.append(TextSelectOption(option[0], option[1]))
+                normalised_options.append(
+                    TextSelectOption(option[0], option[1]))
             else:
                 normalised_options.append(option)
 
@@ -305,7 +310,8 @@ class ChannelSelect(Select[hikari.PartialChannel]):
     ) -> None:
         super().__init__(custom_id, placeholder, min_values, max_values, disabled, callback)
 
-        self.channel_types: hikari.UndefinedOr[Sequence[hikari.ChannelType]] = channel_types
+        self.channel_types: hikari.UndefinedOr[Sequence[hikari.ChannelType]
+                                               ] = channel_types
         """Channel types permitted to be shown as options."""
 
     def add_to_row(self, row: special_endpoints.MessageActionRowBuilder) -> special_endpoints.MessageActionRowBuilder:
@@ -436,8 +442,7 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
                 resolved_data.members.get(sf)
                 or resolved_data.users.get(sf)
                 or resolved_data.roles.get(sf)
-                # type: ignore[reportArgumentType]
-                or resolved_data.channels[sf]
+                or resolved_data.channels[sf] # type: ignore[reportArgumentType]
             )
 
         return resolved
@@ -447,7 +452,8 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
         title: str,
         custom_id: str,
         component: hikari.UndefinedOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
-        components: hikari.UndefinedOr[Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
+        components: hikari.UndefinedOr[Sequence[special_endpoints.ComponentBuilder]
+                                       ] = hikari.UNDEFINED,
     ) -> None:
         """
         Create a modal response to the interaction that this context represents.
@@ -466,7 +472,8 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
         """
         async with self._response_lock:
             if self._initial_response_sent:
-                raise RuntimeError("cannot respond with a modal if an initial response has already been sent")
+                raise RuntimeError(
+                    "cannot respond with a modal if an initial response has already been sent")
 
             await self.interaction.create_modal_response(title, custom_id, component, components)
             self._initial_response_sent = True
@@ -481,14 +488,18 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
         flags: int | hikari.MessageFlag | hikari.UndefinedType = hikari.UNDEFINED,
         tts: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
         attachment: hikari.UndefinedOr[hikari.Resourceish] = hikari.UNDEFINED,
-        attachments: hikari.UndefinedOr[Sequence[hikari.Resourceish]] = hikari.UNDEFINED,
+        attachments: hikari.UndefinedOr[Sequence[hikari.Resourceish]
+                                        ] = hikari.UNDEFINED,
         component: hikari.UndefinedOr[special_endpoints.ComponentBuilder] = hikari.UNDEFINED,
-        components: hikari.UndefinedOr[Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
+        components: hikari.UndefinedOr[Sequence[special_endpoints.ComponentBuilder]
+                                       ] = hikari.UNDEFINED,
         embed: hikari.UndefinedOr[hikari.Embed] = hikari.UNDEFINED,
         embeds: hikari.UndefinedOr[Sequence[hikari.Embed]] = hikari.UNDEFINED,
         mentions_everyone: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
-        user_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialUser] | bool] = hikari.UNDEFINED,
-        role_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialRole] | bool] = hikari.UNDEFINED,
+        user_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialUser]
+                                          | bool] = hikari.UNDEFINED,
+        role_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialRole]
+                                          | bool] = hikari.UNDEFINED,
     ) -> hikari.Snowflakeish:
         """
         Create a response to the interaction that this context represents.
@@ -581,7 +592,8 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         *,
         custom_id: hikari.UndefinedOr[str] = hikari.UNDEFINED,
         label: hikari.UndefinedOr[str] = hikari.UNDEFINED,
-        emoji: hikari.UndefinedOr[hikari.Snowflakeish | str | hikari.Emoji] = hikari.UNDEFINED,
+        emoji: hikari.UndefinedOr[hikari.Snowflakeish |
+                                  str | hikari.Emoji] = hikari.UNDEFINED,
         disabled: bool = False,
     ) -> InteractiveButton:
         """
@@ -603,7 +615,8 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
             :obj:`ValueError`: When neither ``label`` nor ``emoji`` are specified.
         """
         if label is hikari.UNDEFINED and emoji is hikari.UNDEFINED:
-            raise ValueError("at least one of 'label' and 'emoji' must be specified")
+            raise ValueError(
+                "at least one of 'label' and 'emoji' must be specified")
 
         return self.add(
             InteractiveButton(
@@ -621,7 +634,8 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         url: str,
         *,
         label: hikari.UndefinedOr[str] = hikari.UNDEFINED,
-        emoji: hikari.UndefinedOr[hikari.Snowflakeish | str | hikari.Emoji] = hikari.UNDEFINED,
+        emoji: hikari.UndefinedOr[hikari.Snowflakeish |
+                                  str | hikari.Emoji] = hikari.UNDEFINED,
         disabled: bool = False,
     ) -> LinkButton:
         """
@@ -640,7 +654,8 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
             :obj:`ValueError`: When neither ``label`` nor ``emoji`` are specified.
         """
         if label is hikari.UNDEFINED and emoji is hikari.UNDEFINED:
-            raise ValueError("at least one of 'label' and 'emoji' must be specified")
+            raise ValueError(
+                "at least one of 'label' and 'emoji' must be specified")
 
         return self.add(LinkButton(url=url, label=label, emoji=emoji, disabled=disabled))
 
@@ -800,7 +815,8 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         min_values: int = 1,
         max_values: int = 1,
         disabled: bool = False,
-        channel_types: hikari.UndefinedOr[Sequence[hikari.ChannelType]] = hikari.UNDEFINED,
+        channel_types: hikari.UndefinedOr[Sequence[hikari.ChannelType]
+                                          ] = hikari.UNDEFINED,
     ) -> ChannelSelect:
         """
         Add a channel select menu to this menu.
@@ -831,7 +847,8 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         )
 
     async def _run_menu(self, client: client_.Client, timeout: float | None = None) -> None:  # noqa: ASYNC109
-        all_custom_ids: dict[str, base.BaseComponent[special_endpoints.MessageActionRowBuilder]] = {}
+        all_custom_ids: dict[str,
+                             base.BaseComponent[special_endpoints.MessageActionRowBuilder]] = {}
         re_resolve_custom_ids: bool = True
 
         queue: asyncio.Queue[hikari.ComponentInteraction] = asyncio.Queue()
@@ -860,7 +877,8 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
                     )
 
                     if await self.predicate(context):
-                        callback: t.Callable[[MenuContext], t.Awaitable[None]] = getattr(component, "callback")
+                        callback: t.Callable[[MenuContext], t.Awaitable[None]] = getattr(
+                            component, "callback")
                         await callback(context)
 
                     stopped = context._should_stop_menu

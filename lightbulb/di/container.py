@@ -177,7 +177,7 @@ class Container:
                 f"cannot provide {dependency_id!r} - circular dependency found during creation"
             )
 
-        LOGGER.debug("dependency %r depends on %s", dependency_id, creation_order)
+        LOGGER.debug("dependency %r depends on %s", dependency_id, creation_order[:-1])
         for dep_id in creation_order:
             # We already have the dependency we need
             if dep_id in self._instances:

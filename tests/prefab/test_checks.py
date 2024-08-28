@@ -27,7 +27,7 @@ import lightbulb
 
 
 class TestOwnerOnly:
-    @pytest.fixture
+    @pytest.fixture(scope="function")
     def application(self) -> hikari.Application:
         app = mock.Mock(spec=hikari.Application)
         app.owner.id = 123
@@ -70,7 +70,7 @@ class TestOwnerOnly:
 
 
 class TestHasPermissions:
-    @pytest.fixture
+    @pytest.fixture(scope="function")
     def context(self) -> lightbulb.Context:
         ctx = mock.Mock(spec=lightbulb.Context)
         ctx.member = mock.Mock(permissions=hikari.Permissions.all_permissions())
@@ -104,7 +104,7 @@ class TestHasPermissions:
 
 
 class TestBotHasPermissions:
-    @pytest.fixture
+    @pytest.fixture(scope="function")
     def context(self) -> lightbulb.Context:
         ctx = mock.Mock(spec=lightbulb.Context)
         ctx.interaction = mock.Mock(app_permissions=hikari.Permissions.all_permissions())
@@ -140,7 +140,7 @@ class TestBotHasPermissions:
 
 
 class TestHasRoles:
-    @pytest.fixture
+    @pytest.fixture(scope="function")
     def context(self) -> lightbulb.Context:
         ctx = mock.Mock(spec=lightbulb.Context)
         ctx.member = mock.Mock(role_ids=[123, 456, 789])

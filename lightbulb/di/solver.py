@@ -389,6 +389,10 @@ class AutoInjecting:
             LOGGER.debug("requesting dependency for type %r", type)
             new_kwargs[name] = await di_container.get(type)
 
+        if len(new_kwargs) > len(kwargs):
+            func_name = ((self._self.__class__.__name__ + ".") if self._self else "") + self._func.__name__
+            LOGGER.debug("calling function %r with resolved dependencies", func_name)
+
         if self._self is not None:
             return await utils.maybe_await(self._func(self._self, *args, **new_kwargs))
         return await utils.maybe_await(self._func(*args, **new_kwargs))

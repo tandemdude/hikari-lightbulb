@@ -395,6 +395,18 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
         """
         self._timeout.shift(length)
 
+    def set_timeout(self, timeout: float) -> None:
+        """
+        Override the menu's timeout, resetting it to the given value.
+
+        Args:
+            timeout: The number of seconds to set the timeout for.
+
+        Returns:
+            :obj:`None`
+        """
+        self._timeout.update(asyncio.get_running_loop().time() + timeout)
+
     def selected_values_for(self, select: Select[T]) -> Sequence[T]:
         """
         Get the values the user selected for the given select menu.
@@ -424,7 +436,8 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
                 resolved_data.members.get(sf)
                 or resolved_data.users.get(sf)
                 or resolved_data.roles.get(sf)
-                or resolved_data.channels[sf]  # type: ignore[reportArgumentType]
+                # type: ignore[reportArgumentType]
+                or resolved_data.channels[sf]
             )
 
         return resolved

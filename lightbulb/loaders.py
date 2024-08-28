@@ -124,7 +124,7 @@ class _ListenerLoadable(Loadable):
             raise RuntimeError("listeners are not supported for non event_manager aware applications")
 
         async def _wrapped(*args: t.Any, **kwargs: t.Any) -> t.Any:
-            async with client.di.enter_context(di.Contexts.LISTENER):
+            async with client.di.enter_context(di.Contexts.DEFAULT), client.di.enter_context(di.Contexts.LISTENER):
                 return await self._callback(*args, **kwargs)
 
         self._wrapped_callback = _wrapped if di.DI_ENABLED else None

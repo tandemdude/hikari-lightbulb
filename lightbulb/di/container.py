@@ -22,6 +22,7 @@ from __future__ import annotations
 
 __all__ = ["Container"]
 
+import logging
 import typing as t
 
 import networkx as nx
@@ -35,9 +36,11 @@ if t.TYPE_CHECKING:
     import types
     from collections.abc import Callable
 
+    from lightbulb.di import solver
     from lightbulb.internal import types as lb_types
 
 T = t.TypeVar("T")
+LOGGER = logging.getLogger(__name__)
 
 
 class Container:
@@ -49,32 +52,21 @@ class Container:
         parent: The parent container. Defaults to None.
     """
 
-    __slots__ = ("_closed", "_graph", "_instances", "_parent", "_registry")
+    __slots__ = ("_closed", "_graph", "_instances", "_parent", "_registry", "_tag")
 
-    def __init__(self, registry: registry_.Registry, *, parent: Container | None = None) -> None:
+    def __init__(
+        self, registry: registry_.Registry, *, parent: Container | None = None, tag: solver.Context | None = None
+    ) -> None:
         self._registry = registry
         self._registry._freeze(self)
+
         self._parent = parent
+        self._tag = tag
 
         self._closed = False
 
-        self._graph: nx.DiGraph[str] = nx.DiGraph(self._parent._graph) if self._parent is not None else nx.DiGraph()
+        self._graph: nx.DiGraph[str] = nx.DiGraph(self._registry._graph)
         self._instances: dict[str, t.Any] = {}
-
-        # Add our registry entries to the graphs
-        for node, node_data in self._registry._graph.nodes.items():
-            new_node_data = dict(node_data)
-
-            # Set the origin container if this is a concrete dependency instead of a transient one
-            if node_data.get("factory") is not None:
-                new_node_data["container"] = self
-
-            # If we are overriding a previously defined dependency with our own
-            if node in self._graph and node_data.get("factory") is not None:
-                self._graph.remove_edges_from(list(self._graph.out_edges(node)))
-
-            self._graph.add_node(node, **new_node_data)
-        self._graph.add_edges_from(self._registry._graph.edges)
 
         self.add_value(Container, self)
 
@@ -152,7 +144,7 @@ class Container:
 
         if dependency_id in self._graph:
             self._graph.remove_edges_from(list(self._graph.out_edges(dependency_id)))
-        self._graph.add_node(dependency_id, container=self, teardown=teardown)
+        self._graph.add_node(dependency_id, factory=lambda: None, teardown=teardown)
 
     async def _get(self, dependency_id: str) -> t.Any:
         if self._closed:
@@ -160,15 +152,17 @@ class Container:
 
         # TODO - look into whether locking is necessary - how likely are we to have race conditions
 
-        data = self._graph.nodes.get(dependency_id)
-        if data is None or data.get("container") is None:
-            raise exceptions.DependencyNotSatisfiableException(
-                f"could not create dependency {dependency_id!r} - not provided by this or a parent container"
-            )
+        if (existing := self._instances.get(dependency_id)) is not None:
+            return existing
 
-        existing_dependency = data["container"]._instances.get(dependency_id)
-        if existing_dependency is not None:
-            return existing_dependency
+        if (data := self._graph.nodes.get(dependency_id)) is None or data.get("factory") is None:
+            if self._parent is None:
+                raise exceptions.DependencyNotSatisfiableException(
+                    f"cannot create dependency {dependency_id!r} - not provided by this or a parent container"
+                )
+
+            LOGGER.debug("dependency %r not provided by this container - checking parent", dependency_id)
+            return await self._parent._get(dependency_id)
 
         # TODO - look into caching individual dependency creation order globally
         #      - may speed up using subsequent containers (i.e. for each command)
@@ -177,47 +171,38 @@ class Container:
         assert isinstance(subgraph, nx.DiGraph)
 
         try:
-            creation_order = reversed(list(nx.topological_sort(subgraph)))
+            creation_order = list(reversed(list(nx.topological_sort(subgraph))))
         except nx.NetworkXUnfeasible:
             raise exceptions.CircularDependencyException(
                 f"cannot provide {dependency_id!r} - circular dependency found during creation"
             )
 
+        LOGGER.debug("dependency %r depends on %s", dependency_id, creation_order[:-1])
         for dep_id in creation_order:
-            if (container := self._graph.nodes[dep_id].get("container")) is None:
-                raise exceptions.DependencyNotSatisfiableException(
-                    f"could not create dependency {dep_id!r} - not provided by this or a parent container"
-                )
-
             # We already have the dependency we need
-            if dep_id in container._instances:
+            if dep_id in self._instances:
                 continue
 
             node_data = self._graph.nodes[dep_id]
-            # Check that we actually know how to create the dependency - this should have been caught earlier
-            # by checking that node["container"] was present - but just in case, we check for the factory
             if node_data.get("factory") is None:
                 raise exceptions.DependencyNotSatisfiableException(
                     f"could not create dependency {dep_id!r} - do not know how to instantiate"
                 )
 
-            # Get the dependencies for this dependency from the container this dependency was defined in.
-            # This prevents 'scope promotion' - a dependency from the parent container requiring one from the
-            # child container, and hence the lifecycle of the child dependency being extended to
-            # that of the parent.
             sub_dependencies: dict[str, t.Any] = {}
             try:
+                LOGGER.debug("checking sub-dependencies for %r", dep_id)
                 for sub_dependency_id, param_name in node_data["factory_params"].items():
-                    sub_dependencies[param_name] = await node_data["container"]._get(sub_dependency_id)
+                    sub_dependencies[param_name] = await self._get(sub_dependency_id)
             except exceptions.DependencyNotSatisfiableException as e:
                 raise exceptions.DependencyNotSatisfiableException(
                     f"could not create dependency {dep_id!r} - failed creating sub-dependency"
                 ) from e
 
             # Cache the created dependency in the correct container to ensure the correct lifecycle
-            container._instances[dep_id] = await utils.maybe_await(node_data["factory"](**sub_dependencies))
+            self._instances[dep_id] = await utils.maybe_await(node_data["factory"](**sub_dependencies))
 
-        return self._graph.nodes[dependency_id]["container"]._instances[dependency_id]
+        return self._instances[dependency_id]
 
     async def get(self, typ: type[T]) -> T:
         """

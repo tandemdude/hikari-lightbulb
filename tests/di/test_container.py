@@ -191,7 +191,7 @@ class TestStandaloneContainer:
         async with di.Container(registry) as container:
             await container.get(C)
 
-    @pytest.fixture
+    @pytest.fixture(scope="function")
     def complicated_registry(self) -> di.Registry:
         # fmt: off
         def f_a() -> object: return object()

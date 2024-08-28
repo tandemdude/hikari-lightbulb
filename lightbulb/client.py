@@ -946,9 +946,11 @@ class Client(abc.ABC):
     async def _execute_autocomplete_context(
         self, context: context_.AutocompleteContext[t.Any], autocomplete_provider: options_.AutocompleteProvider[t.Any]
     ) -> None:
-        async with self.di.enter_context(di_.Contexts.AUTOCOMPLETE) as container:
-            if container is not None:  # type: ignore[reportUnnecessaryComparison]
-                container.add_value(context_.AutocompleteContext, context)
+        async with (
+            self.di.enter_context(di_.Contexts.DEFAULT),
+            self.di.enter_context(di_.Contexts.AUTOCOMPLETE) as container,
+        ):
+            container.add_value(context_.AutocompleteContext, context)
 
             try:
                 await autocomplete_provider(context)
@@ -1015,10 +1017,12 @@ class Client(abc.ABC):
     async def _execute_command_context(self, context: context_.Context) -> None:
         pipeline = execution.ExecutionPipeline(context, self.execution_step_order)
 
-        async with self.di.enter_context(di_.Contexts.COMMAND) as container:
-            if container is not None:  # type: ignore[reportUnnecessaryComparison]
-                container.add_value(context_.Context, context)
-                container.add_value(execution.ExecutionPipeline, pipeline)
+        async with (
+            self.di.enter_context(di_.Contexts.DEFAULT),
+            self.di.enter_context(di_.Contexts.COMMAND) as container,
+        ):
+            container.add_value(context_.Context, context)
+            container.add_value(execution.ExecutionPipeline, pipeline)
 
             try:
                 await pipeline._run()

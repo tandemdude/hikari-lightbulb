@@ -19,10 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import typing as t
+from unittest import mock
 
 import pytest
 
 import lightbulb
+from lightbulb.di import solver
 from lightbulb.di.solver import CANNOT_INJECT
 from lightbulb.di.solver import _parse_injectable_params
 
@@ -253,7 +255,10 @@ class TestDependencyInjectionManager:
     async def test_default_container_not_closed_once_sub_context_exited(self) -> None:
         manager = lightbulb.di.DependencyInjectionManager()
 
-        async with manager.enter_context(lightbulb.di.Contexts.COMMAND):
+        async with (
+            manager.enter_context(lightbulb.di.Contexts.DEFAULT),
+            manager.enter_context(lightbulb.di.Contexts.COMMAND),
+        ):
             pass
 
         assert manager.default_container is not None
@@ -263,7 +268,10 @@ class TestDependencyInjectionManager:
     async def test_default_container_closed_once_manager_closed(self) -> None:
         manager = lightbulb.di.DependencyInjectionManager()
 
-        async with manager.enter_context(lightbulb.di.Contexts.COMMAND):
+        async with (
+            manager.enter_context(lightbulb.di.Contexts.DEFAULT),
+            manager.enter_context(lightbulb.di.Contexts.COMMAND),
+        ):
             pass
 
         assert manager.default_container is not None
@@ -272,3 +280,80 @@ class TestDependencyInjectionManager:
         await manager.close()
         assert default_container._closed
         assert manager.default_container is None
+
+    @pytest.mark.asyncio
+    async def test_entering_child_context_twice_returns_same_container(self) -> None:
+        manager = lightbulb.di.DependencyInjectionManager()
+
+        async with (
+            manager.enter_context(lightbulb.di.Contexts.DEFAULT),
+            manager.enter_context(lightbulb.di.Contexts.COMMAND) as c1,
+            manager.enter_context(lightbulb.di.Contexts.COMMAND) as c2,
+        ):
+            assert c1 is c2
+
+    @pytest.mark.asyncio
+    async def test_entering_parent_context_twice_returns_same_container(self) -> None:
+        manager = lightbulb.di.DependencyInjectionManager()
+
+        async with (
+            manager.enter_context(lightbulb.di.Contexts.DEFAULT) as c1,
+            manager.enter_context(lightbulb.di.Contexts.COMMAND),
+            manager.enter_context(lightbulb.di.Contexts.DEFAULT) as c2,
+        ):
+            assert c1 is c2
+
+    @pytest.mark.asyncio
+    async def test_enter_context_yields_noop_container_when_di_globally_disabled(self) -> None:
+        with mock.patch.object(solver, "DI_ENABLED", False):
+            manager = lightbulb.di.DependencyInjectionManager()
+            async with manager.enter_context(lightbulb.di.Contexts.DEFAULT) as c1:
+                assert c1 is solver._NOOP_CONTAINER
+
+    @pytest.mark.asyncio
+    async def test_noop_container_raises_exception_when_attempting_to_retrieve_dependency(self) -> None:
+        with pytest.raises(lightbulb.di.DependencyNotSatisfiableException):
+            await solver._NOOP_CONTAINER.get(object)
+
+    @pytest.mark.asyncio
+    async def test_noop_container_does_not_raise_exception_when_adding_dependency(self) -> None:
+        solver._NOOP_CONTAINER.add_value(object, object())
+        solver._NOOP_CONTAINER.add_factory(object, object)
+
+
+class TestLazyInjecting:
+    def test_setattr_passes_through_to_wrapped_function(self) -> None:
+        wrapped = lightbulb.di.with_di(func := lambda: "foo")
+        setattr(wrapped, "__lb_test__", "bar")
+        assert getattr(func, "__lb_test__") == "bar"
+
+    def test_getattr_passes_through_to_wrapped_function(self) -> None:
+        wrapped = lightbulb.di.with_di(func := lambda: "foo")
+        setattr(func, "__lb_test__", "bar")
+        assert getattr(wrapped, "__lb_test__") == "bar"
+
+    def test__get__does_not_bind_when_called_on_class(self) -> None:
+        class Foo:
+            @lightbulb.di.with_di
+            def bar(self) -> None: ...
+
+        assert Foo.bar._self is None  # type: ignore[reportFunctionMemberAccess]
+
+    def test__get__binds_when_called_on_instance(self) -> None:
+        class Foo:
+            @lightbulb.di.with_di
+            def bar(self) -> None: ...
+
+        foo = Foo()
+        assert foo.bar._self is foo  # type: ignore[reportFunctionMemberAccess]
+
+
+class TestWithDiDecorator:
+    def test_enables_di_if_di_globally_enabled(self) -> None:
+        wrapped = lightbulb.di.with_di(lambda: "foo")
+        assert isinstance(wrapped, solver.AutoInjecting)
+
+    def test_does_not_enable_di_if_di_globally_disabled(self) -> None:
+        with mock.patch.object(solver, "DI_ENABLED", False):
+            wrapped = lightbulb.di.with_di(func := lambda: "foo")
+            assert wrapped is func

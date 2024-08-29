@@ -53,6 +53,8 @@ if t.TYPE_CHECKING:
     from collections.abc import Awaitable
     from collections.abc import Callable
 
+    import typing_extensions as t_ex
+
     from lightbulb import client as client_
 
     ValidSelectOptions: t.TypeAlias = t.Union[Sequence["TextSelectOption"], Sequence[str], Sequence[tuple[str, str]]]
@@ -572,6 +574,34 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
             len(self._rows[self._current_row]) >= self._MAX_BUTTONS_PER_ROW
             or ((r := self._rows[self._current_row]) and isinstance(r[0], Select))
         )
+
+    def enable_all_components(self) -> t_ex.Self:
+        """
+        Utility function to set all components within this menu as enabled.
+
+        Returns:
+            The menu instance, for method chaining
+        """
+        for row in self._rows:
+            for component in row:
+                if hasattr(component, "disabled"):
+                    setattr(component, "disabled", False)
+
+        return self
+
+    def disable_all_components(self) -> t_ex.Self:
+        """
+        Utility function to set all components within this menu as disabled.
+
+        Returns:
+            The menu instance, for method chaining.
+        """
+        for row in self._rows:
+            for component in row:
+                if hasattr(component, "disabled"):
+                    setattr(component, "disabled", True)
+
+        return self
 
     def add_interactive_button(
         self,

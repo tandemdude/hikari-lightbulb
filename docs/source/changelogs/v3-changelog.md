@@ -8,6 +8,28 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a11 (2024-08-29)
+### Bugfixes
+
+- - Improved container hierarchical dependency resolution process.
+  - Add significantly more `DEBUG` logging throughout the DI pipeline.
+  - `DependencyInjectionManager.enter_context` now needs to be called for every context you wish to enter; it will no longer enter the default context automatically.
+  - `DependencyInjectionManager.enter_context` now searches the existing container hierarchy to find an existing container for the passed context before trying to create a new one.
+  - `DependencyInjectionManager.enter_context` now returns a no-op container implementation instead of `None` if DI is disabled globally.
+
+  ([#449](https://github.com/tandemdude/hikari-lightbulb/issues/449))
+- Fix default injection container being closed when explicitly entering the `DEFAULT` DI context.
+
+### Features
+
+- Add `has_roles` check to the `prefab` subpackage. ([#447](https://github.com/tandemdude/hikari-lightbulb/issues/447))
+- Add `set_timeout` method to `MenuContext`. ([#448](https://github.com/tandemdude/hikari-lightbulb/issues/448))
+- Add `client` attribute to `ModalContext` and `MenuContext`.
+- Add `enable_all_components` and `disable_all_components` methods to `Menu`.
+- Add `registered_commands` and `invokable_commands` properties to `Client`.
+
+----
+
 ## v3.0.0a10 (2024-08-15)
 ### Documentation
 

@@ -301,5 +301,6 @@ __all__ = [
     "Select",
     "TextInput",
     "TextSelect",
+    "TextSelectOption",
     "UserSelect",
 ]

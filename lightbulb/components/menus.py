@@ -33,6 +33,7 @@ __all__ = [
     "RoleSelect",
     "Select",
     "TextSelect",
+    "TextSelectOption",
     "UserSelect",
 ]
 

@@ -185,10 +185,24 @@ class Client(abc.ABC):
 
         self._owner_ids: set[hikari.Snowflakeish] | None = None
 
+    def _handle_task_done(self, task: asyncio.Task[t.Any]) -> None:
+        self._asyncio_tasks.remove(task)
+        if task.cancelled():
+            return
+
+        if (exc := task.exception()) is not None:
+            asyncio.get_running_loop().call_exception_handler(
+                {
+                    "message": "an exception occurred during task execution",
+                    "exception": exc,
+                    "task": task,
+                }
+            )
+
     def _safe_create_task(self, coro: Coroutine[None, None, T]) -> asyncio.Task[T]:
         task = asyncio.create_task(coro)
         self._asyncio_tasks.add(task)
-        task.add_done_callback(lambda tsk: self._asyncio_tasks.remove(tsk))
+        task.add_done_callback(self._handle_task_done)
         return task
 
     @property

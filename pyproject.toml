@@ -50,7 +50,7 @@ dev = ["nox==2024.4.15"]
     "sphinxext-opengraph>=0.9.1, <1",
     "sphinxcontrib-mermaid>=0.9.2, <1",
 ]
-"dev.format" = ["ruff==0.6.2"]
+"dev.format" = ["ruff==0.6.3"]
 "dev.typecheck" = [
     "pyright==1.1.378",
     "typing-extensions>=4.12.2, <5",
@@ -78,21 +78,15 @@ package = "lightbulb"
 title_format = "v{version} ({project_date})"
 issue_format = "[#{issue}](https://github.com/tandemdude/hikari-lightbulb/issues/{issue})"
 orphan_prefix = "+"
-
-[tool.towncrier.fragment.feature]
-name = "Features"
-
-[tool.towncrier.fragment.bugfix]
-name = "Bugfixes"
-
-[tool.towncrier.fragment.doc]
-name = "Documentation"
-
-[tool.towncrier.fragment.removal]
-name = "Deprecations and Removals"
-
-[tool.towncrier.fragment.misc]
-name = "Miscellaneous"
+type = [
+    { directory = "breaking", name = "Breaking Changes" },
+    { directory = "removal", name = "Removals" },
+    { directory = "deprecation", name = "Deprecations" },
+    { directory = "feature", name = "Features" },
+    { directory = "bugfix", name = "Bugfixes" },
+    { directory = "doc", name = "Documentation" },
+    { directory = "misc", name = "Miscellaneous" },
+]
 
 [tool.black]
 line-length     = 120

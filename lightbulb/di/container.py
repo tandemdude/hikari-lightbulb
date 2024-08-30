@@ -70,6 +70,9 @@ class Container:
 
         self.add_value(Container, self)
 
+    def __repr__(self) -> str:
+        return f"<lightbulb.di.container.Container tag={self._tag!r}>"
+
     async def __aenter__(self) -> Container:
         return self
 
@@ -185,9 +188,13 @@ class Container:
 
             node_data = self._graph.nodes[dep_id]
             if node_data.get("factory") is None:
-                raise exceptions.DependencyNotSatisfiableException(
-                    f"could not create dependency {dep_id!r} - do not know how to instantiate"
-                )
+                if self._parent is None:
+                    raise exceptions.DependencyNotSatisfiableException(
+                        f"could not create dependency {dep_id!r} - do not know how to instantiate"
+                    )
+                # Ensure that the dependency is available from the parent container
+                await self._parent._get(dep_id)
+                continue
 
             sub_dependencies: dict[str, t.Any] = {}
             try:
@@ -201,6 +208,7 @@ class Container:
 
             # Cache the created dependency in the correct container to ensure the correct lifecycle
             self._instances[dep_id] = await utils.maybe_await(node_data["factory"](**sub_dependencies))
+            LOGGER.debug("instantiated dependency %r", dep_id)
 
         return self._instances[dependency_id]
 

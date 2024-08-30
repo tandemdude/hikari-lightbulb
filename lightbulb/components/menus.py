@@ -859,7 +859,7 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
             )
         )
 
-    async def _run_menu(self, client: client_.Client, timeout: float | None = None) -> None:  # noqa: ASYNC109
+    async def _run_menu(self, client: client_.Client, timeout: float | None = None) -> None:
         all_custom_ids: dict[str, base.BaseComponent[special_endpoints.MessageActionRowBuilder]] = {}
         re_resolve_custom_ids: bool = True
 
@@ -902,8 +902,8 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         self,
         client: client_.Client,
         *,
-        wait: bool = False,
-        timeout: float | None = None,  # noqa: ASYNC109
+        wait: bool = True,
+        timeout: float | None = 30,
     ) -> asyncio.Task[None]:
         """
         Attach this menu to the given client, starting it. You may optionally wait for the menu to finish and/or
@@ -911,8 +911,8 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
 
         Args:
             client: The client to attach the menu to.
-            wait: Whether to wait for the menu to finish.
-            timeout: The amount of time in seconds before the menu will time out.
+            wait: Whether to wait for the menu to finish. Defaults to :obj:`True`.
+            timeout: The amount of time in seconds before the menu will time out. Defaults to `30` seconds.
 
         Returns:
             The created task. This allows you to await it later in case you want to perform some logic before
@@ -920,13 +920,11 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
 
         Raises:
             :obj:`asyncio.TimeoutError`: If the timeout is exceeded, and ``wait=True``. If you wait on the returned
-                task instead, you are expected to check for an exception yourself.
+                task instead, the error will be raised from that statement.
         """
         task = client._safe_create_task(self._run_menu(client, timeout))
         if wait:
             await task
-            if (exc := task.exception()) is not None and not isinstance(exc, asyncio.CancelledError):
-                raise exc
         return task
 
     async def predicate(self, ctx: MenuContext) -> bool:

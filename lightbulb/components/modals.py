@@ -250,7 +250,7 @@ class Modal(base.BuildableComponentContainer[special_endpoints.ModalActionRowBui
             )
         )
 
-    async def attach(self, client: client_.Client, custom_id: str, *, timeout: float = 30) -> None:  # noqa: ASYNC109
+    async def attach(self, client: client_.Client, custom_id: str, *, timeout: float = 30) -> None:
         """
         Attach this modal to the given client, starting the interaction listener for it.
 

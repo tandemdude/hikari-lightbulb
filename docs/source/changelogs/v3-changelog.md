@@ -8,6 +8,18 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a12 (2024-08-30)
+### Breaking Changes
+
+- `Menu.attach` now has the `wait` parameter set to `True` by default, and the `timeout` parameter set to `30s` by default.
+
+### Bugfixes
+
+- Fix DI creating a new default container every time instead of reusing the existing one.
+- Fixed DI failing when trying to create dependencies with more complex dependency trees.
+
+----
+
 ## v3.0.0a11 (2024-08-29)
 ### Bugfixes
 

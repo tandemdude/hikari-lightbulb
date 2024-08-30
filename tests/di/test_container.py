@@ -348,3 +348,32 @@ class TestContainerWithParent:
             async with di.Container(registry) as c:
                 pass
             await c.get(object)
+
+    @pytest.mark.asyncio
+    async def test_get_from_child_with_complicated_structure_works_correctly(self) -> None:
+        g = object()
+
+        # fmt: off
+        def f_a() -> object: return object()
+        def f_b(_: A) -> object: return object()
+        def f_c(_: A) -> object: return object()
+        def f_d(_: B) -> object: return object()
+        def f_e(_: B, __: C) -> object: return object()
+        def f_f(_: A, __: E) -> object: return object()
+        def f_g(_: A, __: D, ___: F) -> object: return g
+        # fmt: on
+
+        r1, r2 = di.Registry(), di.Registry()
+        r1.register_factory(A, f_a, teardown=mock.Mock())
+        r1.register_factory(B, f_b, teardown=mock.Mock())
+        r1.register_factory(C, f_c, teardown=mock.Mock())
+        r1.register_factory(D, f_d, teardown=mock.Mock())
+        r1.register_factory(E, f_e, teardown=mock.Mock())
+        r2.register_factory(F, f_f, teardown=mock.Mock())
+        r2.register_factory(G, f_g, teardown=mock.Mock())
+
+        async with (
+            di.Container(r1) as p,
+            di.Container(r2, parent=p) as c,
+        ):
+            assert await c.get(G) is g

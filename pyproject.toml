@@ -79,13 +79,13 @@ title_format = "v{version} ({project_date})"
 issue_format = "[#{issue}](https://github.com/tandemdude/hikari-lightbulb/issues/{issue})"
 orphan_prefix = "+"
 type = [
-    { directory = "breaking", name = "Breaking Changes" },
-    { directory = "removal", name = "Removals" },
-    { directory = "deprecation", name = "Deprecations" },
-    { directory = "feature", name = "Features" },
-    { directory = "bugfix", name = "Bugfixes" },
-    { directory = "doc", name = "Documentation" },
-    { directory = "misc", name = "Miscellaneous" },
+    { directory = "breaking", name = "Breaking Changes", showcontent = true },
+    { directory = "removal", name = "Removals", showcontent = true },
+    { directory = "deprecation", name = "Deprecations", showcontent = true },
+    { directory = "feature", name = "Features", showcontent = true },
+    { directory = "bugfix", name = "Bugfixes", showcontent = true },
+    { directory = "doc", name = "Documentation", showcontent = true },
+    { directory = "misc", name = "Miscellaneous", showcontent = true },
 ]
 
 [tool.black]

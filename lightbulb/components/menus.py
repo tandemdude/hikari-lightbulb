@@ -49,6 +49,7 @@ from hikari.api import special_endpoints
 from hikari.impl import special_endpoints as special_endpoints_impl
 
 from lightbulb.components import base
+from lightbulb.components import utils
 
 if t.TYPE_CHECKING:
     from collections.abc import Awaitable
@@ -905,7 +906,7 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         *,
         wait: bool = True,
         timeout: float | None = 30,
-    ) -> asyncio.Task[None]:
+    ) -> Awaitable[None]:
         """
         Attach this menu to the given client, starting it. You may optionally wait for the menu to finish and/or
         provide a timeout, after which an :obj:`asyncio.TimeoutError` will be raised.
@@ -916,17 +917,19 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
             timeout: The amount of time in seconds before the menu will time out. Defaults to `30` seconds.
 
         Returns:
-            The created task. This allows you to await it later in case you want to perform some logic before
-            waiting for the menu to finish.
+            An awaitable proxying the menu's interaction consumer. You can await this directly in order to wait
+            for the menu to finish if you passed ``wait=False``.
 
         Raises:
             :obj:`asyncio.TimeoutError`: If the timeout is exceeded, and ``wait=True``. If you wait on the returned
-                task instead, the error will be raised from that statement.
+                awaitable instead, the error will be raised from that statement.
         """
         task = client._safe_create_task(self._run_menu(client, timeout))
+        wrapped = utils.TaskLogSuppressorProxy(task)
+
         if wait:
-            await task
-        return task
+            await wrapped
+        return wrapped
 
     async def predicate(self, ctx: MenuContext) -> bool:
         """

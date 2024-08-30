@@ -186,11 +186,11 @@ class Client(abc.ABC):
         self._owner_ids: set[hikari.Snowflakeish] | None = None
 
     def _handle_task_done(self, task: asyncio.Task[t.Any]) -> None:
-        self._asyncio_tasks.remove(task)
+        self._asyncio_tasks.discard(task)
         if task.cancelled():
             return
 
-        if (exc := task.exception()) is not None:
+        if (exc := task.exception()) is not None and not task.get_name().endswith("@suppress"):
             asyncio.get_running_loop().call_exception_handler(
                 {
                     "message": "an exception occurred during task execution",

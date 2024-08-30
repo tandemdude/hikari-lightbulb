@@ -34,6 +34,7 @@ docs/build/
 docs/source/api-references/
 docs/source/api-reference.rst
 CHANGES.md
+CHANGES.tmp.md
 
 # Test files
 bot_test.py

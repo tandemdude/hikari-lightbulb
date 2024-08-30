@@ -62,11 +62,15 @@ jobs:
           git tag ${{ steps.update-version.outputs.VERSION }}
           git push origin ${{ steps.update-version.outputs.VERSION }}
 
+      - name: Prepare Release Description
+        run: |
+          tail -n +3 CHANGES.md > CHANGES.tmp.md
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           token: "${{ secrets.GITHUB_TOKEN }}"
           name: "v${{ steps.update-version.outputs.VERSION }}"
           tag_name: "refs/tags/${{ steps.update-version.outputs.VERSION }}"
-          body_path: CHANGES.md
+          body_path: CHANGES.tmp.md
           prerelease: ${{ inputs.version_type == 'alpha' }}

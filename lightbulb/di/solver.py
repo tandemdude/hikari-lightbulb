@@ -251,15 +251,19 @@ class DependencyInjectionManager:
                 this = this._parent
 
         if new_container is None:
-            LOGGER.debug("creating new container for context %r", context)
+            if context == Contexts.DEFAULT and self._default_container is not None:
+                LOGGER.debug("reusing existing container for context %r", context)
+                new_container = self._default_container
+            else:
+                LOGGER.debug("creating new container for context %r", context)
 
-            new_container = container.Container(self._registries[context], parent=value, tag=context)
-            new_container.add_value(_CONTAINER_TYPE_BY_CONTEXT[context], new_container)
+                new_container = container.Container(self._registries[context], parent=value, tag=context)
+                new_container.add_value(_CONTAINER_TYPE_BY_CONTEXT[context], new_container)
 
-            if context == Contexts.DEFAULT:
-                self._default_container = new_container
+                if context == Contexts.DEFAULT:
+                    self._default_container = new_container
 
-            created = True
+                created = True
 
         token = DI_CONTAINER.set(new_container)
         LOGGER.debug("entered context %r", context)

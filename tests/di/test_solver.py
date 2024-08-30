@@ -304,6 +304,15 @@ class TestDependencyInjectionManager:
             assert c1 is c2
 
     @pytest.mark.asyncio
+    async def test_entering_default_context_always_returns_same_container(self) -> None:
+        manager = lightbulb.di.DependencyInjectionManager()
+
+        async with manager.enter_context(lightbulb.di.Contexts.DEFAULT) as c1:
+            pass
+        async with manager.enter_context(lightbulb.di.Contexts.DEFAULT) as c2:
+            assert c1 is c2
+
+    @pytest.mark.asyncio
     async def test_enter_context_yields_noop_container_when_di_globally_disabled(self) -> None:
         with mock.patch.object(solver, "DI_ENABLED", False):
             manager = lightbulb.di.DependencyInjectionManager()

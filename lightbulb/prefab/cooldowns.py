@@ -110,7 +110,7 @@ def fixed_window(
     Creates a hook that applies a cooldown to command invocations using the :abbr:`fixed-window (The fixed-window
     rate limit algorithm tracks requests within a static time window. New request is allowed once the window
     resets.)` cooldown algorithm. The created hook raises :obj:`OnCooldown` when the cooldown is exceeded.
-    This hook run during the ``COOLDOWNS`` execution step.
+    This hook is run during the ``COOLDOWNS`` execution step.
 
     You can pass one of ``"global"``, ``"user"``, ``"channel"`` or ``"guild"`` to the ``bucket`` parameter, or
     a synchronous or asynchronous function to be used to resolve the bucket hash to apply the cooldown to.

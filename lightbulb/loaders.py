@@ -152,12 +152,12 @@ class _ErrorHandlerLoadable(Loadable):
         self._priority = priority
 
     async def load(self, client: client_.Client) -> None:
-        if self._callback in client._error_handlers[self._priority]:
+        if self._callback in client._error_handlers.get(self._priority, []):
             return
         client.error_handler(self._callback, priority=self._priority)
 
     async def unload(self, client: client_.Client) -> None:
-        if self._callback not in client._error_handlers[self._priority]:
+        if self._callback not in client._error_handlers.get(self._priority, []):
             return
         client.remove_error_handler(self._callback)
 

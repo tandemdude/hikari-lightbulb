@@ -52,7 +52,7 @@ dev = ["nox==2024.4.15"]
 ]
 "dev.format" = ["ruff==0.6.3"]
 "dev.typecheck" = [
-    "pyright==1.1.378",
+    "pyright==1.1.379",
     "typing-extensions>=4.12.2, <5",
     "types-networkx>=3.2.1.20240703, <4",
     "types-polib>=1.2.0.20240327, <2",

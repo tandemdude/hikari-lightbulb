@@ -25,7 +25,6 @@ __all__ = ["DEFAULT_EXECUTION_STEP_ORDER", "Client", "GatewayEnabledClient", "Re
 import abc
 import asyncio
 import collections
-import functools
 import importlib
 import logging
 import pathlib
@@ -1122,21 +1121,8 @@ class GatewayEnabledClient(Client):
         super().__init__(app.rest, *args, **kwargs)
         self._app = app
 
-        async def wrap_listener(
-            event: hikari.Event,
-            *,
-            func: Callable[..., Coroutine[t.Any, t.Any, None]],
-            arg_resolver: Callable[[hikari.Event], Sequence[t.Any]],
-        ) -> None:
-            return await func(*arg_resolver(event))
-
         app.event_manager.subscribe(
-            hikari.InteractionCreateEvent,
-            functools.partial(
-                wrap_listener,
-                func=self.handle_interaction_create,
-                arg_resolver=lambda e: (t.cast(hikari.InteractionCreateEvent, e).interaction,),
-            ),
+            hikari.InteractionCreateEvent, lambda e: self.handle_interaction_create(e.interaction)
         )
 
         if isinstance(app, hikari.GatewayBot):

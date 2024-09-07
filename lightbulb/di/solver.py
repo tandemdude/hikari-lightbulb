@@ -43,6 +43,7 @@ import logging
 import os
 import sys
 import typing as t
+from collections.abc import Coroutine
 
 from lightbulb import utils
 from lightbulb.di import container
@@ -54,13 +55,13 @@ if t.TYPE_CHECKING:
     from collections.abc import AsyncIterator
     from collections.abc import Awaitable
     from collections.abc import Callable
-    from collections.abc import Coroutine
 
     from lightbulb.internal import types as lb_types
 
 P = t.ParamSpec("P")
 R = t.TypeVar("R")
 T = t.TypeVar("T")
+AsyncFnT = t.TypeVar("AsyncFnT", bound=t.Callable[..., Coroutine[t.Any, t.Any, t.Any]])
 
 DI_ENABLED: t.Final[bool] = os.environ.get("LIGHTBULB_DI_DISABLED", "false").lower() != "true"
 DI_CONTAINER: contextvars.ContextVar[container.Container | None] = contextvars.ContextVar(
@@ -405,6 +406,10 @@ class AutoInjecting:
         return await utils.maybe_await(self._func(*args, **new_kwargs))
 
 
+@t.overload
+def with_di(func: AsyncFnT) -> AsyncFnT: ...
+@t.overload
+def with_di(func: Callable[P, R]) -> Callable[P, Coroutine[t.Any, t.Any, R]]: ...
 def with_di(func: Callable[P, lb_types.MaybeAwaitable[R]]) -> Callable[P, Coroutine[t.Any, t.Any, R]]:
     """
     Decorator that enables dependency injection on the decorated function. If dependency injection

@@ -176,7 +176,7 @@ class Container:
             :obj:`None`
 
         See Also:
-            :meth:`lightbulb.di.registry.Registry.add_factory` for factory and teardown function spec.
+            :meth:`lightbulb.di.registry.Registry.register_factory` for factory and teardown function spec.
         """
         dependency_id = di_utils.get_dependency_id(typ)
 
@@ -204,7 +204,7 @@ class Container:
             :obj:`None`
 
         See Also:
-            :meth:`lightbulb.di.registry.Registry.add_value` for teardown function spec.
+            :meth:`lightbulb.di.registry.Registry.register_value` for teardown function spec.
         """
         dependency_id = di_utils.get_dependency_id(typ)
         self._instances[dependency_id] = value

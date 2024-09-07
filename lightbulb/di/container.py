@@ -20,27 +20,75 @@
 # SOFTWARE.
 from __future__ import annotations
 
-__all__ = ["Container"]
+__all__ = ["Container", "DependencyExpression"]
 
 import logging
+import types
 import typing as t
 
 import networkx as nx
 
 from lightbulb import utils
+from lightbulb.di import conditions
 from lightbulb.di import exceptions
 from lightbulb.di import registry as registry_
 from lightbulb.di import utils as di_utils
 
 if t.TYPE_CHECKING:
-    import types
     from collections.abc import Callable
+    from collections.abc import Sequence
 
     from lightbulb.di import solver
     from lightbulb.internal import types as lb_types
 
 T = t.TypeVar("T")
+
 LOGGER = logging.getLogger(__name__)
+
+
+class DependencyExpression(t.Generic[T]):
+    __slots__ = ("_order", "_required")
+
+    def __init__(self, order: Sequence[conditions.BaseCondition], required: bool) -> None:
+        self._order = order
+        self._required = required
+
+    def __repr__(self) -> str:
+        return f"DependencyExpression({self._order}, required={self._required})"
+
+    async def resolve(self, container: Container, /) -> T | None:
+        if len(self._order) == 1 and self._required:
+            return await container._get(self._order[0].inner_id)
+
+        for dependency in self._order:
+            succeeded, found = await dependency._get_from(container)
+            if succeeded:
+                return found
+
+        if not self._required:
+            return None
+
+        raise exceptions.DependencyNotSatisfiableException("no dependencies can satisfy the requested type")
+
+    # TODO - TypeExpr
+    @classmethod
+    def create(cls, expr: t.Any, /) -> DependencyExpression[t.Any]:
+        requested_dependencies: list[conditions.BaseCondition] = []
+        required: bool = True
+
+        args = expr.order if isinstance(expr, conditions.BaseCondition) else (t.get_args(expr) or (expr,))
+        for arg in args:
+            if arg is types.NoneType or arg is None:
+                required = False
+                continue
+
+            if not isinstance(arg, conditions.BaseCondition):
+                # a concrete type T implicitly means If[T]
+                arg = conditions.If(arg)
+
+            requested_dependencies.append(arg)
+
+        return cls(requested_dependencies, required)
 
 
 class Container:
@@ -72,6 +120,22 @@ class Container:
 
     def __repr__(self) -> str:
         return f"<lightbulb.di.container.Container tag={self._tag!r}>"
+
+    def __contains__(self, item: t.Any) -> bool:
+        if not isinstance(item, str):
+            item = di_utils.get_dependency_id(item)
+
+        if item in self._instances:
+            return True
+
+        node = self._graph.nodes.get(item)
+        if node is not None and node.get("factory") is not None:
+            return True
+
+        if self._parent is None:
+            return False
+
+        return item in self._parent
 
     async def __aenter__(self) -> Container:
         return self
@@ -151,10 +215,9 @@ class Container:
 
     async def _get(self, dependency_id: str) -> t.Any:
         if self._closed:
-            raise exceptions.ContainerClosedException
+            raise exceptions.ContainerClosedException("the container is closed")
 
         # TODO - look into whether locking is necessary - how likely are we to have race conditions
-
         if (existing := self._instances.get(dependency_id)) is not None:
             return existing
 
@@ -207,17 +270,27 @@ class Container:
                 ) from e
 
             # Cache the created dependency in the correct container to ensure the correct lifecycle
-            self._instances[dep_id] = await utils.maybe_await(node_data["factory"](**sub_dependencies))
+            try:
+                self._instances[dep_id] = await utils.maybe_await(node_data["factory"](**sub_dependencies))
+            except Exception as e:
+                raise exceptions.DependencyNotSatisfiableException(
+                    f"could not create dependency {dep_id!r} - factory raised exception"
+                ) from e
             LOGGER.debug("instantiated dependency %r", dep_id)
 
         return self._instances[dependency_id]
 
-    async def get(self, typ: type[T]) -> T:
+    @t.overload
+    async def get(self, type_: type[T], /) -> T: ...
+    # TODO - TypeExpr
+    @t.overload
+    async def get(self, type_: t.Any, /) -> t.Any: ...
+    async def get(self, type_: t.Any, /) -> t.Any:
         """
         Get a dependency from this container, instantiating it and sub-dependencies if necessary.
 
         Args:
-            typ: The type used when registering the dependency.
+            type_: The type used when registering the dependency.
 
         Returns:
             The dependency for the given type.
@@ -229,5 +302,8 @@ class Container:
             :obj:`~lightbulb.di.exceptions.DependencyNotSatisfiableException`: If the dependency cannot be satisfied
                 for any other reason.
         """
-        dependency_id = di_utils.get_dependency_id(typ)
-        return t.cast(T, await self._get(dependency_id))
+        if self._closed:
+            raise exceptions.ContainerClosedException("the container is closed")
+
+        expr = DependencyExpression.create(type_)
+        return await expr.resolve(self)

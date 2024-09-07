@@ -1121,9 +1121,10 @@ class GatewayEnabledClient(Client):
         super().__init__(app.rest, *args, **kwargs)
         self._app = app
 
-        app.event_manager.subscribe(
-            hikari.InteractionCreateEvent, lambda e: self.handle_interaction_create(e.interaction)
-        )
+        async def handle_interaction(event: hikari.InteractionCreateEvent) -> None:
+            await self.handle_interaction_create(event.interaction)
+
+        app.event_manager.subscribe(hikari.InteractionCreateEvent, handle_interaction)
 
         if isinstance(app, hikari.GatewayBot):
             self.di.registry_for(di_.Contexts.DEFAULT).register_value(hikari.GatewayBot, app)

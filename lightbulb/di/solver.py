@@ -313,11 +313,12 @@ def _parse_injectable_params(func: Callable[..., t.Any]) -> tuple[list[tuple[str
                 positional_or_keyword_params.append((parameter.name, CANNOT_INJECT))
             continue
 
+        expr = container.DependencyExpression.create(parameter.annotation)
         if parameter.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD:
-            positional_or_keyword_params.append((parameter.name, parameter.annotation))
+            positional_or_keyword_params.append((parameter.name, expr))
         else:
             # It has to be a keyword-only parameter
-            keyword_only_params[parameter.name] = parameter.annotation
+            keyword_only_params[parameter.name] = expr
 
     return positional_or_keyword_params, keyword_only_params
 
@@ -382,16 +383,18 @@ class AutoInjecting:
         }
         injectables.update({name: type for name, type in self._kw_only_params.items() if name not in new_kwargs})
 
-        for name, type in injectables.items():
+        for name, type_expr in injectables.items():
             # Skip any arguments that we can't inject
-            if type is CANNOT_INJECT:
+            if type_expr is CANNOT_INJECT:
                 continue
 
             if di_container is None:
                 raise exceptions.DependencyNotSatisfiableException("no DI context is available")
 
-            LOGGER.debug("requesting dependency for type %r", type)
-            new_kwargs[name] = await di_container.get(type)
+            assert isinstance(type_expr, container.DependencyExpression)
+
+            LOGGER.debug("requesting dependency matching %r", type_expr)  # type: ignore[reportUnknownArgumentType]
+            new_kwargs[name] = await type_expr.resolve(di_container)
 
         if len(new_kwargs) > len(kwargs):
             func_name = ((self._self.__class__.__name__ + ".") if self._self else "") + self._func.__name__

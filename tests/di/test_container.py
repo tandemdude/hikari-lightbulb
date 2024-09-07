@@ -377,3 +377,76 @@ class TestContainerWithParent:
             di.Container(r2, parent=p) as c,
         ):
             assert await c.get(G) is g
+
+
+class TestDependencyFallbacks:
+    @pytest.mark.asyncio
+    async def test_get_optional_dependency_implicit_if_returns_none_when_unregistered(self) -> None:
+        registry = di.Registry()
+
+        async with di.Container(registry) as c:
+            assert await c.get(object | None) is None
+
+    @pytest.mark.asyncio
+    async def test_get_optional_dependency_explicit_if_returns_none_when_unregistered(self) -> None:
+        registry = di.Registry()
+
+        async with di.Container(registry) as c:
+            assert await c.get(di.If[object] | None) is None
+
+    @pytest.mark.asyncio
+    async def test_get_optional_dependency_try_returns_none_when_unregistered(self) -> None:
+        registry = di.Registry()
+
+        async with di.Container(registry) as c:
+            assert await c.get(di.Try[object] | None) is None
+
+    @pytest.mark.asyncio
+    async def test_get_optional_dependency_try_returns_none_when_creation_fails(self) -> None:
+        registry = di.Registry()
+
+        def create_object() -> object:
+            raise ValueError
+
+        registry.register_factory(object, create_object)
+
+        async with di.Container(registry) as c:
+            assert await c.get(di.Try[object] | None) is None
+
+    @pytest.mark.asyncio
+    async def test_get_union_returns_first_when_possible(self) -> None:
+        registry = di.Registry()
+        registry.register_value(str, (val := "foo"))
+
+        async with di.Container(registry) as c:
+            assert await c.get(str | int) is val
+
+    @pytest.mark.asyncio
+    async def test_get_union_returns_second_when_first_not_registered(self) -> None:
+        registry = di.Registry()
+        registry.register_value(int, (val := 12345))
+
+        async with di.Container(registry) as c:
+            assert await c.get(str | int) is val
+
+    @pytest.mark.asyncio
+    async def test_get_union_raises_error_when_neither_registered(self) -> None:
+        registry = di.Registry()
+
+        with pytest.raises(di.DependencyNotSatisfiableException):
+            async with di.Container(registry) as c:
+                await c.get(str | int)
+
+    @pytest.mark.asyncio
+    async def test_get_union_try_raises_error_when_creation_fails_for_both(self) -> None:
+        registry = di.Registry()
+
+        def create() -> t.Any:
+            raise ValueError
+
+        registry.register_factory(str, create)
+        registry.register_factory(int, create)
+
+        with pytest.raises(di.DependencyNotSatisfiableException):
+            async with di.Container(registry) as c:
+                await c.get(di.Try[str] | di.Try[int])

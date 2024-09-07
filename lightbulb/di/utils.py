@@ -22,9 +22,11 @@ from __future__ import annotations
 
 __all__ = ["get_dependency_id", "populate_graph_for_dependency", "resolve_dependency_id_for_all_parameters"]
 
+import functools
 import inspect
 import sys
 import typing as t
+from collections.abc import Sequence
 
 if t.TYPE_CHECKING:
     from collections.abc import Callable
@@ -34,7 +36,8 @@ if t.TYPE_CHECKING:
     from lightbulb.internal import types
 
 
-def get_dependency_id(dependency_type: type[t.Any]) -> str:
+@functools.cache
+def get_dependency_id(dependency_type: t.Any) -> str:
     """
     Get the dependency id of the given type. This is used when storing and retrieving dependencies from registries
     and containers.
@@ -45,7 +48,21 @@ def get_dependency_id(dependency_type: type[t.Any]) -> str:
     Returns:
         The dependency id for the given type.
     """
-    return f"{dependency_type.__module__}.{getattr(dependency_type, '__qualname__', dependency_type.__name__)}"
+    root_id = (mod + ".") if (mod := dependency_type.__module__) != "builtins" else ""
+    root_id += getattr(dependency_type, "__qualname__", dependency_type.__name__)
+
+    if not (args := t.get_args(dependency_type)):
+        return root_id
+
+    str_args: list[str] = []
+    for arg in args:
+        if isinstance(arg, Sequence):
+            str_args.append(f"[{','.join(get_dependency_id(a) for a in arg)}]")  # type: ignore[reportUnknownVariableType]
+            continue
+
+        str_args.append(get_dependency_id(arg))
+
+    return f"{root_id}[{','.join(str_args)}]"
 
 
 def resolve_dependency_id_for_all_parameters(func: Callable[..., types.MaybeAwaitable[t.Any]]) -> dict[str, str]:

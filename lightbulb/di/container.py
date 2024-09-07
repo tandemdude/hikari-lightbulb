@@ -76,7 +76,12 @@ class DependencyExpression(t.Generic[T]):
         requested_dependencies: list[conditions.BaseCondition] = []
         required: bool = True
 
-        args = expr.order if isinstance(expr, conditions.BaseCondition) else (t.get_args(expr) or (expr,))
+        args: Sequence[t.Any] = (expr,)
+        if isinstance(expr, types.UnionType):
+            args = t.get_args(expr)
+        elif isinstance(expr, conditions.BaseCondition):
+            args = expr.order
+
         for arg in args:
             if arg is types.NoneType or arg is None:
                 required = False

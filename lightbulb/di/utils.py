@@ -24,7 +24,6 @@ __all__ = ["get_dependency_id"]
 
 import functools
 import typing as t
-from collections.abc import Sequence
 
 
 @functools.cache
@@ -39,18 +38,4 @@ def get_dependency_id(dependency_type: t.Any) -> str:
     Returns:
         The dependency id for the given type.
     """
-    root_id = (mod + ".") if (mod := dependency_type.__module__) != "builtins" else ""
-    root_id += getattr(dependency_type, "__qualname__", dependency_type.__name__)
-
-    if not (args := t.get_args(dependency_type)):
-        return root_id
-
-    str_args: list[str] = []
-    for arg in args:
-        if isinstance(arg, Sequence):
-            str_args.append(f"[{','.join(get_dependency_id(a) for a in arg)}]")  # type: ignore[reportUnknownVariableType]
-            continue
-
-        str_args.append(get_dependency_id(arg))
-
-    return f"{root_id}[{','.join(str_args)}]"
+    return f"{dependency_type.__module__}.{getattr(dependency_type, '__qualname__', dependency_type.__name__)}"

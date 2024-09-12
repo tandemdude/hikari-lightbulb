@@ -225,7 +225,7 @@ class TestStandaloneContainer:
             await container.get(G)
 
         for item in [A, B, C, D, E, F, G]:
-            complicated_registry._graph.nodes[utils.get_dependency_id(item)]["teardown"].assert_called_once()
+            complicated_registry._graph.nodes[utils.get_dependency_id(item)].teardown_method.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_direct_unsatisfied_dependency_raises_exception(self) -> None:
@@ -246,6 +246,43 @@ class TestStandaloneContainer:
         with pytest.raises(di.DependencyNotSatisfiableException):
             async with di.Container(registry) as container:
                 await container.get(B)
+
+    @pytest.mark.asyncio
+    async def test_non_direct_circular_dependency_raises_exception(self) -> None:
+        # fmt: off
+        def f_a(_: B) -> object: return object()
+        def f_b(_: A) -> object: return object()
+        # fmt: on
+
+        registry = di.Registry()
+        registry.register_factory(A, f_a)
+        registry.register_factory(B, f_b)
+
+        with pytest.raises(di.CircularDependencyException):
+            async with di.Container(registry) as c:
+                await c.get(A)
+
+    @pytest.mark.asyncio
+    async def test_get_transient_dependency_raises_exception(self) -> None:
+        def f_a(_: B) -> object:
+            return object()
+
+        registry = di.Registry()
+        registry.register_factory(A, f_a)
+
+        with pytest.raises(di.DependencyNotSatisfiableException):
+            async with di.Container(registry) as c:
+                await c.get(B)
+
+    @pytest.mark.asyncio
+    async def test_get_from_closed_container_raises_exception(self) -> None:
+        registry = di.Registry()
+        registry.register_factory(object, lambda: object())
+
+        with pytest.raises(di.ContainerClosedException):
+            async with di.Container(registry) as c:
+                pass
+            await c.get(object)
 
 
 class TestContainerWithParent:
@@ -311,43 +348,6 @@ class TestContainerWithParent:
                 di.Container(child_registry, parent=pc) as cc,
             ):
                 await cc.get(B)
-
-    @pytest.mark.asyncio
-    async def test_non_direct_circular_dependency_raises_exception(self) -> None:
-        # fmt: off
-        def f_a(_: B) -> object: return object()
-        def f_b(_: A) -> object: return object()
-        # fmt: on
-
-        registry = di.Registry()
-        registry.register_factory(A, f_a)
-        registry.register_factory(B, f_b)
-
-        with pytest.raises(di.CircularDependencyException):
-            async with di.Container(registry) as c:
-                await c.get(A)
-
-    @pytest.mark.asyncio
-    async def test_get_transient_dependency_raises_exception(self) -> None:
-        def f_a(_: B) -> object:
-            return object()
-
-        registry = di.Registry()
-        registry.register_factory(A, f_a)
-
-        with pytest.raises(di.DependencyNotSatisfiableException):
-            async with di.Container(registry) as c:
-                await c.get(B)
-
-    @pytest.mark.asyncio
-    async def test_get_from_closed_container_raises_exception(self) -> None:
-        registry = di.Registry()
-        registry.register_factory(object, lambda: object())
-
-        with pytest.raises(di.ContainerClosedException):
-            async with di.Container(registry) as c:
-                pass
-            await c.get(object)
 
     @pytest.mark.asyncio
     async def test_get_from_child_with_complicated_structure_works_correctly(self) -> None:

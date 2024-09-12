@@ -46,6 +46,7 @@ import typing as t
 from collections.abc import Coroutine
 
 from lightbulb import utils
+from lightbulb.di import conditions
 from lightbulb.di import container
 from lightbulb.di import exceptions
 from lightbulb.di import registry
@@ -314,7 +315,7 @@ def _parse_injectable_params(func: Callable[..., t.Any]) -> tuple[list[tuple[str
                 positional_or_keyword_params.append((parameter.name, CANNOT_INJECT))
             continue
 
-        expr = container.DependencyExpression.create(parameter.annotation)
+        expr = conditions.DependencyExpression.create(parameter.annotation)
         if parameter.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD:
             positional_or_keyword_params.append((parameter.name, expr))
         else:
@@ -392,7 +393,7 @@ class AutoInjecting:
             if di_container is None:
                 raise exceptions.DependencyNotSatisfiableException("no DI context is available")
 
-            assert isinstance(type_expr, container.DependencyExpression)
+            assert isinstance(type_expr, conditions.DependencyExpression)
 
             LOGGER.debug("requesting dependency matching %r", type_expr)  # type: ignore[reportUnknownArgumentType]
             new_kwargs[name] = await type_expr.resolve(di_container)

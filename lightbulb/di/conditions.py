@@ -20,7 +20,7 @@
 # SOFTWARE.
 from __future__ import annotations
 
-__all__ = ["If", "Try"]
+__all__ = ["DependencyExpression", "If", "Try"]
 
 import abc
 import types
@@ -30,6 +30,8 @@ from lightbulb.di import exceptions
 from lightbulb.di import utils as di_utils
 
 if t.TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from lightbulb.di import container as container_
 
 T = t.TypeVar("T")
@@ -108,6 +110,56 @@ class Try(BaseCondition):
             return True, await container._get(self.inner_id)
         except exceptions.DependencyInjectionException:
             return False, None
+
+
+class DependencyExpression(t.Generic[T]):
+    __slots__ = ("_order", "_required")
+
+    def __init__(self, order: Sequence[BaseCondition], required: bool) -> None:
+        self._order = order
+        self._required = required
+
+    def __repr__(self) -> str:
+        return f"DependencyExpression({self._order}, required={self._required})"
+
+    async def resolve(self, container: container_.Container, /) -> T | None:
+        if len(self._order) == 1 and self._required:
+            return await container._get(self._order[0].inner_id)
+
+        for dependency in self._order:
+            succeeded, found = await dependency._get_from(container)
+            if succeeded:
+                return found
+
+        if not self._required:
+            return None
+
+        raise exceptions.DependencyNotSatisfiableException("no dependencies can satisfy the requested type")
+
+    # TODO - TypeExpr
+    @classmethod
+    def create(cls, expr: t.Any, /) -> DependencyExpression[t.Any]:
+        requested_dependencies: list[BaseCondition] = []
+        required: bool = True
+
+        args: Sequence[t.Any] = (expr,)
+        if isinstance(expr, types.UnionType):
+            args = t.get_args(expr)
+        elif isinstance(expr, BaseCondition):
+            args = expr.order
+
+        for arg in args:
+            if arg is types.NoneType or arg is None:
+                required = False
+                continue
+
+            if not isinstance(arg, BaseCondition):
+                # a concrete type T implicitly means If[T]
+                arg = If(arg)
+
+            requested_dependencies.append(arg)
+
+        return cls(requested_dependencies, required)
 
 
 if t.TYPE_CHECKING:

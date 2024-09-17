@@ -67,14 +67,18 @@ class BaseCondition(abc.ABC):
         return self
 
     def __repr__(self) -> str:
+        includes_none: bool = False
         parts: list[str] = []
         for item in self.order:
             if item is None:
-                parts.append("None")
+                includes_none = True
             elif item is self:
                 parts.append(f"{self.__class__.__name__}[{self.inner_id}]")
             else:
                 parts.append(repr(item) if isinstance(item, BaseCondition) else di_utils.get_dependency_id(item))
+
+        if includes_none:
+            parts.append("None")
 
         return " | ".join(parts)
 

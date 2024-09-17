@@ -73,7 +73,7 @@ class Container:
         self.add_value(Container, self)
 
     def __repr__(self) -> str:
-        return f"<lightbulb.di.container.Container tag={self._tag!r}>"
+        return f"Container(tag={self._tag!r})"
 
     def __contains__(self, item: t.Any) -> bool:
         if not isinstance(item, str):
@@ -102,13 +102,10 @@ class Container:
     async def close(self) -> None:
         """Closes the container, running teardown procedures for each created dependency belonging to this container."""
         for dependency_id, instance in self._instances.items():
-            if (node := self._graph.nodes.get(dependency_id)) is None:
+            if (node := self._graph.nodes.get(dependency_id)) is None or node.teardown_method is None:
                 continue
 
-            if (td := node.teardown_method) is None:
-                continue
-
-            await utils.maybe_await(td(instance))
+            await utils.maybe_await(node.teardown_method(instance))
 
         self._registry._unfreeze(self)
         self._closed = True

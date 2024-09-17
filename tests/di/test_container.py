@@ -225,7 +225,7 @@ class TestStandaloneContainer:
             await container.get(G)
 
         for item in [A, B, C, D, E, F, G]:
-            complicated_registry._graph.nodes[utils.get_dependency_id(item)].teardown_method.assert_called_once()
+            complicated_registry._graph.nodes[utils.get_dependency_id(item)].teardown_method.assert_called_once()  # type: ignore[reportOptionalMemberAccess]
 
     @pytest.mark.asyncio
     async def test_direct_unsatisfied_dependency_raises_exception(self) -> None:
@@ -450,3 +450,17 @@ class TestDependencyFallbacks:
         with pytest.raises(di.DependencyNotSatisfiableException):
             async with di.Container(registry) as c:
                 await c.get(di.Try[str] | di.Try[int])
+
+    @pytest.mark.asyncio
+    async def test_factory_requiring_union_falls_back_when_initial_not_available(self) -> None:
+        registry = di.Registry()
+        registry.register_value(str, (val := "foobar"))
+
+        def create(foo: int | str) -> float:
+            assert foo is val
+            return 0.0
+
+        registry.register_factory(float, create)
+
+        async with di.Container(registry) as c:
+            await c.get(float)

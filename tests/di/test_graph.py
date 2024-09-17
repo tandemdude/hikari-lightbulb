@@ -18,7 +18,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 import pytest
 
 from lightbulb.di import graph
@@ -37,8 +36,13 @@ class TestGraph:
     def test_add_remove_node(self, g: graph.DiGraph) -> None:
         g.add_node("foo", None)
         assert g.nodes["foo"] is None
+
+        g.add_node("bar", None)
+        g.add_edge("bar", "foo")
+
         g.remove_node("foo")
         assert "foo" not in g.nodes
+        assert ("bar", "foo") not in g.edges
 
     def test_add_remove_edge(self, g: graph.DiGraph) -> None:
         assert not g.out_edges("foo")
@@ -47,12 +51,23 @@ class TestGraph:
         g.add_node("bar", None)
         g.add_edge("foo", "bar")
 
+        assert g.edges == {("foo", "bar")}
+
+        assert not g.in_edges("foo")
         assert g.out_edges("foo") == {("foo", "bar")}
+
         assert not g.out_edges("bar")
+        assert g.in_edges("bar") == {("foo", "bar")}
 
         g.remove_edge("foo", "bar")
-
         assert not g.out_edges("foo")
+
+        with pytest.raises(ValueError):
+            g.add_edge("foo", "baz")
+        with pytest.raises(ValueError):
+            g.add_edge("baz", "foo")
+
+        g.remove_edge("baz", "bork")
 
     def test_children_simple(self, g: graph.DiGraph) -> None:
         g.add_node("foo", None)
@@ -100,3 +115,18 @@ class TestGraph:
         g.add_edge("baz", "foo")
 
         assert g.children("foo") == {"bar", "baz", "foo"}
+
+    def test_subgraph(self, g: graph.DiGraph) -> None:
+        g.add_node("foo", None)
+        g.add_node("bar", None)
+        g.add_node("baz", None)
+
+        g.add_edge("foo", "bar")
+        g.add_edge("bar", "baz")
+        g.add_edge("baz", "foo")
+
+        sg = g.subgraph({"foo", "baz"})
+        assert sg.nodes["foo"] is None
+        assert sg.nodes["baz"] is None
+
+        assert sg.edges == {("baz", "foo")}

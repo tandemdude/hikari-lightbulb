@@ -35,34 +35,33 @@ E = t.NewType("E", object)
 F = t.NewType("F", object)
 G = t.NewType("G", object)
 
+T = t.TypeVar("T")
+
+
+class Foo(t.Generic[T]): ...
+
 
 class TestStandaloneContainer:
-    def test_cannot_have_factory_with_pos_only_args(self) -> None:
+    @pytest.mark.asyncio
+    async def test__contains__returns_true_when_dependency_registered(self) -> None:
+        registry = di.Registry()
+        registry.register_value(object, object())
+
+        async with di.Container(registry) as container:
+            assert object in container
+            assert "builtins.object" in container
+
+            await container.get(object)
+            assert object in container
+            assert "builtins.object" in container
+
+    @pytest.mark.asyncio
+    async def test__contains__returns_false_when_dependency_not_registered(self) -> None:
         registry = di.Registry()
 
-        def f(_: str, /) -> object:
-            return object()
-
-        with pytest.raises(ValueError):
-            registry.register_factory(object, f)
-
-    def test_cannot_have_factory_with_var_pos_args(self) -> None:
-        registry = di.Registry()
-
-        def f(*_: str) -> object:
-            return object()
-
-        with pytest.raises(ValueError):
-            registry.register_factory(object, f)
-
-    def test_cannot_have_factory_with_var_kw_args(self) -> None:
-        registry = di.Registry()
-
-        def f(**_: str) -> object:
-            return object()
-
-        with pytest.raises(ValueError):
-            registry.register_factory(object, f)
+        async with di.Container(registry) as container:
+            assert object not in container
+            assert "builtins.object" not in container
 
     @pytest.mark.asyncio
     async def test_supply_dependency_by_value(self) -> None:
@@ -287,6 +286,35 @@ class TestStandaloneContainer:
 
 class TestContainerWithParent:
     @pytest.mark.asyncio
+    async def test__contains__returns_true_when_dependency_registered_in_parent(self) -> None:
+        parent_registry = di.Registry()
+        parent_registry.register_factory(object, lambda: object())
+        child_registry = di.Registry()
+
+        async with (
+            di.Container(parent_registry) as pc,
+            di.Container(child_registry, parent=pc) as cc,
+        ):
+            assert object in cc
+            assert "builtins.object" in cc
+
+            await cc.get(object)
+            assert object in cc
+            assert "builtins.object" in cc
+
+    @pytest.mark.asyncio
+    async def test__contains__returns_false_when_dependency_not_registered_in_parent(self) -> None:
+        parent_registry = di.Registry()
+        child_registry = di.Registry()
+
+        async with (
+            di.Container(parent_registry) as pc,
+            di.Container(child_registry, parent=pc) as cc,
+        ):
+            assert object not in cc
+            assert "builtins.object" not in cc
+
+    @pytest.mark.asyncio
     async def test_dependency_from_parent_supplied(self) -> None:
         parent_registry = di.Registry()
         parent_registry.register_factory(object, lambda: object())
@@ -457,6 +485,20 @@ class TestDependencyFallbacks:
         registry.register_value(str, (val := "foobar"))
 
         def create(foo: int | str) -> float:
+            assert foo is val
+            return 0.0
+
+        registry.register_factory(float, create)
+
+        async with di.Container(registry) as c:
+            await c.get(float)
+
+    @pytest.mark.asyncio
+    async def test_factory_requiring_union_falls_back_when_initial_not_available_generic_type(self) -> None:
+        registry = di.Registry()
+        registry.register_value(Foo, (val := Foo()))  # type: ignore[reportUnknownArgumentType]
+
+        def create(foo: int | Foo[str]) -> float:
             assert foo is val
             return 0.0
 

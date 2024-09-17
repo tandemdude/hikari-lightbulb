@@ -70,3 +70,30 @@ class TestRegistry:
         registry = di.Registry()
         T = t.NewType("T", object)
         assert T not in registry
+
+    def test_cannot_have_factory_with_pos_only_args(self) -> None:
+        registry = di.Registry()
+
+        def f(_: str, /) -> object:
+            return object()
+
+        with pytest.raises(ValueError):
+            registry.register_factory(object, f)
+
+    def test_cannot_have_factory_with_var_pos_args(self) -> None:
+        registry = di.Registry()
+
+        def f(*_: str) -> object:
+            return object()
+
+        with pytest.raises(ValueError):
+            registry.register_factory(object, f)
+
+    def test_cannot_have_factory_with_var_kw_args(self) -> None:
+        registry = di.Registry()
+
+        def f(**_: str) -> object:
+            return object()
+
+        with pytest.raises(ValueError):
+            registry.register_factory(object, f)

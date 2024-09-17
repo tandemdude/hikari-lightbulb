@@ -46,10 +46,10 @@ class BaseCondition(abc.ABC):
     __slots__ = ("inner", "inner_id", "order")
 
     def __init__(self, inner: type[t.Any] | types.UnionType | tuple[t.Any, ...] | None) -> None:
-        if isinstance(inner, (types.UnionType, tuple)) or inner is None:
+        if isinstance(inner, tuple) or inner is None or t.get_origin(inner) in (types.UnionType, t.Union):
             raise SyntaxError("{self.__class__.__name__!r} can only be parameterized by concrete types")
 
-        self.inner: type[t.Any] = inner
+        self.inner: type[t.Any] = inner  # type: ignore[reportAttributeAccessIssue]
         self.inner_id: str = di_utils.get_dependency_id(inner)
 
         self.order: list[t.Any] = [self]
@@ -58,14 +58,14 @@ class BaseCondition(abc.ABC):
         return cls(item)
 
     def __or__(self, other: t.Any) -> BaseCondition:
-        if isinstance(other, types.UnionType):
+        if t.get_origin(other) in (types.UnionType, t.Union):
             self.order = [*self.order, *t.get_args(other)]
         else:
             self.order.append(other)
         return self
 
     def __ror__(self, other: t.Any) -> BaseCondition:
-        if isinstance(other, types.UnionType):
+        if t.get_origin(other) in (types.UnionType, t.Union):
             self.order = [*t.get_args(other), *self.order]
         else:
             self.order.insert(0, other)
@@ -206,7 +206,7 @@ class DependencyExpression(t.Generic[T]):
         required: bool = True
 
         args: Sequence[t.Any] = (expr,)
-        if isinstance(expr, types.UnionType):
+        if t.get_origin(expr) in (types.UnionType, t.Union):
             args = t.get_args(expr)
         elif isinstance(expr, BaseCondition):
             args = expr.order

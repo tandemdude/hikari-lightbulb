@@ -47,7 +47,7 @@ class TestGraph:
         g.add_node("bar", None)
         g.add_edge("foo", "bar")
 
-        assert g.out_edges("foo") == {"bar"}
+        assert g.out_edges("foo") == {("foo", "bar")}
         assert not g.out_edges("bar")
 
         g.remove_edge("foo", "bar")

@@ -38,10 +38,15 @@ T = t.TypeVar("T")
 
 
 class BaseCondition(abc.ABC):
+    """
+    Base class for dependency conditions. Implements ``|`` and ``[]`` operators in order to be used
+    as a type hint, and combined with other elements in a type hint.
+    """
+
     __slots__ = ("inner", "inner_id", "order")
 
-    def __init__(self, inner: type[t.Any] | types.UnionType | tuple[t.Any, ...]) -> None:
-        if isinstance(inner, (types.UnionType, tuple)):
+    def __init__(self, inner: type[t.Any] | types.UnionType | tuple[t.Any, ...] | None) -> None:
+        if isinstance(inner, (types.UnionType, tuple)) or inner is None:
             raise SyntaxError("{self.__class__.__name__!r} can only be parameterized by concrete types")
 
         self.inner: type[t.Any] = inner
@@ -91,6 +96,22 @@ class If(BaseCondition):
     Dependency injection condition that will only fall back when the requested
     dependency is not known to the current container. This is the default when
     no condition is specified.
+
+    Example:
+
+        .. code-block:: python
+
+            @lightbulb.di.with_di
+            async def foo(bar: If[Bar] | None) -> None:
+                # The 'bar' parameter will be 'None' if the 'Bar' dependency
+                # is unregistered.
+                ...
+
+            # Lightbulb treats the lack of meta annotation as meaning the same as 'If[dep]'
+            @lightbulb.di.with_di
+            async def foo(bar: Bar | None) -> None:
+                # Same as previous example
+                ...
     """
 
     __slots__ = ()
@@ -105,6 +126,16 @@ class Try(BaseCondition):
     """
     Dependency injection condition that will fall back when the requested dependency
     is either unknown to the current container, or creation raises an exception.
+
+    Example:
+
+        .. code-block:: python
+
+            @lightbulb.di.with_di
+            async def foo(bar: Try[Bar] | None) -> None:
+                # The 'bar' parameter will be 'None' if creating the 'Bar' dependency
+                # failed, or is unregistered.
+                ...
     """
 
     __slots__ = ()
@@ -117,6 +148,15 @@ class Try(BaseCondition):
 
 
 class DependencyExpression(t.Generic[T]):
+    """
+    A cached dependency expression. This contains the steps needed to resolve the dependencies
+    for a single function parameter.
+
+    Args:
+        order: The sequence of conditions required to resolve the dependency expression.
+        required: Whether the dependency expression is required - i.e. can resolve to ``None``.
+    """
+
     __slots__ = ("_order", "_required")
 
     def __init__(self, order: Sequence[BaseCondition], required: bool) -> None:
@@ -127,6 +167,16 @@ class DependencyExpression(t.Generic[T]):
         return f"DependencyExpression({self._order}, required={self._required})"
 
     async def resolve(self, container: container_.Container, /) -> T | None:
+        """
+        Resolve the dependency that satisfies this expression from the given container.
+
+        Args:
+            container: The container to use while satisfying the expression.
+
+        Returns:
+            The resolved dependency, or ``None`` if the dependency could not be resolved, and ``required`` was
+            ``True`` upon creation.
+        """
         if len(self._order) == 1 and self._required:
             return await container._get(self._order[0].inner_id)
 
@@ -143,6 +193,15 @@ class DependencyExpression(t.Generic[T]):
     # TODO - TypeExpr
     @classmethod
     def create(cls, expr: t.Any, /) -> DependencyExpression[t.Any]:
+        """
+        Create a dependency expression from a type expression (type hint).
+
+        Args:
+            expr: The type expression to create the dependency expression from.
+
+        Returns:
+            The created dependency expression.
+        """
         requested_dependencies: list[BaseCondition] = []
         required: bool = True
 

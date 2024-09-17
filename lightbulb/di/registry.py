@@ -136,6 +136,6 @@ class Registry:
         # a load of redundant ones - maybe the new version doesn't require the same sub-dependencies
         if dependency_id in self._graph:
             for edge in self._graph.out_edges(dependency_id):
-                self._graph.remove_edge(dependency_id, edge)
+                self._graph.remove_edge(*edge)
 
         graph.populate_graph_for_dependency(self._graph, dependency_id, factory, teardown)

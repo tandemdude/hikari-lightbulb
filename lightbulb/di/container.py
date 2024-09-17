@@ -136,7 +136,7 @@ class Container:
 
         if dependency_id in self._graph:
             for edge in self._graph.out_edges(dependency_id):
-                self._graph.remove_edge(dependency_id, edge)
+                self._graph.remove_edge(*edge)
 
         graph.populate_graph_for_dependency(self._graph, dependency_id, factory, teardown)
 
@@ -167,7 +167,7 @@ class Container:
 
         if dependency_id in self._graph:
             for edge in self._graph.out_edges(dependency_id):
-                self._graph.remove_edge(dependency_id, edge)
+                self._graph.remove_edge(*edge)
 
         self._graph.add_node(dependency_id, DependencyData(lambda: None, {}, teardown))
 

@@ -377,7 +377,7 @@ class Loader:
         """
         if func is not None:
             wrapped = di.with_di(func)
-            self.add(_ErrorHandlerLoadable(wrapped, priority))
+            self.add(_ErrorHandlerLoadable(wrapped, priority))  # type: ignore[reportArgumentType]
             return t.cast(ErrorHandlerT, wrapped)
 
         def _inner(func_: ErrorHandlerT) -> ErrorHandlerT:

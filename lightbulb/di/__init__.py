@@ -37,6 +37,7 @@ __all__ = [
     "Context",
     "Contexts",
     "DefaultContainer",
+    "DependencyData",
     "DependencyExpression",
     "DependencyInjectionException",
     "DependencyInjectionManager",

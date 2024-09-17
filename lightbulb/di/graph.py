@@ -20,7 +20,7 @@
 # SOFTWARE.
 from __future__ import annotations
 
-__all__ = ["DiGraph"]
+__all__ = ["DependencyData", "DiGraph"]
 
 import collections
 import inspect
@@ -42,6 +42,15 @@ T = t.TypeVar("T")
 
 
 class DependencyData(t.Generic[T]):
+    """
+    Data required in order to be able to create/destroy a given dependency.
+
+    Args:
+        factory_method: The method used to create the dependency.
+        factory_params: Mapping of param name to dependency expression for any dependencies the factory depends on.
+        teardown_method: The optional method used to teardown the dependency.
+    """
+
     __slots__ = ("factory_method", "factory_params", "teardown_method")
 
     def __init__(
@@ -51,8 +60,11 @@ class DependencyData(t.Generic[T]):
         teardown_method: Callable[[T], types.MaybeAwaitable[None]] | None,
     ) -> None:
         self.factory_method: Callable[..., types.MaybeAwaitable[T]] = factory_method
+        """The method used to create the dependency."""
         self.factory_params: Mapping[str, conditions.DependencyExpression[T]] = factory_params
+        """Mapping of param name to dependency expression for any dependencies the factory depends on."""
         self.teardown_method: Callable[[T], types.MaybeAwaitable[None]] | None = teardown_method
+        """The optional method used to teardown the dependency."""
 
 
 def resolve_dependency_expression_for_all_parameters(
@@ -127,6 +139,13 @@ def populate_graph_for_dependency(
 
 
 class DiGraph:
+    """
+    Implementation of a directional graph datastructure for use as a dependency graph.
+
+    Args:
+        initial: The initial graph to use to populate the starting state of the graph. Defaults to ``None``.
+    """
+
     __slots__ = ("_adjacency", "_nodes")
 
     def __init__(self, initial: DiGraph | None = None) -> None:
@@ -143,28 +162,112 @@ class DiGraph:
 
     @property
     def nodes(self) -> Mapping[str, DependencyData[t.Any] | None]:
+        """
+        Mapping of dependency ID to the data for that dependency. If the data is ``None``, it indicates
+        that the node was added indirectly and that the dependency for that ID has not been directly
+        registered to this graph.
+        """
         return self._nodes
 
-    def out_edges(self, id_: str, /) -> Set[str]:
-        return self._adjacency[id_]
+    @property
+    def edges(self) -> Set[tuple[str, str]]:
+        """
+        Set containing all edges within this graph. An edge is represented by a tuple where the first element
+        is the origin node, and the second element is the destination node.
+        """
+        all_edges: set[tuple[str, str]] = set()
+        for node, edges in self._adjacency.items():
+            all_edges.update((node, other) for other in edges)
+
+        return all_edges
+
+    def out_edges(self, id_: str, /) -> Set[tuple[str, str]]:
+        """
+        Get the out edges for the node with the given dependency ID. In the context of DI, the edges
+        represent the dependencies that the requested dependency directly depends on.
+
+        Args:
+            id_: The ID of the dependency to get out edges for.
+
+        Returns:
+            The out edges for the node with the given dependency ID.
+        """
+        return {(id_, other) for other in self._adjacency[id_]}
+
+    def in_edges(self, id_: str, /) -> Set[tuple[str, str]]:
+        """
+        Get the in edges for the node with the given dependency ID. In the context of DI, the edges
+        represent the dependencies that depend on the requested dependency.
+
+        Args:
+            id_: The ID of the dependency to get in edges for.
+
+        Returns:
+            The in edges for the node with the given dependency ID.
+        """
+        return {(node, id_) for node, edges in self._adjacency.items() if id_ in edges}
 
     def add_node(self, id_: str, /, data: DependencyData[t.Any] | None) -> None:
+        """
+        Add a node to the graph.
+
+        Args:
+            id_: The ID of the node to add.
+            data: The data for the node.
+
+        Returns:
+            ``None``
+        """
         if id_ in self._nodes:
             return
 
         self._nodes[id_] = data
 
     def remove_node(self, id_: str, /) -> None:
+        """
+        Remove a node from the graph. Does nothing if the node is not present in the graph. Also
+        removes all edges referencing the node.
+
+        Args:
+            id_: The ID of the node to remove.
+
+        Returns:
+            ``None``
+        """
         self._nodes.pop(id_, None)
         self._adjacency.pop(id_, None)
 
         for adj in self._adjacency.values():
             adj.discard(id_)
 
-    def replace_node(self, id_: str, /, data: DependencyData[t.Any]) -> None:
+    def replace_node(self, id_: str, /, data: DependencyData[t.Any] | None) -> None:
+        """
+        Replace the data for the node with the given ID. Preserves all edges already referencing this
+        node. Adds the node if it is not already in the graph.
+
+        Args:
+            id_: The ID of the node to replace.
+            data: The data for the node.
+
+        Returns:
+            ``None``
+        """
         self._nodes[id_] = data
 
     def add_edge(self, from_: str, to_: str, /) -> None:
+        """
+        Add an edge to the graph. Fails if either the origin or destination nodes are not in the graph.
+
+        Args:
+            from_: The origin node.
+            to_: The destination node.
+
+        Returns:
+            ``None``
+
+        Raises:
+            :obj:`ValueError`: If either the origin or destination nodes are not in the graph.
+        """
         if from_ not in self._nodes:
             raise ValueError(f"node {from_!r} is not in the graph")
         if to_ not in self._nodes:
@@ -173,12 +276,32 @@ class DiGraph:
         self._adjacency[from_].add(to_)
 
     def remove_edge(self, from_: str, to_: str, /) -> None:
+        """
+        Remove an edge from the graph. Does nothing if either the origin or destination nodes are not in the graph.
+
+        Args:
+            from_: The origin node.
+            to_: The destination node.
+
+        Returns:
+            ``None``
+        """
         if from_ not in self._nodes or to_ not in self._nodes:
             return
 
         self._adjacency[from_].discard(to_)
 
     def children(self, of: str, /) -> Set[str]:
+        """
+        Get the set of all children for the given node. Includes indirect children where a node depends on a
+        node that depends on the requested node (etc.).
+
+        Args:
+            of: The node to get the children for.
+
+        Returns:
+            Set of all children for the given node.
+        """
         children_: set[str] = set()
 
         to_process, index = list(self._adjacency[of]), 0
@@ -192,6 +315,17 @@ class DiGraph:
         return children_
 
     def subgraph(self, of: Collection[str], /) -> DiGraph:
+        """
+        Create a subgraph containing only the given nodes, and any edges relating them. The created
+        graph will **only** contain the requested nodes, and no nodes that depend on any of the given nodes
+        that were not specified.
+
+        Args:
+            of: The nodes the subgraph should contain.
+
+        Returns:
+            The created subgraph.
+        """
         subgraph: DiGraph = DiGraph()
 
         nodes = set(n for n in of if n in self._nodes)

@@ -43,7 +43,7 @@ class NotOwner(Exception):
     """Exception raised when a user that does not own the bot attempts to invoke a protected command."""
 
 
-@execution.hook(execution.ExecutionSteps.CHECKS, skip_when_failed=True)
+@execution.hook(execution.ExecutionSteps.CHECKS, skip_when_failed=True, name="owner_only")
 async def owner_only(_: execution.ExecutionPipeline, ctx: context.Context) -> None:
     """
     Hook that checks whether the user invoking the command is an owner of the bot. This takes into account
@@ -97,7 +97,7 @@ def has_permissions(permissions: hikari.Permissions, /, *, fail_in_dm: bool = Tr
                 ...
     """
 
-    @execution.hook(execution.ExecutionSteps.CHECKS, skip_when_failed=True)
+    @execution.hook(execution.ExecutionSteps.CHECKS, skip_when_failed=True, name="has_permissions")
     def _has_permissions(_: execution.ExecutionPipeline, ctx: context.Context) -> None:
         if ctx.member is None:
             if fail_in_dm:
@@ -143,7 +143,7 @@ def bot_has_permissions(permissions: hikari.Permissions, /, *, fail_in_dm: bool 
                 ...
     """
 
-    @execution.hook(execution.ExecutionSteps.CHECKS, skip_when_failed=True)
+    @execution.hook(execution.ExecutionSteps.CHECKS, skip_when_failed=True, name="bot_has_permissions")
     def _bot_has_permissions(_: execution.ExecutionPipeline, ctx: context.Context) -> None:
         if ctx.interaction.app_permissions is None:
             if fail_in_dm:
@@ -194,7 +194,7 @@ def has_roles(
     """
     flattened_role_ids = [elem for item in role_ids for elem in (item if isinstance(item, Iterable) else [item])]
 
-    @execution.hook(execution.ExecutionSteps.CHECKS, skip_when_failed=True)
+    @execution.hook(execution.ExecutionSteps.CHECKS, skip_when_failed=True, name="has_roles")
     def _has_roles(_: execution.ExecutionPipeline, ctx: context.Context) -> None:
         if ctx.member is None:
             if fail_in_dm:

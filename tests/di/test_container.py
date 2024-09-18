@@ -458,6 +458,22 @@ class TestDependencyFallbacks:
             assert await c.get(str | int) is val
 
     @pytest.mark.asyncio
+    async def test_get_union_returns_first_when_possible_old_syntax(self) -> None:
+        registry = di.Registry()
+        registry.register_value(str, (val := "foo"))
+
+        async with di.Container(registry) as c:
+            assert await c.get(t.Union[str, int]) is val
+
+    @pytest.mark.asyncio
+    async def test_get_union_returns_second_when_first_not_registered_old_syntax(self) -> None:
+        registry = di.Registry()
+        registry.register_value(int, (val := 12345))
+
+        async with di.Container(registry) as c:
+            assert await c.get(t.Union[str, int]) is val
+
+    @pytest.mark.asyncio
     async def test_get_union_raises_error_when_neither_registered(self) -> None:
         registry = di.Registry()
 

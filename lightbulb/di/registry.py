@@ -24,9 +24,8 @@ __all__ = ["Registry"]
 
 import typing as t
 
-import networkx as nx
-
 from lightbulb.di import exceptions
+from lightbulb.di import graph
 from lightbulb.di import utils as di_utils
 
 if t.TYPE_CHECKING:
@@ -63,15 +62,15 @@ class Registry:
     __slots__ = ("_active_containers", "_graph")
 
     def __init__(self) -> None:
-        self._graph: nx.DiGraph[str] = nx.DiGraph()
+        self._graph: graph.DiGraph = graph.DiGraph()
         self._active_containers: set[container.Container] = set()
 
     def __contains__(self, item: type[t.Any]) -> bool:
         dep_id = di_utils.get_dependency_id(item)
-        if dep_id not in self._graph:
+        if dep_id not in self._graph.nodes:
             return False
 
-        return self._graph.nodes[dep_id].get("factory") is not None
+        return self._graph.nodes[dep_id] is not None
 
     def _freeze(self, cnt: container.Container) -> None:
         self._active_containers.add(cnt)
@@ -136,11 +135,7 @@ class Registry:
         # We are overriding a previously defined dependency and want to strip the edges, so we don't have
         # a load of redundant ones - maybe the new version doesn't require the same sub-dependencies
         if dependency_id in self._graph:
-            self._graph.remove_edges_from(list(self._graph.out_edges(dependency_id)))
+            for edge in self._graph.out_edges(dependency_id):
+                self._graph.remove_edge(*edge)
 
-        factory_dependencies = di_utils.resolve_dependency_id_for_all_parameters(factory)
-
-        if dependency_id in factory_dependencies:
-            raise exceptions.CircularDependencyException(f"factory for type {typ!r} requires itself as a dependency")
-
-        di_utils.populate_graph_for_dependency(self._graph, dependency_id, factory, teardown)
+        graph.populate_graph_for_dependency(self._graph, dependency_id, factory, teardown)

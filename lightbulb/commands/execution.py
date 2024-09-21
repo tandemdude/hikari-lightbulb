@@ -103,6 +103,8 @@ class ExecutionHook:
     """The step that this hook should be run during."""
     skip_when_failed: bool
     """Whether this hook should be skipped if the pipeline has already failed."""
+    name: str
+    """The name of this hook."""
     func: ExecutionHookFunc
     """The function that this hook executes."""
 
@@ -263,7 +265,9 @@ class ExecutionPipeline:
             )
 
 
-def hook(step: ExecutionStep, skip_when_failed: bool = False) -> Callable[[ExecutionHookFunc], ExecutionHook]:
+def hook(
+    step: ExecutionStep, skip_when_failed: bool = False, name: str = ""
+) -> Callable[[ExecutionHookFunc], ExecutionHook]:
     """
     Second order decorator to convert a function into an execution hook for the given
     step. Also enables dependency injection on the decorated function.
@@ -283,6 +287,8 @@ def hook(step: ExecutionStep, skip_when_failed: bool = False) -> Callable[[Execu
         step: The step that this hook should be run during.
         skip_when_failed: Whether this hook should be skipped if the :obj:`~ExecutionPipeline`
             has already failed due to a different hook or command invocation exception. Defaults to :obj:`False`.
+        name: The name of the hook. If not specified (an empty string), this will be set to the name of the
+            hook function.
 
     Returns:
         :obj:`~ExecutionHook`: The created execution hook.
@@ -303,7 +309,7 @@ def hook(step: ExecutionStep, skip_when_failed: bool = False) -> Callable[[Execu
         raise ValueError("hooks cannot be registered for the 'INVOKE' execution step")
 
     def inner(func: ExecutionHookFunc) -> ExecutionHook:
-        return ExecutionHook(step, skip_when_failed, di.with_di(func))
+        return ExecutionHook(step, skip_when_failed, name or func.__name__, di.with_di(func))  # type: ignore[reportArgumentType]
 
     return inner
 

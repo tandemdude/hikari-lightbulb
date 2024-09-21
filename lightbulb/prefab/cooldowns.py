@@ -129,7 +129,7 @@ def fixed_window(
     Returns:
         The created hook.
     """
-    return execution.hook(execution.ExecutionSteps.COOLDOWNS, skip_when_failed=True)(
+    return execution.hook(execution.ExecutionSteps.COOLDOWNS, skip_when_failed=True, name="fixed_window")(
         _FixedWindow(
             window_length, allowed_invocations, _PROVIDED_BUCKETS[bucket] if isinstance(bucket, str) else bucket
         )
@@ -165,7 +165,7 @@ def sliding_window(
     Returns:
         The created hook.
     """
-    return execution.hook(execution.ExecutionSteps.COOLDOWNS, skip_when_failed=True)(
+    return execution.hook(execution.ExecutionSteps.COOLDOWNS, skip_when_failed=True, name="sliding_window")(
         _SlidingWindow(
             window_length, allowed_invocations, _PROVIDED_BUCKETS[bucket] if isinstance(bucket, str) else bucket
         )

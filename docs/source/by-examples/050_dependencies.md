@@ -488,6 +488,69 @@ bot.add_shutdown_callback(client.stop)
 
 ---
 
+(union-dependencies)=
+## Union and Optional Dependencies
+
+When injecting dependencies into either a dependency factory method, or a dependency injection enabled function - Lightbulb
+supports specifying unions in order to allow for fallbacks when one or more dependencies are not registered.
+
+For example, if you want to use the same factory method for both command and autocomplete invocations, you could do
+the following:
+
+```python
+async def dependency_factory(ctx: lightbulb.Context | lightbulb.AutocompleteContext) -> Foo:
+    ...
+```
+
+In this case, Lightbulb would recognise when `Context` isn't available in the container and would provide `AutocompleteContext`
+instead.
+
+Similarly, the special case {obj}`typing.Optional` (`typing.Optional[Foo]` or `Foo | None`) is supported - when the
+parameter is needed to be injected, Lightbulb will check if the dependency `Foo` exists in the container, if not,
+the parameter value will be `None` instead of the created dependency.
+
+### Modifying Resolution Behaviour
+
+The default behaviour for resolving union dependencies works as follows:
+
+- Check dependencies in the order specified in the union
+- For each dependency, check if it is registered to the container (or a parent container)
+- If registered, return that dependency
+- Otherwise, check the next dependency in the sequence
+
+Lightbulb provides some "meta annotations" that allow you to slightly alter this behaviour. For example, you could
+change it so that if creating one of the dependencies fails (even if it is registered), then Lightbulb will try to
+fall back to the next dependency in the sequence.
+
+```python
+from lightbulb.di import Try
+
+async def dependency_factory(foo: Try[Bar] | Baz) -> Bork:
+    ...
+```
+
+In the above example, `Try[]` acts as a modifier that tells the injection system to always attempt to create
+the enclosed dependency, and fall back if creation fails. If `Try[]` was not included, then an error would
+be raised if creation of the `Bar` dependency failed - and the method would not be called.
+
+:::{note}
+The absense of a "meta annotation" is functionally identical to the dependency type being enclosed within an `If[]`.
+
+E.g. the following two examples will function the same way
+```python
+async def dependency_factory(foo: Bar) -> Baz:
+    ...
+```
+```python
+from lightbulb.di import If
+
+async def dependency_factory(foo: If[Bar]) -> Baz:
+    ...
+```
+:::
+
+---
+
 ## Examples
 
 ### Basic

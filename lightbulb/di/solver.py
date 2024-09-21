@@ -43,8 +43,10 @@ import logging
 import os
 import sys
 import typing as t
+from collections.abc import Coroutine
 
 from lightbulb import utils
+from lightbulb.di import conditions
 from lightbulb.di import container
 from lightbulb.di import exceptions
 from lightbulb.di import registry
@@ -54,13 +56,13 @@ if t.TYPE_CHECKING:
     from collections.abc import AsyncIterator
     from collections.abc import Awaitable
     from collections.abc import Callable
-    from collections.abc import Coroutine
 
     from lightbulb.internal import types as lb_types
 
 P = t.ParamSpec("P")
 R = t.TypeVar("R")
 T = t.TypeVar("T")
+AsyncFnT = t.TypeVar("AsyncFnT", bound=t.Callable[..., Coroutine[t.Any, t.Any, t.Any]])
 
 DI_ENABLED: t.Final[bool] = os.environ.get("LIGHTBULB_DI_DISABLED", "false").lower() != "true"
 DI_CONTAINER: contextvars.ContextVar[container.Container | None] = contextvars.ContextVar(
@@ -313,11 +315,12 @@ def _parse_injectable_params(func: Callable[..., t.Any]) -> tuple[list[tuple[str
                 positional_or_keyword_params.append((parameter.name, CANNOT_INJECT))
             continue
 
+        expr = conditions.DependencyExpression.create(parameter.annotation)
         if parameter.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD:
-            positional_or_keyword_params.append((parameter.name, parameter.annotation))
+            positional_or_keyword_params.append((parameter.name, expr))
         else:
             # It has to be a keyword-only parameter
-            keyword_only_params[parameter.name] = parameter.annotation
+            keyword_only_params[parameter.name] = expr
 
     return positional_or_keyword_params, keyword_only_params
 
@@ -382,16 +385,18 @@ class AutoInjecting:
         }
         injectables.update({name: type for name, type in self._kw_only_params.items() if name not in new_kwargs})
 
-        for name, type in injectables.items():
+        for name, type_expr in injectables.items():
             # Skip any arguments that we can't inject
-            if type is CANNOT_INJECT:
+            if type_expr is CANNOT_INJECT:
                 continue
 
             if di_container is None:
                 raise exceptions.DependencyNotSatisfiableException("no DI context is available")
 
-            LOGGER.debug("requesting dependency for type %r", type)
-            new_kwargs[name] = await di_container.get(type)
+            assert isinstance(type_expr, conditions.DependencyExpression)
+
+            LOGGER.debug("requesting dependency matching %r", type_expr)  # type: ignore[reportUnknownArgumentType]
+            new_kwargs[name] = await type_expr.resolve(di_container)
 
         if len(new_kwargs) > len(kwargs):
             func_name = ((self._self.__class__.__name__ + ".") if self._self else "") + self._func.__name__
@@ -402,6 +407,10 @@ class AutoInjecting:
         return await utils.maybe_await(self._func(*args, **new_kwargs))
 
 
+@t.overload
+def with_di(func: AsyncFnT) -> AsyncFnT: ...
+@t.overload
+def with_di(func: Callable[P, R]) -> Callable[P, Coroutine[t.Any, t.Any, R]]: ...
 def with_di(func: Callable[P, lb_types.MaybeAwaitable[R]]) -> Callable[P, Coroutine[t.Any, t.Any, R]]:
     """
     Decorator that enables dependency injection on the decorated function. If dependency injection

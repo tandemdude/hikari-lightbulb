@@ -121,7 +121,8 @@ class _ListenerLoadable(Loadable):
     async def load(self, client: client_.Client) -> None:
         em = getattr(getattr(client, "_app", None), "event_manager", None)
         if not isinstance(em, hikari.api.EventManager):
-            raise RuntimeError("listeners are not supported for non event_manager aware applications")
+            LOGGER.warning("skipping loading listener - bot is not event manager aware")
+            return
 
         async def _wrapped(*args: t.Any, **kwargs: t.Any) -> t.Any:
             async with client.di.enter_context(di.Contexts.DEFAULT), client.di.enter_context(di.Contexts.LISTENER):
@@ -136,7 +137,8 @@ class _ListenerLoadable(Loadable):
 
     async def unload(self, client: client_.Client) -> None:
         em = getattr(getattr(client, "_app", None), "event_manager", None)
-        assert isinstance(em, hikari.api.EventManager)
+        if not isinstance(em, hikari.api.EventManager):
+            return
 
         for event in self._event_types:
             if (self._wrapped_callback or self._callback) not in em.get_listeners(event):
@@ -377,7 +379,7 @@ class Loader:
         """
         if func is not None:
             wrapped = di.with_di(func)
-            self.add(_ErrorHandlerLoadable(wrapped, priority))
+            self.add(_ErrorHandlerLoadable(wrapped, priority))  # type: ignore[reportArgumentType]
             return t.cast(ErrorHandlerT, wrapped)
 
         def _inner(func_: ErrorHandlerT) -> ErrorHandlerT:

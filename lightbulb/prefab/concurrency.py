@@ -73,14 +73,14 @@ def max_concurrency(n_invocations: int, bucket: Bucket) -> tuple[execution.Execu
     invocations: dict[hikari.Snowflakeish, int] = collections.defaultdict(lambda: 0)
     bucket_callable = _PROVIDED_BUCKETS[bucket] if isinstance(bucket, str) else bucket
 
-    @execution.hook(execution.ExecutionSteps.MAX_CONCURRENCY)
+    @execution.hook(execution.ExecutionSteps.MAX_CONCURRENCY, name="incr_concurrency")
     async def _increment_invocation_count(_: execution.ExecutionPipeline, ctx: context.Context) -> None:
         if invocations[hash := await utils.maybe_await(bucket_callable(ctx))] >= n_invocations:
             raise MaxConcurrencyReached
 
         invocations[hash] += 1
 
-    @execution.hook(execution.ExecutionSteps.POST_INVOKE)
+    @execution.hook(execution.ExecutionSteps.POST_INVOKE, name="decr_concurrency")
     async def _decrement_invocation_count(_: execution.ExecutionPipeline, ctx: context.Context) -> None:
         invocations[hash] = min(invocations[hash := await utils.maybe_await(bucket_callable(ctx))] - 1, 0)
 

@@ -35,34 +35,33 @@ E = t.NewType("E", object)
 F = t.NewType("F", object)
 G = t.NewType("G", object)
 
+T = t.TypeVar("T")
+
+
+class Foo(t.Generic[T]): ...
+
 
 class TestStandaloneContainer:
-    def test_cannot_have_factory_with_pos_only_args(self) -> None:
+    @pytest.mark.asyncio
+    async def test__contains__returns_true_when_dependency_registered(self) -> None:
+        registry = di.Registry()
+        registry.register_value(object, object())
+
+        async with di.Container(registry) as container:
+            assert object in container
+            assert "builtins.object" in container
+
+            await container.get(object)
+            assert object in container
+            assert "builtins.object" in container
+
+    @pytest.mark.asyncio
+    async def test__contains__returns_false_when_dependency_not_registered(self) -> None:
         registry = di.Registry()
 
-        def f(_: str, /) -> object:
-            return object()
-
-        with pytest.raises(ValueError):
-            registry.register_factory(object, f)
-
-    def test_cannot_have_factory_with_var_pos_args(self) -> None:
-        registry = di.Registry()
-
-        def f(*_: str) -> object:
-            return object()
-
-        with pytest.raises(ValueError):
-            registry.register_factory(object, f)
-
-    def test_cannot_have_factory_with_var_kw_args(self) -> None:
-        registry = di.Registry()
-
-        def f(**_: str) -> object:
-            return object()
-
-        with pytest.raises(ValueError):
-            registry.register_factory(object, f)
+        async with di.Container(registry) as container:
+            assert object not in container
+            assert "builtins.object" not in container
 
     @pytest.mark.asyncio
     async def test_supply_dependency_by_value(self) -> None:
@@ -225,7 +224,7 @@ class TestStandaloneContainer:
             await container.get(G)
 
         for item in [A, B, C, D, E, F, G]:
-            complicated_registry._graph.nodes[utils.get_dependency_id(item)]["teardown"].assert_called_once()
+            complicated_registry._graph.nodes[utils.get_dependency_id(item)].teardown_method.assert_called_once()  # type: ignore[reportOptionalMemberAccess]
 
     @pytest.mark.asyncio
     async def test_direct_unsatisfied_dependency_raises_exception(self) -> None:
@@ -247,8 +246,74 @@ class TestStandaloneContainer:
             async with di.Container(registry) as container:
                 await container.get(B)
 
+    @pytest.mark.asyncio
+    async def test_non_direct_circular_dependency_raises_exception(self) -> None:
+        # fmt: off
+        def f_a(_: B) -> object: return object()
+        def f_b(_: A) -> object: return object()
+        # fmt: on
+
+        registry = di.Registry()
+        registry.register_factory(A, f_a)
+        registry.register_factory(B, f_b)
+
+        with pytest.raises(di.CircularDependencyException):
+            async with di.Container(registry) as c:
+                await c.get(A)
+
+    @pytest.mark.asyncio
+    async def test_get_transient_dependency_raises_exception(self) -> None:
+        def f_a(_: B) -> object:
+            return object()
+
+        registry = di.Registry()
+        registry.register_factory(A, f_a)
+
+        with pytest.raises(di.DependencyNotSatisfiableException):
+            async with di.Container(registry) as c:
+                await c.get(B)
+
+    @pytest.mark.asyncio
+    async def test_get_from_closed_container_raises_exception(self) -> None:
+        registry = di.Registry()
+        registry.register_factory(object, lambda: object())
+
+        with pytest.raises(di.ContainerClosedException):
+            async with di.Container(registry) as c:
+                pass
+            await c.get(object)
+
 
 class TestContainerWithParent:
+    @pytest.mark.asyncio
+    async def test__contains__returns_true_when_dependency_registered_in_parent(self) -> None:
+        parent_registry = di.Registry()
+        parent_registry.register_factory(object, lambda: object())
+        child_registry = di.Registry()
+
+        async with (
+            di.Container(parent_registry) as pc,
+            di.Container(child_registry, parent=pc) as cc,
+        ):
+            assert object in cc
+            assert "builtins.object" in cc
+
+            await cc.get(object)
+            assert object in cc
+            assert "builtins.object" in cc
+
+    @pytest.mark.asyncio
+    async def test__contains__returns_false_when_dependency_not_registered_in_parent(self) -> None:
+        parent_registry = di.Registry()
+        child_registry = di.Registry()
+
+        async with (
+            di.Container(parent_registry) as pc,
+            di.Container(child_registry, parent=pc) as cc,
+        ):
+            assert object not in cc
+            assert "builtins.object" not in cc
+
     @pytest.mark.asyncio
     async def test_dependency_from_parent_supplied(self) -> None:
         parent_registry = di.Registry()
@@ -313,43 +378,6 @@ class TestContainerWithParent:
                 await cc.get(B)
 
     @pytest.mark.asyncio
-    async def test_non_direct_circular_dependency_raises_exception(self) -> None:
-        # fmt: off
-        def f_a(_: B) -> object: return object()
-        def f_b(_: A) -> object: return object()
-        # fmt: on
-
-        registry = di.Registry()
-        registry.register_factory(A, f_a)
-        registry.register_factory(B, f_b)
-
-        with pytest.raises(di.CircularDependencyException):
-            async with di.Container(registry) as c:
-                await c.get(A)
-
-    @pytest.mark.asyncio
-    async def test_get_transient_dependency_raises_exception(self) -> None:
-        def f_a(_: B) -> object:
-            return object()
-
-        registry = di.Registry()
-        registry.register_factory(A, f_a)
-
-        with pytest.raises(di.DependencyNotSatisfiableException):
-            async with di.Container(registry) as c:
-                await c.get(B)
-
-    @pytest.mark.asyncio
-    async def test_get_from_closed_container_raises_exception(self) -> None:
-        registry = di.Registry()
-        registry.register_factory(object, lambda: object())
-
-        with pytest.raises(di.ContainerClosedException):
-            async with di.Container(registry) as c:
-                pass
-            await c.get(object)
-
-    @pytest.mark.asyncio
     async def test_get_from_child_with_complicated_structure_works_correctly(self) -> None:
         g = object()
 
@@ -377,3 +405,120 @@ class TestContainerWithParent:
             di.Container(r2, parent=p) as c,
         ):
             assert await c.get(G) is g
+
+
+class TestDependencyFallbacks:
+    @pytest.mark.asyncio
+    async def test_get_optional_dependency_implicit_if_returns_none_when_unregistered(self) -> None:
+        registry = di.Registry()
+
+        async with di.Container(registry) as c:
+            assert await c.get(object | None) is None
+
+    @pytest.mark.asyncio
+    async def test_get_optional_dependency_explicit_if_returns_none_when_unregistered(self) -> None:
+        registry = di.Registry()
+
+        async with di.Container(registry) as c:
+            assert await c.get(di.If[object] | None) is None
+
+    @pytest.mark.asyncio
+    async def test_get_optional_dependency_try_returns_none_when_unregistered(self) -> None:
+        registry = di.Registry()
+
+        async with di.Container(registry) as c:
+            assert await c.get(di.Try[object] | None) is None
+
+    @pytest.mark.asyncio
+    async def test_get_optional_dependency_try_returns_none_when_creation_fails(self) -> None:
+        registry = di.Registry()
+
+        def create_object() -> object:
+            raise ValueError
+
+        registry.register_factory(object, create_object)
+
+        async with di.Container(registry) as c:
+            assert await c.get(di.Try[object] | None) is None
+
+    @pytest.mark.asyncio
+    async def test_get_union_returns_first_when_possible(self) -> None:
+        registry = di.Registry()
+        registry.register_value(str, (val := "foo"))
+
+        async with di.Container(registry) as c:
+            assert await c.get(str | int) is val
+
+    @pytest.mark.asyncio
+    async def test_get_union_returns_second_when_first_not_registered(self) -> None:
+        registry = di.Registry()
+        registry.register_value(int, (val := 12345))
+
+        async with di.Container(registry) as c:
+            assert await c.get(str | int) is val
+
+    @pytest.mark.asyncio
+    async def test_get_union_returns_first_when_possible_old_syntax(self) -> None:
+        registry = di.Registry()
+        registry.register_value(str, (val := "foo"))
+
+        async with di.Container(registry) as c:
+            assert await c.get(t.Union[str, int]) is val
+
+    @pytest.mark.asyncio
+    async def test_get_union_returns_second_when_first_not_registered_old_syntax(self) -> None:
+        registry = di.Registry()
+        registry.register_value(int, (val := 12345))
+
+        async with di.Container(registry) as c:
+            assert await c.get(t.Union[str, int]) is val
+
+    @pytest.mark.asyncio
+    async def test_get_union_raises_error_when_neither_registered(self) -> None:
+        registry = di.Registry()
+
+        with pytest.raises(di.DependencyNotSatisfiableException):
+            async with di.Container(registry) as c:
+                await c.get(str | int)
+
+    @pytest.mark.asyncio
+    async def test_get_union_try_raises_error_when_creation_fails_for_both(self) -> None:
+        registry = di.Registry()
+
+        def create() -> t.Any:
+            raise ValueError
+
+        registry.register_factory(str, create)
+        registry.register_factory(int, create)
+
+        with pytest.raises(di.DependencyNotSatisfiableException):
+            async with di.Container(registry) as c:
+                await c.get(di.Try[str] | di.Try[int])
+
+    @pytest.mark.asyncio
+    async def test_factory_requiring_union_falls_back_when_initial_not_available(self) -> None:
+        registry = di.Registry()
+        registry.register_value(str, (val := "foobar"))
+
+        def create(foo: int | str) -> float:
+            assert foo is val
+            return 0.0
+
+        registry.register_factory(float, create)
+
+        async with di.Container(registry) as c:
+            await c.get(float)
+
+    @pytest.mark.asyncio
+    async def test_factory_requiring_union_falls_back_when_initial_not_available_generic_type(self) -> None:
+        registry = di.Registry()
+        registry.register_value(Foo, (val := Foo()))  # type: ignore[reportUnknownArgumentType]
+
+        def create(foo: int | Foo[str]) -> float:
+            assert foo is val
+            return 0.0
+
+        registry.register_factory(float, create)
+
+        async with di.Container(registry) as c:
+            await c.get(float)

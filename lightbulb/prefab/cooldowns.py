@@ -18,7 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-__all__ = ["OnCooldown", "fixed_window", "sliding_window"]
+__all__ = ["CommandCooldown", "OnCooldown", "fixed_window", "sliding_window"]
 
 import collections
 import time
@@ -30,6 +30,8 @@ import hikari
 from lightbulb import context
 from lightbulb import utils
 from lightbulb.commands import execution
+from lightbulb.di import container
+from lightbulb.di import solver
 from lightbulb.internal import types
 
 BucketCallable: t.TypeAlias = Callable[[context.Context], types.MaybeAwaitable[hikari.Snowflakeish]]
@@ -51,6 +53,62 @@ class OnCooldown(Exception):
         """The remaining time in seconds before the command can be invoked again."""
 
 
+class CommandCooldown:
+    """
+    Utility class registered as a dependency when a cooldown hook runs for a command. Can be
+    injected into any dependency-enabled function in order to manipulate the cooldown state
+    within your code.
+    """
+
+    __slots__ = ("_cls", "_ctx")
+
+    def __init__(self, ctx: context.Context, cls: "_FixedWindow | _SlidingWindow") -> None:
+        self._ctx = ctx
+        self._cls = cls
+
+    async def undo(self) -> None:
+        """
+        Undoes the last cooldown application for the enclosed context. If called multiple times, it will continue to
+        undo each cooldown application until all have been removed.
+
+        Returns:
+            :obj:`None`
+        """
+        await self._cls.undo(self._ctx)
+
+    async def reset(self) -> None:
+        """
+        Resets the cooldown for the enclosed context.
+
+        Returns:
+            :obj:`None`
+        """
+        await self._cls.reset(self._ctx)
+
+    async def apply(self) -> None:
+        """
+        Applies the cooldown to the enclosed context.
+
+        Returns:
+            :obj:`None`
+
+        Raises:
+            :obj:`~OnCooldown`: If the cooldown has been exceeded.
+        """
+        await self._cls(None, self._ctx)  # type: ignore[reportArgumentType]
+
+
+def _maybe_register_dependency(cc: CommandCooldown) -> None:
+    if not solver.DI_ENABLED:
+        return
+
+    di_container: container.Container | None = solver.DI_CONTAINER.get(None)
+    if di_container is None or di_container._tag is not solver.Contexts.DEFAULT:
+        return
+
+    di_container.add_value(CommandCooldown, cc)
+
+
 class _FixedWindow:
     __slots__ = ("_allowed_invocations", "_bucket", "_invocations", "_window_length")
 
@@ -69,7 +127,17 @@ class _FixedWindow:
             _FixedWindow._InvocationData
         )
 
+    async def undo(self, ctx: context.Context) -> None:
+        data = self._invocations[await utils.maybe_await(self._bucket(ctx))]
+        if data.n > 0:
+            data.n -= 1
+
+    async def reset(self, ctx: context.Context) -> None:
+        self._invocations.pop(await utils.maybe_await(self._bucket(ctx)), None)
+
     async def __call__(self, _: execution.ExecutionPipeline, ctx: context.Context) -> None:
+        _maybe_register_dependency(CommandCooldown(ctx, self))
+
         data = self._invocations[await utils.maybe_await(self._bucket(ctx))]
         if data.expires < (now := time.perf_counter()):
             data.expires = now + self._window_length
@@ -90,9 +158,18 @@ class _SlidingWindow:
         self._bucket = bucket
         self._invocations: dict[hikari.Snowflakeish, list[float]] = collections.defaultdict(list)
 
-    async def __call__(self, _: execution.ExecutionPipeline, ctx: context.Context) -> None:
-        invocations = self._invocations[hash := await utils.maybe_await(self._bucket(ctx))]
+    async def undo(self, ctx: context.Context) -> None:
+        invocations = self._invocations[await utils.maybe_await(self._bucket(ctx))]
+        if invocations:
+            invocations.pop(-1)
 
+    async def reset(self, ctx: context.Context) -> None:
+        self._invocations.pop(await utils.maybe_await(self._bucket(ctx)), None)
+
+    async def __call__(self, _: execution.ExecutionPipeline, ctx: context.Context) -> None:
+        _maybe_register_dependency(CommandCooldown(ctx, self))
+
+        invocations = self._invocations[hash := await utils.maybe_await(self._bucket(ctx))]
         interval = (now := time.perf_counter()) - self._window_length
         usages_in_window = [usage for usage in invocations[::-1] if usage > interval]
         if len(usages_in_window) + 1 > self._allowed_invocations:
@@ -120,6 +197,8 @@ def fixed_window(
     - ``"channel"`` - cooldown is applied individually for each channel
     - ``"guild"`` - cooldown is applied individually for each guild. If in DMs, the cooldown is applied individually to
       each DM.
+
+    If DI is enabled, this hook will register an instance of :obj:`~CommandCooldown` when it is executed.
 
     Args:
         window_length: The length of the cooldown window.
@@ -156,6 +235,8 @@ def sliding_window(
     - ``"channel"`` - cooldown is applied individually for each channel
     - ``"guild"`` - cooldown is applied individually for each guild. If in DMs, the cooldown is applied individually to
       each DM.
+
+    If DI is enabled, this hook will register an instance of :obj:`~CommandCooldown` when it is executed.
 
     Args:
         window_length: The length of the cooldown window.

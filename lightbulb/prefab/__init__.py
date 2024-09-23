@@ -26,6 +26,7 @@ from lightbulb.prefab.cooldowns import *
 
 __all__ = [
     "BotMissingRequiredPermissions",
+    "CommandCooldown",
     "MaxConcurrencyReached",
     "MissingRequiredPermission",
     "MissingRequiredRoles",

@@ -216,7 +216,7 @@ class DiGraph:
             data: The data for the node.
 
         Returns:
-            ``None``
+            :obj:`None`
         """
         if id_ in self._nodes:
             return
@@ -232,7 +232,7 @@ class DiGraph:
             id_: The ID of the node to remove.
 
         Returns:
-            ``None``
+            :obj:`None`
         """
         self._nodes.pop(id_, None)
         self._adjacency.pop(id_, None)
@@ -250,7 +250,7 @@ class DiGraph:
             data: The data for the node.
 
         Returns:
-            ``None``
+            :obj:`None`
         """
         self._nodes[id_] = data
 
@@ -263,7 +263,7 @@ class DiGraph:
             to_: The destination node.
 
         Returns:
-            ``None``
+            :obj:`None`
 
         Raises:
             :obj:`ValueError`: If either the origin or destination nodes are not in the graph.
@@ -284,7 +284,7 @@ class DiGraph:
             to_: The destination node.
 
         Returns:
-            ``None``
+            :obj:`None`
         """
         if from_ not in self._nodes or to_ not in self._nodes:
             return

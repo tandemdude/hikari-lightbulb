@@ -8,6 +8,24 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a13 (2024-09-30)
+### Features
+
+- - Implement injection for union dependencies using `Foo | Bar`. If any of the requested dependencies are not registered, it will fall back to the next in the union.
+  - Implement injection for optional dependencies using `Foo | None`. If all the requested dependencies are not registered, it will fall back to `None`.
+  - Implement injection 'meta annotations' (`Try[]` and `If[]`) allowing modifying of the fall-back behaviour.
+
+  ([#454](https://github.com/tandemdude/hikari-lightbulb/issues/454))
+- Add `name` argument to the `hook()` decorator and `name` attribute to `ExecutionHook`.
+- Prefab cooldown hooks now register an instance of `CommandCooldown` as a dependency when they are executed.
+
+### Bugfixes
+
+- Fix `KeyError` preventing error handlers being loaded from extensions.
+- Fix menu task exceptions being logged even if they were raised previously.
+
+----
+
 ## v3.0.0a12 (2024-08-30)
 ### Breaking Changes
 

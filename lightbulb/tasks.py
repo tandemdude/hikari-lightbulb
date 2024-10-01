@@ -310,6 +310,13 @@ class Task:
                         return
 
                     n_failures += 1
+
+                    if self._max_failures <= 0:
+                        LOGGER.warning(
+                            "Execution of tast %r failed", self._func.__name__, exc_info=(type(e), e, e.__traceback__)
+                        )
+                        continue
+
                     LOGGER.warning(
                         "Execution of task %r failed - cancelling after %s more failures",
                         self._func.__name__,

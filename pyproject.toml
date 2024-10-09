@@ -37,7 +37,7 @@ Changelog = "https://hikari-lightbulb.readthedocs.io/en/latest/changelog.html"
 [project.optional-dependencies]
 localization = ["polib>=1.2.0, <2"]
 crontrigger = ["croniter>=3.0.3, <4"]
-dev = ["nox==2024.4.15"]
+dev = ["nox==2024.10.9"]
 "dev.docs" = [
     "sphinx>=8.0.2, <9",
     "furo==2024.8.6",

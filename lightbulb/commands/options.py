@@ -655,7 +655,7 @@ def attachment(
         hikari.Attachment,
         Option(
             OptionData(
-                type=hikari.OptionType.MENTIONABLE,
+                type=hikari.OptionType.ATTACHMENT,
                 name=name,
                 description=description,
                 localize=localize,

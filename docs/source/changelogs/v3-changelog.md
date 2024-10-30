@@ -8,6 +8,17 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a14 (2024-10-30)
+### Bugfixes
+
+- Fixed lightbulb.attachment option, which previously compiled to hikari.OptionType.MENTIONABLE ([#472](https://github.com/tandemdude/hikari-lightbulb/issues/472))
+
+### Miscellaneous
+
+- Add support for Python 3.13
+
+----
+
 ## v3.0.0a13 (2024-09-30)
 ### Features
 

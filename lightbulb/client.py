@@ -332,9 +332,9 @@ class Client(abc.ABC):
                 the client upon the client being started, the task will also be started; it will also be started
                 if being added to an already-started client.
             max_failures: The maximum number of failed attempts to execute the task before it is cancelled.
-                Setting this to a negative number will disable this behavior, and the task won't be canceled, 
+                Setting this to a negative number will disable this behavior, and the task won't be canceled,
                 no matter how often the task fails.
-            max_invocations: The maximum number of times the task can be invoked before being stopped. 
+            max_invocations: The maximum number of times the task can be invoked before being stopped.
                 Setting this to a negative number will disable this behavior, allowing unlimited invocations.
 
         Note:

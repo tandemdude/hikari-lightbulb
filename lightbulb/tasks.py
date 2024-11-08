@@ -316,7 +316,7 @@ class Task:
 
                     if self._max_failures <= 0:
                         LOGGER.error(
-                            "Execution of tast %r failed", self._func.__name__, exc_info=(type(e), e, e.__traceback__)
+                            "Execution of task %r failed", self._func.__name__, exc_info=(type(e), e, e.__traceback__)
                         )
                         continue
 

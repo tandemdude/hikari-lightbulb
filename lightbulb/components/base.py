@@ -287,7 +287,7 @@ class BuildableComponentContainer(abc.ABC, Sequence[special_endpoints.ComponentB
 
     def previous_row(self) -> t_ex.Self:
         """Move the current row pointer back to the previous row."""
-        self.__current_row = max(0, self.__current_row - 1)
+        self.__current_row = max(0, self._current_row - 1)
         return self
 
     def add(self, component: BaseComponentT) -> BaseComponentT:

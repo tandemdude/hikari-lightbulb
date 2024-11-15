@@ -41,6 +41,7 @@ import abc
 import asyncio
 import typing as t
 import uuid
+from collections.abc import Generator
 from collections.abc import Sequence
 
 import async_timeout
@@ -49,7 +50,6 @@ from hikari.api import special_endpoints
 from hikari.impl import special_endpoints as special_endpoints_impl
 
 from lightbulb.components import base
-from lightbulb.components import utils
 
 if t.TYPE_CHECKING:
     from collections.abc import Awaitable
@@ -557,6 +557,33 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
         )
 
 
+class MenuHandle:
+    """
+    Class encapsulating a single instance of an interaction listener for a component menu. Can be awaited in order
+    to block until the menu completes.
+    """
+
+    __slots__ = ("_task",)
+
+    def __init__(self, task: asyncio.Task[None]) -> None:
+        self._task = task
+
+    def __await__(self) -> Generator[None, t.Any, None]:
+        # Slight bodge allowing suppression of error logging from tasks if they are
+        # awaited before the execution completes.
+        self._task.set_name(self._task.get_name() + "@suppress")
+        return self._task.__await__()
+
+    def stop_interacting(self) -> None:
+        """
+        Stop the interaction listener that this handle represents.
+
+        Returns:
+            :obj:`None`
+        """
+        self._task.cancel()
+
+
 class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBuilder]):
     """Class representing a component menu."""
 
@@ -906,7 +933,7 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         *,
         wait: bool = True,
         timeout: float | None = 30,
-    ) -> Awaitable[None]:
+    ) -> MenuHandle:
         """
         Attach this menu to the given client, starting it. You may optionally wait for the menu to finish and/or
         provide a timeout, after which an :obj:`asyncio.TimeoutError` will be raised.
@@ -925,7 +952,7 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
                 awaitable instead, the error will be raised from that statement.
         """
         task = client._safe_create_task(self._run_menu(client, timeout))
-        wrapped = utils.TaskLogSuppressorProxy(task)
+        wrapped = MenuHandle(task)
 
         if wait:
             await wrapped

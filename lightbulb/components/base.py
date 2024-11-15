@@ -270,7 +270,8 @@ class BuildableComponentContainer(abc.ABC, Sequence[special_endpoints.ComponentB
 
     def clear_rows(self) -> t_ex.Self:
         """Remove all components from this container."""
-        self._rows.clear()
+        for row in self._rows:
+            row.clear()
         return self
 
     def clear_current_row(self) -> t_ex.Self:

@@ -8,6 +8,18 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a15 (2024-11-22)
+### Features
+
+- `Menu.attach` now returns an instance of `MenuHandle` instead of a generic awaitable - allowing the menu to be stopped without using a `MenuContext` or timeout.
+
+### Bugfixes
+
+- Changed logging level for exceptions happening in tasks from `WARNING` to `ERROR`. ([#486](https://github.com/tandemdude/hikari-lightbulb/issues/486))
+- Fix sporadic attribute error when using `self.previous_row()` within a component menu class.
+
+----
+
 ## v3.0.0a14 (2024-10-30)
 ### Bugfixes
 

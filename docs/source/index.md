@@ -14,7 +14,7 @@ ogp_description_length: 148
 
 ## Overview
 
-**Lightbulb** is a command handler library designed for use with [Hikari](https://github.com/hikari-py/hikari>).
+**Lightbulb** is a command handler library designed for use with [Hikari](https://github.com/hikari-py/hikari).
 
 It aims to provide an easy-to-use interface for building commands with your bot.
 

@@ -322,7 +322,7 @@ def string(
         Descriptor allowing access to the option value from within a command invocation.
     """
     return t.cast(
-        str,
+        "str",
         Option(
             OptionData(
                 type=hikari.OptionType.STRING,
@@ -372,7 +372,7 @@ def integer(
         Descriptor allowing access to the option value from within a command invocation.
     """
     return t.cast(
-        int,
+        "int",
         Option(
             OptionData(
                 type=hikari.OptionType.INTEGER,
@@ -414,7 +414,7 @@ def boolean(
         Descriptor allowing access to the option value from within a command invocation.
     """
     return t.cast(
-        bool,
+        "bool",
         Option(
             OptionData(
                 type=hikari.OptionType.BOOLEAN,
@@ -459,7 +459,7 @@ def number(
         Descriptor allowing access to the option value from within a command invocation.
     """
     return t.cast(
-        float,
+        "float",
         Option(
             OptionData(
                 type=hikari.OptionType.FLOAT,
@@ -501,7 +501,7 @@ def user(
         Descriptor allowing access to the option value from within a command invocation.
     """
     return t.cast(
-        hikari.User,
+        "hikari.User",
         Option(
             OptionData(
                 type=hikari.OptionType.USER,
@@ -540,7 +540,7 @@ def channel(
         Descriptor allowing access to the option value from within a command invocation.
     """
     return t.cast(
-        hikari.PartialChannel,
+        "hikari.PartialChannel",
         Option(
             OptionData(
                 type=hikari.OptionType.CHANNEL,
@@ -578,7 +578,7 @@ def role(
         Descriptor allowing access to the option value from within a command invocation.
     """
     return t.cast(
-        hikari.Role,
+        "hikari.Role",
         Option(
             OptionData(
                 type=hikari.OptionType.ROLE,
@@ -615,7 +615,7 @@ def mentionable(
         Descriptor allowing access to the option value from within a command invocation.
     """
     return t.cast(
-        hikari.Snowflake,
+        "hikari.Snowflake",
         Option(
             OptionData(
                 type=hikari.OptionType.MENTIONABLE,
@@ -652,7 +652,7 @@ def attachment(
         Descriptor allowing access to the option value from within a command invocation.
     """
     return t.cast(
-        hikari.Attachment,
+        "hikari.Attachment",
         Option(
             OptionData(
                 type=hikari.OptionType.ATTACHMENT,

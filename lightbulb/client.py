@@ -424,7 +424,7 @@ class Client(abc.ABC):
             sorted_handlers = sorted(self._error_handlers.items(), key=lambda item: item[0], reverse=True)
             self._error_handlers = {k: v for k, v in sorted_handlers}
 
-            return t.cast(ErrorHandlerT, wrapped)
+            return t.cast("ErrorHandlerT", wrapped)
 
         def _inner(func_: ErrorHandlerT) -> ErrorHandlerT:
             return self.error_handler(func_, priority=priority)
@@ -447,7 +447,7 @@ class Client(abc.ABC):
                 h for h in handlers if h is not func and (isinstance(h, di_.AutoInjecting) and h._func is not func)
             ]
             if handlers:
-                new_handlers[priority] = t.cast(list[lb_types.ErrorHandler], handlers)
+                new_handlers[priority] = t.cast("list[lb_types.ErrorHandler]", handlers)
 
         sorted_handlers = sorted(new_handlers.items(), key=lambda item: item[0], reverse=True)
         self._error_handlers = {k: v for k, v in sorted_handlers}

@@ -153,7 +153,7 @@ class RestAutocompleteContext(AutocompleteContext[T]):
     def __init__(
         self,
         *args: t.Any,
-        _initial_response_callback: Callable[
+        _initial_response_callback: Callable[  # noqa: RUF052
             [hikari.api.InteractionAutocompleteBuilder],
             None,
         ],
@@ -518,7 +518,7 @@ class RestContext(Context):
     def __init__(
         self,
         *args: t.Any,
-        _initial_response_callback: Callable[
+        _initial_response_callback: Callable[  # noqa: RUF052
             [hikari.api.InteractionResponseBuilder],
             None,
         ],

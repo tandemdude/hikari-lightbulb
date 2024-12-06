@@ -77,4 +77,4 @@ async def maybe_await(item: types.MaybeAwaitable[T]) -> T:
     """
     if inspect.iscoroutine(item):
         return await item
-    return t.cast(T, item)
+    return t.cast("T", item)

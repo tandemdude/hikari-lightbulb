@@ -22,7 +22,7 @@ __all__ = ["MaxConcurrencyReached", "max_concurrency"]
 
 import collections
 
-import hikari  # noqa: TCH002
+import hikari  # noqa: TC002
 
 from lightbulb import context
 from lightbulb import utils

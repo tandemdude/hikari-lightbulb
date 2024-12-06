@@ -25,9 +25,6 @@ __all__ = ["Loadable", "Loader"]
 import abc
 import logging
 import typing as t
-from collections.abc import Awaitable
-from collections.abc import Callable
-from collections.abc import Sequence
 
 import hikari
 
@@ -35,6 +32,10 @@ from lightbulb import di
 from lightbulb import tasks
 
 if t.TYPE_CHECKING:
+    from collections.abc import Awaitable
+    from collections.abc import Callable
+    from collections.abc import Sequence
+
     from lightbulb import client as client_
     from lightbulb.internal import types
 
@@ -349,7 +350,7 @@ class Loader:
         def _inner(
             callback: Callable["t.Concatenate[EventT, ...]", Awaitable[None]],
         ) -> Callable[[EventT], Awaitable[None]]:
-            wrapped = t.cast(Callable[[EventT], Awaitable[None]], di.with_di(callback))
+            wrapped = t.cast("Callable[[EventT], Awaitable[None]]", di.with_di(callback))
             self.add(_ListenerLoadable(wrapped, *event_types))
             return wrapped
 
@@ -380,7 +381,7 @@ class Loader:
         if func is not None:
             wrapped = di.with_di(func)
             self.add(_ErrorHandlerLoadable(wrapped, priority))  # type: ignore[reportArgumentType]
-            return t.cast(ErrorHandlerT, wrapped)
+            return t.cast("ErrorHandlerT", wrapped)
 
         def _inner(func_: ErrorHandlerT) -> ErrorHandlerT:
             return self.error_handler(func_, priority=priority)

@@ -265,7 +265,7 @@ class CommandMeta(type):
 
         # Don't want to use a set for deduplicating because we want to preserve ordering
         hooks: list[t.Any] = []
-        for hook in t.cast(Iterable[t.Any], raw_hooks or []):
+        for hook in t.cast("Iterable[t.Any]", raw_hooks or []):
             if hook in hooks:
                 continue
             hooks.append(hook)
@@ -353,7 +353,7 @@ class CommandBase:
             raise RuntimeError("cannot resolve option if no context is available")
 
         if option._data._localized_name in self._resolved_option_cache:
-            return t.cast(T, self._resolved_option_cache[option._data._localized_name])
+            return t.cast("T", self._resolved_option_cache[option._data._localized_name])
 
         found = [opt for opt in context.options if opt.name == option._data._localized_name]
 
@@ -366,7 +366,7 @@ class CommandBase:
 
         if option._data.type in _PRIMITIVE_OPTION_TYPES:
             self._resolved_option_cache[option._data._localized_name] = found[0].value
-            return t.cast(T, found[0].value)
+            return t.cast("T", found[0].value)
 
         snowflake = found[0].value
         resolved = context.interaction.resolved
@@ -388,7 +388,7 @@ class CommandBase:
             raise TypeError("unsupported option type passed")
 
         self._resolved_option_cache[option._data._localized_name] = resolved_option
-        return t.cast(T, resolved_option)
+        return t.cast("T", resolved_option)
 
     @classmethod
     async def as_command_builder(
@@ -487,7 +487,7 @@ class UserCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.US
 
     __slots__ = ()
 
-    target: hikari.User = t.cast(hikari.User, options_.ContextMenuOption(hikari.User))
+    target: hikari.User = t.cast("hikari.User", options_.ContextMenuOption(hikari.User))
     """The target user that the context menu command was executed on."""
 
 
@@ -526,5 +526,5 @@ class MessageCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType
 
     __slots__ = ()
 
-    target: hikari.Message = t.cast(hikari.Message, options_.ContextMenuOption(hikari.Message))
+    target: hikari.Message = t.cast("hikari.Message", options_.ContextMenuOption(hikari.Message))
     """The target message that the context menu command was executed on."""

@@ -42,8 +42,6 @@ import abc
 import asyncio
 import typing as t
 import uuid
-from collections.abc import Generator
-from collections.abc import Sequence
 
 import async_timeout
 import hikari
@@ -55,6 +53,8 @@ from lightbulb.components import base
 if t.TYPE_CHECKING:
     from collections.abc import Awaitable
     from collections.abc import Callable
+    from collections.abc import Generator
+    from collections.abc import Sequence
 
     import typing_extensions as t_ex
 
@@ -343,7 +343,7 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
         menu: Menu,
         interaction: hikari.ComponentInteraction,
         component: base.BaseComponent[special_endpoints.MessageActionRowBuilder],
-        _timeout: async_timeout.Timeout,
+        _timeout: async_timeout.Timeout,  # noqa: RUF052
     ) -> None:
         super().__init__()
 
@@ -428,7 +428,7 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
         if isinstance(select, TextSelect):
             # This is **not** unreachable, pyright is just a silly sausage, and I don't want
             # to add an overload for all the supported select types :D
-            return t.cast(Sequence[T], self.interaction.values)
+            return t.cast("Sequence[T]", self.interaction.values)
 
         resolved_data = self.interaction.resolved
         if resolved_data is None:

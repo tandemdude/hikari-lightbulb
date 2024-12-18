@@ -346,8 +346,8 @@ class AutoInjecting:
         self,
         func: Callable[..., Awaitable[t.Any]],
         self_: t.Any = None,
-        _cached_pos_or_kw_params: list[tuple[str, t.Any]] | None = None,  # noqa: RUF052
-        _cached_kw_only_params: dict[str, t.Any] | None = None,  # noqa: RUF052
+        _cached_pos_or_kw_params: list[tuple[str, t.Any]] | None = None,
+        _cached_kw_only_params: dict[str, t.Any] | None = None,
     ) -> None:
         self._func = func
         self._self: t.Any = self_

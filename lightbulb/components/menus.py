@@ -343,7 +343,7 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
         menu: Menu,
         interaction: hikari.ComponentInteraction,
         component: base.BaseComponent[special_endpoints.MessageActionRowBuilder],
-        _timeout: async_timeout.Timeout,  # noqa: RUF052
+        _timeout: async_timeout.Timeout,
     ) -> None:
         super().__init__()
 

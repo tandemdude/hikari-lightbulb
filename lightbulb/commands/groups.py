@@ -88,7 +88,7 @@ class GroupMixin(abc.ABC):
             command._command_data.parent = self  # type: ignore[reportGeneralTypeIssues]
             return command
 
-        def _inner(_command: CommandT) -> CommandT:  # noqa: RUF052
+        def _inner(_command: CommandT) -> CommandT:
             return self.register(_command)
 
         return _inner

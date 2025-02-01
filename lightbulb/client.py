@@ -344,7 +344,7 @@ class Client(abc.ABC):
 
             .. code-block:: python
 
-                @client.task(lightbulb.uniformtrigger(minutes=1)
+                @client.task(lightbulb.uniformtrigger(minutes=1))
                 async def print_hi() -> None:
                     print("HI")
         """

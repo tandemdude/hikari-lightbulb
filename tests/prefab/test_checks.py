@@ -126,14 +126,14 @@ class TestBotHasPermissions:
 
     @pytest.mark.asyncio
     async def test_fails_when_not_in_guild(self, context: lightbulb.Context) -> None:
-        context.interaction.app_permissions = None
+        context.guild_id = None  # type: ignore[reportAttributeAccess]
 
         with pytest.raises(lightbulb.prefab.BotMissingRequiredPermissions):
             await lightbulb.prefab.bot_has_permissions(hikari.Permissions.ADMINISTRATOR)(mock.Mock(), context)
 
     @pytest.mark.asyncio
     async def test_passes_when_not_in_guild_fail_flag_disabled(self, context: lightbulb.Context) -> None:
-        context.interaction.app_permissions = None
+        context.guild_id = None  # type: ignore[reportAttributeAccess]
         await lightbulb.prefab.bot_has_permissions(hikari.Permissions.ADMINISTRATOR, fail_in_dm=False)(
             mock.Mock(), context
         )

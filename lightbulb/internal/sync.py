@@ -62,7 +62,7 @@ class _CommandBuilderCollection:
 
 
 def _hikari_command_to_builder(
-    cmd: hikari.PartialCommand,
+    cmd: hikari.PartialCommand, default_integration_types: list[hikari.ApplicationIntegrationType]
 ) -> hikari.api.SlashCommandBuilder | hikari.api.ContextMenuCommandBuilder:
     bld: hikari.api.SlashCommandBuilder | hikari.api.ContextMenuCommandBuilder
     if desc := getattr(cmd, "description", None):
@@ -72,9 +72,13 @@ def _hikari_command_to_builder(
     else:
         bld = hikari.impl.ContextMenuCommandBuilder(type=cmd.type, name=cmd.name)
 
+    if cmd.guild_id is None:
+        bld = bld.set_integration_types(cmd.integration_types or default_integration_types).set_context_types(
+            cmd.context_types or list(hikari.ApplicationContextType)
+        )
+
     return (
         bld.set_default_member_permissions(cmd.default_member_permissions)
-        .set_is_dm_enabled(cmd.is_dm_enabled)
         .set_is_nsfw(cmd.is_nsfw)
         .set_name_localizations(cmd.name_localizations)
         .set_id(cmd.id)
@@ -82,7 +86,10 @@ def _hikari_command_to_builder(
 
 
 async def _get_existing_and_registered_commands(
-    client: client_.Client, application: hikari.PartialApplication, guild: hikari.UndefinedOr[hikari.Snowflakeish]
+    client: client_.Client,
+    application: hikari.Application,
+    guild: hikari.UndefinedOr[hikari.Snowflakeish],
+    default_integration_types: list[hikari.ApplicationIntegrationType],
 ) -> tuple[dict[str, _CommandBuilderCollection], dict[str, _CommandBuilderCollection]]:
     existing: dict[str, _CommandBuilderCollection] = collections.defaultdict(_CommandBuilderCollection)
     registered: dict[str, _CommandBuilderCollection] = collections.defaultdict(_CommandBuilderCollection)
@@ -91,7 +98,9 @@ async def _get_existing_and_registered_commands(
     client._created_commands[guild or constants.GLOBAL_COMMAND_KEY] = existing_commands
 
     for existing_command in existing_commands:
-        existing[existing_command.name].put(_hikari_command_to_builder(existing_command))
+        existing[existing_command.name].put(
+            _hikari_command_to_builder(existing_command, list(application.integration_types_config.keys()))
+        )
 
     for collection in client._command_invocation_mapping.get(
         constants.GLOBAL_COMMAND_KEY if guild is hikari.UNDEFINED else guild, {}
@@ -107,6 +116,12 @@ async def _get_existing_and_registered_commands(
             assert isinstance(root, groups.Group) or (inspect.isclass(root) and issubclass(root, commands.CommandBase))
 
             builder = await root.as_command_builder(client.default_locale, client.localization_provider)
+
+            if guild is hikari.UNDEFINED:
+                builder = builder.set_integration_types(
+                    builder.integration_types or default_integration_types
+                ).set_context_types(builder.context_types or list(hikari.ApplicationContextType))
+
             registered[builder.name].put(builder)
 
     return existing, registered
@@ -133,7 +148,8 @@ def _serialize_builder(bld: hikari.api.CommandBuilder) -> dict[str, t.Any]:
 
     out: dict[str, t.Any] = {
         "name": bld.name,
-        "is_dm_enabled": non_undefined_or(bld.is_dm_enabled, True),
+        "integration_types": list(sorted(bld.integration_types or [])),
+        "contexts": list(sorted(bld.context_types or [])),
         "is_nsfw": non_undefined_or(bld.is_nsfw, False),
         "name_localizations": bld.name_localizations,
     }
@@ -197,10 +213,11 @@ async def sync_application_commands(client: client_.Client) -> None:
     """
     client._created_commands.clear()
     application = await client._ensure_application()
+    default_integration_types = list(application.integration_types_config.keys())
 
     LOGGER.info("syncing global commands")
     existing_global_commands, registered_global_commands = await _get_existing_and_registered_commands(
-        client, application, hikari.UNDEFINED
+        client, application, hikari.UNDEFINED, default_integration_types
     )
     global_commands_to_set = _get_commands_to_set(
         existing_global_commands, registered_global_commands, client.delete_unknown_commands
@@ -217,7 +234,7 @@ async def sync_application_commands(client: client_.Client) -> None:
 
         LOGGER.info("syncing commands for guild '%s'", guild)
         existing_guild_commands, registered_guild_commands = await _get_existing_and_registered_commands(
-            client, application, guild
+            client, application, guild, default_integration_types
         )
         guild_commands_to_set = _get_commands_to_set(
             existing_guild_commands, registered_guild_commands, client.delete_unknown_commands

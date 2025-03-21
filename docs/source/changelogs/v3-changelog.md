@@ -8,6 +8,13 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a16 (2025-03-21)
+### Features
+
+- Implement user installable application commands. ([#536](https://github.com/tandemdude/hikari-lightbulb/issues/536))
+
+----
+
 ## v3.0.0a15 (2024-11-22)
 ### Features
 

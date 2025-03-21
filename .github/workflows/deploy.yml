@@ -12,7 +12,7 @@ on:
           - minor
           - patch
           - alpha
-        default: minor
+        default: patch
       increment:
         description: "Increment the version before release"
         type: boolean

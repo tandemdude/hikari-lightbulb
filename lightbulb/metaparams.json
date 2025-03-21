@@ -7,7 +7,8 @@
     "optional": {
       "localize": "bool",
       "nsfw": "bool",
-      "dm_enabled": "bool",
+      "integration_types": "list[hikari.applications.ApplicationIntegrationType]",
+      "contexts": "list[hikari.applications.ApplicationContextType]",
       "default_member_permissions": "hikari.permissions.Permissions",
       "hooks": "list[lightbulb.ExecutionHook]"
     }
@@ -19,7 +20,8 @@
     "optional": {
       "localize": "bool",
       "nsfw": "bool",
-      "dm_enabled": "bool",
+      "integration_types": "list[hikari.applications.ApplicationIntegrationType]",
+      "contexts": "list[hikari.applications.ApplicationContextType]",
       "default_member_permissions": "hikari.permissions.Permissions",
       "hooks": "list[lightbulb.ExecutionHook]"
     }
@@ -31,7 +33,8 @@
     "optional": {
       "localize": "bool",
       "nsfw": "bool",
-      "dm_enabled": "bool",
+      "integration_types": "list[hikari.applications.ApplicationIntegrationType]",
+      "contexts": "list[hikari.applications.ApplicationContextType]",
       "default_member_permissions": "hikari.permissions.Permissions",
       "hooks": "list[lightbulb.ExecutionHook]"
     }

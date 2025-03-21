@@ -73,8 +73,11 @@ class CommandData:
     """Whether the command name and description should be localized."""
     nsfw: bool = dataclasses.field(repr=False)
     """Whether the command is marked as nsfw."""
-    dm_enabled: bool = dataclasses.field(repr=False)
-    """Whether the command is enabled in direct messages. This field is ignored for subcommands."""
+
+    integration_types: hikari.UndefinedOr[Sequence[hikari.ApplicationIntegrationType]] = dataclasses.field(repr=False)
+    """Installations contexts where the command is available. Only affects global commands."""
+    contexts: hikari.UndefinedOr[Sequence[hikari.ApplicationContextType]] = dataclasses.field(repr=False)
+    """Interaction contexts where the command can be used. Only affects global commands."""
     default_member_permissions: hikari.UndefinedOr[hikari.Permissions] = dataclasses.field(repr=False)
     """The default permissions required to use the command in a guild. This field is ignored for subcommands."""
 
@@ -143,8 +146,9 @@ class CommandData:
                 hikari.impl.SlashCommandBuilder(name=name, description=description)
                 .set_name_localizations(name_localizations)  # type: ignore[reportArgumentType]
                 .set_description_localizations(description_localizations)  # type: ignore[reportArgumentType]
-                .set_is_dm_enabled(self.dm_enabled)
                 .set_default_member_permissions(self.default_member_permissions)
+                .set_integration_types(self.integration_types)
+                .set_context_types(self.contexts)
             )
             for option in self.options.values():
                 bld.add_option(await option.to_command_option(default_locale, localization_provider))
@@ -154,8 +158,9 @@ class CommandData:
         return (
             hikari.impl.ContextMenuCommandBuilder(type=self.type, name=self.name)
             .set_name_localizations(name_localizations)  # type: ignore[reportArgumentType]
-            .set_is_dm_enabled(self.dm_enabled)
             .set_default_member_permissions(self.default_member_permissions)
+            .set_integration_types(self.integration_types)
+            .set_context_types(self.contexts)
         )
 
     async def to_command_option(
@@ -254,7 +259,11 @@ class CommandMeta(type):
 
         localize: bool = kwargs.pop("localize", False)
         nsfw: bool = kwargs.pop("nsfw", False)
-        dm_enabled: bool = kwargs.pop("dm_enabled", True)
+
+        integration_types: hikari.UndefinedOr[Sequence[hikari.ApplicationIntegrationType]] = kwargs.pop(
+            "integration_types", hikari.UNDEFINED
+        )
+        contexts: hikari.UndefinedOr[Sequence[hikari.ApplicationContextType]] = kwargs.pop("contexts", hikari.UNDEFINED)
         default_member_permissions: hikari.UndefinedOr[hikari.Permissions] = kwargs.pop(
             "default_member_permissions", hikari.UNDEFINED
         )
@@ -292,7 +301,8 @@ class CommandMeta(type):
             description=description,
             localize=localize,
             nsfw=nsfw,
-            dm_enabled=dm_enabled,
+            integration_types=integration_types,
+            contexts=contexts,
             default_member_permissions=default_member_permissions,
             hooks=hooks,
             options=options,

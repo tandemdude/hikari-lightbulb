@@ -145,7 +145,7 @@ def bot_has_permissions(permissions: hikari.Permissions, /, *, fail_in_dm: bool 
 
     @execution.hook(execution.ExecutionSteps.CHECKS, skip_when_failed=True, name="bot_has_permissions")
     def _bot_has_permissions(_: execution.ExecutionPipeline, ctx: context.Context) -> None:
-        if ctx.interaction.app_permissions is None:
+        if ctx.guild_id is None:
             if fail_in_dm:
                 raise BotMissingRequiredPermissions(permissions, hikari.Permissions.NONE)
             return

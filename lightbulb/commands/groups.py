@@ -34,6 +34,7 @@ from lightbulb.commands import utils
 if t.TYPE_CHECKING:
     from collections.abc import Callable
     from collections.abc import Mapping
+    from collections.abc import Sequence
 
     from lightbulb import localization
 
@@ -122,7 +123,8 @@ class SubGroup(GroupMixin):
             self.description,
             self.localize,
             self.parent.nsfw,
-            self.parent.dm_enabled,
+            self.parent.integration_types,
+            self.parent.contexts,
             self.parent.default_member_permissions,
             [],
             {},
@@ -187,8 +189,14 @@ class Group(GroupMixin):
     """Whether the group name and description should be localized."""
     nsfw: bool = dataclasses.field(repr=False, default=False)
     """Whether the group should be marked as nsfw. Defaults to :obj:`False`."""
-    dm_enabled: bool = dataclasses.field(repr=False, default=True)
-    """Whether the group is enabled in direct messages."""
+    integration_types: hikari.UndefinedOr[Sequence[hikari.ApplicationIntegrationType]] = dataclasses.field(
+        repr=False, default=hikari.UNDEFINED
+    )
+    """Installations contexts where the command is available. Only affects global commands."""
+    contexts: hikari.UndefinedOr[Sequence[hikari.ApplicationContextType]] = dataclasses.field(
+        repr=False, default=hikari.UNDEFINED
+    )
+    """Interaction contexts where the command can be used. Only affects global commands."""
     default_member_permissions: hikari.UndefinedOr[hikari.Permissions] = dataclasses.field(
         repr=False, default=hikari.UNDEFINED
     )
@@ -204,7 +212,8 @@ class Group(GroupMixin):
             self.description,
             self.localize,
             self.nsfw,
-            self.dm_enabled,
+            self.integration_types,
+            self.contexts,
             self.default_member_permissions,
             [],
             {},
@@ -260,8 +269,9 @@ class Group(GroupMixin):
             .set_name_localizations(name_localizations)  # type: ignore[reportArgumentType]
             .set_description_localizations(description_localizations)  # type: ignore[reportArgumentType]
             .set_is_nsfw(self.nsfw)
-            .set_is_dm_enabled(self.dm_enabled)
             .set_default_member_permissions(self.default_member_permissions)
+            .set_integration_types(self.integration_types)
+            .set_context_types(self.contexts)
         )
 
         for command_or_group in self._commands.values():

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version_type:
-        description: "The type of the release version."
+        description: "The type of the release version"
         required: true
         type: choice
         options:
@@ -12,8 +12,9 @@ on:
           - minor
           - patch
           - alpha
+        default: minor
       increment:
-        description: "Whether to increment the version before release."
+        description: "Increment the version before release"
         type: boolean
         default: true
 

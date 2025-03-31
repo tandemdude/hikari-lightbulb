@@ -1191,11 +1191,13 @@ class RestEnabledClient(Client):
     ) -> AsyncGenerator[None, None]:
         self._safe_create_task(self.handle_application_command_interaction(interaction))
         yield None
-    
-    async def handle_rest_component_interaction(self, interaction: hikari.ComponentInteraction) -> AsyncGenerator[None, None]:
+
+    async def handle_rest_component_interaction(
+        self, interaction: hikari.ComponentInteraction
+    ) -> AsyncGenerator[None, None]:
         self._safe_create_task(self.handle_component_interaction(interaction))
         yield None
-    
+
     async def handle_rest_modal_interaction(self, interaction: hikari.ModalInteraction) -> AsyncGenerator[None, None]:
         self._safe_create_task(self.handle_modal_interaction(interaction))
         yield None

@@ -52,7 +52,6 @@ __all__ = [
     "MessageCommand",
     "Option",
     "OptionData",
-    "RestContext",
     "RestEnabledClient",
     "SlashCommand",
     "SubGroup",

@@ -1169,7 +1169,8 @@ class RestEnabledClient(Client):
 
         app.interaction_server.set_listener(hikari.AutocompleteInteraction, self.handle_rest_autocomplete_interaction)
         app.interaction_server.set_listener(hikari.CommandInteraction, self.handle_rest_application_command_interaction)
-        # TODO - make RESTBot compatible with component and modal handler
+        app.interaction_server.set_listener(hikari.ComponentInteraction, self.handle_rest_component_interaction)
+        app.interaction_server.set_listener(hikari.ModalInteraction, self.handle_rest_modal_interaction)
 
         if isinstance(app, hikari.RESTBot):
             self.di.registry_for(di_.Contexts.DEFAULT).register_value(hikari.RESTBot, app)
@@ -1189,6 +1190,14 @@ class RestEnabledClient(Client):
         self, interaction: hikari.CommandInteraction
     ) -> AsyncGenerator[None, None]:
         self._safe_create_task(self.handle_application_command_interaction(interaction))
+        yield None
+    
+    async def handle_rest_component_interaction(self, interaction: hikari.ComponentInteraction) -> AsyncGenerator[None, None]:
+        self._safe_create_task(self.handle_component_interaction(interaction))
+        yield None
+    
+    async def handle_rest_modal_interaction(self, interaction: hikari.ModalInteraction) -> AsyncGenerator[None, None]:
+        self._safe_create_task(self.handle_modal_interaction(interaction))
         yield None
 
 

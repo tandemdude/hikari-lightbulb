@@ -330,7 +330,7 @@ class Client(abc.ABC):
             trigger: The trigger function to use to resolve the interval between task executions.
             auto_start: Whether the task should be started automatically. This means that if the task is added to
                 the client upon the client being started, the task will also be started; it will also be started
-                if being added to an already-started client.
+                if added to an already-started client.
             max_failures: The maximum number of failed attempts to execute the task before it is cancelled.
                 Setting this to a negative number will prevent the task from being cancelled, regardless of
                 how often the task fails.
@@ -926,7 +926,7 @@ class Client(abc.ABC):
         root_commands = guild_commands if interaction.registered_guild_id is not None else global_commands
         if root_commands is None:
             LOGGER.debug("ignoring interaction received for unknown command - %r", interaction.command_name)
-            return
+            return None
 
         command = {
             int(hikari.CommandType.SLASH): root_commands.slash,
@@ -936,7 +936,7 @@ class Client(abc.ABC):
 
         if command is None:
             LOGGER.debug("ignoring interaction received for unknown command - %r", " ".join(command_path))
-            return
+            return None
 
         return options, command
 
@@ -1169,7 +1169,8 @@ class RestEnabledClient(Client):
 
         app.interaction_server.set_listener(hikari.AutocompleteInteraction, self.handle_rest_autocomplete_interaction)
         app.interaction_server.set_listener(hikari.CommandInteraction, self.handle_rest_application_command_interaction)
-        # TODO - make RESTBot compatible with component and modal handler
+        app.interaction_server.set_listener(hikari.ComponentInteraction, self.handle_rest_component_interaction)
+        app.interaction_server.set_listener(hikari.ModalInteraction, self.handle_rest_modal_interaction)
 
         if isinstance(app, hikari.RESTBot):
             self.di.registry_for(di_.Contexts.DEFAULT).register_value(hikari.RESTBot, app)
@@ -1179,134 +1180,27 @@ class RestEnabledClient(Client):
     def app(self) -> RestClientAppT:
         return self._app
 
-    def build_rest_autocomplete_context(
-        self,
-        interaction: hikari.AutocompleteInteraction,
-        options: Sequence[hikari.AutocompleteInteractionOption],
-        command_cls: type[commands.CommandBase],
-        response_callback: Callable[[hikari.api.InteractionResponseBuilder], None],
-    ) -> context_.AutocompleteContext[t.Any]:
-        return context_.RestAutocompleteContext(
-            client=self,
-            interaction=interaction,
-            options=options,
-            command=command_cls,
-            _initial_response_callback=response_callback,
-        )
-
     async def handle_rest_autocomplete_interaction(
         self, interaction: hikari.AutocompleteInteraction
-    ) -> AsyncGenerator[hikari.api.InteractionAutocompleteBuilder, t.Any]:
-        if not self._started:
-            LOGGER.debug("ignoring autocomplete interaction received before the client was started")
-            return
-
-        out = self._resolve_options_and_command(interaction)
-        if out is None:
-            return
-
-        options, command = out
-
-        if not options:
-            LOGGER.debug("no options resolved from autocomplete interaction - ignoring")
-            return
-
-        initial_response_ready = asyncio.Event()
-        initial_response: hikari.api.InteractionResponseBuilder | None = None
-
-        def set_response(response: hikari.api.InteractionResponseBuilder) -> None:
-            nonlocal initial_response, initial_response_ready
-            initial_response = response
-            initial_response_ready.set()
-
-        context = self.build_rest_autocomplete_context(interaction, options, command, set_response)
-
-        option = next(
-            filter(lambda opt: opt._localized_name == context.focused.name, command._command_data.options.values()),
-            None,
-        )
-        if option is None or not option.autocomplete:
-            LOGGER.debug("interaction appears to refer to option that has autocomplete disabled - ignoring")
-            return
-
-        LOGGER.debug("%r - invoking autocomplete", command._command_data.qualified_name)
-
-        assert option.autocomplete_provider is not hikari.UNDEFINED
-        task = asyncio.create_task(self._execute_autocomplete_context(context, option.autocomplete_provider))
-        try:
-            await asyncio.wait_for(initial_response_ready.wait(), timeout=5)
-
-            if initial_response is not None:
-                yield initial_response
-        except asyncio.TimeoutError:
-            LOGGER.warning(
-                "Autocomplete for command %r took too long to create initial response",
-                command._command_data.qualified_name,
-            )
-
-        # Ensure the autocomplete provider completes
-        await task
-
-    def build_rest_command_context(
-        self,
-        interaction: hikari.CommandInteraction,
-        options: Sequence[hikari.CommandInteractionOption],
-        command_cls: type[commands.CommandBase],
-        response_callback: Callable[[hikari.api.InteractionResponseBuilder], None],
-    ) -> context_.Context:
-        return context_.RestContext(
-            client=self,
-            interaction=interaction,
-            options=options,
-            command=command_cls(),
-            _initial_response_callback=response_callback,
-        )
+    ) -> AsyncGenerator[None, None]:
+        self._safe_create_task(self.handle_autocomplete_interaction(interaction))
+        yield None
 
     async def handle_rest_application_command_interaction(
         self, interaction: hikari.CommandInteraction
-    ) -> AsyncGenerator[
-        hikari.api.InteractionDeferredBuilder
-        | hikari.api.InteractionMessageBuilder
-        | hikari.api.InteractionModalBuilder,
-        t.Any,
-    ]:
-        if not self._started:
-            LOGGER.debug("ignoring command interaction received before the client was started")
-            return
+    ) -> AsyncGenerator[None, None]:
+        self._safe_create_task(self.handle_application_command_interaction(interaction))
+        yield None
 
-        out = self._resolve_options_and_command(interaction)
-        if out is None:
-            return
+    async def handle_rest_component_interaction(
+        self, interaction: hikari.ComponentInteraction
+    ) -> AsyncGenerator[None, None]:
+        self._safe_create_task(self.handle_component_interaction(interaction))
+        yield None
 
-        options, command = out
-
-        initial_response_ready = asyncio.Event()
-        initial_response: hikari.api.InteractionResponseBuilder | None = None
-
-        def set_response(response: hikari.api.InteractionResponseBuilder) -> None:
-            nonlocal initial_response, initial_response_ready
-
-            initial_response = response
-            initial_response_ready.set()
-
-        context = self.build_rest_command_context(interaction, options or [], command, set_response)
-        LOGGER.debug("invoking command - %r", command._command_data.qualified_name)
-
-        task = asyncio.create_task(self._execute_command_context(context))
-        try:
-            await asyncio.wait_for(initial_response_ready.wait(), timeout=5)
-
-            if initial_response is not None:
-                yield initial_response
-        except asyncio.TimeoutError as e:
-            LOGGER.warning(
-                "Command %r took too long to create initial response",
-                command._command_data.qualified_name,
-                exc_info=(type(e), e, e.__traceback__),
-            )
-
-        # Ensure the command completes
-        await task
+    async def handle_rest_modal_interaction(self, interaction: hikari.ModalInteraction) -> AsyncGenerator[None, None]:
+        self._safe_create_task(self.handle_modal_interaction(interaction))
+        yield None
 
 
 @t.overload

@@ -265,6 +265,7 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
         components: hikari.UndefinedOr[Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
         embed: hikari.UndefinedOr[hikari.Embed] = hikari.UNDEFINED,
         embeds: hikari.UndefinedOr[Sequence[hikari.Embed]] = hikari.UNDEFINED,
+        poll: hikari.UndefinedOr[special_endpoints.PollBuilder] = hikari.UNDEFINED,
         mentions_everyone: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
         user_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialUser] | bool] = hikari.UNDEFINED,
         role_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialRole] | bool] = hikari.UNDEFINED,
@@ -280,6 +281,7 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
             components=components,
             embed=embed,
             embeds=embeds,
+            poll=poll,
             mentions_everyone=mentions_everyone,
             user_mentions=user_mentions,
             role_mentions=role_mentions,
@@ -320,6 +322,7 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
         components: hikari.UndefinedOr[Sequence[special_endpoints.ComponentBuilder]] = hikari.UNDEFINED,
         embed: hikari.UndefinedOr[hikari.Embed] = hikari.UNDEFINED,
         embeds: hikari.UndefinedOr[Sequence[hikari.Embed]] = hikari.UNDEFINED,
+        poll: hikari.UndefinedOr[special_endpoints.PollBuilder] = hikari.UNDEFINED,
         mentions_everyone: hikari.UndefinedOr[bool] = hikari.UNDEFINED,
         user_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialUser] | bool] = hikari.UNDEFINED,
         role_mentions: hikari.UndefinedOr[hikari.SnowflakeishSequence[hikari.PartialRole] | bool] = hikari.UNDEFINED,
@@ -338,6 +341,7 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
             components: The sequence of the component builder objects to include in this message.
             embed: The message embed.
             embeds: The message embeds.
+            poll: The poll to include with the message.
             flags: The message flags this response should have.
             tts: Whether the message will be read out by a screen reader using Discord's TTS (text-to-speech) system.
             mentions_everyone: Whether the message should parse @everyone/@here mentions.
@@ -375,6 +379,7 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
                     components=components,
                     embed=embed,
                     embeds=embeds,
+                    poll=poll,
                     mentions_everyone=mentions_everyone,
                     user_mentions=user_mentions,
                     role_mentions=role_mentions,
@@ -396,6 +401,7 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
                         components=components,
                         embed=embed,
                         embeds=embeds,
+                        poll=poll,
                         mentions_everyone=mentions_everyone,
                         user_mentions=user_mentions,
                         role_mentions=role_mentions,

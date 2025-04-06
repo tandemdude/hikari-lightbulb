@@ -8,6 +8,17 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a17 (2025-04-06)
+### Breaking Changes
+
+- Removed `RestContext` and `RestAutocompleteContext`. If you were not explicitly using these classes you will not be affected.
+
+### Features
+
+- Added support for sending polls within command and component interaction responses.
+
+----
+
 ## v3.0.0a16 (2025-03-21)
 ### Features
 

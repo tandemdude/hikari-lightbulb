@@ -21,7 +21,7 @@
 """
 Module containing exceptions raised by lightbulb internals. Exceptions raised by built-in hooks (prefab package)
 are instead kept within that package. See the ``lightbulb.prefab`` documentation page for their reference. Similarly,
-exceptions raised by the dependency injection system are contained in the ``lightbulb.di`` subpackage.
+exceptions raised by the dependency injection system are vendored by the ``lightbulb.di`` submodule.
 """
 
 from __future__ import annotations

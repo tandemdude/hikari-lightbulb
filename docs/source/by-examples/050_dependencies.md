@@ -74,13 +74,13 @@ called `DEFAULT` - is what contains the 'globally' available dependencies. All f
 this base context.
 
 Lightbulb provides 5 different contexts by default, each available under specific circumstances only. These are:
-- {obj}`~lightbulb.di.solver.Contexts.DEFAULT` - always available during all Lightbulb controlled flows
-- {obj}`~lightbulb.di.solver.Contexts.COMMAND` - available only during command execution (including hooks and 
+- {obj}`~lightbulb.di.Contexts.DEFAULT` - always available during all Lightbulb controlled flows
+- {obj}`~lightbulb.di.Contexts.COMMAND` - available only during command execution (including hooks and 
   error handlers)
-- {obj}`~lightbulb.di.solver.Contexts.AUTOCOMPLETE` - available only during autocomplete handler execution
-- {obj}`~lightbulb.di.solver.Contexts.LISTENER` - available only during listener execution; specifically only 
+- {obj}`~lightbulb.di.Contexts.AUTOCOMPLETE` - available only during autocomplete handler execution
+- {obj}`~lightbulb.di.Contexts.LISTENER` - available only during listener execution; specifically only 
   available for listeners registered to `Loader`s
-- {obj}`~lightbulb.di.solver.Contexts.TASK` - available only during task execution.
+- {obj}`~lightbulb.di.Contexts.TASK` - available only during task execution.
 
 The diagram below represents a simplified version of how Lightbulb handles function calls that require dependency
 injection. A 'Flow' is something that has its own context allocated to it. Commands, autocomplete, etc - as
@@ -220,7 +220,7 @@ registry.register_factory(aiohttp.ClientSession, create_client_session)
 ```
 
 If you try to register a dependency whose factory directly depends on itself, a 
-{obj}`~lightbulb.di.exceptions.CircularDependencyException` will be raised.
+{obj}`~linkd.exceptions.CircularDependencyException` will be raised.
 
 ### Multiple Dependencies of the Same Type
 
@@ -289,15 +289,15 @@ Getting the current active container in order to add an ephemeral dependency to 
 As mentioned before, Lightbulb provides multiple injection contexts that you can register dependencies to. Each of these
 contexts has a different lifetime for the container's created from them, which corresponds to the type of context.
 
-- {obj}`~lightbulb.di.solver.Contexts.DEFAULT` - the entire length of the application
-- {obj}`~lightbulb.di.solver.Contexts.COMMAND` - the entire length of a command execution, including execution of all hooks
-  and error handlers. A new {obj}`~lightbulb.di.container.Container` will be created for each distinct command invocation.
-- {obj}`~lightbulb.di.solver.Contexts.AUTOCOMPLETE` - the entire length of an autocomplete execution. A new
-  {obj}`~lightbulb.di.container.Container` will be created for each distinct autocomplete invocation.
-- {obj}`~lightbulb.di.solver.Contexts.LISTENER` - the entire length of a listener execution. A new
-  {obj}`~lightbulb.di.container.Container` will be created for each distinct listener invocation.
-- {obj}`~lightbulb.di.solver.Contexts.TASK` - the entire length of a task execution. A new
-  {obj}`~lightbulb.di.container.Container` will be created for each distinct invocation of each task.
+- {obj}`~lightbulb.di.Contexts.DEFAULT` - the entire length of the application
+- {obj}`~lightbulb.di.Contexts.COMMAND` - the entire length of a command execution, including execution of all hooks
+  and error handlers. A new {obj}`~linkd.container.Container` will be created for each distinct command invocation.
+- {obj}`~lightbulb.di.Contexts.AUTOCOMPLETE` - the entire length of an autocomplete execution. A new
+  {obj}`~linkd.container.Container` will be created for each distinct autocomplete invocation.
+- {obj}`~lightbulb.di.Contexts.LISTENER` - the entire length of a listener execution. A new
+  {obj}`~linkd.container.Container` will be created for each distinct listener invocation.
+- {obj}`~lightbulb.di.Contexts.TASK` - the entire length of a task execution. A new
+  {obj}`~linkd.container.Container` will be created for each distinct invocation of each task.
 
 Overriding dependencies occurs when a child container has a dependency of the same type defined in the parent
 container - either ephemerally, or from the child's registry. Any injection done using the child container
@@ -308,7 +308,7 @@ parent **CANNOT** access the new overridden one.
 1. **Providing Dependencies:**
 
    A container (think of it as a box) holds and provides various dependencies (think of these as tools).
-   For example, the {const}`~lightbulb.di.solver.DefaultContainer` might provide a `DatabaseService`.
+   For example, the {const}`~linkd.context.DefaultContainer` might provide a `DatabaseService`.
 
 2. **Dependencies with Their Own Dependencies:**
 
@@ -316,15 +316,15 @@ parent **CANNOT** access the new overridden one.
 
 3. **Parent-Child Container Relationship:**
 
-   Containers can have hierarchical relationships. A {const}`~lightbulb.di.solver.CommandContainer` will inherit
-   dependencies from the {const}`~lightbulb.di.solver.DefaultContainer`, as all context-specific containers are created
-   with the {const}`~lightbulb.di.solver.DefaultContainer` as the base.
+   Containers can have hierarchical relationships. A {const}`~lightbulb.di.CommandContainer` will inherit
+   dependencies from the {const}`~linkd.solver.DefaultContainer`, as all context-specific containers are created
+   with the {const}`~linkd.solver.DefaultContainer` as the base.
 
 4. **Overriding Dependencies in Child Containers:**
 
-   If a {const}`~lightbulb.di.solver.CommandContainer` defines a dependency with the same type as the
-   {const}`~lightbulb.di.solver.DefaultContainer`, this is called overriding. Only dependencies within the 
-   {const}`~lightbulb.di.solver.CommandContainer` and any of its children can access the overridden value.
+   If a {const}`~lightbulb.di.CommandContainer` defines a dependency with the same type as the
+   {const}`~linkd.DefaultContainer`, this is called overriding. Only dependencies within the 
+   {const}`~lightbulb.di.CommandContainer` and any of its children can access the overridden value.
 
 5. **Resolving Dependencies:**
 
@@ -391,34 +391,34 @@ These are listed below:
 - {meth}`@Loader.task <lightbulb.loaders.Loader.task>`
 
 If you need to enable dependency injection on other functions, you can decorate it with
-{meth}`@lightbulb.di.with_di <lightbulb.di.solver.with_di>` - from  then on, each time the function is called,
+{meth}`@lightbulb.di.with_di <linkd.solver.with_di>` - from  then on, each time the function is called,
 lightbulb will attempt to dependency inject suitable parameters.
 
 :::{important}
 For a parameter to be suitable for dependency injection, it needs to match the following rules:
 - It **must** have a type annotation
-- It has no default value, or a default value of exactly {const}`lightbulb.di.INJECTED <lightbulb.di.solver.INJECTED>`
+- It has no default value, or a default value of exactly {const}`lightbulb.di.INJECTED <linkd.solver.INJECTED>`
 - It **cannot** be positional-only, var-positional, or var-keyword (injected parameters are always passed using keywords)
 :::
 
 ### Injecting Containers
 
-When a container is active, it automatically registers itself as a dependency of the type {obj}`~lightbulb.di.containers.Container`.
+When a container is active, it automatically registers itself as a dependency of the type {obj}`~linkd.containers.Container`.
 Along with this, when you enter one of the Lightbulb-defined contexts, a special type is registered which is the container
 for that specific context. These are as follows:
 
-- {obj}`lightbulb.di.DefaultContainer <lightbulb.di.solver.DefaultContainer>`
-- {obj}`lightbulb.di.CommandContainer <lightbulb.di.solver.CommandContainer>`
-- {obj}`lightbulb.di.AutocompleteContainer <lightbulb.di.solver.AutocompleteContainer>`
-- {obj}`lightbulb.di.ListenerContainer <lightbulb.di.solver.ListenerContainer>`
-- {obj}`lightbulb.di.TaskContainer <lightbulb.di.solver.TaskContainer>`
+- {obj}`lightbulb.di.DefaultContainer <linkd.solver.DefaultContainer>`
+- {obj}`lightbulb.di.CommandContainer <lightbulb.di.CommandContainer>`
+- {obj}`lightbulb.di.AutocompleteContainer <lightbulb.di.AutocompleteContainer>`
+- {obj}`lightbulb.di.ListenerContainer <lightbulb.di.ListenerContainer>`
+- {obj}`lightbulb.di.TaskContainer <lightbulb.di.TaskContainer>`
 
 You can use any of these types within your injection-enabled functions in order to access them if you wish 
 to register some ephemeral dependencies to them.
 
-When using {obj}`~lightbulb.di.containers.Container` as the type hint, the passed value will be the most-recently
+When using {obj}`~linkd.containers.Container` as the type hint, the passed value will be the most-recently
 activated container for the current context. I.e. within a command it would return the same value as the type hint
-{obj}`~lightbulb.di.solver.CommandContainer`.
+{obj}`~lightbulb.di.CommandContainer`.
 
 ### Example
 

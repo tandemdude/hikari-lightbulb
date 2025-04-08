@@ -26,12 +26,12 @@ import typing as t
 from collections.abc import Callable
 
 import hikari
+import linkd
 
 from lightbulb import context
+from lightbulb import di
 from lightbulb import utils
 from lightbulb.commands import execution
-from lightbulb.di import container
-from lightbulb.di import solver
 from lightbulb.internal import types
 
 BucketCallable: t.TypeAlias = Callable[[context.Context], types.MaybeAwaitable[hikari.Snowflakeish]]
@@ -99,11 +99,11 @@ class CommandCooldown:
 
 
 def _maybe_register_dependency(cc: CommandCooldown) -> None:
-    if not solver.DI_ENABLED:
+    if not di.DI_ENABLED:
         return
 
-    di_container: container.Container | None = solver.DI_CONTAINER.get(None)
-    if di_container is None or di_container._tag is not solver.Contexts.DEFAULT:
+    di_container: linkd.Container | None = linkd.DI_CONTAINER.get(None)
+    if di_container is None or di_container._tag is not di.Contexts.DEFAULT:
         return
 
     di_container.add_value(CommandCooldown, cc)

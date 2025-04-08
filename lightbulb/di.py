@@ -45,7 +45,7 @@ from linkd import DependencyInjectionException
 from linkd import DependencyNotSatisfiableException
 from linkd import If
 from linkd import Try
-from linkd import with_di
+from linkd import inject as with_di
 
 CommandContainer = t.NewType("CommandContainer", linkd.Container)
 """Injectable type representing the dependency container for the command context."""

@@ -4,7 +4,8 @@ Now that your bot is coming along nicely, you are likely thinking about adding s
 data storage (i.e. a database) - or maybe you are using an API you need a client for. In these cases,
 a database or API client would be considered a **dependency**.
 
-Lightbulb includes a [dependency injection](https://en.wikipedia.org/wiki/Dependency_injection) (DI) framework to help 
+Lightbulb includes a [dependency injection](https://en.wikipedia.org/wiki/Dependency_injection) (DI) framework
+implemented using [`linkd`](https://github.com/tandemdude/lightbulb) to help 
 you manage the different dependencies required by your bot to function. This allows you to forget about 
 having to keep global state or pass objects around throughout your application and have the dependencies 
 "magically appear" when you need them.

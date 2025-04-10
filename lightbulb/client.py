@@ -32,6 +32,7 @@ import sys
 import typing as t
 
 import hikari
+import linkd
 
 from lightbulb import context as context_
 from lightbulb import di as di_
@@ -157,7 +158,7 @@ class Client(abc.ABC):
         )
         self.hooks: Sequence[execution.ExecutionHook] = hooks
 
-        self._di = di_.DependencyInjectionManager()
+        self._di = linkd.DependencyInjectionManager()
 
         self._registered_commands: dict[
             lb_types.CommandOrGroup, Collection[hikari.Snowflakeish] | t.Literal["defer"]
@@ -210,7 +211,7 @@ class Client(abc.ABC):
         """The app that this client was created from."""
 
     @property
-    def di(self) -> di_.DependencyInjectionManager:
+    def di(self) -> linkd.DependencyInjectionManager:
         """The dependency injection manager used by this client."""
         return self._di
 
@@ -444,7 +445,7 @@ class Client(abc.ABC):
         new_handlers: dict[int, list[lb_types.ErrorHandler]] = {}
         for priority, handlers in self._error_handlers.items():
             handlers = [
-                h for h in handlers if h is not func and (isinstance(h, di_.AutoInjecting) and h._func is not func)
+                h for h in handlers if h is not func and (isinstance(h, linkd.AutoInjecting) and h._func is not func)
             ]
             if handlers:
                 new_handlers[priority] = t.cast("list[lb_types.ErrorHandler]", handlers)

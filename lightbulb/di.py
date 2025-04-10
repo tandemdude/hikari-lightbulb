@@ -23,12 +23,17 @@ from __future__ import annotations
 __all__ = [
     "DI_ENABLED",
     "INJECTED",
+    "AutocompleteContainer",
     "CircularDependencyException",
+    "CommandContainer",
     "ContainerClosedException",
+    "Contexts",
     "DefaultContainer",
     "DependencyInjectionException",
     "DependencyNotSatisfiableException",
     "If",
+    "ListenerContainer",
+    "TaskContainer",
     "Try",
     "with_di",
 ]

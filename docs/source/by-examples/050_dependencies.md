@@ -686,7 +686,7 @@ if __name__ == "__main__":
 ## Disabling DI
 
 If you wish to run your application with no dependency injection, Lightbulb allows you
-to disable the entire system by setting the environment variable `LIGHTBULB_DI_DISABLED` to `false`.
+to disable the entire system by setting the environment variable `LINKD_DI_DISABLED` to `false`.
 
 This will prevent decorators from wrapping functions to enable DI and will prevent parameter processing
 from attempting to resolve injectable parameters.

@@ -45,7 +45,7 @@ from linkd import DI_ENABLED
 from linkd import INJECTED
 from linkd import CircularDependencyException
 from linkd import ContainerClosedException
-from linkd import DefaultContainer
+from linkd import RootContainer as DefaultContainer
 from linkd import DependencyInjectionException
 from linkd import DependencyNotSatisfiableException
 from linkd import If
@@ -68,7 +68,8 @@ class Contexts:
 
     __slots__ = ()
 
-    DEFAULT = linkd.Contexts.DEFAULT
+    # renaming this would be a majorly breaking change, so keeping it as DEFAULT for now
+    DEFAULT = linkd.Contexts.ROOT
     """The base DI context - all other contexts are built with this as the parent."""
     COMMAND = linkd.global_context_registry.register("lightbulb.di.contexts.command", CommandContainer)
     """DI context used during command invocation, including for hooks and error handlers."""

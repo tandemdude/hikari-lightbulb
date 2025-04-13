@@ -45,10 +45,10 @@ from linkd import DI_ENABLED
 from linkd import INJECTED
 from linkd import CircularDependencyException
 from linkd import ContainerClosedException
-from linkd import RootContainer as DefaultContainer
 from linkd import DependencyInjectionException
 from linkd import DependencyNotSatisfiableException
 from linkd import If
+from linkd import RootContainer as DefaultContainer
 from linkd import Try
 from linkd import inject as with_di
 

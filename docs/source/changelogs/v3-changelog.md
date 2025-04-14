@@ -11,7 +11,7 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 ## v3.0.0a18 (2025-04-14)
 ### Breaking Changes
 
-- Migrate to using [`linkd`](https://github.com/tandemdude/lightbulb) for dependency injection instead of including the framework within Lightbulb.
+- Migrate to using [`linkd`](https://github.com/tandemdude/linkd) for dependency injection instead of including the framework within Lightbulb.
 
   - All DI classes have been removed and should now be imported from `linkd` instead. A few members are vendored through
     Lightbulb to prevent too many breaking code changes.

@@ -192,7 +192,7 @@ class Group(GroupMixin):
     integration_types: hikari.UndefinedOr[Sequence[hikari.ApplicationIntegrationType]] = dataclasses.field(
         hash=False, repr=False, default=hikari.UNDEFINED
     )
-    """Installations contexts where the command is available. Only affects global commands."""
+    """Installation contexts where the command is available. Only affects global commands."""
     contexts: hikari.UndefinedOr[Sequence[hikari.ApplicationContextType]] = dataclasses.field(
         hash=False, repr=False, default=hikari.UNDEFINED
     )

@@ -77,7 +77,7 @@ class CommandData:
     integration_types: hikari.UndefinedOr[Sequence[hikari.ApplicationIntegrationType]] = dataclasses.field(
         hash=False, repr=False
     )
-    """Installations contexts where the command is available. Only affects global commands."""
+    """Installation contexts where the command is available. Only affects global commands."""
     contexts: hikari.UndefinedOr[Sequence[hikari.ApplicationContextType]] = dataclasses.field(hash=False, repr=False)
     """Interaction contexts where the command can be used. Only affects global commands."""
     default_member_permissions: hikari.UndefinedOr[hikari.Permissions] = dataclasses.field(repr=False)
@@ -224,7 +224,8 @@ class CommandMeta(type):
             then the ``name`` and ``description`` arguments will instead be interpreted as localization keys from
             which the actual name and description will be retrieved. Defaults to :obj:`False`.
         nsfw: Whether the command should be marked as nsfw. Defaults to :obj:`False`.
-        dm_enabled: Whether the command can be used in direct messages. Defaults to :obj:`True`.
+        integration_types: Installation contexts where the command is available. Only affects global commands.
+        contexts: Interaction contexts where the command can be used. Only affects global commands.
         default_member_permissions: The default permissions required for a
             guild member to use the command. If unspecified, all users can use the command by default. Set to
             ``hikari.Permissions.NONE`` to disable for everyone apart from admins.
@@ -441,7 +442,8 @@ class SlashCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.S
             then the ``name`` and ``description`` arguments will instead be interpreted as localization keys from
             which the actual name and description will be retrieved. Defaults to :obj:`False`.
         nsfw: Whether the command should be marked as nsfw. Defaults to :obj:`False`.
-        dm_enabled: Whether the command can be used in direct messages. Defaults to :obj:`True`.
+        integration_types: Installation contexts where the command is available. Only affects global commands.
+        contexts: Interaction contexts where the command can be used. Only affects global commands.
         default_member_permissions: The default permissions required for a
             guild member to use the command. If unspecified, all users can use the command by default.
         hooks: The hooks to run before the command invocation function is executed. Defaults to an empty set.
@@ -477,7 +479,8 @@ class UserCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.US
             then the ``name`` argument will instead be interpreted as a localization key from
             which the actual name will be retrieved. Defaults to :obj:`False`.
         nsfw: Whether the command should be marked as nsfw. Defaults to :obj:`False`.
-        dm_enabled: Whether the command can be used in direct messages. Defaults to :obj:`True`.
+        integration_types: Installation contexts where the command is available. Only affects global commands.
+        contexts: Interaction contexts where the command can be used. Only affects global commands.
         default_member_permissions: The default permissions required for a
             guild member to use the command. If unspecified, all users can use the command by default.
         hooks: The hooks to run before the command invocation function is executed. Defaults to an empty set.
@@ -487,7 +490,7 @@ class UserCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType.US
         .. code-block:: python
 
             class UserId(
-                lightbulb.SlashCommand,
+                lightbulb.UserCommand,
                 name="userid",
                 description="gets the ID of the user",
                 ...  # additional parameters
@@ -516,7 +519,8 @@ class MessageCommand(CommandBase, metaclass=CommandMeta, type=hikari.CommandType
             then the ``name`` argument will instead be interpreted as a localization key from
             which the actual name will be retrieved. Defaults to :obj:`False`.
         nsfw: Whether the command should be marked as nsfw. Defaults to :obj:`False`.
-        dm_enabled: Whether the command can be used in direct messages. Defaults to :obj:`True`.
+        integration_types: Installation contexts where the command is available. Only affects global commands.
+        contexts: Interaction contexts where the command can be used. Only affects global commands.
         default_member_permissions: The default permissions required for a guild member to use the command.
             If unspecified, all users can use the command by default.
         hooks: The hooks to run before the command invocation function is executed. Defaults to an empty set.

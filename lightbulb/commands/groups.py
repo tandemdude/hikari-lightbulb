@@ -190,11 +190,11 @@ class Group(GroupMixin):
     nsfw: bool = dataclasses.field(repr=False, default=False)
     """Whether the group should be marked as nsfw. Defaults to :obj:`False`."""
     integration_types: hikari.UndefinedOr[Sequence[hikari.ApplicationIntegrationType]] = dataclasses.field(
-        repr=False, default=hikari.UNDEFINED
+        hash=False, repr=False, default=hikari.UNDEFINED
     )
     """Installations contexts where the command is available. Only affects global commands."""
     contexts: hikari.UndefinedOr[Sequence[hikari.ApplicationContextType]] = dataclasses.field(
-        repr=False, default=hikari.UNDEFINED
+        hash=False, repr=False, default=hikari.UNDEFINED
     )
     """Interaction contexts where the command can be used. Only affects global commands."""
     default_member_permissions: hikari.UndefinedOr[hikari.Permissions] = dataclasses.field(

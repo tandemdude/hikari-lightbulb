@@ -74,9 +74,11 @@ class CommandData:
     nsfw: bool = dataclasses.field(repr=False)
     """Whether the command is marked as nsfw."""
 
-    integration_types: hikari.UndefinedOr[Sequence[hikari.ApplicationIntegrationType]] = dataclasses.field(repr=False)
+    integration_types: hikari.UndefinedOr[Sequence[hikari.ApplicationIntegrationType]] = dataclasses.field(
+        hash=False, repr=False
+    )
     """Installations contexts where the command is available. Only affects global commands."""
-    contexts: hikari.UndefinedOr[Sequence[hikari.ApplicationContextType]] = dataclasses.field(repr=False)
+    contexts: hikari.UndefinedOr[Sequence[hikari.ApplicationContextType]] = dataclasses.field(hash=False, repr=False)
     """Interaction contexts where the command can be used. Only affects global commands."""
     default_member_permissions: hikari.UndefinedOr[hikari.Permissions] = dataclasses.field(repr=False)
     """The default permissions required to use the command in a guild. This field is ignored for subcommands."""

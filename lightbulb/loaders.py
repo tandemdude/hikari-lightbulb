@@ -27,6 +27,7 @@ import logging
 import typing as t
 
 import hikari
+import linkd
 
 from lightbulb import di
 from lightbulb import tasks
@@ -129,7 +130,7 @@ class _ListenerLoadable(Loadable):
             async with client.di.enter_context(di.Contexts.DEFAULT), client.di.enter_context(di.Contexts.LISTENER):
                 return await self._callback(*args, **kwargs)
 
-        self._wrapped_callback = _wrapped if di.DI_ENABLED else None
+        self._wrapped_callback = _wrapped if linkd.DI_ENABLED else None
 
         for event in self._event_types:
             if (self._wrapped_callback or self._callback) in em.get_listeners(event):

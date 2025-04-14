@@ -66,8 +66,8 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "hikari": ("https://docs.hikari-py.dev/en/latest", None),
     "aiohttp": ("https://docs.aiohttp.org/en/stable/", None),
+    "linkd": ("https://linkd.readthedocs.io/en/latest/", None),
 }
-
 
 # -- Options for HTML output -------------------------------------------------
 

@@ -8,6 +8,33 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a18 (2025-04-14)
+### Breaking Changes
+
+- Migrate to using [`linkd`](https://github.com/tandemdude/lightbulb) for dependency injection instead of including the framework within Lightbulb.
+
+  - All DI classes have been removed and should now be imported from `linkd` instead. A few members are vendored through
+    Lightbulb to prevent too many breaking code changes.
+
+  **Vendored members:**
+  The following members are still accessible through the `lightbulb.di` namespace
+  - `DI_ENABLED`, `INJECTED`
+  - `If`, `Try`, `with_di`
+  - `CircularDependencyException`, `ContainerClosedException`, `DependencyInjectionException`, `DependencyNotSatisfiableException`
+  - `DefaultContainer`
+
+  The following members are implemented in Lightbulb due to them being too specialised to include directly in `linkd`
+  - `CommandContainer`, `AutocompleteContainer`, `ListenerContainer`, `TaskContainer`
+  - `Contexts`
+
+  ([#543](https://github.com/tandemdude/hikari-lightbulb/issues/543))
+
+### Bugfixes
+
+- Fixed registering groups failing when using `integration_types` or `contexts`. ([#unregisterable_groups](https://github.com/tandemdude/hikari-lightbulb/issues/unregisterable_groups))
+
+----
+
 ## v3.0.0a17 (2025-04-06)
 ### Breaking Changes
 

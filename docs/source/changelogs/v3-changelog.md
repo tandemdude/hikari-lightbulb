@@ -31,7 +31,7 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 ### Bugfixes
 
-- Fixed registering groups failing when using `integration_types` or `contexts`. ([#unregisterable_groups](https://github.com/tandemdude/hikari-lightbulb/issues/unregisterable_groups))
+- Fixed registering groups failing when using `integration_types` or `contexts`.
 
 ----
 

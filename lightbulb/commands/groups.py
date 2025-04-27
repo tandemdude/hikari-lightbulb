@@ -113,7 +113,7 @@ class SubGroup(GroupMixin):
     parent: Group = dataclasses.field(repr=False)
     """The parent group of the subgroup."""
 
-    _commands: SubGroupCommandMappingT = dataclasses.field(init=False, hash=False, repr=False, default_factory=dict)
+    _commands: SubGroupCommandMappingT = dataclasses.field(init=False, hash=False, repr=False, default_factory=dict)  # type: ignore[reportUnknownVariableType]
     _command_data: commands.CommandData = dataclasses.field(init=False, hash=False, repr=False)
 
     def __post_init__(self) -> None:
@@ -202,7 +202,7 @@ class Group(GroupMixin):
     )
     """The default permissions required to use the group in a guild."""
 
-    _commands: GroupCommandMappingT = dataclasses.field(init=False, hash=False, repr=False, default_factory=dict)
+    _commands: GroupCommandMappingT = dataclasses.field(init=False, hash=False, repr=False, default_factory=dict)  # type: ignore[reportUnknownVariableType]
     _command_data: commands.CommandData = dataclasses.field(init=False, hash=False, repr=False)
 
     def __post_init__(self) -> None:

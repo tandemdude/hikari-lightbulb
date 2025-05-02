@@ -55,7 +55,7 @@ AutocompleteResponse: t.TypeAlias = t.Union[
 class AutocompleteContext(t.Generic[T]):
     """Class representing the context for an autocomplete interaction."""
 
-    __slots__ = ("_focused", "client", "command", "interaction", "options")
+    __slots__ = ("_focused", "_response_sent", "client", "command", "interaction", "options")
 
     def __init__(
         self,
@@ -74,6 +74,7 @@ class AutocompleteContext(t.Generic[T]):
         """Command class for the autocomplete invocation."""
 
         self._focused: hikari.AutocompleteInteractionOption | None = None
+        self._response_sent: asyncio.Event = asyncio.Event()
 
     @property
     def focused(self) -> hikari.AutocompleteInteractionOption:
@@ -141,6 +142,7 @@ class AutocompleteContext(t.Generic[T]):
         """
         normalised_choices = self._normalise_choices(choices)
         await self.interaction.create_response(normalised_choices)
+        self._response_sent.set()
 
 
 class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
@@ -150,7 +152,7 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
 
     def __init__(self) -> None:
         self._response_lock: asyncio.Lock = asyncio.Lock()
-        self._initial_response_sent: bool = False
+        self._initial_response_sent: asyncio.Event = asyncio.Event()
 
     @property
     @abc.abstractmethod
@@ -300,14 +302,14 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
             :obj:`None`
         """
         async with self._response_lock:
-            if self._initial_response_sent:
+            if self._initial_response_sent.is_set():
                 return
 
             await self._create_initial_response(
                 hikari.ResponseType.DEFERRED_MESSAGE_CREATE,
                 flags=hikari.MessageFlag.EPHEMERAL if ephemeral else hikari.MessageFlag.NONE,
             )
-            self._initial_response_sent = True
+            self._initial_response_sent.set()
 
     async def respond(
         self,
@@ -367,7 +369,7 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
             flags = (flags or hikari.MessageFlag.NONE) | hikari.MessageFlag.EPHEMERAL
 
         async with self._response_lock:
-            if not self._initial_response_sent:
+            if not self._initial_response_sent.is_set():
                 await self._create_initial_response(
                     hikari.ResponseType.MESSAGE_CREATE,
                     content,
@@ -384,7 +386,7 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
                     user_mentions=user_mentions,
                     role_mentions=role_mentions,
                 )
-                self._initial_response_sent = True
+                self._initial_response_sent.set()
                 return constants.INITIAL_RESPONSE_IDENTIFIER
             else:
                 # This will automatically cause a response if the initial response was deferred previously.
@@ -486,8 +488,8 @@ class Context(MessageResponseMixin[hikari.CommandInteraction]):
             :obj:`RuntimeError`: If an initial response has already been sent.
         """
         async with self._response_lock:
-            if self._initial_response_sent:
+            if self._initial_response_sent.is_set():
                 raise RuntimeError("cannot respond with a modal if an initial response has already been sent")
 
             await self.interaction.create_modal_response(title, custom_id, component, components)
-            self._initial_response_sent = True
+            self._initial_response_sent.set()

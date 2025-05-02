@@ -27,6 +27,7 @@ __all__ = ["Modal", "ModalContext", "TextInput"]
 
 import abc
 import asyncio
+import contextvars
 import typing as t
 import uuid
 
@@ -265,23 +266,25 @@ class Modal(base.BuildableComponentContainer[special_endpoints.ModalActionRowBui
         Raises:
             :obj:`asyncio.TimeoutError`: If the timeout is exceeded.
         """
-        queue: asyncio.Queue[hikari.ModalInteraction] = asyncio.Queue()
-        client._modal_queues.add(queue)
+        stopped = asyncio.Event()
+
+        ctx = contextvars.copy_context()
+
+        async def _handle_interaction(interaction: hikari.ModalInteraction) -> t.AsyncGenerator[ModalContext, None]:
+            if interaction.custom_id != custom_id:
+                return
+
+            yield (context := ModalContext(client=client, modal=self, interaction=interaction))
+            await ctx.run(self.on_submit, context)
+            stopped.set()
+
+        client._attached_modals[custom_id] = _handle_interaction
         try:
-            stopped: bool = False
             async with async_timeout.timeout(timeout):
-                while not stopped:
-                    interaction = await queue.get()
-                    if interaction.custom_id != custom_id:
-                        continue
-
-                    context = ModalContext(client=client, modal=self, interaction=interaction)
-                    await self.on_submit(context)
-
-                    stopped = True
+                await stopped.wait()
         finally:
             # Unregister queue from client
-            client._modal_queues.remove(queue)
+            client._attached_modals.pop(custom_id)
 
     @abc.abstractmethod
     async def on_submit(self, ctx: ModalContext) -> None:

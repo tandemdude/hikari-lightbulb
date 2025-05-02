@@ -469,11 +469,11 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
             :obj:`RuntimeError`: If an initial response has already been sent.
         """
         async with self._response_lock:
-            if self._initial_response_sent:
+            if self._initial_response_sent.is_set():
                 raise RuntimeError("cannot respond with a modal if an initial response has already been sent")
 
             await self.interaction.create_modal_response(title, custom_id, component, components)
-            self._initial_response_sent = True
+            self._initial_response_sent.set()
 
     async def respond(
         self,

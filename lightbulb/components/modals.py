@@ -267,13 +267,9 @@ class Modal(base.BuildableComponentContainer[special_endpoints.ModalActionRowBui
             :obj:`asyncio.TimeoutError`: If the timeout is exceeded.
         """
         stopped = asyncio.Event()
-
         ctx = contextvars.copy_context()
 
         async def _handle_interaction(interaction: hikari.ModalInteraction) -> t.AsyncGenerator[ModalContext, None]:
-            if interaction.custom_id != custom_id:
-                return
-
             yield (context := ModalContext(client=client, modal=self, interaction=interaction))
             await ctx.run(self.on_submit, context)
             stopped.set()
@@ -283,7 +279,6 @@ class Modal(base.BuildableComponentContainer[special_endpoints.ModalActionRowBui
             async with async_timeout.timeout(timeout):
                 await stopped.wait()
         finally:
-            # Unregister queue from client
             client._attached_modals.pop(custom_id)
 
     @abc.abstractmethod

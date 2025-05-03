@@ -22,7 +22,6 @@ from __future__ import annotations
 
 __all__ = ["CommandCollection", "empty_async_generator", "exhaust_async_generator", "non_undefined_or"]
 
-import asyncio
 import dataclasses
 import typing as t
 
@@ -105,13 +104,12 @@ def non_undefined_or(item: hikari.UndefinedOr[T], default: D) -> T | D:
 
 
 async def empty_async_generator() -> t.AsyncGenerator[t.Any, None]:  # noqa: RUF029
+    # noinspection PyUnreachableCode
     if False:
         yield
 
 
-async def exhaust_async_generator(
-    generator: t.AsyncGenerator[t.Any, None], yield_times: int = 1, call_exception_handler: bool = False
-) -> None:
+async def exhaust_async_generator(generator: t.AsyncGenerator[t.Any, None], yield_times: int = 1) -> None:
     try:
         for _ in range(yield_times):
             await anext(generator)
@@ -119,7 +117,3 @@ async def exhaust_async_generator(
         await generator.athrow(RuntimeError("Generator yielded more times than expected"))
     except StopAsyncIteration:
         pass
-    except Exception as exc:
-        if not call_exception_handler:
-            raise
-        asyncio.get_running_loop().call_exception_handler({"message": "WHEN DOES THIS HAPPEN", "exception": exc})

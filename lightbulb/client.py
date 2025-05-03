@@ -59,6 +59,7 @@ if t.TYPE_CHECKING:
     from collections.abc import Sequence
 
     from lightbulb.commands import options as options_
+    from lightbulb.components import menus
     from lightbulb.components import modals
 
 T = t.TypeVar("T")
@@ -113,6 +114,7 @@ class Client(abc.ABC):
     __slots__ = (
         "_application",
         "_asyncio_tasks",
+        "_attached_menus",
         "_attached_modals",
         "_command_invocation_mapping",
         "_created_commands",
@@ -174,7 +176,8 @@ class Client(abc.ABC):
         self._extensions: set[str] = set()
 
         self._tasks: set[tasks.Task] = set()
-        self._menu_queues: set[asyncio.Queue[hikari.ComponentInteraction]] = set()
+
+        self._attached_menus: set[menus._MenuInteractionHandlerContainer] = set()
         self._attached_modals: dict[
             str, Callable[[hikari.ModalInteraction], t.AsyncGenerator[modals.ModalContext, None]]
         ] = {}
@@ -1078,12 +1081,18 @@ class Client(abc.ABC):
         LOGGER.debug("invoking command - %r", command._command_data.qualified_name)
         await self._execute_command_context(context)
 
-    async def handle_component_interaction(self, interaction: hikari.ComponentInteraction) -> None:
+    def handle_component_interaction(
+        self, interaction: hikari.ComponentInteraction
+    ) -> t.AsyncGenerator[menus.MenuContext, None]:
         if not self._started:
             LOGGER.debug("ignoring component interaction received before the client was started")
-            return
+            return i_utils.empty_async_generator()
 
-        await asyncio.gather(*(c.put(interaction) for c in self._menu_queues))
+        menu = next((m for m in self._attached_menus if interaction.custom_id in m.custom_ids), None)
+        if menu is None or menu.on_interaction is None:
+            return i_utils.empty_async_generator()
+
+        return menu.on_interaction(interaction)
 
     def handle_modal_interaction(
         self, interaction: hikari.ModalInteraction
@@ -1104,7 +1113,7 @@ class Client(abc.ABC):
         elif isinstance(interaction, hikari.CommandInteraction):
             await i_utils.exhaust_async_generator(self.handle_application_command_interaction(interaction), 2)
         elif isinstance(interaction, hikari.ComponentInteraction):
-            await self.handle_component_interaction(interaction)
+            await i_utils.exhaust_async_generator(self.handle_component_interaction(interaction), 2)
         elif isinstance(interaction, hikari.ModalInteraction):
             await i_utils.exhaust_async_generator(self.handle_modal_interaction(interaction), 2)
 
@@ -1202,9 +1211,10 @@ class RestEnabledClient(Client):
         except StopAsyncIteration:
             return
 
-        self._safe_create_task(i_utils.exhaust_async_generator(gen))
+        task = self._safe_create_task(i_utils.exhaust_async_generator(gen))
         await context._response_sent.wait()
         yield None
+        await task
 
     async def handle_rest_application_command_interaction(
         self, interaction: hikari.CommandInteraction
@@ -1214,16 +1224,23 @@ class RestEnabledClient(Client):
         except StopAsyncIteration:
             return
 
-        self._safe_create_task(i_utils.exhaust_async_generator(gen))
+        task = self._safe_create_task(i_utils.exhaust_async_generator(gen))
         await context._initial_response_sent.wait()
         yield None
+        await task
 
-    # TODO - this needs to be fixed when components v2 are implemented
     async def handle_rest_component_interaction(
         self, interaction: hikari.ComponentInteraction
     ) -> AsyncGenerator[None, None]:
-        self._safe_create_task(self.handle_component_interaction(interaction))
+        try:
+            context = await anext(gen := self.handle_component_interaction(interaction))
+        except StopAsyncIteration:
+            return
+
+        task = self._safe_create_task(i_utils.exhaust_async_generator(gen))
+        await context._initial_response_sent.wait()
         yield None
+        await task
 
     async def handle_rest_modal_interaction(self, interaction: hikari.ModalInteraction) -> AsyncGenerator[None, None]:
         try:
@@ -1231,9 +1248,10 @@ class RestEnabledClient(Client):
         except StopAsyncIteration:
             return
 
-        self._safe_create_task(i_utils.exhaust_async_generator(gen))
+        task = self._safe_create_task(i_utils.exhaust_async_generator(gen))
         await context._initial_response_sent.wait()
         yield None
+        await task
 
 
 @t.overload

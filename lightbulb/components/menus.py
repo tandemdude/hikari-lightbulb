@@ -347,8 +347,9 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
         component: base.BaseComponent[special_endpoints.MessageActionRowBuilder],
         _timeout: async_timeout.Timeout,
         _stop_event: asyncio.Event,
+        _initial_response_sent: asyncio.Event,
     ) -> None:
-        super().__init__()
+        super().__init__(_initial_response_sent)
 
         self.client: client_.Client = client
         """The client that is handling interactions for this context."""
@@ -593,7 +594,7 @@ class _MenuInteractionHandlerContainer:
 
     def __init__(self, custom_ids: dict[str, base.BaseComponent[special_endpoints.MessageActionRowBuilder]]) -> None:
         self.custom_ids: dict[str, base.BaseComponent[special_endpoints.MessageActionRowBuilder]] = custom_ids
-        self.on_interaction: Callable[[hikari.ComponentInteraction], t.AsyncGenerator[MenuContext, None]] | None = None
+        self.on_interaction: Callable[[hikari.ComponentInteraction, asyncio.Event], t.Awaitable[None]] | None = None
 
 
 class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBuilder]):
@@ -916,8 +917,8 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
             await callback(context)
 
         async def _handle_interaction(
-            interaction: hikari.ComponentInteraction, *, tm: async_timeout.Timeout
-        ) -> t.AsyncGenerator[MenuContext, None]:
+            interaction: hikari.ComponentInteraction, initial_response_sent: asyncio.Event, *, tm: async_timeout.Timeout
+        ) -> None:
             context = MenuContext(
                 client=client,
                 menu=self,
@@ -925,8 +926,8 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
                 component=am.custom_ids[interaction.custom_id],
                 _timeout=tm,
                 _stop_event=stop_event,
+                _initial_response_sent=initial_response_sent,
             )
-            yield context
             await ctx.run(_run, context)
 
             if context._should_re_resolve_custom_ids:

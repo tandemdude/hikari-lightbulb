@@ -20,7 +20,7 @@
 # SOFTWARE.
 from __future__ import annotations
 
-__all__ = ["CommandCollection", "empty_async_generator", "exhaust_async_generator", "non_undefined_or"]
+__all__ = ["CommandCollection", "non_undefined_or"]
 
 import dataclasses
 import typing as t
@@ -101,19 +101,3 @@ def non_undefined_or(item: hikari.UndefinedOr[T], default: D) -> T | D:
         ``item`` or ``default`` depending on whether ``item`` was undefined.
     """
     return item if item is not hikari.UNDEFINED else default
-
-
-async def empty_async_generator() -> t.AsyncGenerator[t.Any, None]:  # noqa: RUF029
-    # noinspection PyUnreachableCode
-    if False:
-        yield
-
-
-async def exhaust_async_generator(generator: t.AsyncGenerator[t.Any, None], yield_times: int = 1) -> None:
-    try:
-        for _ in range(yield_times):
-            await anext(generator)
-
-        await generator.athrow(RuntimeError("Generator yielded more times than expected"))
-    except StopAsyncIteration:
-        pass

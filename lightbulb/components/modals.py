@@ -101,8 +101,14 @@ class ModalContext(context.MessageResponseMixin[hikari.ModalInteraction]):
 
     __slots__ = ("_interaction", "client", "modal")
 
-    def __init__(self, client: client_.Client, modal: Modal, interaction: hikari.ModalInteraction) -> None:
-        super().__init__()
+    def __init__(
+        self,
+        client: client_.Client,
+        modal: Modal,
+        interaction: hikari.ModalInteraction,
+        initial_response_sent: asyncio.Event,
+    ) -> None:
+        super().__init__(initial_response_sent)
 
         self.client: client_.Client = client
         """The client that is handling interactions for this context."""
@@ -269,9 +275,15 @@ class Modal(base.BuildableComponentContainer[special_endpoints.ModalActionRowBui
         stopped = asyncio.Event()
         ctx = contextvars.copy_context()
 
-        async def _handle_interaction(interaction: hikari.ModalInteraction) -> t.AsyncGenerator[ModalContext, None]:
-            yield (context := ModalContext(client=client, modal=self, interaction=interaction))
-            await ctx.run(self.on_submit, context)
+        async def _handle_interaction(
+            interaction: hikari.ModalInteraction, initial_response_sent: asyncio.Event
+        ) -> None:
+            await ctx.run(
+                self.on_submit,
+                ModalContext(
+                    client=client, modal=self, interaction=interaction, initial_response_sent=initial_response_sent
+                ),
+            )
             stopped.set()
 
         client._attached_modals[custom_id] = _handle_interaction

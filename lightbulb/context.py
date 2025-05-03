@@ -55,7 +55,7 @@ AutocompleteResponse: t.TypeAlias = t.Union[
 class AutocompleteContext(t.Generic[T]):
     """Class representing the context for an autocomplete interaction."""
 
-    __slots__ = ("_focused", "_response_sent", "client", "command", "interaction", "options")
+    __slots__ = ("_focused", "_initial_response_sent", "client", "command", "interaction", "options")
 
     def __init__(
         self,
@@ -63,6 +63,7 @@ class AutocompleteContext(t.Generic[T]):
         interaction: hikari.AutocompleteInteraction,
         options: Sequence[hikari.AutocompleteInteractionOption],
         command: type[commands.CommandBase],
+        initial_response_sent: asyncio.Event,
     ) -> None:
         self.client: client_.Client = client
         """The client that created the context."""
@@ -74,7 +75,7 @@ class AutocompleteContext(t.Generic[T]):
         """Command class for the autocomplete invocation."""
 
         self._focused: hikari.AutocompleteInteractionOption | None = None
-        self._response_sent: asyncio.Event = asyncio.Event()
+        self._initial_response_sent: asyncio.Event = initial_response_sent
 
     @property
     def focused(self) -> hikari.AutocompleteInteractionOption:
@@ -142,7 +143,7 @@ class AutocompleteContext(t.Generic[T]):
         """
         normalised_choices = self._normalise_choices(choices)
         await self.interaction.create_response(normalised_choices)
-        self._response_sent.set()
+        self._initial_response_sent.set()
 
 
 class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
@@ -150,9 +151,9 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
 
     __slots__ = ("_initial_response_sent", "_response_lock")
 
-    def __init__(self) -> None:
+    def __init__(self, initial_response_sent: asyncio.Event) -> None:
         self._response_lock: asyncio.Lock = asyncio.Lock()
-        self._initial_response_sent: asyncio.Event = asyncio.Event()
+        self._initial_response_sent: asyncio.Event = initial_response_sent
 
     @property
     @abc.abstractmethod
@@ -422,8 +423,9 @@ class Context(MessageResponseMixin[hikari.CommandInteraction]):
         interaction: hikari.CommandInteraction,
         options: Sequence[hikari.CommandInteractionOption],
         command: commands.CommandBase,
+        initial_response_sent: asyncio.Event,
     ) -> None:
-        super().__init__()
+        super().__init__(initial_response_sent)
 
         self.client: client_.Client = client
         """The client that created the context."""

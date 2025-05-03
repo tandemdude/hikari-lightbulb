@@ -8,6 +8,13 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a20 (2025-05-03)
+### Bugfixes
+
+- Fix handling of REST interactions erroring when trying to make an initial response. ([#556](https://github.com/tandemdude/hikari-lightbulb/issues/556))
+
+----
+
 ## v3.0.0a19 (2025-04-27)
 ### Miscellaneous
 

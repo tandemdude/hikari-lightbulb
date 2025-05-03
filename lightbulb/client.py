@@ -52,7 +52,6 @@ from lightbulb.internal import utils as i_utils
 if t.TYPE_CHECKING:
     import types
     from collections.abc import AsyncGenerator
-    from collections.abc import Awaitable
     from collections.abc import Callable
     from collections.abc import Collection
     from collections.abc import Coroutine
@@ -114,7 +113,6 @@ class Client(abc.ABC):
     __slots__ = (
         "_application",
         "_asyncio_tasks",
-        "_attached_menus",
         "_attached_modals",
         "_command_invocation_mapping",
         "_created_commands",
@@ -122,6 +120,7 @@ class Client(abc.ABC):
         "_error_handlers",
         "_extensions",
         "_localization",
+        "_menu_queues",
         "_owner_ids",
         "_registered_commands",
         "_started",
@@ -175,7 +174,7 @@ class Client(abc.ABC):
         self._extensions: set[str] = set()
 
         self._tasks: set[tasks.Task] = set()
-        self._attached_menus: set[Callable[[hikari.ComponentInteraction], Awaitable[None]]] = set()
+        self._menu_queues: set[asyncio.Queue[hikari.ComponentInteraction]] = set()
         self._attached_modals: dict[
             str, Callable[[hikari.ModalInteraction], t.AsyncGenerator[modals.ModalContext, None]]
         ] = {}
@@ -1084,7 +1083,7 @@ class Client(abc.ABC):
             LOGGER.debug("ignoring component interaction received before the client was started")
             return
 
-        await asyncio.gather(*(c(interaction) for c in self._attached_menus))
+        await asyncio.gather(*(c.put(interaction) for c in self._menu_queues))
 
     def handle_modal_interaction(
         self, interaction: hikari.ModalInteraction

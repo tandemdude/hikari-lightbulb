@@ -59,6 +59,7 @@ if t.TYPE_CHECKING:
     from collections.abc import Sequence
 
     from lightbulb.commands import options as options_
+    from lightbulb.components import menus
 
 T = t.TypeVar("T")
 CommandOrGroupT = t.TypeVar("CommandOrGroupT", bound=lb_types.CommandOrGroup)
@@ -112,6 +113,8 @@ class Client(abc.ABC):
     __slots__ = (
         "_application",
         "_asyncio_tasks",
+        "_attached_menus",
+        "_attached_modals",
         "_command_invocation_mapping",
         "_created_commands",
         "_di",
@@ -119,7 +122,6 @@ class Client(abc.ABC):
         "_extensions",
         "_localization",
         "_menu_queues",
-        "_modal_queues",
         "_owner_ids",
         "_registered_commands",
         "_started",
@@ -173,8 +175,9 @@ class Client(abc.ABC):
         self._extensions: set[str] = set()
 
         self._tasks: set[tasks.Task] = set()
-        self._menu_queues: set[asyncio.Queue[hikari.ComponentInteraction]] = set()
-        self._modal_queues: set[asyncio.Queue[hikari.ModalInteraction]] = set()
+
+        self._attached_menus: set[menus._MenuInteractionHandlerContainer] = set()
+        self._attached_modals: dict[str, Callable[[hikari.ModalInteraction, asyncio.Event], t.Awaitable[None]]] = {}
 
         self._asyncio_tasks: set[asyncio.Task[t.Any]] = set()
 
@@ -946,6 +949,7 @@ class Client(abc.ABC):
         interaction: hikari.AutocompleteInteraction,
         options: Sequence[hikari.AutocompleteInteractionOption],
         command_cls: type[commands.CommandBase],
+        initial_response_sent: asyncio.Event,
     ) -> context_.AutocompleteContext[t.Any]:
         """
         Build a context object from the given parameters.
@@ -954,11 +958,18 @@ class Client(abc.ABC):
             interaction: The interaction for the autocomplete invocation.
             options: The options supplied with the interaction.
             command_cls: The command class that represents the command that has the option being autocompleted.
+            initial_response_sent: Asyncio event that the context will set when the autocomplete response is sent.
 
         Returns:
             :obj:`~lightbulb.context.AutocompleteContext`: The built context.
         """
-        return context_.AutocompleteContext(client=self, interaction=interaction, options=options, command=command_cls)
+        return context_.AutocompleteContext(
+            client=self,
+            interaction=interaction,
+            options=options,
+            command=command_cls,
+            initial_response_sent=initial_response_sent,
+        )
 
     async def _execute_autocomplete_context(
         self, context: context_.AutocompleteContext[t.Any], autocomplete_provider: options_.AutocompleteProvider[t.Any]
@@ -978,7 +989,9 @@ class Client(abc.ABC):
                     exc_info=(type(e), e, e.__traceback__),
                 )
 
-    async def handle_autocomplete_interaction(self, interaction: hikari.AutocompleteInteraction) -> None:
+    async def handle_autocomplete_interaction(
+        self, interaction: hikari.AutocompleteInteraction, initial_response_sent: asyncio.Event
+    ) -> None:
         if not self._started:
             LOGGER.debug("ignoring autocomplete interaction received before the client was started")
             return
@@ -992,7 +1005,7 @@ class Client(abc.ABC):
             LOGGER.debug("no options resolved from autocomplete interaction - ignoring")
             return
 
-        context = self.build_autocomplete_context(interaction, options, command)
+        context = self.build_autocomplete_context(interaction, options, command, initial_response_sent)
 
         option = next(
             filter(lambda opt: opt._localized_name == context.focused.name, command._command_data.options.values()),
@@ -1012,6 +1025,7 @@ class Client(abc.ABC):
         interaction: hikari.CommandInteraction,
         options: Sequence[hikari.CommandInteractionOption],
         command_cls: type[commands.CommandBase],
+        initial_response_sent: asyncio.Event,
     ) -> context_.Context:
         """
         Build a context object from the given parameters.
@@ -1020,6 +1034,7 @@ class Client(abc.ABC):
             interaction: The interaction for the command invocation.
             options: The options to use to invoke the command with.
             command_cls: The command class that represents the command that should be invoked for the interaction.
+            initial_response_sent: Asyncio event that the context will set when the initial response is sent.
 
         Returns:
             :obj:`~lightbulb.context.Context`: The built context.
@@ -1029,6 +1044,7 @@ class Client(abc.ABC):
             interaction=interaction,
             options=options,
             command=command_cls(),
+            initial_response_sent=initial_response_sent,
         )
 
     async def _execute_command_context(self, context: context_.Context) -> None:
@@ -1057,7 +1073,9 @@ class Client(abc.ABC):
                         exc_info=(type(ex), ex, ex.__traceback__),
                     )
 
-    async def handle_application_command_interaction(self, interaction: hikari.CommandInteraction) -> None:
+    async def handle_application_command_interaction(
+        self, interaction: hikari.CommandInteraction, initial_response_sent: asyncio.Event
+    ) -> None:
         if not self._started:
             LOGGER.debug("ignoring command interaction received before the client was started")
             return
@@ -1067,33 +1085,45 @@ class Client(abc.ABC):
             return
 
         options, command = out
-        context = self.build_command_context(interaction, options or [], command)
+        context = self.build_command_context(interaction, options or [], command, initial_response_sent)
         LOGGER.debug("invoking command - %r", command._command_data.qualified_name)
         await self._execute_command_context(context)
 
-    async def handle_component_interaction(self, interaction: hikari.ComponentInteraction) -> None:
+    async def handle_component_interaction(
+        self, interaction: hikari.ComponentInteraction, initial_response_sent: asyncio.Event
+    ) -> None:
         if not self._started:
             LOGGER.debug("ignoring component interaction received before the client was started")
             return
 
-        await asyncio.gather(*(q.put(interaction) for q in self._menu_queues))
+        menu = next((m for m in self._attached_menus if interaction.custom_id in m.custom_ids), None)
+        if menu is None or menu.on_interaction is None:
+            return
 
-    async def handle_modal_interaction(self, interaction: hikari.ModalInteraction) -> None:
+        await menu.on_interaction(interaction, initial_response_sent)
+
+    async def handle_modal_interaction(
+        self, interaction: hikari.ModalInteraction, initial_response_sent: asyncio.Event
+    ) -> None:
         if not self._started:
             LOGGER.debug("ignoring modal interaction received before the client was started")
             return
 
-        await asyncio.gather(*(q.put(interaction) for q in self._modal_queues))
+        handler = self._attached_modals.get(interaction.custom_id)
+        if handler is None:
+            return
+
+        await handler(interaction, initial_response_sent)
 
     async def handle_interaction_create(self, interaction: hikari.PartialInteraction) -> None:
         if isinstance(interaction, hikari.AutocompleteInteraction):
-            await self.handle_autocomplete_interaction(interaction)
+            await self.handle_autocomplete_interaction(interaction, asyncio.Event())
         elif isinstance(interaction, hikari.CommandInteraction):
-            await self.handle_application_command_interaction(interaction)
+            await self.handle_application_command_interaction(interaction, asyncio.Event())
         elif isinstance(interaction, hikari.ComponentInteraction):
-            await self.handle_component_interaction(interaction)
+            await self.handle_component_interaction(interaction, asyncio.Event())
         elif isinstance(interaction, hikari.ModalInteraction):
-            await self.handle_modal_interaction(interaction)
+            await self.handle_modal_interaction(interaction, asyncio.Event())
 
 
 class GatewayEnabledClient(Client):
@@ -1184,24 +1214,36 @@ class RestEnabledClient(Client):
     async def handle_rest_autocomplete_interaction(
         self, interaction: hikari.AutocompleteInteraction
     ) -> AsyncGenerator[None, None]:
-        self._safe_create_task(self.handle_autocomplete_interaction(interaction))
+        task = self._safe_create_task(self.handle_autocomplete_interaction(interaction, (ir := asyncio.Event())))
+        await ir.wait()
+
         yield None
+        await task
 
     async def handle_rest_application_command_interaction(
         self, interaction: hikari.CommandInteraction
     ) -> AsyncGenerator[None, None]:
-        self._safe_create_task(self.handle_application_command_interaction(interaction))
+        task = self._safe_create_task(self.handle_application_command_interaction(interaction, (ir := asyncio.Event())))
+        await ir.wait()
+
         yield None
+        await task
 
     async def handle_rest_component_interaction(
         self, interaction: hikari.ComponentInteraction
     ) -> AsyncGenerator[None, None]:
-        self._safe_create_task(self.handle_component_interaction(interaction))
+        task = self._safe_create_task(self.handle_component_interaction(interaction, (ir := asyncio.Event())))
+        await ir.wait()
+
         yield None
+        await task
 
     async def handle_rest_modal_interaction(self, interaction: hikari.ModalInteraction) -> AsyncGenerator[None, None]:
-        self._safe_create_task(self.handle_modal_interaction(interaction))
+        task = self._safe_create_task(self.handle_modal_interaction(interaction, (ir := asyncio.Event())))
+        await ir.wait()
+
         yield None
+        await task
 
 
 @t.overload

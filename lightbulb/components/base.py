@@ -83,7 +83,7 @@ class MessageResponseMixinWithEdit(context.MessageResponseMixin[context.Responda
             :obj:`None`
         """
         async with self._response_lock:
-            if self._initial_response_sent:
+            if self._initial_response_sent.is_set():
                 return
 
             response_type = (
@@ -93,7 +93,7 @@ class MessageResponseMixinWithEdit(context.MessageResponseMixin[context.Responda
                 response_type,
                 flags=hikari.MessageFlag.EPHEMERAL if ephemeral else hikari.MessageFlag.NONE,
             )
-            self._initial_response_sent = True
+            self._initial_response_sent.set()
 
     async def respond(
         self,
@@ -159,7 +159,7 @@ class MessageResponseMixinWithEdit(context.MessageResponseMixin[context.Responda
             flags = (flags or hikari.MessageFlag.NONE) | hikari.MessageFlag.EPHEMERAL
 
         async with self._response_lock:
-            if not self._initial_response_sent:
+            if not self._initial_response_sent.is_set():
                 await self._create_initial_response(
                     hikari.ResponseType.MESSAGE_UPDATE if edit else hikari.ResponseType.MESSAGE_CREATE,
                     content,
@@ -176,7 +176,7 @@ class MessageResponseMixinWithEdit(context.MessageResponseMixin[context.Responda
                     user_mentions=user_mentions,
                     role_mentions=role_mentions,
                 )
-                self._initial_response_sent = True
+                self._initial_response_sent.set()
                 return constants.INITIAL_RESPONSE_IDENTIFIER
             else:
                 if edit:

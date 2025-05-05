@@ -81,7 +81,7 @@ jobs:
 
       - name: Run pytest
         run: |
-          pip install ".[localization,crontrigger,dev.test]"
+          pip install ".[localization,crontrigger,dev.config,dev.test]"
           pytest --cov lightbulb --cov-report=xml --junitxml=junit.xml tests
 
       - name: Upload coverage to CodeCov

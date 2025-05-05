@@ -97,6 +97,7 @@ Then to parse the config file into your models, simply call the :meth:`~load` me
     # prints "bar"
     print(parsed_cfg.foo)
 """
+
 from __future__ import annotations
 
 __all__ = ["load"]

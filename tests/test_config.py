@@ -31,6 +31,7 @@ class SubConfig(msgspec.Struct):
 
 
 class Config(msgspec.Struct):
+    number: int
     key: int
     defaulted: str
     escaped: str
@@ -39,6 +40,7 @@ class Config(msgspec.Struct):
 
 
 YAML_SAMPLE = """
+number: 5
 key: ${FOO}
 defaulted: ${MISSING:default_val}
 escaped: $${ESCAPED}
@@ -49,6 +51,7 @@ items:
   - nested: baz
 """
 TOML_SAMPLE = """
+number = 5
 key = "${FOO}"
 defaulted = "${MISSING:default_val}"
 escaped = "$${ESCAPED}"
@@ -63,6 +66,7 @@ nested = "baz"
 """
 JSON_SAMPLE = """
 {
+    "number": 5,
     "key": "${FOO}",
     "defaulted": "${MISSING:default_val}",
     "escaped": "$${ESCAPED}",
@@ -89,6 +93,7 @@ def test_load(file_ext: str, file_content: str, tmp_path: pathlib.Path, monkeypa
     file.write_text(file_content)
 
     cfg = config.load(str(file), cls=Config)
+    assert cfg.number == 5
     assert cfg.key == 1
     assert cfg.defaulted == "default_val"
     assert cfg.escaped == "${ESCAPED}"

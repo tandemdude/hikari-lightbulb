@@ -31,7 +31,7 @@ class SubConfig(msgspec.Struct):
 
 
 class Config(msgspec.Struct):
-    key: str
+    key: int
     defaulted: str
     escaped: str
     sub: SubConfig
@@ -81,7 +81,7 @@ JSON_SAMPLE = """
     ["file_ext", "file_content"], [("yaml", YAML_SAMPLE), ("toml", TOML_SAMPLE), ("json", JSON_SAMPLE)]
 )
 def test_load(file_ext: str, file_content: str, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("FOO", "env_value")
+    monkeypatch.setenv("FOO", "1")
     monkeypatch.delenv("MISSING", raising=False)
     monkeypatch.setenv("ESCAPED", "should_not_appear")
 
@@ -89,7 +89,7 @@ def test_load(file_ext: str, file_content: str, tmp_path: pathlib.Path, monkeypa
     file.write_text(file_content)
 
     cfg = config.load(str(file), cls=Config)
-    assert cfg.key == "env_value"
+    assert cfg.key == 1
     assert cfg.defaulted == "default_val"
     assert cfg.escaped == "${ESCAPED}"
     assert cfg.sub.nested == "foo"

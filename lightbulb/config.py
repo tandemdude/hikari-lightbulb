@@ -109,7 +109,7 @@ def load(path: str, *, cls: type[StructT], dec_hook: Callable[[type[t.Any], t.An
         raise ValueError(f"{path.split('.')[-1]!r} files are not supported")
 
     with open(path, "rb") as fp:
-        parsed = t.cast("t.Any", parser(fp.read()))
+        parsed = parser(fp.read())  # type: ignore[reportUnknownVariableType]
 
     if not isinstance(parsed, dict):
         raise RuntimeError("top-level config must be parseable to dict")

@@ -21,6 +21,7 @@
 """A simple, elegant, and powerful command handler for Hikari."""
 
 from lightbulb import components
+from lightbulb import config
 from lightbulb import di
 from lightbulb import exceptions
 from lightbulb import internal
@@ -63,6 +64,7 @@ __all__ = [
     "channel",
     "client_from_app",
     "components",
+    "config",
     "crontrigger",
     "di",
     "exceptions",

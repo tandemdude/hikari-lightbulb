@@ -60,7 +60,7 @@ Below are all the changelogs for the pre-release versions of hikari-lightbulb (v
 
 ## Version 0.0.56
 
-- Move docs to \[readthedocs\](<https://hikari-lightbulb.readthedocs.io/en/latest/>).
+- Move docs to [readthedocs](https://hikari-lightbulb.readthedocs.io/en/latest/).
 - Refactor errors to ensure they get instantiated correctly everywhere they are used.
 - Fix various check messages and an issue where a check decorator added an incorrect check function.
 

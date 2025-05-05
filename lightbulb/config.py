@@ -84,7 +84,7 @@ def load(path: str, *, cls: type[StructT], dec_hook: Callable[[type[t.Any], t.An
     Args:
         path: The path to the configuration file.
         cls: The msgspec Struct to parse the configuration into.
-        dec_hook: Optional decode hook for msgspec use when parsing to allow supporting additional types.
+        dec_hook: Optional decode hook for msgspec to use when parsing to allow supporting additional types.
 
     Returns:
         The parsed configuration.
@@ -104,9 +104,7 @@ def load(path: str, *, cls: type[StructT], dec_hook: Callable[[type[t.Any], t.An
     elif path.endswith(".json"):
         parser = msgspec.json.decode
     elif path.endswith(".toml"):
-        import tomllib
-
-        parser = lambda content: tomllib.loads(content.decode())  # noqa: E731
+        parser = msgspec.toml.decode
     else:
         raise ValueError(f"{path.split('.')[-1]!r} files are not supported")
 

@@ -8,6 +8,13 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a21 (2025-05-05)
+### Features
+
+- Add `configuration` submodule for parsing configuration files to msgspec Structs, including environment variable interpolation. ([#557](https://github.com/tandemdude/hikari-lightbulb/issues/557))
+
+----
+
 ## v3.0.0a20 (2025-05-03)
 ### Bugfixes
 

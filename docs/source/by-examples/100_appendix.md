@@ -15,3 +15,11 @@ documentation for the {obj}`components subpackage <lightbulb.components>`.
 Lightbulb supports scheduled and repeating tasks through the ``@Client.task`` and ``@Loader.task`` decorators. This
 allows you to run logic every set interval, schedule it for a specific time, or anything else using unique triggers.
 For more on this as well as a usage guide, see the documentation for the {obj}`tasks module <lightbulb.tasks>`.
+
+---
+
+## Configuration
+
+Lightbulb provides configuration parsing from ``yaml``/``toml``/``json`` files into Python objects using
+``msgspec``, with environment variable substitution evaluation. For more on this, see the documentation for the
+{obj}`config module<lightbulb.config>`.

@@ -36,7 +36,7 @@ StructT = t.TypeVar("StructT", bound="msgspec.Struct")
 ENV_VAR_REGEX = re.compile(r"(?P<escaped>\$)?(?P<raw>\${(?P<name>[a-zA-Z_]\w*)(?P<default>:[^}]*)?})")
 
 
-def try_substitute(value: t.Any) -> t.Any:
+def _try_substitute_value(value: t.Any) -> t.Any:
     if not isinstance(value, str):
         return value
 
@@ -53,30 +53,42 @@ def try_substitute(value: t.Any) -> t.Any:
     return ENV_VAR_REGEX.sub(_replace, value)
 
 
-def substitute_config(config: dict[t.Any, t.Any]) -> dict[t.Any, t.Any]:
-    def process_value(value: t.Any) -> t.Any:
+def _substitute_config(config: dict[t.Any, t.Any]) -> dict[t.Any, t.Any]:
+    def process_item(value: t.Any) -> t.Any:
         if isinstance(value, dict):
             return process_dict(t.cast("dict[t.Any, t.Any]", value))
         elif isinstance(value, list):
             return process_list(t.cast("list[t.Any]", value))
         else:
-            return try_substitute(value)
+            return _try_substitute_value(value)
 
     def process_dict(dct: dict[t.Any, t.Any]) -> dict[t.Any, t.Any]:
         for k, v in dct.items():
-            dct[k] = process_value(v)
+            dct[k] = process_item(v)
 
         return dct
 
     def process_list(lst: list[t.Any]) -> list[t.Any]:
         for i in range(len(lst)):
-            lst[i] = process_value(lst[i])
+            lst[i] = process_item(lst[i])
         return lst
 
-    return process_value(config)
+    return process_item(config)
 
 
-def load(path: str, *, cls: type[StructT]) -> StructT:
+def load(path: str, *, cls: type[StructT], dec_hook: Callable[[type[t.Any], t.Any], t.Any] | None = None) -> StructT:
+    """
+    Loads arbitrary configuration from the given path, performing environment variable substitutions, and
+    parses it into the given msgspec Struct class. Currently supported formats are: yaml, toml and JSON.
+
+    Args:
+        path: The path to the configuration file.
+        cls: The msgspec Struct to parse the configuration into.
+        dec_hook: Optional decode hook for msgspec use when parsing to allow supporting additional types.
+
+    Returns:
+        The parsed configuration.
+    """
     try:
         import msgspec
     except ImportError as e:
@@ -104,5 +116,5 @@ def load(path: str, *, cls: type[StructT]) -> StructT:
     if not isinstance(parsed, dict):
         raise RuntimeError("top-level config must be parseable to dict")
 
-    substituted = substitute_config(t.cast("dict[t.Any, t.Any]", parsed))
-    return msgspec.json.decode(msgspec.json.encode(substituted), type=cls, strict=False)
+    substituted = _substitute_config(t.cast("dict[t.Any, t.Any]", parsed))
+    return msgspec.json.decode(msgspec.json.encode(substituted), type=cls, strict=False, dec_hook=dec_hook)

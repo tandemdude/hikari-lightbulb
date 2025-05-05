@@ -23,7 +23,7 @@ import pathlib
 import msgspec
 import pytest
 
-import lightbulb
+from lightbulb import config
 
 
 class SubConfig(msgspec.Struct):
@@ -88,10 +88,23 @@ def test_load(file_ext: str, file_content: str, tmp_path: pathlib.Path, monkeypa
     file = tmp_path / f"foo.{file_ext}"
     file.write_text(file_content)
 
-    config = lightbulb.config.load(str(file), cls=Config)
-    assert config.key == "env_value"
-    assert config.defaulted == "default_val"
-    assert config.escaped == "${ESCAPED}"
-    assert config.sub.nested == "foo"
-    assert config.items[0].nested == "bar"
-    assert config.items[1].nested == "baz"
+    cfg = config.load(str(file), cls=Config)
+    assert cfg.key == "env_value"
+    assert cfg.defaulted == "default_val"
+    assert cfg.escaped == "${ESCAPED}"
+    assert cfg.sub.nested == "foo"
+    assert cfg.items[0].nested == "bar"
+    assert cfg.items[1].nested == "baz"
+
+
+def test_load_fails_on_unknown_file_type() -> None:
+    with pytest.raises(NotImplementedError):
+        config.load("foo.baz", cls=Config)
+
+
+def test_load_fails_when_file_cannot_parse_to_dict(tmp_path: pathlib.Path) -> None:
+    file = tmp_path / "foo.json"
+    file.write_text('["foo", "bar", "baz"]')
+
+    with pytest.raises(TypeError):
+        config.load(str(file), cls=Config)

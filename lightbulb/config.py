@@ -168,31 +168,36 @@ def load(path: str, *, cls: type[StructT], dec_hook: Callable[[type[t.Any], t.An
 
     Returns:
         The parsed configuration.
+
+    Raises:
+        :obj:`NotImplementedError`: If a file with an unrecognized format is specified.
+        :obj:`ValueError`: If the file cannot be parsed to a dictionary (e.g. the top level object is an array).
+        :obj:`ImportError`: If a required dependency is not installed.
     """
     try:
         import msgspec
-    except ImportError as e:
-        raise RuntimeError("'msgspec' is a required dependency when using lightbulb config loading") from e
+    except ImportError as e:  # pragma: no cover
+        raise ImportError("'msgspec' is a required dependency when using lightbulb config loading") from e
 
     parser: Callable[[bytes], t.Any]
     if path.endswith(".yaml") or path.endswith(".yml"):
         try:
             import ruamel.yaml as yaml
-        except ImportError as e:
-            raise RuntimeError("'ruamel.yaml' is required for '.yaml' file support") from e
+        except ImportError as e:  # pragma: no cover
+            raise ImportError("'ruamel.yaml' is required for '.yaml' file support") from e
         parser = yaml.YAML(typ="safe", pure=True).load  # type: ignore[reportUnknownVariableType,reportUnknownMemberType]
     elif path.endswith(".json"):
         parser = msgspec.json.decode
     elif path.endswith(".toml"):
         parser = msgspec.toml.decode
     else:
-        raise ValueError(f"{path.split('.')[-1]!r} files are not supported")
+        raise NotImplementedError(f"{path.split('.')[-1]!r} files are not supported")
 
     with open(path, "rb") as fp:
         parsed = parser(fp.read())  # type: ignore[reportUnknownVariableType]
 
     if not isinstance(parsed, dict):
-        raise RuntimeError("top-level config must be parseable to dict")
+        raise TypeError("top-level config must be parseable to dict")
 
     substituted = _substitute_config(t.cast("dict[t.Any, t.Any]", parsed))
     return msgspec.json.decode(msgspec.json.encode(substituted), type=cls, strict=False, dec_hook=dec_hook)

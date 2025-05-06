@@ -50,7 +50,7 @@ bot.run()
 ```
 
 When this code is run, you will get some logging information and a Hikari banner printed across your
-terminal. The bot will be online and you can test out the command!
+terminal. The bot will be online, and you can test out the command!
 
 ## Optional: Setting up logging
 

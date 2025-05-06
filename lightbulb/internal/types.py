@@ -30,6 +30,7 @@ from collections.abc import Callable
 from collections.abc import Iterable
 
 import hikari
+from linkd.utils import MaybeAwaitable
 
 if t.TYPE_CHECKING:
     from lightbulb import exceptions
@@ -38,8 +39,6 @@ if t.TYPE_CHECKING:
 
 T = t.TypeVar("T")
 
-MaybeAwaitable: t.TypeAlias = t.Union[T, t.Coroutine[t.Any, t.Any, T]]
-"""TypeAlias for an item that might be able to be awaited."""
 CommandOrGroup: t.TypeAlias = t.Union["groups.Group", type["commands.CommandBase"]]
 # Annoyingly can't replace this with 'Callable' because the concatenate I use isn't supported
 ErrorHandler: t.TypeAlias = t.Callable[

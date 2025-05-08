@@ -8,6 +8,13 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a22 (2025-05-08)
+### Bugfixes
+
+- Fix cooldown prefabs failing to register the appropriate `CommandCooldown` dependency during invocation.
+
+----
+
 ## v3.0.0a21 (2025-05-05)
 ### Features
 

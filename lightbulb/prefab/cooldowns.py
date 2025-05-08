@@ -103,7 +103,7 @@ def _maybe_register_dependency(cc: CommandCooldown) -> None:
         return
 
     di_container: linkd.Container | None = linkd.DI_CONTAINER.get(None)
-    if di_container is None or di_container._tag is not di.Contexts.DEFAULT:
+    if di_container is None or di_container._tag is not di.Contexts.COMMAND:
         return
 
     di_container.add_value(CommandCooldown, cc)

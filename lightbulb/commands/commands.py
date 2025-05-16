@@ -92,6 +92,14 @@ class CommandData:
 
     parent: groups.Group | groups.SubGroup | None = dataclasses.field(init=False, repr=False, default=None)
     """The group that the command belongs to, or :obj:`None` if not applicable."""
+    extension: str | None = dataclasses.field(init=False, repr=False, default=None)
+    """
+    The extensions that the command's loader was loaded from, or :obj:`None` if not applicable.
+
+    .. note::
+        This will only be set if this is a top-level command. If this is a sub-command, you should get the
+        extension from the parent group instead.
+    """
 
     def __post_init__(self) -> None:
         if not self.localize:

@@ -117,6 +117,7 @@ class Client(abc.ABC):
         "_attached_modals",
         "_command_invocation_mapping",
         "_created_commands",
+        "_current_extension_being_loaded",
         "_di",
         "_error_handlers",
         "_extensions",
@@ -172,7 +173,9 @@ class Client(abc.ABC):
 
         self._error_handlers: dict[int, list[lb_types.ErrorHandler]] = {}
         self._application: hikari.Application | None = None
+
         self._extensions: set[str] = set()
+        self._current_extension_being_loaded: str | None = None
 
         self._tasks: set[tasks.Task] = set()
 
@@ -640,6 +643,7 @@ class Client(abc.ABC):
 
             try:
                 extension = importlib.import_module(path)
+                self._current_extension_being_loaded = path
             except ImportError as e:
                 LOGGER.error("error importing extension %r - skipping", path, exc_info=(type(e), e, e.__traceback__))
                 continue
@@ -650,16 +654,18 @@ class Client(abc.ABC):
             maybe_loader: loaders.Loader | None = None
             try:
                 for name in dir(extension):
-                    if isinstance(item := getattr(extension, name, None), loaders.Loader) and item not in loaded:
-                        maybe_loader = item
+                    if not isinstance(item := getattr(extension, name, None), loaders.Loader) or item in loaded:
+                        continue
 
-                        if not await utils.maybe_await(maybe_loader._should_load_hook()):
-                            any_skipped = True
-                            continue
+                    maybe_loader = item
 
-                        await maybe_loader.add_to_client(self)
+                    if not await utils.maybe_await(maybe_loader._should_load_hook()):
+                        any_skipped = True
+                        continue
 
-                        loaded.append(maybe_loader)
+                    await maybe_loader.add_to_client(self)
+
+                    loaded.append(maybe_loader)
             except Exception as e:
                 LOGGER.error("error loading extension %r - skipping", path, exc_info=(type(e), e, e.__traceback__))
 
@@ -673,7 +679,10 @@ class Client(abc.ABC):
                 # the extension will be able to be loaded as normal.
                 del sys.modules[path]
 
+                self._current_extension_being_loaded = None
                 continue
+
+            self._current_extension_being_loaded = None
 
             if not loaded and not any_skipped:
                 LOGGER.warning("found no loaders in extension %r - skipping", path)

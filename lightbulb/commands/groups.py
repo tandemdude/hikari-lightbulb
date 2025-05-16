@@ -135,6 +135,7 @@ class SubGroup(GroupMixin):
 
     @property
     def subcommands(self) -> SubGroupCommandMappingT:
+        """The subcommands of this subgroup."""
         return self._commands
 
     async def to_command_option(
@@ -201,6 +202,8 @@ class Group(GroupMixin):
         repr=False, default=hikari.UNDEFINED
     )
     """The default permissions required to use the group in a guild."""
+    extension: str | None = dataclasses.field(init=False, repr=False, default=None)
+    """The extensions that the command's loader was loaded from, or :obj:`None` if not applicable."""
 
     _commands: GroupCommandMappingT = dataclasses.field(init=False, hash=False, repr=False, default_factory=dict)  # type: ignore[reportUnknownVariableType]
     _command_data: commands.CommandData = dataclasses.field(init=False, hash=False, repr=False)
@@ -223,6 +226,7 @@ class Group(GroupMixin):
 
     @property
     def subcommands(self) -> GroupCommandMappingT:
+        """The subcommands and subgroups of this group."""
         return self._commands
 
     def subgroup(self, name: str, description: str, *, localize: bool = False) -> SubGroup:

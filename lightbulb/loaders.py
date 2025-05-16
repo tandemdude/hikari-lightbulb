@@ -31,6 +31,7 @@ import linkd
 
 from lightbulb import di
 from lightbulb import tasks
+from lightbulb.commands import groups
 
 if t.TYPE_CHECKING:
     from collections.abc import Awaitable
@@ -102,6 +103,11 @@ class _CommandLoadable(Loadable):
         self._defer_guilds = defer_guilds
 
     async def load(self, client: client_.Client) -> None:
+        if isinstance(self._command, groups.Group):
+            object.__setattr__(self._command, "extension", client._current_extension_being_loaded)
+        else:
+            self._command._command_data.extension = client._current_extension_being_loaded
+
         if self._defer_guilds:
             client.register(self._command, defer_guilds=True)
         else:

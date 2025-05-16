@@ -23,8 +23,8 @@ This module contains utilities for parsing your application configuration from v
 basic deserializing to Python objects, it implements environment variable substitution expressions to allow
 "dynamic" values within the configuration.
 
-.. note::
-    Using this feature requires that you have `msgspec <https://jcristharif.com/msgspec/>`_ installed.
+These utilities were originally implemented within lightbulb, but since have been extracted and are now
+provided by the ``confspec`` library (`PyPI <https://pypi.org/project/confspec/>`_).
 
 Environment Variable Substitution
 ---------------------------------
@@ -57,8 +57,14 @@ can be achieved by escaping the substitution expression with an additional ``$``
 This will not be expanded using the environment variables, and instead one of the leading ``$`` symbols will be
 stripped, causing it to evaluate as ``${VARIABLE_NAME}``.
 
+``confspec`` provides additional substitution features, you should consult its documentation for further details.
+
 Usage
 -----
+
+``confspec`` supports parsing configuration into a variety of formats - standard dictionaries, msgspec Structs, or
+pydantic models. The below example will use msgspec Structs, but you can choose whichever you are most comfortable
+with. Just ensure the correct dependencies are installed first.
 
 You should create a configuration file for your application - supported
 formats are ``yaml``, ``toml`` and ``json`` - and a :obj:`msgspec.Struct`-derived class that your configuration
@@ -100,104 +106,7 @@ Then to parse the config file into your models, simply call the :meth:`~load` me
 
 from __future__ import annotations
 
-__all__ = ["load"]
+__all__ = ["load", "loads"]
 
-import os
-import re
-import typing as t
-
-if t.TYPE_CHECKING:
-    from collections.abc import Callable
-
-    import msgspec
-
-StructT = t.TypeVar("StructT", bound="msgspec.Struct")
-
-ENV_VAR_REGEX = re.compile(r"(?P<escaped>\$)?(?P<raw>\${(?P<name>[a-zA-Z_]\w*)(?P<default>:[^}]*)?})")
-
-
-def _try_substitute_value(value: t.Any) -> t.Any:
-    if not isinstance(value, str):
-        return value
-
-    def _replace(match: re.Match[str]) -> str:
-        if match.group("escaped"):
-            return str(match.group("raw"))
-
-        var, is_set = os.getenv(name := match.group("name")), name in os.environ
-        if not is_set and (default := match.group("default")):
-            return str(default)[1:]  # strip the leading colon
-
-        return str(var)
-
-    return ENV_VAR_REGEX.sub(_replace, value)
-
-
-def _substitute_config(config: dict[t.Any, t.Any]) -> dict[t.Any, t.Any]:
-    def process_item(value: t.Any) -> t.Any:
-        if isinstance(value, dict):
-            return process_dict(t.cast("dict[t.Any, t.Any]", value))
-        elif isinstance(value, list):
-            return process_list(t.cast("list[t.Any]", value))
-        else:
-            return _try_substitute_value(value)
-
-    def process_dict(dct: dict[t.Any, t.Any]) -> dict[t.Any, t.Any]:
-        for k, v in dct.items():
-            dct[k] = process_item(v)
-
-        return dct
-
-    def process_list(lst: list[t.Any]) -> list[t.Any]:
-        for i in range(len(lst)):
-            lst[i] = process_item(lst[i])
-        return lst
-
-    return process_item(config)
-
-
-def load(path: str, *, cls: type[StructT], dec_hook: Callable[[type[t.Any], t.Any], t.Any] | None = None) -> StructT:
-    """
-    Loads arbitrary configuration from the given path, performing environment variable substitutions, and
-    parses it into the given msgspec Struct class. Currently supported formats are: yaml, toml and JSON.
-
-    Args:
-        path: The path to the configuration file.
-        cls: The msgspec Struct to parse the configuration into.
-        dec_hook: Optional decode hook for msgspec to use when parsing to allow supporting additional types.
-
-    Returns:
-        The parsed configuration.
-
-    Raises:
-        :obj:`NotImplementedError`: If a file with an unrecognized format is specified.
-        :obj:`ValueError`: If the file cannot be parsed to a dictionary (e.g. the top level object is an array).
-        :obj:`ImportError`: If a required dependency is not installed.
-    """
-    try:
-        import msgspec
-    except ImportError as e:  # pragma: no cover
-        raise ImportError("'msgspec' is a required dependency when using lightbulb config loading") from e
-
-    parser: Callable[[bytes], t.Any]
-    if path.endswith(".yaml") or path.endswith(".yml"):
-        try:
-            import ruamel.yaml as yaml
-        except ImportError as e:  # pragma: no cover
-            raise ImportError("'ruamel.yaml' is required for '.yaml' file support") from e
-        parser = yaml.YAML(typ="safe", pure=True).load  # type: ignore[reportUnknownVariableType,reportUnknownMemberType]
-    elif path.endswith(".json"):
-        parser = msgspec.json.decode
-    elif path.endswith(".toml"):
-        parser = msgspec.toml.decode
-    else:
-        raise NotImplementedError(f"{path.split('.')[-1]!r} files are not supported")
-
-    with open(path, "rb") as fp:
-        parsed = parser(fp.read())  # type: ignore[reportUnknownVariableType]
-
-    if not isinstance(parsed, dict):
-        raise TypeError("top-level config must be parseable to dict")
-
-    substituted = _substitute_config(t.cast("dict[t.Any, t.Any]", parsed))
-    return msgspec.json.decode(msgspec.json.encode(substituted), type=cls, strict=False, dec_hook=dec_hook)
+from confspec import load
+from confspec import loads

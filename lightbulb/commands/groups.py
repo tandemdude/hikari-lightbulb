@@ -222,6 +222,7 @@ class Group(GroupMixin):
             {},
             "",
         )
+        cdata.extension = self.extension
         object.__setattr__(self, "_command_data", cdata)
 
     @property

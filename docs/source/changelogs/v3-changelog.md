@@ -8,6 +8,17 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a23 (2025-05-17)
+### Features
+
+- Add `extension` attribute to `CommandData` and `Group` classes.
+
+### Miscellaneous
+
+- Switch to `confspec` to provide `lightbulb.config` functionality.
+
+----
+
 ## v3.0.0a22 (2025-05-08)
 ### Bugfixes
 

@@ -114,9 +114,9 @@ class SubGroup(GroupMixin):
     """The parent group of the subgroup."""
 
     _commands: SubGroupCommandMappingT = dataclasses.field(init=False, hash=False, repr=False, default_factory=dict)  # type: ignore[reportUnknownVariableType]
-    _command_data: commands.CommandData = dataclasses.field(init=False, hash=False, repr=False)
 
-    def __post_init__(self) -> None:
+    @property
+    def _command_data(self) -> commands.CommandData:
         cdata = commands.CommandData(
             hikari.CommandType.SLASH,
             self.name,
@@ -131,7 +131,7 @@ class SubGroup(GroupMixin):
             "",
         )
         cdata.parent = self.parent
-        object.__setattr__(self, "_command_data", cdata)
+        return cdata
 
     @property
     def subcommands(self) -> SubGroupCommandMappingT:
@@ -206,9 +206,9 @@ class Group(GroupMixin):
     """The extensions that the command's loader was loaded from, or :obj:`None` if not applicable."""
 
     _commands: GroupCommandMappingT = dataclasses.field(init=False, hash=False, repr=False, default_factory=dict)  # type: ignore[reportUnknownVariableType]
-    _command_data: commands.CommandData = dataclasses.field(init=False, hash=False, repr=False)
 
-    def __post_init__(self) -> None:
+    @property
+    def _command_data(self) -> commands.CommandData:
         cdata = commands.CommandData(
             hikari.CommandType.SLASH,
             self.name,
@@ -223,7 +223,7 @@ class Group(GroupMixin):
             "",
         )
         cdata.extension = self.extension
-        object.__setattr__(self, "_command_data", cdata)
+        return cdata
 
     @property
     def subcommands(self) -> GroupCommandMappingT:

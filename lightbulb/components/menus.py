@@ -47,6 +47,7 @@ import uuid
 
 import async_timeout
 import hikari
+import linkd
 from hikari.api import special_endpoints
 from hikari.impl import special_endpoints as special_endpoints_impl
 
@@ -909,13 +910,6 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         stop_event = asyncio.Event()
         ctx = contextvars.copy_context()
 
-        async def _run(context: MenuContext) -> None:
-            if not await self.predicate(context):
-                return
-
-            callback: t.Callable[[MenuContext], t.Awaitable[None]] = getattr(context.component, "callback")
-            await callback(context)
-
         async def _handle_interaction(
             interaction: hikari.ComponentInteraction, initial_response_sent: asyncio.Event, *, tm: async_timeout.Timeout
         ) -> None:
@@ -928,7 +922,16 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
                 _stop_event=stop_event,
                 _initial_response_sent=initial_response_sent,
             )
-            await ctx.run(_run, context)
+
+            token = linkd.DI_CONTAINER.set(ctx.get(linkd.DI_CONTAINER))
+            try:
+                if not await self.predicate(context):
+                    return
+
+                callback: t.Callable[[MenuContext], t.Awaitable[None]] = getattr(context.component, "callback")
+                await callback(context)
+            finally:
+                linkd.DI_CONTAINER.reset(token)
 
             if context._should_re_resolve_custom_ids:
                 am.custom_ids = {c.custom_id: c for row in self._rows for c in row if not isinstance(c, LinkButton)}

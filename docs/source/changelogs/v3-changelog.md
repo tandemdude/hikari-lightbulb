@@ -8,6 +8,17 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a24 (2025-05-20)
+### Bugfixes
+
+- Fix DI context not propagating correctly for menu callbacks where it would be expected to work. ([#563](https://github.com/tandemdude/hikari-lightbulb/issues/563))
+
+### Miscellaneous
+
+- Remove maximum version limit for `linkd` and `confspec`.
+
+----
+
 ## v3.0.0a23 (2025-05-17)
 ### Features
 

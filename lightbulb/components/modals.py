@@ -33,6 +33,7 @@ import uuid
 
 import async_timeout
 import hikari
+import linkd
 from hikari.api import special_endpoints
 from hikari.impl import special_endpoints as special_endpoints_impl
 
@@ -278,13 +279,16 @@ class Modal(base.BuildableComponentContainer[special_endpoints.ModalActionRowBui
         async def _handle_interaction(
             interaction: hikari.ModalInteraction, initial_response_sent: asyncio.Event
         ) -> None:
-            await ctx.run(
-                self.on_submit,
-                ModalContext(
-                    client=client, modal=self, interaction=interaction, initial_response_sent=initial_response_sent
-                ),
+            context = ModalContext(
+                client=client, modal=self, interaction=interaction, initial_response_sent=initial_response_sent
             )
-            stopped.set()
+
+            token = linkd.DI_CONTAINER.set(ctx.get(linkd.DI_CONTAINER))
+            try:
+                await self.on_submit(context)
+                stopped.set()
+            finally:
+                linkd.DI_CONTAINER.reset(token)
 
         client._attached_modals[custom_id] = _handle_interaction
         try:

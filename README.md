@@ -70,7 +70,6 @@ this resource over the past 5+ years.
 
 The following large bots are all using Lightbulb in production:
 
-<div align="center">
 <table>
     <tbody>
         <tr>
@@ -79,7 +78,6 @@ The following large bots are all using Lightbulb in production:
         </tr>
     </tbody>
 </table>
-</div>
 
 Do you own a large bot using Lightbulb? Mention `@thomm.o` on [Discord](https://discord.gg/hikari) or submit a pull request to add your bot to the list!
 

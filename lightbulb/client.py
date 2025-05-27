@@ -162,7 +162,7 @@ class Client(abc.ABC):
             deferred_registration_callback
         )
         self.hooks: Sequence[execution.ExecutionHook] = hooks
-        self.sync_commands = sync_commands
+        self.sync_commands: bool = sync_commands
 
         self._di = linkd.DependencyInjectionManager()
 

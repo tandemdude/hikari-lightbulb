@@ -18,6 +18,17 @@ Discord API wrapper library for Python, Hikari.
 This library aims to make it simple for you to make your own Discord bots and provide
 all the utilities and functions you need to help make this job easier.
 
+## Trusted By
+
+<table>
+    <tbody>
+        <tr>
+            <td align="center" valign="top" width="14.28%"><a href="https://invite-tracker.com"><img src="https://cdn.invite-tracker.com/logo.png" width="100px;" alt="Invite Tracker"/><br /><sub><b>Invite Tracker</b></sub></a></td>
+            <td align="center" valign="top" width="14.28%"><a href="https://nmarkov.xyz"><img src="https://nmarkov.xyz/logo.png" width="100px;" alt="nMarkov"/><br /><sub><b>nMarkov</b></sub></a></td>
+        </tr>
+    </tbody>
+</table>
+
 ## Installation
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install Lightbulb.
 

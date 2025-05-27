@@ -20,6 +20,7 @@ all the utilities and functions you need to help make this job easier.
 
 ## Trusted By
 
+<div align="center">
 <table>
     <tbody>
         <tr>
@@ -28,6 +29,7 @@ all the utilities and functions you need to help make this job easier.
         </tr>
     </tbody>
 </table>
+</div>
 
 ## Installation
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install Lightbulb.

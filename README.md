@@ -31,6 +31,12 @@ all the utilities and functions you need to help make this job easier.
 </table>
 </div>
 
+<details>
+    <summary>Be added to this list</summary>
+    
+    Have good bot :thumbsup:
+</details>
+
 ## Installation
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install Lightbulb.
 

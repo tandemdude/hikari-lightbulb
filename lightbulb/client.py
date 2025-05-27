@@ -135,6 +135,7 @@ class Client(abc.ABC):
         "hooks",
         "localization_provider",
         "rest",
+        "sync_commands",
     )
 
     def __init__(
@@ -147,6 +148,7 @@ class Client(abc.ABC):
         delete_unknown_commands: bool,
         deferred_registration_callback: lb_types.DeferredRegistrationCallback | None,
         hooks: Sequence[execution.ExecutionHook],
+        sync_commands: bool,
     ) -> None:
         super().__init__()
 
@@ -160,6 +162,7 @@ class Client(abc.ABC):
             deferred_registration_callback
         )
         self.hooks: Sequence[execution.ExecutionHook] = hooks
+        self.sync_commands = sync_commands
 
         self._di = linkd.DependencyInjectionManager()
 
@@ -289,7 +292,9 @@ class Client(abc.ABC):
         if self._started:
             raise RuntimeError("cannot start already-started client")
 
-        await self.sync_application_commands()
+        if self.sync_commands:
+            await self.sync_application_commands()
+
         self._started = True
 
         for task in self._tasks:
@@ -1265,6 +1270,7 @@ def client_from_app(
     delete_unknown_commands: bool = True,
     deferred_registration_callback: lb_types.DeferredRegistrationCallback | None = None,
     hooks: Sequence[execution.ExecutionHook] = (),
+    sync_commands: bool = True,
 ) -> GatewayEnabledClient: ...
 @t.overload
 def client_from_app(
@@ -1276,6 +1282,7 @@ def client_from_app(
     delete_unknown_commands: bool = True,
     deferred_registration_callback: lb_types.DeferredRegistrationCallback | None = None,
     hooks: Sequence[execution.ExecutionHook] = (),
+    sync_commands: bool = True,
 ) -> RestEnabledClient: ...
 def client_from_app(
     app: GatewayClientAppT | RestClientAppT,
@@ -1286,6 +1293,7 @@ def client_from_app(
     delete_unknown_commands: bool = True,
     deferred_registration_callback: lb_types.DeferredRegistrationCallback | None = None,
     hooks: Sequence[execution.ExecutionHook] = (),
+    sync_commands: bool = True,
 ) -> Client:
     """
     Create and return the appropriate client implementation from the given application.
@@ -1309,6 +1317,8 @@ def client_from_app(
             to :obj:`None`.
         hooks: Execution hooks that should be applied to all commands. These hooks will always run **before**
             all other hooks registered for the same step are executed.
+        sync_commands: Whether to sync commands that are registered to the client before starting. Defaults
+            to :obj:`True`.
 
     Returns:
         :obj:`~Client`: The created client instance.
@@ -1332,4 +1342,5 @@ def client_from_app(
         delete_unknown_commands,
         deferred_registration_callback,
         hooks,
+        sync_commands,
     )

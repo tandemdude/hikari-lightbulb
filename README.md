@@ -5,7 +5,7 @@
     <picture>
         <source media="(prefers-color-scheme: dark)" srcset="/docs/source/_static/lightbulb_logo_dark.svg">
         <source media="(prefers-color-scheme: light)" srcset="/docs/source/_static/lightbulb_logo_light.svg">
-        <img alt="Hikari-Lightbulb logo" src="/docs/source/_static/lightbulb_logo_light.svg" width="50%">
+        <img alt="Hikari-Lightbulb logo" src="https://raw.githubusercontent.com/tandemdude/hikari-lightbulb/refs/heads/master/docs/source/_static/lightbulb_logo_light.svg" width="50%">
     </picture>
 </p>
 

@@ -23,8 +23,8 @@ all the utilities and functions you need to help make this job easier.
 <table>
     <tbody>
         <tr>
-            <td align="center" valign="top" width="14.28%"><a href="https://invite-tracker.com"><img src="https://cdn.invite-tracker.com/logo.png" width="100px;" alt="Invite Tracker"/><br /><sub><b>Invite Tracker</b></sub></a></td>
-            <td align="center" valign="top" width="14.28%"><a href="https://nmarkov.xyz"><img src="https://nmarkov.xyz/logo.png" width="100px;" alt="nMarkov"/><br /><sub><b>nMarkov</b></sub></a></td>
+            <td align="center" valign="top" width="14.28%"><a href="https://invite-tracker.com"><img src="https://cdn.invite-tracker.com/logo.png" width="100px;" height="100px;" alt="Invite Tracker"/><br /><sub><b>Invite Tracker</b></sub></a></td>
+            <td align="center" valign="top" width="14.28%"><a href="https://nmarkov.xyz"><img src="https://nmarkov.xyz/logo.png" width="100px;" height="100px;" alt="nMarkov"/><br /><sub><b>nMarkov</b></sub></a></td>
         </tr>
     </tbody>
 </table>

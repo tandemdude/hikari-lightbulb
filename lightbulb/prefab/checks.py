@@ -74,7 +74,7 @@ class MissingRequiredPermission(Exception):
         """The permissions the user has."""
 
 
-def has_permissions(permissions: hikari.Permissions, /, *, fail_in_dm: bool = True) -> execution.ExecutionHook:
+def has_permissions(permissions: hikari.Permissions, /, *, fail_in_dm: bool = True, permit_admin: bool = True) -> execution.ExecutionHook:
     """
     Creates a hook that checks whether the user invoking the command has all the given permissions. The created hook
     raises :obj:`~MissingRequiredPermissions` when it fails. This hook is run during the ``CHECKS`` execution step.
@@ -82,6 +82,8 @@ def has_permissions(permissions: hikari.Permissions, /, *, fail_in_dm: bool = Tr
     Args:
         permissions: The permissions that the user should have.
         fail_in_dm: Whether this hook should fail if the command is invoked within a DM. Defaults to :obj:`True`.
+        permit_admin: Whether this hook should pass if the user has the ``ADMINISTRATOR`` permission.
+            Defaults to :obj:`True`.
 
     Returns:
         The created hook.
@@ -104,6 +106,9 @@ def has_permissions(permissions: hikari.Permissions, /, *, fail_in_dm: bool = Tr
                 raise MissingRequiredPermission(permissions, hikari.Permissions.NONE)
             return
 
+        if permit_admin and (ctx.member.permissions & hikari.Permissions.ADMINISTRATOR):
+            return
+
         if (ctx.member.permissions & permissions) != permissions:
             raise MissingRequiredPermission(permissions & ~ctx.member.permissions, ctx.member.permissions)
 
@@ -120,7 +125,7 @@ class BotMissingRequiredPermissions(Exception):
         """The permissions the bot has."""
 
 
-def bot_has_permissions(permissions: hikari.Permissions, /, *, fail_in_dm: bool = True) -> execution.ExecutionHook:
+def bot_has_permissions(permissions: hikari.Permissions, /, *, fail_in_dm: bool = True, permit_admin: bool = True) -> execution.ExecutionHook:
     """
     Creates a hook that checks whether the bot has all the given permissions. The created hook raises
     :obj:`~BotMissingRequiredPermissions` when it fails. This hook is run during the ``CHECKS`` execution step.
@@ -128,6 +133,8 @@ def bot_has_permissions(permissions: hikari.Permissions, /, *, fail_in_dm: bool 
     Args:
         permissions: The permissions that the bot should have.
         fail_in_dm: Whether this hook should fail if the command is invoked within a DM. Defaults to :obj:`True`.
+        permit_admin: Whether this hook should pass if the user has the ``ADMINISTRATOR`` permission.
+            Defaults to :obj:`True`.
 
     Returns:
         The created hook.
@@ -148,6 +155,9 @@ def bot_has_permissions(permissions: hikari.Permissions, /, *, fail_in_dm: bool 
         if ctx.guild_id is None:
             if fail_in_dm:
                 raise BotMissingRequiredPermissions(permissions, hikari.Permissions.NONE)
+            return
+
+        if permit_admin and (ctx.interaction.app_permissions & hikari.Permissions.ADMINISTRATOR):
             return
 
         if (ctx.interaction.app_permissions & permissions) != permissions:

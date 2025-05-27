@@ -18,7 +18,7 @@ Discord API wrapper library for Python, Hikari.
 This library aims to make it simple for you to make your own Discord bots and provide
 all the utilities and functions you need to help make this job easier.
 
-## <abbr title="have good bot">Trusted By</abbr>
+## <span title="have good bot">Trusted By</abbr>
 
 <div align="center">
 <table>

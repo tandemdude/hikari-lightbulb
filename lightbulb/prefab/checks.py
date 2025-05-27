@@ -74,7 +74,9 @@ class MissingRequiredPermission(Exception):
         """The permissions the user has."""
 
 
-def has_permissions(permissions: hikari.Permissions, /, *, fail_in_dm: bool = True, permit_admin: bool = True) -> execution.ExecutionHook:
+def has_permissions(
+    permissions: hikari.Permissions, /, *, fail_in_dm: bool = True, permit_admin: bool = True
+) -> execution.ExecutionHook:
     """
     Creates a hook that checks whether the user invoking the command has all the given permissions. The created hook
     raises :obj:`~MissingRequiredPermissions` when it fails. This hook is run during the ``CHECKS`` execution step.
@@ -125,7 +127,9 @@ class BotMissingRequiredPermissions(Exception):
         """The permissions the bot has."""
 
 
-def bot_has_permissions(permissions: hikari.Permissions, /, *, fail_in_dm: bool = True, permit_admin: bool = True) -> execution.ExecutionHook:
+def bot_has_permissions(
+    permissions: hikari.Permissions, /, *, fail_in_dm: bool = True, permit_admin: bool = True
+) -> execution.ExecutionHook:
     """
     Creates a hook that checks whether the bot has all the given permissions. The created hook raises
     :obj:`~BotMissingRequiredPermissions` when it fails. This hook is run during the ``CHECKS`` execution step.

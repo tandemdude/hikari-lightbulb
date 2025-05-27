@@ -284,6 +284,8 @@ class Task:
         assert self._client is not None
         self.started = True
 
+        cancelled: asyncio.CancelledError | None = None
+
         n_failures = 0
         while (
             not self.stopped
@@ -310,7 +312,8 @@ class Task:
                 except Exception as e:
                     if isinstance(e, asyncio.CancelledError):
                         LOGGER.debug("task cancelled")
-                        return
+                        cancelled = e
+                        break
 
                     n_failures += 1
 
@@ -333,6 +336,9 @@ class Task:
 
             self.last_invocation_length = time.perf_counter() - before
             self.invocation_count += 1
+
+        if cancelled is not None:
+            raise asyncio.CancelledError from cancelled
 
         self.stopped, self._task = True, None
         LOGGER.debug("stopped task %r", self._func.__name__)
@@ -368,7 +374,7 @@ class Task:
 
         self.stopped = True
 
-    def cancel(self) -> None:
+    def cancel(self) -> asyncio.Task[t.Any] | None:
         """
         Cancel the task. Does nothing if the task is already stopped or canceled, or has not been started.
 

@@ -32,7 +32,7 @@ all the utilities and functions you need to help make this job easier.
 </div>
 
 <details>
-<summary>Be added to this list</summary>
+<summary><h5>Get added to this list</h5></summary>
 
 Have good bot :thumbsup:
 </details>

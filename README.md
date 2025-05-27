@@ -18,19 +18,6 @@ Discord API wrapper library for Python, Hikari.
 This library aims to make it simple for you to make your own Discord bots and provide
 all the utilities and functions you need to help make this job easier.
 
-## <span title="have good bot">Trusted By</abbr>
-
-<div align="center">
-<table>
-    <tbody>
-        <tr>
-            <td align="center" valign="top" width="14.28%"><a href="https://invite-tracker.com"><img src="https://cdn.invite-tracker.com/logo.png" width="100px;" height="100px;" alt="Invite Tracker"/><br /><sub><b>Invite Tracker</b></sub></a></td>
-            <td align="center" valign="top" width="14.28%"><a href="https://nmarkov.xyz"><img src="https://nmarkov.xyz/logo.png" width="100px;" height="100px;" alt="nMarkov"/><br /><sub><b>nMarkov</b></sub></a></td>
-        </tr>
-    </tbody>
-</table>
-</div>
-
 ## Installation
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install Lightbulb.
 
@@ -72,18 +59,34 @@ class Ping(
 bot.run()
 ```
 
-## Issues
-If you find any bugs, issues, or unexpected behaviour while using the library,
-you should open an issue with details of the problem and how to reproduce if possible.
-Please also open an issue for any new features you would like to see added.
+## Sponsors
 
-## Contributing
-Pull requests are welcome. For major changes, please open an issue/discussion first to discuss what you would like to change.
+I would like to give a special thanks to my sponsors for providing the funding to continue developing and improving
+this resource over the past 5+ years.
 
-Please try to ensure that documentation is updated if you add any features accessible through the public API.
+- [nulldomain](https://github.com/null-domain)
 
-If you use this library and like it, feel free to sign up to GitHub and star the project,
-it is greatly appreciated and lets me know that I'm going in the right direction!
+## Large Bots
+
+The following large bots are all using Lightbulb in production:
+
+<div align="center">
+<table>
+    <tbody>
+        <tr>
+            <td align="center" valign="top" width="14.28%"><a href="https://invite-tracker.com"><img src="https://cdn.invite-tracker.com/logo.png" width="100px;" height="100px;" alt="Invite Tracker"/><br /><sub><b>Invite Tracker</b></sub></a></td>
+            <td align="center" valign="top" width="14.28%"><a href="https://nmarkov.xyz"><img src="https://nmarkov.xyz/logo.png" width="100px;" height="100px;" alt="nMarkov"/><br /><sub><b>nMarkov</b></sub></a></td>
+        </tr>
+    </tbody>
+</table>
+</div>
+
+Do you own a large bot using Lightbulb? Mention `@thomm.o` on [Discord](https://discord.gg/hikari) or submit a pull request to add your bot to the list!
+
+## Show your Support
+
+We love people's support in growing and improving. Be sure to leave a ⭐️ if you like the project, and I would gladly welcome
+any contributions if you're interested!
 
 ## Links
 - **License:** [MIT](https://choosealicense.com/licenses/mit/)

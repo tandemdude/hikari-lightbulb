@@ -292,8 +292,7 @@ class Client(abc.ABC):
         if self._started:
             raise RuntimeError("cannot start already-started client")
 
-        if self.sync_commands:
-            await self.sync_application_commands()
+        await self.sync_application_commands()
 
         self._started = True
 
@@ -896,7 +895,8 @@ class Client(abc.ABC):
                 for command_path, actual_command in all_commands.items():
                     self._command_invocation_mapping[snowflake][command_path].put(actual_command)
 
-        await sync.sync_application_commands(self)
+        if self.sync_commands:
+            await sync.sync_application_commands(self)
 
     @staticmethod
     def _get_subcommand(

@@ -32,9 +32,9 @@ all the utilities and functions you need to help make this job easier.
 </div>
 
 <details>
-    <summary>Be added to this list</summary>
-    
-    Have good bot :thumbsup:
+<summary>Be added to this list</summary>
+
+Have good bot :thumbsup:
 </details>
 
 ## Installation

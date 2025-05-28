@@ -8,6 +8,14 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a25 (2025-05-28)
+### Features
+
+- Add `permit_admin` argument to builtin permission check hooks.
+- Add `sync_commands` flag when constructing the Client instance.
+
+----
+
 ## v3.0.0a24 (2025-05-20)
 ### Bugfixes
 

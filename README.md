@@ -65,6 +65,7 @@ I would like to give a special thanks to my sponsors for providing the funding t
 this resource over the past 5+ years.
 
 - [nulldomain](https://github.com/null-domain)
+- [Invite Tracker](https://invite-tracker.com)
 
 ## Large Bots
 

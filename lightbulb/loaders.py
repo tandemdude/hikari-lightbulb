@@ -23,6 +23,7 @@ from __future__ import annotations
 __all__ = ["Loadable", "Loader"]
 
 import abc
+import functools
 import logging
 import typing as t
 
@@ -132,6 +133,7 @@ class _ListenerLoadable(Loadable):
             LOGGER.warning("skipping loading listener - bot is not event manager aware")
             return
 
+        @functools.wraps(self._callback)
         async def _wrapped(*args: t.Any, **kwargs: t.Any) -> t.Any:
             async with client.di.enter_context(di.Contexts.DEFAULT), client.di.enter_context(di.Contexts.LISTENER):
                 return await self._callback(*args, **kwargs)

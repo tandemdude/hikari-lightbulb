@@ -10,7 +10,7 @@ of the change. The fragment filename should be in the form `<pr number>.<type>.m
 
 - `breaking` - a breaking change
 - `removal` - removal of a feature
-- `deprectation` - a deprecation
+- `deprecation` - a deprecation
 - `feature` - addition of a feature
 - `bugfix` - a bugfix
 - `doc` - notable changes to the documentation

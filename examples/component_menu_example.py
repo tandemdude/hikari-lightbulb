@@ -89,7 +89,7 @@ class RoleSelectorMenu(lightbulb.components.Menu):
         try:
             # Extend the timeout of this menu to account for the sub-menu
             ctx.extend_timeout(30)
-            await confirm_menu.attach(client, wait=True, timeout=30)
+            await confirm_menu.attach(client, timeout=30)
         except asyncio.TimeoutError:
             await ctx.respond("Timed out", edit=True, components=[])
 
@@ -114,7 +114,7 @@ class GetRole(
         menu = RoleSelectorMenu(ctx.member)
         resp = await ctx.respond("Pick the role you want", components=menu)
         try:
-            await menu.attach(client, wait=True, timeout=30)
+            await menu.attach(client, timeout=30)
         except asyncio.TimeoutError:
             await ctx.edit_response(resp, "Timed out", components=[])
 

@@ -40,8 +40,8 @@ __all__ = [
 
 import abc
 import asyncio
+import contextlib
 import contextvars
-import functools
 import typing as t
 import uuid
 
@@ -56,7 +56,6 @@ from lightbulb.components import base
 if t.TYPE_CHECKING:
     from collections.abc import Awaitable
     from collections.abc import Callable
-    from collections.abc import Generator
     from collections.abc import Sequence
 
     import typing_extensions as t_ex
@@ -346,7 +345,7 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
         menu: Menu,
         interaction: hikari.ComponentInteraction,
         component: base.BaseComponent[special_endpoints.MessageActionRowBuilder],
-        _timeout: async_timeout.Timeout,
+        _timeout: async_timeout.Timeout | None,
         _stop_event: asyncio.Event,
         _initial_response_sent: asyncio.Event,
     ) -> None:
@@ -360,7 +359,7 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
         self.component: base.BaseComponent[special_endpoints.MessageActionRowBuilder] = component
         """The component that triggered the interaction for this context."""
 
-        self._timeout: async_timeout.Timeout = _timeout
+        self._timeout: async_timeout.Timeout | None = _timeout
         self._stop_event: asyncio.Event = _stop_event
         self._should_re_resolve_custom_ids: bool = False
 
@@ -403,6 +402,9 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
         Returns:
             :obj:`None`
         """
+        if self._timeout is None:
+            return
+
         self._timeout.shift(length)
 
     def set_timeout(self, timeout: float) -> None:
@@ -415,6 +417,9 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
         Returns:
             :obj:`None`
         """
+        if self._timeout is None:
+            return
+
         self._timeout.update(asyncio.get_running_loop().time() + timeout)
 
     def selected_values_for(self, select: Select[T]) -> Sequence[T]:
@@ -569,16 +574,38 @@ class MenuHandle:
     to block until the menu completes.
     """
 
-    __slots__ = ("_task",)
+    __slots__ = ("__am", "_stop_event", "_task")
 
-    def __init__(self, task: asyncio.Task[None]) -> None:
+    def __init__(
+        self,
+        task: asyncio.Task[None] | None,
+        stop_event: asyncio.Event,
+        _am: _MenuInteractionHandlerContainer | None = None,
+    ) -> None:
         self._task = task
+        self._stop_event = stop_event
 
-    def __await__(self) -> Generator[None, t.Any, None]:
+        self.__am: _MenuInteractionHandlerContainer | None = None
+
+    @property
+    def _am(self) -> _MenuInteractionHandlerContainer | None:
+        return self.__am
+
+    @_am.setter
+    def _am(self, am: _MenuInteractionHandlerContainer) -> None:
+        self.__am = am
+        if self._stop_event.is_set():
+            am._client._attached_menus.discard(am)
+
+    async def wait(self) -> None:
         # Slight bodge allowing suppression of error logging from tasks if they are
         # awaited before the execution completes.
+        if self._task is None:
+            await self._stop_event.wait()
+            return
+
         self._task.set_name(self._task.get_name() + "@suppress")
-        return self._task.__await__()
+        await self._task
 
     def stop_interacting(self) -> None:
         """
@@ -587,15 +614,68 @@ class MenuHandle:
         Returns:
             :obj:`None`
         """
-        self._task.cancel()
+        if self.__am is not None:
+            self.__am._client._attached_menus.discard(self.__am)
+
+        self._stop_event.set()
+        if self._task is not None:
+            self._task.cancel()
 
 
 class _MenuInteractionHandlerContainer:
-    __slots__ = ("custom_ids", "on_interaction")
+    __slots__ = ("_client", "_ctx", "_menu", "_stop_event", "_tm", "custom_ids")
 
-    def __init__(self, custom_ids: dict[str, base.BaseComponent[special_endpoints.MessageActionRowBuilder]]) -> None:
-        self.custom_ids: dict[str, base.BaseComponent[special_endpoints.MessageActionRowBuilder]] = custom_ids
-        self.on_interaction: Callable[[hikari.ComponentInteraction, asyncio.Event], t.Awaitable[None]] | None = None
+    def __init__(
+        self,
+        client: client_.Client,
+        menu: Menu,
+        tm: async_timeout.Timeout | None,
+        stop_event: asyncio.Event,
+        ctx: contextvars.Context | None,
+    ) -> None:
+        self._client = client
+        self._menu = menu
+        self._tm = tm
+        self._stop_event = stop_event
+        self._ctx = ctx
+
+        self.custom_ids: dict[str, base.BaseComponent[special_endpoints.MessageActionRowBuilder]] = {
+            c.custom_id: c for row in self._menu._rows for c in row if not isinstance(c, LinkButton)
+        }
+
+    async def on_interaction(
+        self, interaction: hikari.ComponentInteraction, initial_response_sent: asyncio.Event
+    ) -> None:
+        context = MenuContext(
+            client=self._client,
+            menu=self._menu,
+            interaction=interaction,
+            component=self.custom_ids[interaction.custom_id],
+            _timeout=self._tm,
+            _stop_event=self._stop_event,
+            _initial_response_sent=initial_response_sent,
+        )
+
+        token: contextvars.Token[linkd.Container | None] | None = None
+        if self._ctx is not None:
+            token = linkd.DI_CONTAINER.set(self._ctx.get(linkd.DI_CONTAINER))
+
+        try:
+            if not await self._menu.predicate(context):
+                return
+
+            callback: t.Callable[[MenuContext], t.Awaitable[None]] = getattr(context.component, "callback")
+            await callback(context)
+        finally:
+            if token is not None:
+                linkd.DI_CONTAINER.reset(token)
+
+            if self._stop_event.is_set():
+                self._client._attached_menus.discard(self)
+                return
+
+        if context._should_re_resolve_custom_ids:
+            self.custom_ids = {c.custom_id: c for row in self._menu._rows for c in row if not isinstance(c, LinkButton)}
 
 
 class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBuilder]):
@@ -902,79 +982,86 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
             )
         )
 
-    async def _run_menu(self, client: client_.Client, timeout: float | None) -> None:
-        am = _MenuInteractionHandlerContainer(
-            {c.custom_id: c for row in self._rows for c in row if not isinstance(c, LinkButton)}
-        )
-
-        stop_event = asyncio.Event()
-        ctx = contextvars.copy_context()
-
-        async def _handle_interaction(
-            interaction: hikari.ComponentInteraction, initial_response_sent: asyncio.Event, *, tm: async_timeout.Timeout
-        ) -> None:
-            context = MenuContext(
-                client=client,
-                menu=self,
-                interaction=interaction,
-                component=am.custom_ids[interaction.custom_id],
-                _timeout=tm,
-                _stop_event=stop_event,
-                _initial_response_sent=initial_response_sent,
-            )
-
-            token = linkd.DI_CONTAINER.set(ctx.get(linkd.DI_CONTAINER))
-            try:
-                if not await self.predicate(context):
-                    return
-
-                callback: t.Callable[[MenuContext], t.Awaitable[None]] = getattr(context.component, "callback")
-                await callback(context)
-            finally:
-                linkd.DI_CONTAINER.reset(token)
-
-            if context._should_re_resolve_custom_ids:
-                am.custom_ids = {c.custom_id: c for row in self._rows for c in row if not isinstance(c, LinkButton)}
-
-        try:
-            async with async_timeout.timeout(timeout) as tm:
-                am.on_interaction = functools.partial(_handle_interaction, tm=tm)
-                client._attached_menus.add(am)
-
-                await stop_event.wait()
-        finally:
-            client._attached_menus.remove(am)
-
-    async def attach(
-        self,
-        client: client_.Client,
-        *,
-        wait: bool = True,
-        timeout: float | None = 30,
-    ) -> MenuHandle:
+    async def attach(self, client: client_.Client, *, timeout: float | None = 30) -> None:
         """
-        Attach this menu to the given client, starting it. You may optionally wait for the menu to finish and/or
+        Attach this menu to the given client, starting it - and wait for it to terminate. You may optionally
         provide a timeout, after which an :obj:`asyncio.TimeoutError` will be raised.
+
+        If you wish to run the menu in the background, or wait on it later, you should use `.attach_persistent()`
+        instead.
 
         Args:
             client: The client to attach the menu to.
-            wait: Whether to wait for the menu to finish. Defaults to :obj:`True`.
-            timeout: The amount of time in seconds before the menu will time out. Defaults to `30` seconds.
+            timeout: The amount of time in seconds before the menu will time out. Defaults to `30` seconds. Set to
+                :obj:`None` to disable timeout.
 
         Returns:
-            An awaitable proxying the menu's interaction consumer. You can await this directly in order to wait
-            for the menu to finish if you passed ``wait=False``.
+            :obj:`None`
 
         Raises:
-            :obj:`asyncio.TimeoutError`: If the timeout is exceeded, and ``wait=True``. If you wait on the returned
-                awaitable instead, the error will be raised from that statement.
-        """
-        task = client._safe_create_task(self._run_menu(client, timeout))
-        wrapped = MenuHandle(task)
+            :obj:`asyncio.TimeoutError`: If the timeout is exceeded.
 
-        if wait:
-            await wrapped
-        return wrapped
+        See Also:
+            :meth:`~lightbulb.components.menus.Menu.attach_persistent`
+        """
+        stop_event, ctx = asyncio.Event(), contextvars.copy_context()
+
+        stack = contextlib.AsyncExitStack()
+        async with stack:
+            tm = None
+            if timeout is not None:
+                tm = await stack.enter_async_context(async_timeout.timeout(timeout))
+
+            am = _MenuInteractionHandlerContainer(client, self, tm, stop_event, ctx)
+            client._attached_menus.add(am)
+
+            try:
+                await stop_event.wait()
+            finally:
+                client._attached_menus.discard(am)
+
+    def attach_persistent(self, client: client_.Client, *, timeout: float | None = 30) -> MenuHandle:
+        """
+        Attach this menu to the given client, starting it in the background. You may optionally provide
+        a timeout, after which an :obj:`asyncio.TimeoutError` will be raised within the created task. This method
+        returns a proxy object allowing you to wait on menu termination, or stop the menu manually.
+
+        Args:
+            client: The client to attach the menu to.
+            timeout: The amount of time in seconds before the menu will time out. Defaults to `30` seconds. Set to
+                :obj:`None` to disable timeout.
+
+        Returns:
+            A proxy for the menu's interaction consumer. You can await `.wait()` on this in order
+            to wait for the menu to terminate. You may also call `.stop_interacting()` to manually stop the menu.
+
+        Note:
+            If you wait on a menu to terminate that had ``timeout=None``, it is possible that it will block
+            forever if the menu never terminates from within one of the component callbacks.
+        """
+        stop_event = asyncio.Event()
+
+        if timeout is None:
+            am = _MenuInteractionHandlerContainer(client, self, None, stop_event, None)
+            client._attached_menus.add(am)
+            return MenuHandle(None, stop_event, _am=am)
+
+        handle = MenuHandle(None, stop_event)
+
+        async def _run_with_timeout() -> None:
+            async with async_timeout.timeout(timeout) as tm:
+                am = _MenuInteractionHandlerContainer(client, self, tm, stop_event, None)
+                handle._am = am
+                client._attached_menus.add(am)
+
+                try:
+                    await stop_event.wait()
+                finally:
+                    client._attached_menus.discard(am)
+
+        task = client._safe_create_task(_run_with_timeout())
+        handle._task = task
+        return handle
 
     async def predicate(self, ctx: MenuContext) -> bool:
         """

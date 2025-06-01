@@ -8,6 +8,24 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0a26 (2025-06-01)
+### Breaking Changes
+
+- - Removed `wait` kwarg from the `Menu.attach` method - `wait=True` is now the only supported behaviour. For persistent menus, you should use the `Menu.attach_persistent` method instead.
+  - `MenuHandle` is no longer awaitable. You should await the `.wait()` method instead.
+
+  ([#569](https://github.com/tandemdude/hikari-lightbulb/issues/569))
+
+### Features
+
+- Add `Menu.attach_persistent` method to replace previous waiter functionality. ([#569](https://github.com/tandemdude/hikari-lightbulb/issues/569))
+
+### Miscellaneous
+
+- Optimised the number of asyncio tasks created when using menus to improve performance at a large scale. ([#569](https://github.com/tandemdude/hikari-lightbulb/issues/569))
+
+----
+
 ## v3.0.0a25 (2025-05-28)
 ### Features
 

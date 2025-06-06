@@ -1,6 +1,3 @@
-> [!NOTE]
-> This branch is for Lightbulb **version 3**. If you are looking for the V2 code you should switch to the `v2` branch instead.  
-
 <p align="center">
     <picture>
         <source media="(prefers-color-scheme: dark)" srcset="/docs/source/_static/lightbulb_logo_dark.svg">

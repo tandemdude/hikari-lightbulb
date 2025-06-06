@@ -8,6 +8,13 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.0 (2025-06-06)
+### Features
+
+- This is the first V3 stable release! From now on the number of breaking changes will be minimal and the API is considered stable. Any breaking changes will be preceded by a suitably long deprecation period.
+
+----
+
 ## v3.0.0a26 (2025-06-01)
 ### Breaking Changes
 

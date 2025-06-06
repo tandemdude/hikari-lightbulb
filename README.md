@@ -19,7 +19,7 @@ all the utilities and functions you need to help make this job easier.
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install Lightbulb.
 
 ```bash
-pip install --pre hikari-lightbulb
+pip install hikari-lightbulb
 ```
 
 ## Usage

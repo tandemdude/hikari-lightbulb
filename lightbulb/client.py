@@ -31,6 +31,7 @@ import pathlib
 import sys
 import typing as t
 
+import async_timeout
 import hikari
 import linkd
 
@@ -199,7 +200,10 @@ class Client(abc.ABC):
         if task.cancelled():
             return
 
-        if (exc := task.exception()) is not None and not task.get_name().endswith("@suppress"):
+        if (exc := task.exception()) is not None:
+            if isinstance(exc, asyncio.TimeoutError) and task.get_name().endswith("@notimeout"):
+                return
+
             asyncio.get_running_loop().call_exception_handler(
                 {
                     "message": "an exception occurred during task execution",
@@ -1129,15 +1133,19 @@ class Client(abc.ABC):
 
         await handler(interaction, initial_response_sent)
 
-    async def handle_interaction_create(self, interaction: hikari.PartialInteraction) -> None:
+    async def handle_interaction_create(
+        self, interaction: hikari.PartialInteraction, initial_response_sent_event: asyncio.Event | None = None
+    ) -> None:
+        initial_response_sent_event = initial_response_sent_event or asyncio.Event()
+
         if isinstance(interaction, hikari.AutocompleteInteraction):
-            await self.handle_autocomplete_interaction(interaction, asyncio.Event())
+            await self.handle_autocomplete_interaction(interaction, initial_response_sent_event)
         elif isinstance(interaction, hikari.CommandInteraction):
-            await self.handle_application_command_interaction(interaction, asyncio.Event())
+            await self.handle_application_command_interaction(interaction, initial_response_sent_event)
         elif isinstance(interaction, hikari.ComponentInteraction):
-            await self.handle_component_interaction(interaction, asyncio.Event())
+            await self.handle_component_interaction(interaction, initial_response_sent_event)
         elif isinstance(interaction, hikari.ModalInteraction):
-            await self.handle_modal_interaction(interaction, asyncio.Event())
+            await self.handle_modal_interaction(interaction, initial_response_sent_event)
 
 
 class GatewayEnabledClient(Client):
@@ -1212,10 +1220,10 @@ class RestEnabledClient(Client):
         super().__init__(app.rest, *args, **kwargs)
         self._app = app
 
-        app.interaction_server.set_listener(hikari.AutocompleteInteraction, self.handle_rest_autocomplete_interaction)
-        app.interaction_server.set_listener(hikari.CommandInteraction, self.handle_rest_application_command_interaction)
-        app.interaction_server.set_listener(hikari.ComponentInteraction, self.handle_rest_component_interaction)
-        app.interaction_server.set_listener(hikari.ModalInteraction, self.handle_rest_modal_interaction)
+        app.interaction_server.set_listener(hikari.AutocompleteInteraction, self.handle_rest_interaction)
+        app.interaction_server.set_listener(hikari.CommandInteraction, self.handle_rest_interaction)
+        app.interaction_server.set_listener(hikari.ComponentInteraction, self.handle_rest_interaction)
+        app.interaction_server.set_listener(hikari.ModalInteraction, self.handle_rest_interaction)
 
         if isinstance(app, hikari.RESTBot):
             self.di.registry_for(di_.Contexts.DEFAULT).register_value(hikari.RESTBot, app)
@@ -1225,38 +1233,15 @@ class RestEnabledClient(Client):
     def app(self) -> RestClientAppT:
         return self._app
 
-    async def handle_rest_autocomplete_interaction(
-        self, interaction: hikari.AutocompleteInteraction
-    ) -> AsyncGenerator[None, None]:
-        task = self._safe_create_task(self.handle_autocomplete_interaction(interaction, (ir := asyncio.Event())))
-        await ir.wait()
+    async def handle_rest_interaction(self, interaction: hikari.PartialInteraction) -> AsyncGenerator[None, None]:
+        task = self._safe_create_task(self.handle_interaction_create(interaction, (ir := asyncio.Event())))
+        try:
+            async with async_timeout.timeout(5):
+                await ir.wait()
+                yield None
+        except asyncio.TimeoutError:
+            task.cancel("timed out before creating initial response")
 
-        yield None
-        await task
-
-    async def handle_rest_application_command_interaction(
-        self, interaction: hikari.CommandInteraction
-    ) -> AsyncGenerator[None, None]:
-        task = self._safe_create_task(self.handle_application_command_interaction(interaction, (ir := asyncio.Event())))
-        await ir.wait()
-
-        yield None
-        await task
-
-    async def handle_rest_component_interaction(
-        self, interaction: hikari.ComponentInteraction
-    ) -> AsyncGenerator[None, None]:
-        task = self._safe_create_task(self.handle_component_interaction(interaction, (ir := asyncio.Event())))
-        await ir.wait()
-
-        yield None
-        await task
-
-    async def handle_rest_modal_interaction(self, interaction: hikari.ModalInteraction) -> AsyncGenerator[None, None]:
-        task = self._safe_create_task(self.handle_modal_interaction(interaction, (ir := asyncio.Event())))
-        await ir.wait()
-
-        yield None
         await task
 
 

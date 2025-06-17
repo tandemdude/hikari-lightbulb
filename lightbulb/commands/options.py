@@ -279,7 +279,7 @@ class ContextMenuOption(Option[CtxMenuOptionReturn, CtxMenuOptionReturn]):
         self, instance: commands.MessageCommand | None, owner: type[commands.MessageCommand]
     ) -> hikari.Message: ...
 
-    def __get__(self, instance: commands.CommandBase | None, owner: type[commands.CommandBase]) -> CtxMenuOptionReturn | T:
+    def __get__(self, instance: commands.CommandBase | None, owner: type[commands.CommandBase]) -> CtxMenuOptionReturn:
         if instance is None or getattr(instance, "_current_context", None) is None:
             return self._unbound_default
 

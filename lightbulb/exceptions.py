@@ -52,6 +52,10 @@ class LocalizationFailedException(LightbulbException):
     could not be resolved.
     """
 
+class ConversionFailedException(LightbulbException):
+    """
+    Exception raised when a command option conversion fails.
+    """
 
 class ExecutionException(LightbulbException):
     """Base class for exceptions that can be encountered during a command execution pipeline."""

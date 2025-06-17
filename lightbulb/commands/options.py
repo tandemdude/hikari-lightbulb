@@ -244,7 +244,7 @@ class Option(t.Generic[T, D]):
             raise ConversionFailedException from e
 
 
-class ContextMenuOption[T](Option[CtxMenuOptionReturn, CtxMenuOptionReturn]):
+class ContextMenuOption(Option[CtxMenuOptionReturn, CtxMenuOptionReturn]):
     """
     Special implementation of :obj:`~Option` to handle context menu command targets given that
     they do not count as an "option" and the ID is instead given through the ``target`` field on the
@@ -260,7 +260,7 @@ class ContextMenuOption[T](Option[CtxMenuOptionReturn, CtxMenuOptionReturn]):
 
     __slots__ = ("_type",)
 
-    def __init__(self, type_: type[CtxMenuOptionReturn], converter: t.Callable[[CtxMenuOptionReturn], T] | None = None) -> None:
+    def __init__(self, type_: type[CtxMenuOptionReturn]) -> None:
         self._type = type_
         super().__init__(
             OptionData(
@@ -269,7 +269,6 @@ class ContextMenuOption[T](Option[CtxMenuOptionReturn, CtxMenuOptionReturn]):
                 description="target",
             ),
             utils.EMPTY,
-            converter=converter
         )
 
     @t.overload
@@ -279,11 +278,6 @@ class ContextMenuOption[T](Option[CtxMenuOptionReturn, CtxMenuOptionReturn]):
     def __get__(
         self, instance: commands.MessageCommand | None, owner: type[commands.MessageCommand]
     ) -> hikari.Message: ...
-
-    @t.overload
-    def __get__(
-        self, instance: commands.MessageCommand | commands.UserCommand | None, owner: type[commands.MessageCommand] | type[commands.UserCommand]
-    ) -> T: ...
 
     def __get__(self, instance: commands.CommandBase | None, owner: type[commands.CommandBase]) -> CtxMenuOptionReturn | T:
         if instance is None or getattr(instance, "_current_context", None) is None:
@@ -298,11 +292,11 @@ class ContextMenuOption[T](Option[CtxMenuOptionReturn, CtxMenuOptionReturn]):
         if self._type is hikari.User:
             user = resolved.members.get(interaction.target_id) or resolved.users.get(interaction.target_id)
             assert isinstance(user, hikari.User)
-            return user if not self._converter else self._convert(user)
+            return user
 
         message = resolved.messages.get(interaction.target_id)
         assert isinstance(message, hikari.Message)
-        return message if not self._converter else self._convert(message)
+        return message
 
 @t.overload
 def string(

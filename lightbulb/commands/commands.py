@@ -383,11 +383,11 @@ class CommandBase:
                 # error lol
                 raise ValueError("no option resolved and no default provided")
 
-            return option._data.default
+            return option._data.default if not option._converter else option._convert(option._data.default)
 
         if option._data.type in _PRIMITIVE_OPTION_TYPES:
-            self._resolved_option_cache[option._data._localized_name] = found[0].value
-            return t.cast("T", found[0].value)
+            self._resolved_option_cache[option._data._localized_name] = converted = found[0].value if not option._converter else option._convert(found[0].value)
+            return t.cast("T", converted)
 
         snowflake = found[0].value
         resolved = context.interaction.resolved
@@ -408,8 +408,8 @@ class CommandBase:
         else:
             raise TypeError("unsupported option type passed")
 
-        self._resolved_option_cache[option._data._localized_name] = resolved_option
-        return t.cast("T", resolved_option)
+        self._resolved_option_cache[option._data._localized_name] = converted = resolved_option if not option._converter else option._convert(resolved_option)
+        return t.cast("T", converted)
 
     @classmethod
     async def as_command_builder(

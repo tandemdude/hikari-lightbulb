@@ -77,7 +77,7 @@ class Contexts:
     """DI context used during command invocation, including for hooks and error handlers."""
     AUTOCOMPLETE = linkd.global_context_registry.register("lightbulb.di.contexts.autocomplete", AutocompleteContainer)
     """DI context used during autocomplete invocation."""
-    OPTION_CONVERSION = linkd.global_context_registry.register("lightbulb.di.context.option_conversion", OptionConversionContainer)
+    OPTION_CONVERSION = linkd.global_context_registry.register("lightbulb.di.contexts.option_conversion", OptionConversionContainer)
     """DI context used during option conversion invocation."""
     LISTENER = linkd.global_context_registry.register("lightbulb.di.contexts.listener", ListenerContainer)
     """DI context used during listener invocation."""

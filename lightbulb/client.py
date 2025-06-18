@@ -1121,6 +1121,12 @@ class Client(abc.ABC):
 
         options, command = out
         context = self.build_command_context(interaction, options or [], command, initial_response_sent)
+        async with (
+                self.di.enter_context(di_.Contexts.DEFAULT),
+                self.di.enter_context(di_.Contexts.OPTION_CONVERSION) as container
+        ):
+            container.add_value(context_.Context, context)
+            await context.command._resolve_options()
         LOGGER.debug("invoking command - %r", command._command_data.qualified_name)
         await self._execute_command_context(context)
 

@@ -31,6 +31,7 @@ __all__ = [
     "ExecutionPipelineFailedException",
     "LightbulbException",
     "LocalizationFailedException",
+    "ConversionFailedException"
 ]
 
 import typing as t

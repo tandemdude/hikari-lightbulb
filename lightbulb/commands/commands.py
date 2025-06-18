@@ -357,59 +357,55 @@ class CommandBase:
         self._current_context = context
         self._resolved_option_cache = {}
 
-    def _resolve_option(self, option: options_.Option[T, D]) -> T | D:
+    async def _resolve_options(self) -> None:
         """
-        Resolves the actual value for the given option from the command's current
-        execution context. If the value has been resolved before and is available in the cache then
-        the cached value is returned instead.
-
-        Args:
-            option: The option to resolve the value for.
+        Resolves the actual option values for the command's current
+        execution context. The values will be then stored in the cache.
 
         Returns:
-            ``T`` | ``D``: The resolved value for the given option.
+            :obj:`None`
         """
         context = self._current_context
         if context is None:
-            raise RuntimeError("cannot resolve option if no context is available")
+            raise RuntimeError("cannot resolve options if no context is available")
 
-        if option._data._localized_name in self._resolved_option_cache:
-            return t.cast("T", self._resolved_option_cache[option._data._localized_name])
+        named_interaction_options = {option.name: option for option in context.options}
+        named_options: dict[str, options_.Option] = {option._data._localized_name: option for option in filter(lambda attr: isinstance(attr, options_.Option), vars(type(self)).values())}
 
-        found = [opt for opt in context.options if opt.name == option._data._localized_name]
+        for name, option in named_options.items():
+            if (name not in named_interaction_options.keys()) or (option._data.type not in _PRIMITIVE_OPTION_TYPES and context.interaction.resolved is None):
+                if option._data.default is hikari.UNDEFINED:
+                    # error lol
+                    raise ValueError(f"no option resolved and no default provided for option: {name}")
 
-        if not found or (option._data.type not in _PRIMITIVE_OPTION_TYPES and context.interaction.resolved is None):
-            if option._data.default is hikari.UNDEFINED:
-                # error lol
-                raise ValueError("no option resolved and no default provided")
+                self._resolved_option_cache[name] = option._data.default
+                continue
 
-            return option._data.default
+            value = named_interaction_options[name].value
+            if option._data.type in _PRIMITIVE_OPTION_TYPES:
+                self._resolved_option_cache[name] = value if not option._converter else await option._convert(context, value)
+                continue
 
-        if option._data.type in _PRIMITIVE_OPTION_TYPES:
-            self._resolved_option_cache[option._data._localized_name] = converted = found[0].value if not option._converter else option._convert(found[0].value)
-            return t.cast("T", converted)
+            snowflake = value
+            resolved = context.interaction.resolved
+            option_type = option._data.type
 
-        snowflake = found[0].value
-        resolved = context.interaction.resolved
-        option_type = option._data.type
+            assert isinstance(snowflake, hikari.Snowflake)
+            assert resolved is not None
 
-        assert isinstance(snowflake, hikari.Snowflake)
-        assert resolved is not None
+            resolved_option: t.Any
+            if option_type is hikari.OptionType.USER:
+                resolved_option = resolved.members.get(snowflake) or resolved.users[snowflake]
+            elif option_type is hikari.OptionType.ROLE:
+                resolved_option = resolved.roles[snowflake]
+            elif option_type is hikari.OptionType.CHANNEL:
+                resolved_option = resolved.channels[snowflake]
+            elif option_type is hikari.OptionType.ATTACHMENT:
+                resolved_option = resolved.attachments[snowflake]
+            else:
+                raise TypeError("unsupported option type passed")
 
-        resolved_option: t.Any
-        if option_type is hikari.OptionType.USER:
-            resolved_option = resolved.members.get(snowflake) or resolved.users[snowflake]
-        elif option_type is hikari.OptionType.ROLE:
-            resolved_option = resolved.roles[snowflake]
-        elif option_type is hikari.OptionType.CHANNEL:
-            resolved_option = resolved.channels[snowflake]
-        elif option_type is hikari.OptionType.ATTACHMENT:
-            resolved_option = resolved.attachments[snowflake]
-        else:
-            raise TypeError("unsupported option type passed")
-
-        self._resolved_option_cache[option._data._localized_name] = converted = resolved_option if not option._converter else option._convert(resolved_option)
-        return t.cast("T", converted)
+            self._resolved_option_cache[name] = resolved_option if not option._converter else await option._convert(context, resolved_option)
 
     @classmethod
     async def as_command_builder(

@@ -40,11 +40,13 @@ import typing as t
 
 import hikari
 
+import lightbulb
 from lightbulb import di
 from lightbulb import utils
 from lightbulb.commands import utils as cmd_utils
 from lightbulb.exceptions import ConversionFailedException
 from lightbulb.internal.utils import non_undefined_or
+from lightbulb.utils import maybe_await
 
 if t.TYPE_CHECKING:
     from collections.abc import Awaitable
@@ -55,6 +57,7 @@ if t.TYPE_CHECKING:
     from lightbulb import commands
     from lightbulb import context
     from lightbulb import localization
+    from lightbulb.utils import MaybeAwaitable
 
     AutocompleteProvider = Callable[[context.AutocompleteContext[context.T]], Awaitable[t.Any]]
 
@@ -226,7 +229,7 @@ class Option(t.Generic[T, D]):
 
     __slots__ = ("_data", "_unbound_default", "_converter")
 
-    def __init__(self, data: OptionData[D], default_when_not_bound: T, converter: t.Callable[[D], T] | None = None) -> None:
+    def __init__(self, data: OptionData[D], default_when_not_bound: T, converter: t.Callable[[lightbulb.Context, D], MaybeAwaitable[T]] | None = None) -> None:
         self._data = data
         self._unbound_default = default_when_not_bound
         self._converter = converter
@@ -235,14 +238,16 @@ class Option(t.Generic[T, D]):
         if instance is None or getattr(instance, "_current_context", None) is None:
             return self._unbound_default
 
-        return instance._resolve_option(self)
+        if not self._data._localized_name in instance._resolved_option_cache.keys():
+            raise RuntimeError(f"Tried to access option {self._data._localized_name} before resolving options.")
 
-    def _convert(self, data: D) -> T:
+        return t.cast("T", instance._resolved_option_cache[self._data._localized_name])
+
+    async def _convert(self, ctx: lightbulb.Context, value: D) -> T:
         try:
-            return self._converter(data)
+            return t.cast("T", await maybe_await(await di.with_di(self._converter)(ctx, value)))
         except Exception as e:
             raise ConversionFailedException from e
-
 
 class ContextMenuOption(Option[CtxMenuOptionReturn, CtxMenuOptionReturn]):
     """
@@ -318,7 +323,7 @@ def string(
     description: str,
     /,
     *,
-    converter: t.Callable[[str], T],
+    converter: t.Callable[[lightbulb.Context, str], MaybeAwaitable[T]],
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
     choices: hikari.UndefinedOr[Sequence[Choice[str]]] = hikari.UNDEFINED,
@@ -332,7 +337,7 @@ def string(
     description: str,
     /,
     *,
-    converter: t.Callable[[str], T] | None = None,
+    converter: t.Callable[[lightbulb.Context, str], MaybeAwaitable[T]] | None = None,
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
     choices: hikari.UndefinedOr[Sequence[Choice[str]]] = hikari.UNDEFINED,

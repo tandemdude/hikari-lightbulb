@@ -30,6 +30,8 @@ from collections.abc import Sequence
 
 import hikari
 
+from lightbulb import exceptions
+from lightbulb import utils as main_utils
 from lightbulb.commands import execution
 from lightbulb.commands import options as options_
 from lightbulb.commands import utils
@@ -357,6 +359,18 @@ class CommandBase:
         self._current_context = context
         self._resolved_option_cache = {}
 
+    async def convert_option(self, option: options_.Option[T, D], value: D) -> T:
+        if not self._current_context:
+            raise RuntimeError("tried to convert an option before setting context.")
+
+        if not option._converter:
+            raise RuntimeError("tried to convert an option without a converter.")
+
+        try:
+            return await main_utils.maybe_await(option._converter(self._current_context, value))
+        except Exception as e:
+            raise exceptions.ConversionFailedException(self._current_context, option, value) from e
+
     async def _resolve_options(self) -> None:
         """
         Resolves the actual option values for the command's current
@@ -369,28 +383,34 @@ class CommandBase:
         if context is None:
             raise RuntimeError("cannot resolve options if no context is available")
 
-        named_interaction_options = {option.name: option for option in context.options}
-        named_options = {option._data._localized_name: option for option in filter(lambda attr: isinstance(attr, options_.Option), vars(type(self)).values())}
+        named_interaction_options = {opt.name: opt for opt in context.options}
+        resolved = context.interaction.resolved
 
-        for name, option in named_options.items():
-            if (name not in named_interaction_options.keys()) or (option._data.type not in _PRIMITIVE_OPTION_TYPES and context.interaction.resolved is None):
+        for attr in vars(type(self)).values():
+            if not isinstance(attr, options_.Option):
+                continue
+
+            option = t.cast("options_.Option[t.Any, t.Any]", attr)
+            name = option._data._localized_name
+            interaction_option = named_interaction_options.get(name)
+
+            if not interaction_option or (option._data.type not in _PRIMITIVE_OPTION_TYPES and resolved is None):
                 if option._data.default is hikari.UNDEFINED:
                     # error lol
                     raise ValueError(f"no option resolved and no default provided for option: {name}")
-
                 self._resolved_option_cache[name] = option._data.default
                 continue
-
-            value = named_interaction_options[name].value
-            if option._data.type in _PRIMITIVE_OPTION_TYPES:
-                self._resolved_option_cache[name] = value if not option._converter else await option._convert(value)
-                continue
-
-            resolved = context.interaction.resolved
+            value = interaction_option.value
             option_type = option._data.type
 
+            if option_type in _PRIMITIVE_OPTION_TYPES:
+                self._resolved_option_cache[name] = (
+                    value if not option._converter else await self.convert_option(option, value)
+                )
+                continue
+
             assert isinstance(value, hikari.Snowflake)
-            assert resolved is not None
+            assert resolved
 
             resolved_option: t.Any
             if option_type is hikari.OptionType.USER:
@@ -404,7 +424,9 @@ class CommandBase:
             else:
                 raise TypeError("unsupported option type passed")
 
-            self._resolved_option_cache[name] = resolved_option if not option._converter else await option._convert(resolved_option)
+            self._resolved_option_cache[name] = (
+                resolved_option if not option._converter else await self.convert_option(resolved_option, value)
+            )
 
     @classmethod
     async def as_command_builder(

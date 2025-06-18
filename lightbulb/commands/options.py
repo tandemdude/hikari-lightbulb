@@ -40,13 +40,10 @@ import typing as t
 
 import hikari
 
-import lightbulb
 from lightbulb import di
 from lightbulb import utils
 from lightbulb.commands import utils as cmd_utils
-from lightbulb.exceptions import ConversionFailedException
 from lightbulb.internal.utils import non_undefined_or
-from lightbulb.utils import maybe_await
 
 if t.TYPE_CHECKING:
     from collections.abc import Awaitable
@@ -227,9 +224,14 @@ class Option(t.Generic[T, D]):
         :meth:`~attachment`
     """
 
-    __slots__ = ("_data", "_unbound_default", "_converter")
+    __slots__ = ("_converter", "_data", "_unbound_default")
 
-    def __init__(self, data: OptionData[D], default_when_not_bound: T, converter: t.Callable[[D], types.MaybeAwaitable[T]] | None = None) -> None:
+    def __init__(
+        self,
+        data: OptionData[D],
+        default_when_not_bound: T,
+        converter: t.Callable[[context.Context, D], types.MaybeAwaitable[T]] | None = None,
+    ) -> None:
         self._data = data
         self._unbound_default = default_when_not_bound
         self._converter = converter
@@ -238,16 +240,11 @@ class Option(t.Generic[T, D]):
         if instance is None or getattr(instance, "_current_context", None) is None:
             return self._unbound_default
 
-        if not self._data._localized_name in instance._resolved_option_cache.keys():
+        if self._data._localized_name not in instance._resolved_option_cache:
             raise RuntimeError(f"Tried to access option {self._data._localized_name} before resolving options.")
 
         return t.cast("T", instance._resolved_option_cache[self._data._localized_name])
 
-    async def _convert(self, value: D) -> T:
-        try:
-            return t.cast("T", await maybe_await(di.with_di(self._converter)(value)))
-        except Exception as e:
-            raise ConversionFailedException(f"Failed to convert {value} for option {self._data._localized_name}") from e
 
 class ContextMenuOption(Option[CtxMenuOptionReturn, CtxMenuOptionReturn]):
     """
@@ -303,6 +300,7 @@ class ContextMenuOption(Option[CtxMenuOptionReturn, CtxMenuOptionReturn]):
         assert isinstance(message, hikari.Message)
         return message
 
+
 @t.overload
 def string(
     name: str,
@@ -317,13 +315,14 @@ def string(
     autocomplete: hikari.UndefinedOr[AutocompleteProvider[str]] = hikari.UNDEFINED,
 ) -> str | D: ...
 
+
 @t.overload
 def string(
     name: str,
     description: str,
     /,
     *,
-    converter: t.Callable[[str], types.MaybeAwaitable[T]],
+    converter: t.Callable[[context.Context, D], types.MaybeAwaitable[T]],
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
     choices: hikari.UndefinedOr[Sequence[Choice[str]]] = hikari.UNDEFINED,
@@ -332,12 +331,13 @@ def string(
     autocomplete: hikari.UndefinedOr[AutocompleteProvider[str]] = hikari.UNDEFINED,
 ) -> T | D: ...
 
+
 def string(
     name: str,
     description: str,
     /,
     *,
-    converter: t.Callable[[str], types.MaybeAwaitable[T]] | None = None,
+    converter: t.Callable[[context.Context, D], types.MaybeAwaitable[T]] | None = None,
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
     choices: hikari.UndefinedOr[Sequence[Choice[str]]] = hikari.UNDEFINED,

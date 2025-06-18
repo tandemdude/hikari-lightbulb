@@ -383,29 +383,28 @@ class CommandBase:
 
             value = named_interaction_options[name].value
             if option._data.type in _PRIMITIVE_OPTION_TYPES:
-                self._resolved_option_cache[name] = value if not option._converter else await option._convert(context, value)
+                self._resolved_option_cache[name] = value if not option._converter else await option._convert(value)
                 continue
 
-            snowflake = value
             resolved = context.interaction.resolved
             option_type = option._data.type
 
-            assert isinstance(snowflake, hikari.Snowflake)
+            assert isinstance(value, hikari.Snowflake)
             assert resolved is not None
 
             resolved_option: t.Any
             if option_type is hikari.OptionType.USER:
-                resolved_option = resolved.members.get(snowflake) or resolved.users[snowflake]
+                resolved_option = resolved.members.get(value) or resolved.users[value]
             elif option_type is hikari.OptionType.ROLE:
-                resolved_option = resolved.roles[snowflake]
+                resolved_option = resolved.roles[value]
             elif option_type is hikari.OptionType.CHANNEL:
-                resolved_option = resolved.channels[snowflake]
+                resolved_option = resolved.channels[value]
             elif option_type is hikari.OptionType.ATTACHMENT:
-                resolved_option = resolved.attachments[snowflake]
+                resolved_option = resolved.attachments[value]
             else:
                 raise TypeError("unsupported option type passed")
 
-            self._resolved_option_cache[name] = resolved_option if not option._converter else await option._convert(context, resolved_option)
+            self._resolved_option_cache[name] = resolved_option if not option._converter else await option._convert(resolved_option)
 
     @classmethod
     async def as_command_builder(

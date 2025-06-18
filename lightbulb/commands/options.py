@@ -229,7 +229,7 @@ class Option(t.Generic[T, D]):
 
     __slots__ = ("_data", "_unbound_default", "_converter")
 
-    def __init__(self, data: OptionData[D], default_when_not_bound: T, converter: t.Callable[[lightbulb.Context, D], MaybeAwaitable[T]] | None = None) -> None:
+    def __init__(self, data: OptionData[D], default_when_not_bound: T, converter: t.Callable[[D], MaybeAwaitable[T]] | None = None) -> None:
         self._data = data
         self._unbound_default = default_when_not_bound
         self._converter = converter
@@ -241,13 +241,13 @@ class Option(t.Generic[T, D]):
         if not self._data._localized_name in instance._resolved_option_cache.keys():
             raise RuntimeError(f"Tried to access option {self._data._localized_name} before resolving options.")
 
-        return t.cast("T", instance._resolved_option_cache[self._data._localized_name])
+        return t.cast(T, instance._resolved_option_cache[self._data._localized_name])
 
-    async def _convert(self, ctx: lightbulb.Context, value: D) -> T:
+    async def _convert(self, value: D) -> T:
         try:
-            return t.cast("T", await maybe_await(await di.with_di(self._converter)(ctx, value)))
+            return t.cast(T, await maybe_await(di.with_di(self._converter)(value)))
         except Exception as e:
-            raise ConversionFailedException from e
+            raise ConversionFailedException(f"Failed to convert {value} for option {self._data._localized_name}") from e
 
 class ContextMenuOption(Option[CtxMenuOptionReturn, CtxMenuOptionReturn]):
     """
@@ -323,7 +323,7 @@ def string(
     description: str,
     /,
     *,
-    converter: t.Callable[[lightbulb.Context, str], MaybeAwaitable[T]],
+    converter: t.Callable[[str], MaybeAwaitable[T]],
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
     choices: hikari.UndefinedOr[Sequence[Choice[str]]] = hikari.UNDEFINED,
@@ -337,7 +337,7 @@ def string(
     description: str,
     /,
     *,
-    converter: t.Callable[[lightbulb.Context, str], MaybeAwaitable[T]] | None = None,
+    converter: t.Callable[[str], MaybeAwaitable[T]] | None = None,
     localize: bool = False,
     default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
     choices: hikari.UndefinedOr[Sequence[Choice[str]]] = hikari.UNDEFINED,

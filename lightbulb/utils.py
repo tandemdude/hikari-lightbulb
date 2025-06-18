@@ -20,13 +20,12 @@
 # SOFTWARE.
 from __future__ import annotations
 
-__all__ = ["EMPTY", "get_command_data", "maybe_await", "MaybeAwaitable"]
+__all__ = ["EMPTY", "get_command_data", "maybe_await"]
 
 import inspect
 import typing as t
 
 from lightbulb.internal import marker
-from linkd.utils import MaybeAwaitable
 
 if t.TYPE_CHECKING:
     from lightbulb.commands import commands

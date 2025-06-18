@@ -370,7 +370,7 @@ class CommandBase:
             raise RuntimeError("cannot resolve options if no context is available")
 
         named_interaction_options = {option.name: option for option in context.options}
-        named_options: dict[str, options_.Option] = {option._data._localized_name: option for option in filter(lambda attr: isinstance(attr, options_.Option), vars(type(self)).values())}
+        named_options = {option._data._localized_name: option for option in filter(lambda attr: isinstance(attr, options_.Option), vars(type(self)).values())}
 
         for name, option in named_options.items():
             if (name not in named_interaction_options.keys()) or (option._data.type not in _PRIMITIVE_OPTION_TYPES and context.interaction.resolved is None):

@@ -56,6 +56,8 @@ CommandContainer = t.NewType("CommandContainer", linkd.Container)
 """Injectable type representing the dependency container for the command context."""
 AutocompleteContainer = t.NewType("AutocompleteContainer", linkd.Container)
 """Injectable type representing the dependency container for the autocomplete context."""
+OptionConversionContainer = t.NewType("OptionConversionContainer", linkd.Container)
+"""Injectable type representing the dependency container for the option conversion context."""
 ListenerContainer = t.NewType("ListenerContainer", linkd.Container)
 """Injectable type representing the dependency container for the listener context."""
 TaskContainer = t.NewType("TaskContainer", linkd.Container)
@@ -75,6 +77,8 @@ class Contexts:
     """DI context used during command invocation, including for hooks and error handlers."""
     AUTOCOMPLETE = linkd.global_context_registry.register("lightbulb.di.contexts.autocomplete", AutocompleteContainer)
     """DI context used during autocomplete invocation."""
+    OPTION_CONVERSION = linkd.global_context_registry.register("lightbulb.di.context.option_conversion", OptionConversionContainer)
+    """DI context used during option conversion invocation."""
     LISTENER = linkd.global_context_registry.register("lightbulb.di.contexts.listener", ListenerContainer)
     """DI context used during listener invocation."""
     TASK = linkd.global_context_registry.register("lightbulb.di.contexts.task", TaskContainer)

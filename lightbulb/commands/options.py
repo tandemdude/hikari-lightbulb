@@ -54,6 +54,7 @@ if t.TYPE_CHECKING:
     from lightbulb import commands
     from lightbulb import context
     from lightbulb import localization
+    from lightbulb.internal import types
 
     AutocompleteProvider = Callable[[context.AutocompleteContext[context.T]], Awaitable[t.Any]]
 
@@ -223,17 +224,26 @@ class Option(t.Generic[T, D]):
         :meth:`~attachment`
     """
 
-    __slots__ = ("_data", "_unbound_default")
+    __slots__ = ("_converter", "_data", "_unbound_default")
 
-    def __init__(self, data: OptionData[D], default_when_not_bound: T) -> None:
+    def __init__(
+        self,
+        data: OptionData[D],
+        default_when_not_bound: T,
+        converter: t.Callable[[context.Context, D], types.MaybeAwaitable[T]] | None = None,
+    ) -> None:
         self._data = data
         self._unbound_default = default_when_not_bound
+        self._converter = converter
 
     def __get__(self, instance: commands.CommandBase | None, owner: type[commands.CommandBase]) -> T | D:
         if instance is None or getattr(instance, "_current_context", None) is None:
             return self._unbound_default
 
-        return instance._resolve_option(self)
+        if self._data._localized_name not in instance._resolved_option_cache:
+            raise RuntimeError(f"Tried to access option {self._data._localized_name} before resolving options.")
+
+        return t.cast("T", instance._resolved_option_cache[self._data._localized_name])
 
 
 class ContextMenuOption(Option[CtxMenuOptionReturn, CtxMenuOptionReturn]):
@@ -291,6 +301,7 @@ class ContextMenuOption(Option[CtxMenuOptionReturn, CtxMenuOptionReturn]):
         return message
 
 
+@t.overload
 def string(
     name: str,
     description: str,
@@ -302,13 +313,45 @@ def string(
     min_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     max_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     autocomplete: hikari.UndefinedOr[AutocompleteProvider[str]] = hikari.UNDEFINED,
-) -> str | D:
+) -> str | D: ...
+
+
+@t.overload
+def string(
+    name: str,
+    description: str,
+    /,
+    *,
+    converter: t.Callable[[context.Context, D], types.MaybeAwaitable[T]],
+    localize: bool = False,
+    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
+    choices: hikari.UndefinedOr[Sequence[Choice[str]]] = hikari.UNDEFINED,
+    min_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
+    max_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
+    autocomplete: hikari.UndefinedOr[AutocompleteProvider[str]] = hikari.UNDEFINED,
+) -> T | D: ...
+
+
+def string(
+    name: str,
+    description: str,
+    /,
+    *,
+    converter: t.Callable[[context.Context, D], types.MaybeAwaitable[T]] | None = None,
+    localize: bool = False,
+    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
+    choices: hikari.UndefinedOr[Sequence[Choice[str]]] = hikari.UNDEFINED,
+    min_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
+    max_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
+    autocomplete: hikari.UndefinedOr[AutocompleteProvider[str]] = hikari.UNDEFINED,
+) -> str | T | D:
     """
     A string option.
 
     Args:
         name: The name of the option.
         description: The description of the option.
+        converter: The converter to be used to convert the value to type `T`.
         localize: Whether to localize this option's name and description. If :obj:`True`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
@@ -321,24 +364,23 @@ def string(
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
     """
-    return t.cast(
-        "str",
-        Option(
-            OptionData(
-                type=hikari.OptionType.STRING,
-                name=name,
-                description=description,
-                localize=localize,
-                default=default,
-                choices=choices,
-                min_length=min_length,
-                max_length=max_length,
-                autocomplete=autocomplete is not hikari.UNDEFINED,
-                autocomplete_provider=autocomplete,
-            ),
-            utils.EMPTY,
+    opt = Option(
+        OptionData(
+            type=hikari.OptionType.STRING,
+            name=name,
+            description=description,
+            localize=localize,
+            default=default,
+            choices=choices,
+            min_length=min_length,
+            max_length=max_length,
+            autocomplete=autocomplete is not hikari.UNDEFINED,
+            autocomplete_provider=autocomplete,
         ),
+        utils.EMPTY,
+        converter=converter,
     )
+    return t.cast("str", opt) if not converter else t.cast("T", opt)
 
 
 def integer(

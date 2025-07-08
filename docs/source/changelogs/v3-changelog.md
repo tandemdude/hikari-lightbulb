@@ -8,6 +8,17 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.1 (2025-06-09)
+### Bugfixes
+
+- Fix memory leak when a handler errors before submitting an initial response within REST-based interactions.
+
+### Miscellaneous
+
+- Silence TimeoutError from being logged when using persistent menus with timeouts enabled.
+
+----
+
 ## v3.0.0 (2025-06-06)
 ### Features
 

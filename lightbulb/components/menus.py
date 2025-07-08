@@ -598,13 +598,10 @@ class MenuHandle:
             am._client._attached_menus.discard(am)
 
     async def wait(self) -> None:
-        # Slight bodge allowing suppression of error logging from tasks if they are
-        # awaited before the execution completes.
         if self._task is None:
             await self._stop_event.wait()
             return
 
-        self._task.set_name(self._task.get_name() + "@suppress")
         await self._task
 
     def stop_interacting(self) -> None:
@@ -1059,7 +1056,10 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
                 finally:
                     client._attached_menus.discard(am)
 
+        # Always suppress timeout exceptions from being logged to prevent clutter
         task = client.safe_create_task(_run_with_timeout())
+        task.set_name(task.get_name() + "@notimeout")
+
         handle._task = task
         return handle
 

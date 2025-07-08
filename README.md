@@ -63,6 +63,7 @@ this resource over the past 5+ years.
 
 - [nulldomain](https://github.com/null-domain)
 - [Invite Tracker](https://invite-tracker.com)
+- [Forbidden-A](https://github.com/Forbidden-A)
 
 ## Large Bots
 

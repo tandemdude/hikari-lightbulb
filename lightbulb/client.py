@@ -278,6 +278,8 @@ class Client(abc.ABC):
 
     def safe_create_task(self, coro: Coroutine[None, None, T]) -> asyncio.Task[T]:
         """
+        Safely create an asyncio task.
+
         Asyncio tasks to be stored in some variable or collection to avoid cancellation
         due a GC cycle. This function handles storing the task until completion, as well as
         registering a done callback to report any errors the task may have raised to the asyncio

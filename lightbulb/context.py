@@ -95,7 +95,7 @@ class AutocompleteContext(t.Generic[T]):
 
     @property
     def initial_response_sent(self) -> asyncio.Event:
-        """The event for initial response sent for the interaction."""
+        """The initial response sent event."""
         return self._initial_response_sent
 
     def get_option(self, name: str) -> hikari.AutocompleteInteractionOption | None:
@@ -167,7 +167,7 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
 
     @property
     def initial_response_sent(self) -> asyncio.Event:
-        """The event for initial response sent for the interaction."""
+        """The initial response sent event."""
         return self._initial_response_sent
 
     async def edit_response(

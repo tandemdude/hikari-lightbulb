@@ -1057,7 +1057,7 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
                     client._attached_menus.discard(am)
 
         # Always suppress timeout exceptions from being logged to prevent clutter
-        task = client._safe_create_task(_run_with_timeout())
+        task = client.safe_create_task(_run_with_timeout())
         task.set_name(task.get_name() + "@notimeout")
 
         handle._task = task

@@ -1059,7 +1059,7 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
                 finally:
                     client._attached_menus.discard(am)
 
-        task = client._safe_create_task(_run_with_timeout())
+        task = client.safe_create_task(_run_with_timeout())
         handle._task = task
         return handle
 

@@ -93,6 +93,11 @@ class AutocompleteContext(t.Generic[T]):
         self._focused = found
         return self._focused
 
+    @property
+    def initial_response_sent(self) -> asyncio.Event:
+        """The event for initial response sent for the interaction."""
+        return self._initial_response_sent
+
     def get_option(self, name: str) -> hikari.AutocompleteInteractionOption | None:
         """
         Get the option with the given name if available. If the option has localization enabled, you should
@@ -159,6 +164,11 @@ class MessageResponseMixin(abc.ABC, t.Generic[RespondableInteractionT]):
     @abc.abstractmethod
     def interaction(self) -> RespondableInteractionT:
         """The interaction that this context is for."""
+
+    @property
+    def initial_response_sent(self) -> asyncio.Event:
+        """The event for initial response sent for the interaction."""
+        return self._initial_response_sent
 
     async def edit_response(
         self,

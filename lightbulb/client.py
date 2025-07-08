@@ -196,6 +196,7 @@ class Client(abc.ABC):
 
     def _handle_task_done(self, task: asyncio.Task[t.Any]) -> None:
         self._asyncio_tasks.discard(task)
+
         if task.cancelled():
             return
 
@@ -207,12 +208,6 @@ class Client(abc.ABC):
                     "task": task,
                 }
             )
-
-    def _safe_create_task(self, coro: Coroutine[None, None, T]) -> asyncio.Task[T]:
-        task = asyncio.create_task(coro)
-        self._asyncio_tasks.add(task)
-        task.add_done_callback(self._handle_task_done)
-        return task
 
     @property
     @abc.abstractmethod
@@ -276,6 +271,25 @@ class Client(abc.ABC):
         Global commands are stored at the key :data:`lightbulb.internal.constants.GLOBAL_COMMAND_KEY`.
         """
         return self._created_commands
+
+    def safe_create_task(self, coro: Coroutine[None, None, T]) -> asyncio.Task[T]:
+        """Safely create an asyncio task.
+
+        Asyncio tasks to be stored in some variable or collection to avoid cancellation
+        due a GC cycle. This function handles storing the task until completion, as well as
+        registering a done callback to report any errors the task may have raised to the asyncio
+        exception handler.
+
+        Args:
+            coro: The coroutine to run in the task.
+
+        Returns:
+            The created task.
+        """
+        task = asyncio.create_task(coro)
+        self._asyncio_tasks.add(task)
+        task.add_done_callback(self._handle_task_done)
+        return task
 
     async def start(self, *_: t.Any) -> None:
         """
@@ -1228,7 +1242,7 @@ class RestEnabledClient(Client):
     async def handle_rest_autocomplete_interaction(
         self, interaction: hikari.AutocompleteInteraction
     ) -> AsyncGenerator[None, None]:
-        task = self._safe_create_task(self.handle_autocomplete_interaction(interaction, (ir := asyncio.Event())))
+        task = self.safe_create_task(self.handle_autocomplete_interaction(interaction, (ir := asyncio.Event())))
         await ir.wait()
 
         yield None
@@ -1237,7 +1251,7 @@ class RestEnabledClient(Client):
     async def handle_rest_application_command_interaction(
         self, interaction: hikari.CommandInteraction
     ) -> AsyncGenerator[None, None]:
-        task = self._safe_create_task(self.handle_application_command_interaction(interaction, (ir := asyncio.Event())))
+        task = self.safe_create_task(self.handle_application_command_interaction(interaction, (ir := asyncio.Event())))
         await ir.wait()
 
         yield None
@@ -1246,14 +1260,14 @@ class RestEnabledClient(Client):
     async def handle_rest_component_interaction(
         self, interaction: hikari.ComponentInteraction
     ) -> AsyncGenerator[None, None]:
-        task = self._safe_create_task(self.handle_component_interaction(interaction, (ir := asyncio.Event())))
+        task = self.safe_create_task(self.handle_component_interaction(interaction, (ir := asyncio.Event())))
         await ir.wait()
 
         yield None
         await task
 
     async def handle_rest_modal_interaction(self, interaction: hikari.ModalInteraction) -> AsyncGenerator[None, None]:
-        task = self._safe_create_task(self.handle_modal_interaction(interaction, (ir := asyncio.Event())))
+        task = self.safe_create_task(self.handle_modal_interaction(interaction, (ir := asyncio.Event())))
         await ir.wait()
 
         yield None

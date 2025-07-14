@@ -8,6 +8,14 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.2 (2025-07-14)
+### Features
+
+- Expose `Context.initial_response_sent` and `Client.safe_create_task` ([#578](https://github.com/tandemdude/hikari-lightbulb/issues/578))
+- Allow modals to return values from the `on_submit` handler, which will in turn be returned from the call to `modal.attach`. ([#581](https://github.com/tandemdude/hikari-lightbulb/issues/581))
+
+----
+
 ## v3.0.1 (2025-06-09)
 ### Bugfixes
 

@@ -34,6 +34,7 @@ import uuid
 import async_timeout
 import hikari
 import linkd
+import typing_extensions as t_ex
 from hikari.api import special_endpoints
 from hikari.impl import special_endpoints as special_endpoints_impl
 
@@ -44,7 +45,7 @@ from lightbulb.internal import marker
 if t.TYPE_CHECKING:
     from lightbulb import client as client_
 
-R = t.TypeVar("R")
+R = t_ex.TypeVar("R", default=t.Any)
 ModalComponentT = t.TypeVar("ModalComponentT", bound=base.BaseComponent[special_endpoints.ModalActionRowBuilder])
 
 _MISSING = marker.Marker("MISSING")

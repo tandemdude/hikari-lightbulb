@@ -34,16 +34,21 @@ import uuid
 import async_timeout
 import hikari
 import linkd
+import typing_extensions as t_ex
 from hikari.api import special_endpoints
 from hikari.impl import special_endpoints as special_endpoints_impl
 
 from lightbulb import context
 from lightbulb.components import base
+from lightbulb.internal import marker
 
 if t.TYPE_CHECKING:
     from lightbulb import client as client_
 
+R = t_ex.TypeVar("R", default=t.Any)
 ModalComponentT = t.TypeVar("ModalComponentT", bound=base.BaseComponent[special_endpoints.ModalActionRowBuilder])
+
+_MISSING = marker.Marker("MISSING")
 
 
 class TextInput(base.BaseComponent[special_endpoints.ModalActionRowBuilder]):
@@ -97,7 +102,7 @@ class TextInput(base.BaseComponent[special_endpoints.ModalActionRowBuilder]):
         )
 
 
-class ModalContext(context.MessageResponseMixin[hikari.ModalInteraction]):
+class ModalContext(context.MessageResponseMixin[hikari.ModalInteraction], t.Generic[R]):
     """Class representing the context for a modal interaction."""
 
     __slots__ = ("_interaction", "client", "modal")
@@ -105,7 +110,7 @@ class ModalContext(context.MessageResponseMixin[hikari.ModalInteraction]):
     def __init__(
         self,
         client: client_.Client,
-        modal: Modal,
+        modal: Modal[R],
         interaction: hikari.ModalInteraction,
         initial_response_sent: asyncio.Event,
     ) -> None:
@@ -113,7 +118,7 @@ class ModalContext(context.MessageResponseMixin[hikari.ModalInteraction]):
 
         self.client: client_.Client = client
         """The client that is handling interactions for this context."""
-        self.modal: Modal = modal
+        self.modal: Modal[R] = modal
         """The modal this context is for."""
         self._interaction: hikari.ModalInteraction = interaction
 
@@ -159,7 +164,9 @@ class ModalContext(context.MessageResponseMixin[hikari.ModalInteraction]):
         return None
 
 
-class Modal(base.BuildableComponentContainer[special_endpoints.ModalActionRowBuilder], abc.ABC):
+class Modal(
+    base.BuildableComponentContainer[special_endpoints.ModalActionRowBuilder], t.Generic[R], metaclass=abc.ABCMeta
+):
     """Class representing a modal."""
 
     __slots__ = ()
@@ -258,7 +265,7 @@ class Modal(base.BuildableComponentContainer[special_endpoints.ModalActionRowBui
             )
         )
 
-    async def attach(self, client: client_.Client, custom_id: str, *, timeout: float = 30) -> None:
+    async def attach(self, client: client_.Client, custom_id: str, *, timeout: float = 30) -> R:
         """
         Attach this modal to the given client, starting the interaction listener for it.
 
@@ -268,13 +275,19 @@ class Modal(base.BuildableComponentContainer[special_endpoints.ModalActionRowBui
             timeout: The number of seconds to wait for the correct modal interaction before timing out.
 
         Returns:
-            :obj:`None`
+            ``R``: the return value from your ``on_submit`` method.
 
         Raises:
             :obj:`asyncio.TimeoutError`: If the timeout is exceeded.
+
+        .. versionadded:: 3.0.2
+            Allow values returned from ``on_submit`` to be returned from this method.
         """
         stopped = asyncio.Event()
         ctx = contextvars.copy_context()
+
+        # have to use the missing sentinel to prevent an unbound false positive
+        r_val: R = _MISSING  # type: ignore[reportAssignmentType]
 
         async def _handle_interaction(
             interaction: hikari.ModalInteraction, initial_response_sent: asyncio.Event
@@ -285,7 +298,8 @@ class Modal(base.BuildableComponentContainer[special_endpoints.ModalActionRowBui
 
             token = linkd.DI_CONTAINER.set(ctx.get(linkd.DI_CONTAINER))
             try:
-                await self.on_submit(context)
+                nonlocal r_val
+                r_val = await self.on_submit(context)
                 stopped.set()
             finally:
                 linkd.DI_CONTAINER.reset(token)
@@ -294,11 +308,12 @@ class Modal(base.BuildableComponentContainer[special_endpoints.ModalActionRowBui
         try:
             async with async_timeout.timeout(timeout):
                 await stopped.wait()
+                return r_val
         finally:
             client._attached_modals.pop(custom_id)
 
     @abc.abstractmethod
-    async def on_submit(self, ctx: ModalContext) -> None:
+    async def on_submit(self, ctx: ModalContext[R]) -> R:
         """
         The method to call when the modal is submitted. This **must** be overridden by subclasses.
 
@@ -306,5 +321,8 @@ class Modal(base.BuildableComponentContainer[special_endpoints.ModalActionRowBui
             ctx: The context for the modal submission.
 
         Returns:
-            :obj:`None`
+            ``R``: The value you wish to return from the ``attach`` method.
+
+        .. versionadded:: 3.0.2
+            Allow values returned from this method to in turn be returned from the ``attach`` method.
         """

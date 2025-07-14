@@ -95,7 +95,11 @@ class AutocompleteContext(t.Generic[T]):
 
     @property
     def initial_response_sent(self) -> asyncio.Event:
-        """The event that will be set when an initial response is sent for this context."""
+        """
+        The event that will be set when an initial response is sent for this context.
+
+        .. versionadded:: 3.0.2
+        """
         return self._initial_response_sent
 
     def get_option(self, name: str) -> hikari.AutocompleteInteractionOption | None:

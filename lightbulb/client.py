@@ -290,6 +290,8 @@ class Client(abc.ABC):
 
         Returns:
             The created task.
+
+        .. versionadded:: 3.0.2
         """
         task = asyncio.create_task(coro)
         self._asyncio_tasks.add(task)

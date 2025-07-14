@@ -279,6 +279,9 @@ class Modal(
 
         Raises:
             :obj:`asyncio.TimeoutError`: If the timeout is exceeded.
+
+        .. versionadded:: 3.0.2
+            Allow values returned from ``on_submit`` to be returned from this method.
         """
         stopped = asyncio.Event()
         ctx = contextvars.copy_context()
@@ -319,4 +322,7 @@ class Modal(
 
         Returns:
             ``R``: The value you wish to return from the ``attach`` method.
+
+        .. versionadded:: 3.0.2
+            Allow values returned from this method to in turn be returned from the ``attach`` method.
         """

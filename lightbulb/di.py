@@ -52,14 +52,33 @@ from linkd import RootContainer as DefaultContainer
 from linkd import Try
 from linkd import inject as with_di
 
-CommandContainer = t.NewType("CommandContainer", linkd.Container)
-"""Injectable type representing the dependency container for the command context."""
-AutocompleteContainer = t.NewType("AutocompleteContainer", linkd.Container)
-"""Injectable type representing the dependency container for the autocomplete context."""
-ListenerContainer = t.NewType("ListenerContainer", linkd.Container)
-"""Injectable type representing the dependency container for the listener context."""
-TaskContainer = t.NewType("TaskContainer", linkd.Container)
-"""Injectable type representing the dependency container for the task context."""
+
+@t.final
+class CommandContainer(linkd.Container):
+    """Injectable type representing the dependency container for the command context."""
+
+    __slots__ = ()
+
+
+@t.final
+class AutocompleteContainer(linkd.Container):
+    """Injectable type representing the dependency container for the autocomplete context."""
+
+    __slots__ = ()
+
+
+@t.final
+class ListenerContainer(linkd.Container):
+    """Injectable type representing the dependency container for the listener context."""
+
+    __slots__ = ()
+
+
+@t.final
+class TaskContainer(linkd.Container):
+    """Injectable type representing the dependency container for the task context."""
+
+    __slots__ = ()
 
 
 @t.final

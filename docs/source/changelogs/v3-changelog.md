@@ -8,6 +8,13 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.0.3 (2025-07-18)
+### Bugfixes
+
+- Add `typing-extensions` as a dependency.
+
+----
+
 ## v3.0.2 (2025-07-14)
 ### Features
 

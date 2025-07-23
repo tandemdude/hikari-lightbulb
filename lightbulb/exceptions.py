@@ -27,6 +27,7 @@ exceptions raised by the dependency injection system are vendored by the ``light
 from __future__ import annotations
 
 __all__ = [
+    "ConversionFailedException",
     "ExecutionException",
     "ExecutionPipelineFailedException",
     "LightbulbException",
@@ -35,11 +36,15 @@ __all__ = [
 
 import typing as t
 
+D = t.TypeVar("D")
+R = t.TypeVar("R")
+
 if t.TYPE_CHECKING:
     from collections.abc import Sequence
 
     from lightbulb import context as context_
     from lightbulb.commands import execution
+    from lightbulb.commands import options
 
 
 class LightbulbException(Exception):
@@ -51,6 +56,18 @@ class LocalizationFailedException(LightbulbException):
     Exception raised when a command or option is marked as being localized, but a value for the name or description
     could not be resolved.
     """
+
+
+class ConversionFailedException(LightbulbException):
+    """Exception raised when a command option conversion fails."""
+
+    def __init__(self, option: options.OptionData[D, R], value: t.Any) -> None:
+        super().__init__(f"failed converting option {option._localized_name!r}")
+
+        self.option: options.OptionData[t.Any, t.Any] = option
+        """The data for the option that failed conversion."""
+        self.value: t.Any = value
+        """The value which could not be converted."""
 
 
 class ExecutionException(LightbulbException):

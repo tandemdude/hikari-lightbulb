@@ -235,6 +235,8 @@ class ExecutionPipeline:
         while self._current_step is not None:
             if self._current_step == ExecutionSteps.INVOKE and not self.failed:
                 try:
+                    # TODO - allow users to choose when this is done?
+                    await self._context.command._resolve_options()
                     await getattr(self._context.command, self._context.command_data.invoke_method)(self._context)
                     self._current_step = self._next_step()
                 except Exception as e:

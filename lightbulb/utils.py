@@ -20,7 +20,7 @@
 # SOFTWARE.
 from __future__ import annotations
 
-__all__ = ["EMPTY", "get_command_data"]
+__all__ = ["EMPTY", "get_command_data", "maybe_await"]
 
 import inspect
 import typing as t

@@ -637,7 +637,7 @@ def user(
     description: str,
     /,
     *,
-    converter: t.Callable[[context.Context, hikari.User], t.Awaitable[ConvertedT]],
+    converter: t.Callable[[context.Context, hikari.User], types.MaybeAwaitable[ConvertedT]],
     localize: bool = False,
     default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
 ) -> DefaultT | ConvertedT: ...
@@ -648,7 +648,7 @@ def user(
     description: str,
     /,
     *,
-    converter: t.Callable[[context.Context, hikari.User], t.Awaitable[ConvertedT]] | None = None,
+    converter: t.Callable[[context.Context, hikari.User], types.MaybeAwaitable[ConvertedT]] | None = None,
     localize: bool = False,
     default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
 ) -> hikari.User | DefaultT | ConvertedT:
@@ -701,7 +701,7 @@ def channel(
     description: str,
     /,
     *,
-    converter: t.Callable[[context.Context, hikari.PartialChannel], t.Awaitable[ConvertedT]],
+    converter: t.Callable[[context.Context, hikari.PartialChannel], types.MaybeAwaitable[ConvertedT]],
     localize: bool = False,
     default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
     channel_types: hikari.UndefinedOr[Sequence[hikari.ChannelType]] = hikari.UNDEFINED,
@@ -713,7 +713,7 @@ def channel(
     description: str,
     /,
     *,
-    converter: t.Callable[[context.Context, hikari.PartialChannel], t.Awaitable[ConvertedT]] | None = None,
+    converter: t.Callable[[context.Context, hikari.PartialChannel], types.MaybeAwaitable[ConvertedT]] | None = None,
     localize: bool = False,
     default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
     channel_types: hikari.UndefinedOr[Sequence[hikari.ChannelType]] = hikari.UNDEFINED,
@@ -768,7 +768,7 @@ def role(
     description: str,
     /,
     *,
-    converter: t.Callable[[context.Context, hikari.Role], t.Awaitable[ConvertedT]],
+    converter: t.Callable[[context.Context, hikari.Role], types.MaybeAwaitable[ConvertedT]],
     localize: bool = False,
     default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
 ) -> DefaultT | ConvertedT: ...
@@ -779,7 +779,7 @@ def role(
     description: str,
     /,
     *,
-    converter: t.Callable[[context.Context, hikari.Role], t.Awaitable[ConvertedT]] | None = None,
+    converter: t.Callable[[context.Context, hikari.Role], types.MaybeAwaitable[ConvertedT]] | None = None,
     localize: bool = False,
     default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
 ) -> hikari.Role | DefaultT | ConvertedT:
@@ -831,7 +831,7 @@ def mentionable(
     description: str,
     /,
     *,
-    converter: t.Callable[[context.Context, hikari.Snowflake], t.Awaitable[ConvertedT]],
+    converter: t.Callable[[context.Context, hikari.Snowflake], types.MaybeAwaitable[ConvertedT]],
     localize: bool = False,
     default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
 ) -> DefaultT | ConvertedT: ...
@@ -842,7 +842,7 @@ def mentionable(
     description: str,
     /,
     *,
-    converter: t.Callable[[context.Context, hikari.Snowflake], t.Awaitable[ConvertedT]] | None = None,
+    converter: t.Callable[[context.Context, hikari.Snowflake], types.MaybeAwaitable[ConvertedT]] | None = None,
     localize: bool = False,
     default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
 ) -> hikari.Snowflake | DefaultT | ConvertedT:
@@ -894,7 +894,7 @@ def attachment(
     description: str,
     /,
     *,
-    converter: t.Callable[[context.Context, hikari.Attachment], t.Awaitable[ConvertedT]],
+    converter: t.Callable[[context.Context, hikari.Attachment], types.MaybeAwaitable[ConvertedT]],
     localize: bool = False,
     default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
 ) -> DefaultT | ConvertedT: ...
@@ -905,7 +905,7 @@ def attachment(
     description: str,
     /,
     *,
-    converter: t.Callable[[context.Context, hikari.Attachment], t.Awaitable[ConvertedT]] | None = None,
+    converter: t.Callable[[context.Context, hikari.Attachment], types.MaybeAwaitable[ConvertedT]] | None = None,
     localize: bool = False,
     default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
 ) -> hikari.Attachment | DefaultT | ConvertedT:

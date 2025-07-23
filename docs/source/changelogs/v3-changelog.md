@@ -8,6 +8,13 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.1.0 (2025-07-23)
+### Features
+
+- Implement option converters, allowing conversion of option values to custom types. ([#574](https://github.com/tandemdude/hikari-lightbulb/issues/574))
+
+----
+
 ## v3.0.3 (2025-07-18)
 ### Bugfixes
 

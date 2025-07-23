@@ -119,7 +119,7 @@ class OptionData(t.Generic[DefaultT, ConvertedT]):
     converter: t.Callable[[context.Context, t.Any], ConvertedT] | None = None
     """
     The converter to use for this option.
-    
+
     .. versionadded:: 3.1.0
     """
 

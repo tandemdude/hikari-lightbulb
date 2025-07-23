@@ -117,7 +117,11 @@ class OptionData(t.Generic[DefaultT, ConvertedT]):
     """The provider to use to resolve autocomplete interactions for this option."""
 
     converter: t.Callable[[context.Context, t.Any], ConvertedT] | None = None
-    """The converter to use for this option."""
+    """
+    The converter to use for this option.
+    
+    .. versionadded:: 3.1.0
+    """
 
     _localized_name: str = dataclasses.field(init=False, default="")
     _localized_description: str = dataclasses.field(init=False, default="")
@@ -369,6 +373,9 @@ def string(
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
+
+    .. versionadded:: 3.1.0
+        The ``converter`` argument.
     """
     opt = Option(
         OptionData(
@@ -451,6 +458,9 @@ def integer(
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
+
+    .. versionadded:: 3.1.0
+        The ``converter`` argument.
     """
     return t.cast(
         "int",
@@ -519,6 +529,9 @@ def boolean(
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
+
+    .. versionadded:: 3.1.0
+        The ``converter`` argument.
     """
     return t.cast(
         "bool",
@@ -598,6 +611,9 @@ def number(
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
+
+    .. versionadded:: 3.1.0
+        The ``converter`` argument.
     """
     return t.cast(
         "float",
@@ -666,6 +682,9 @@ def user(
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
+
+    .. versionadded:: 3.1.0
+        The ``converter`` argument.
     """
     return t.cast(
         "hikari.User",
@@ -733,6 +752,9 @@ def channel(
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
+
+    .. versionadded:: 3.1.0
+        The ``converter`` argument.
     """
     return t.cast(
         "hikari.PartialChannel",
@@ -797,6 +819,9 @@ def role(
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
+
+    .. versionadded:: 3.1.0
+        The ``converter`` argument.
     """
     return t.cast(
         "hikari.Role",
@@ -860,6 +885,9 @@ def mentionable(
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
+
+    .. versionadded:: 3.1.0
+        The ``converter`` argument.
     """
     return t.cast(
         "hikari.Snowflake",
@@ -923,6 +951,9 @@ def attachment(
 
     Returns:
         Descriptor allowing access to the option value from within a command invocation.
+
+    .. versionadded:: 3.1.0
+        The ``converter`` argument.
     """
     return t.cast(
         "hikari.Attachment",

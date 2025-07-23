@@ -36,8 +36,8 @@ __all__ = [
 
 import typing as t
 
-T = t.TypeVar("T")
 D = t.TypeVar("D")
+R = t.TypeVar("R")
 
 if t.TYPE_CHECKING:
     from collections.abc import Sequence
@@ -61,12 +61,13 @@ class LocalizationFailedException(LightbulbException):
 class ConversionFailedException(LightbulbException):
     """Exception raised when a command option conversion fails."""
 
-    def __init__(self, context: context_.Context, option: options.Option[T, D], value: D) -> None:
-        super().__init__(f"Failed to convert option {option._data._localized_name}.")
-        self.context: context_.Context = context
-        self.name = option._data._localized_name
-        self.default = option._data.default
-        self.value = value
+    def __init__(self, option: options.OptionData[D, R], value: t.Any) -> None:
+        super().__init__(f"failed converting option {option._localized_name!r}")
+
+        self.option: options.OptionData[t.Any, t.Any] = option
+        """The data for the option that failed conversion."""
+        self.value: t.Any = value
+        """The value which could not be converted."""
 
 
 class ExecutionException(LightbulbException):

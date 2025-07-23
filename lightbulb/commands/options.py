@@ -59,7 +59,10 @@ if t.TYPE_CHECKING:
     AutocompleteProvider = Callable[[context.AutocompleteContext[context.T]], Awaitable[t.Any]]
 
 T = t.TypeVar("T")
-D = t.TypeVar("D")
+
+DefaultT = t.TypeVar("DefaultT")
+ConvertedT = t.TypeVar("ConvertedT")
+
 CtxMenuOptionReturn: t.TypeAlias = t.Union[hikari.User, hikari.Message]
 
 
@@ -74,7 +77,7 @@ class Choice(t.Generic[T]):
 
 
 @dataclasses.dataclass(slots=True)
-class OptionData(t.Generic[D]):
+class OptionData(t.Generic[DefaultT, ConvertedT]):
     """
     Dataclass for storing information about an option necessary for command creation.
 
@@ -91,7 +94,7 @@ class OptionData(t.Generic[D]):
     localize: bool = False
     """Whether the name and description of the option should be interpreted as localization keys."""
 
-    default: hikari.UndefinedOr[D] = hikari.UNDEFINED
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED
     """The default value for the option."""
     choices: hikari.UndefinedOr[Sequence[Choice[t.Any]]] = hikari.UNDEFINED
     """The choices for the option."""
@@ -111,7 +114,10 @@ class OptionData(t.Generic[D]):
     autocomplete: bool = False
     """Whether autocomplete is enabled for the option."""
     autocomplete_provider: hikari.UndefinedOr[AutocompleteProvider[t.Any]] = hikari.UNDEFINED
-    """The provider to use to resolve autocomplete interactions for this command."""
+    """The provider to use to resolve autocomplete interactions for this option."""
+
+    converter: t.Callable[[context.Context, t.Any], ConvertedT] | None = None
+    """The converter to use for this option."""
 
     _localized_name: str = dataclasses.field(init=False, default="")
     _localized_description: str = dataclasses.field(init=False, default="")
@@ -200,7 +206,7 @@ class OptionData(t.Generic[D]):
         )
 
 
-class Option(t.Generic[T, D]):
+class Option(t.Generic[DefaultT, ConvertedT]):
     """
     Descriptor class representing a command option.
 
@@ -224,26 +230,26 @@ class Option(t.Generic[T, D]):
         :meth:`~attachment`
     """
 
-    __slots__ = ("_converter", "_data", "_unbound_default")
+    __slots__ = ("_data", "_unbound_default")
 
     def __init__(
         self,
-        data: OptionData[D],
-        default_when_not_bound: T,
-        converter: t.Callable[[context.Context, D], types.MaybeAwaitable[T]] | None = None,
+        data: OptionData[DefaultT, ConvertedT],
+        default_when_not_bound: DefaultT,
     ) -> None:
         self._data = data
         self._unbound_default = default_when_not_bound
-        self._converter = converter
 
-    def __get__(self, instance: commands.CommandBase | None, owner: type[commands.CommandBase]) -> T | D:
+    def __get__(
+        self, instance: commands.CommandBase | None, owner: type[commands.CommandBase]
+    ) -> DefaultT | ConvertedT:
         if instance is None or getattr(instance, "_current_context", None) is None:
             return self._unbound_default
 
         if self._data._localized_name not in instance._resolved_option_cache:
             raise RuntimeError(f"Tried to access option {self._data._localized_name} before resolving options.")
 
-        return t.cast("T", instance._resolved_option_cache[self._data._localized_name])
+        return t.cast("DefaultT", instance._resolved_option_cache[self._data._localized_name])
 
 
 class ContextMenuOption(Option[CtxMenuOptionReturn, CtxMenuOptionReturn]):
@@ -308,12 +314,12 @@ def string(
     /,
     *,
     localize: bool = False,
-    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
     choices: hikari.UndefinedOr[Sequence[Choice[str]]] = hikari.UNDEFINED,
     min_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     max_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     autocomplete: hikari.UndefinedOr[AutocompleteProvider[str]] = hikari.UNDEFINED,
-) -> str | D: ...
+) -> str | DefaultT: ...
 
 
 @t.overload
@@ -322,14 +328,14 @@ def string(
     description: str,
     /,
     *,
-    converter: t.Callable[[context.Context, D], types.MaybeAwaitable[T]],
+    converter: t.Callable[[context.Context, str], types.MaybeAwaitable[ConvertedT]],
     localize: bool = False,
-    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
     choices: hikari.UndefinedOr[Sequence[Choice[str]]] = hikari.UNDEFINED,
     min_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     max_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     autocomplete: hikari.UndefinedOr[AutocompleteProvider[str]] = hikari.UNDEFINED,
-) -> T | D: ...
+) -> DefaultT | ConvertedT: ...
 
 
 def string(
@@ -337,21 +343,21 @@ def string(
     description: str,
     /,
     *,
-    converter: t.Callable[[context.Context, D], types.MaybeAwaitable[T]] | None = None,
+    converter: t.Callable[[context.Context, str], types.MaybeAwaitable[ConvertedT]] | None = None,
     localize: bool = False,
-    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
     choices: hikari.UndefinedOr[Sequence[Choice[str]]] = hikari.UNDEFINED,
     min_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     max_length: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     autocomplete: hikari.UndefinedOr[AutocompleteProvider[str]] = hikari.UNDEFINED,
-) -> str | T | D:
+) -> str | DefaultT | ConvertedT:
     """
     A string option.
 
     Args:
         name: The name of the option.
         description: The description of the option.
-        converter: The converter to be used to convert the value to type `T`.
+        converter: The converter to be used to convert the value to a custom type.
         localize: Whether to localize this option's name and description. If :obj:`True`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
@@ -376,11 +382,42 @@ def string(
             max_length=max_length,
             autocomplete=autocomplete is not hikari.UNDEFINED,
             autocomplete_provider=autocomplete,
+            converter=converter,
         ),
         utils.EMPTY,
-        converter=converter,
     )
-    return t.cast("str", opt) if not converter else t.cast("T", opt)
+    return t.cast("str", opt)
+
+
+@t.overload
+def integer(
+    name: str,
+    description: str,
+    /,
+    *,
+    localize: bool = False,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
+    choices: hikari.UndefinedOr[Sequence[Choice[int]]] = hikari.UNDEFINED,
+    min_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
+    max_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
+    autocomplete: hikari.UndefinedOr[AutocompleteProvider[int]] = hikari.UNDEFINED,
+) -> int | DefaultT: ...
+
+
+@t.overload
+def integer(
+    name: str,
+    description: str,
+    /,
+    *,
+    converter: t.Callable[[context.Context, int], types.MaybeAwaitable[ConvertedT]],
+    localize: bool = False,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
+    choices: hikari.UndefinedOr[Sequence[Choice[int]]] = hikari.UNDEFINED,
+    min_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
+    max_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
+    autocomplete: hikari.UndefinedOr[AutocompleteProvider[int]] = hikari.UNDEFINED,
+) -> DefaultT | ConvertedT: ...
 
 
 def integer(
@@ -388,19 +425,21 @@ def integer(
     description: str,
     /,
     *,
+    converter: t.Callable[[context.Context, int], types.MaybeAwaitable[ConvertedT]] | None = None,
     localize: bool = False,
-    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
     choices: hikari.UndefinedOr[Sequence[Choice[int]]] = hikari.UNDEFINED,
     min_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     max_value: hikari.UndefinedOr[int] = hikari.UNDEFINED,
     autocomplete: hikari.UndefinedOr[AutocompleteProvider[int]] = hikari.UNDEFINED,
-) -> int | D:
+) -> int | DefaultT | ConvertedT:
     """
     An integer option.
 
     Args:
         name: The name of the option.
         description: The description of the option.
+        converter: The converter to be used to convert the value to a custom type.
         localize: Whether to localize this option's name and description. If :obj:`True`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
@@ -427,10 +466,34 @@ def integer(
                 max_value=max_value,
                 autocomplete=autocomplete is not hikari.UNDEFINED,
                 autocomplete_provider=autocomplete,
+                converter=converter,
             ),
             utils.EMPTY,
         ),
     )
+
+
+@t.overload
+def boolean(
+    name: str,
+    description: str,
+    /,
+    *,
+    localize: bool = False,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
+) -> bool | DefaultT: ...
+
+
+@t.overload
+def boolean(
+    name: str,
+    description: str,
+    /,
+    *,
+    converter: t.Callable[[context.Context, bool], types.MaybeAwaitable[ConvertedT]],
+    localize: bool = False,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
+) -> DefaultT | ConvertedT: ...
 
 
 def boolean(
@@ -438,15 +501,17 @@ def boolean(
     description: str,
     /,
     *,
+    converter: t.Callable[[context.Context, bool], types.MaybeAwaitable[ConvertedT]] | None = None,
     localize: bool = False,
-    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
-) -> bool | D:
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
+) -> bool | DefaultT | ConvertedT:
     """
     A boolean option.
 
     Args:
         name: The name of the option.
         description: The description of the option.
+        converter: The converter to be used to convert the value to a custom type.
         localize: Whether to localize this option's name and description. If :obj:`True`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
@@ -464,10 +529,42 @@ def boolean(
                 description=description,
                 localize=localize,
                 default=default,
+                converter=converter,
             ),
             utils.EMPTY,
         ),
     )
+
+
+@t.overload
+def number(
+    name: str,
+    description: str,
+    /,
+    *,
+    localize: bool = False,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
+    choices: hikari.UndefinedOr[Sequence[Choice[float]]] = hikari.UNDEFINED,
+    min_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
+    max_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
+    autocomplete: hikari.UndefinedOr[AutocompleteProvider[float]] = hikari.UNDEFINED,
+) -> float | DefaultT: ...
+
+
+@t.overload
+def number(
+    name: str,
+    description: str,
+    /,
+    *,
+    converter: t.Callable[[context.Context, float], types.MaybeAwaitable[ConvertedT]],
+    localize: bool = False,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
+    choices: hikari.UndefinedOr[Sequence[Choice[float]]] = hikari.UNDEFINED,
+    min_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
+    max_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
+    autocomplete: hikari.UndefinedOr[AutocompleteProvider[float]] = hikari.UNDEFINED,
+) -> DefaultT | ConvertedT: ...
 
 
 def number(
@@ -475,19 +572,21 @@ def number(
     description: str,
     /,
     *,
+    converter: t.Callable[[context.Context, float], types.MaybeAwaitable[ConvertedT]] | None = None,
     localize: bool = False,
-    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
     choices: hikari.UndefinedOr[Sequence[Choice[float]]] = hikari.UNDEFINED,
     min_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
     max_value: hikari.UndefinedOr[float] = hikari.UNDEFINED,
     autocomplete: hikari.UndefinedOr[AutocompleteProvider[float]] = hikari.UNDEFINED,
-) -> float | D:
+) -> float | DefaultT | ConvertedT:
     """
     A numeric (float) option.
 
     Args:
         name: The name of the option.
         description: The description of the option.
+        converter: The converter to be used to convert the value to a custom type.
         localize: Whether to localize this option's name and description. If :obj:`True`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
@@ -514,10 +613,34 @@ def number(
                 max_value=max_value,
                 autocomplete=autocomplete is not hikari.UNDEFINED,
                 autocomplete_provider=autocomplete,
+                converter=converter,
             ),
             utils.EMPTY,
         ),
     )
+
+
+@t.overload
+def user(
+    name: str,
+    description: str,
+    /,
+    *,
+    localize: bool = False,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
+) -> hikari.User | DefaultT: ...
+
+
+@t.overload
+def user(
+    name: str,
+    description: str,
+    /,
+    *,
+    converter: t.Callable[[context.Context, hikari.User], t.Awaitable[ConvertedT]],
+    localize: bool = False,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
+) -> DefaultT | ConvertedT: ...
 
 
 def user(
@@ -525,15 +648,17 @@ def user(
     description: str,
     /,
     *,
+    converter: t.Callable[[context.Context, hikari.User], t.Awaitable[ConvertedT]] | None = None,
     localize: bool = False,
-    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
-) -> hikari.User | D:
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
+) -> hikari.User | DefaultT | ConvertedT:
     """
     A user option.
 
     Args:
         name: The name of the option.
         description: The description of the option.
+        converter: The converter to be used to convert the value to a custom type.
         localize: Whether to localize this option's name and description. If :obj:`True`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
@@ -551,10 +676,36 @@ def user(
                 description=description,
                 localize=localize,
                 default=default,
+                converter=converter,
             ),
             utils.EMPTY,
         ),
     )
+
+
+@t.overload
+def channel(
+    name: str,
+    description: str,
+    /,
+    *,
+    localize: bool = False,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
+    channel_types: hikari.UndefinedOr[Sequence[hikari.ChannelType]] = hikari.UNDEFINED,
+) -> hikari.PartialChannel | DefaultT: ...
+
+
+@t.overload
+def channel(
+    name: str,
+    description: str,
+    /,
+    *,
+    converter: t.Callable[[context.Context, hikari.PartialChannel], t.Awaitable[ConvertedT]],
+    localize: bool = False,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
+    channel_types: hikari.UndefinedOr[Sequence[hikari.ChannelType]] = hikari.UNDEFINED,
+) -> DefaultT | ConvertedT: ...
 
 
 def channel(
@@ -562,16 +713,18 @@ def channel(
     description: str,
     /,
     *,
+    converter: t.Callable[[context.Context, hikari.PartialChannel], t.Awaitable[ConvertedT]] | None = None,
     localize: bool = False,
-    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
     channel_types: hikari.UndefinedOr[Sequence[hikari.ChannelType]] = hikari.UNDEFINED,
-) -> hikari.PartialChannel | D:
+) -> hikari.PartialChannel | DefaultT | ConvertedT:
     """
     A channel option.
 
     Args:
         name: The name of the option.
         description: The description of the option.
+        converter: The converter to be used to convert the value to a custom type.
         localize: Whether to localize this option's name and description. If :obj:`True`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
@@ -591,10 +744,34 @@ def channel(
                 localize=localize,
                 default=default,
                 channel_types=channel_types,
+                converter=converter,
             ),
             utils.EMPTY,
         ),
     )
+
+
+@t.overload
+def role(
+    name: str,
+    description: str,
+    /,
+    *,
+    localize: bool = False,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
+) -> hikari.Role | DefaultT: ...
+
+
+@t.overload
+def role(
+    name: str,
+    description: str,
+    /,
+    *,
+    converter: t.Callable[[context.Context, hikari.Role], t.Awaitable[ConvertedT]],
+    localize: bool = False,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
+) -> DefaultT | ConvertedT: ...
 
 
 def role(
@@ -602,15 +779,17 @@ def role(
     description: str,
     /,
     *,
+    converter: t.Callable[[context.Context, hikari.Role], t.Awaitable[ConvertedT]] | None = None,
     localize: bool = False,
-    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
-) -> hikari.Role | D:
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
+) -> hikari.Role | DefaultT | ConvertedT:
     """
     A role option.
 
     Args:
         name: The name of the option.
         description: The description of the option.
+        converter: The converter to be used to convert the value to a custom type.
         localize: Whether to localize this option's name and description. If :obj:`True`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
@@ -628,10 +807,34 @@ def role(
                 description=description,
                 localize=localize,
                 default=default,
+                converter=converter,
             ),
             utils.EMPTY,
         ),
     )
+
+
+@t.overload
+def mentionable(
+    name: str,
+    description: str,
+    /,
+    *,
+    localize: bool = False,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
+) -> hikari.Snowflake | DefaultT: ...
+
+
+@t.overload
+def mentionable(
+    name: str,
+    description: str,
+    /,
+    *,
+    converter: t.Callable[[context.Context, hikari.Snowflake], t.Awaitable[ConvertedT]],
+    localize: bool = False,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
+) -> DefaultT | ConvertedT: ...
 
 
 def mentionable(
@@ -639,15 +842,17 @@ def mentionable(
     description: str,
     /,
     *,
+    converter: t.Callable[[context.Context, hikari.Snowflake], t.Awaitable[ConvertedT]] | None = None,
     localize: bool = False,
-    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
-) -> hikari.Snowflake | D:
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
+) -> hikari.Snowflake | DefaultT | ConvertedT:
     """
     A mentionable (snowflake) option.
 
     Args:
         name: The name of the option.
         description: The description of the option.
+        converter: The converter to be used to convert the value to a custom type.
         localize: Whether to localize this option's name and description. If :obj:`True`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
@@ -665,10 +870,34 @@ def mentionable(
                 description=description,
                 localize=localize,
                 default=default,
+                converter=converter,
             ),
             utils.EMPTY,
         ),
     )
+
+
+@t.overload
+def attachment(
+    name: str,
+    description: str,
+    /,
+    *,
+    localize: bool = False,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
+) -> hikari.Attachment | DefaultT: ...
+
+
+@t.overload
+def attachment(
+    name: str,
+    description: str,
+    /,
+    *,
+    converter: t.Callable[[context.Context, hikari.Attachment], t.Awaitable[ConvertedT]],
+    localize: bool = False,
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
+) -> DefaultT | ConvertedT: ...
 
 
 def attachment(
@@ -676,15 +905,17 @@ def attachment(
     description: str,
     /,
     *,
+    converter: t.Callable[[context.Context, hikari.Attachment], t.Awaitable[ConvertedT]] | None = None,
     localize: bool = False,
-    default: hikari.UndefinedOr[D] = hikari.UNDEFINED,
-) -> hikari.Attachment | D:
+    default: hikari.UndefinedOr[DefaultT] = hikari.UNDEFINED,
+) -> hikari.Attachment | DefaultT | ConvertedT:
     """
     An attachment option.
 
     Args:
         name: The name of the option.
         description: The description of the option.
+        converter: The converter to be used to convert the value to a custom type.
         localize: Whether to localize this option's name and description. If :obj:`True`, then the
             ``name`` and ``description`` arguments will instead be interpreted as localization keys from which the
             actual name and description will be retrieved. Defaults to :obj:`False`.
@@ -702,6 +933,7 @@ def attachment(
                 description=description,
                 localize=localize,
                 default=default,
+                converter=converter,
             ),
             utils.EMPTY,
         ),

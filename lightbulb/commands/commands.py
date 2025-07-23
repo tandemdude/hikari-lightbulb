@@ -45,7 +45,10 @@ if t.TYPE_CHECKING:
 __all__ = ["CommandBase", "CommandData", "CommandMeta", "MessageCommand", "SlashCommand", "UserCommand"]
 
 T = t.TypeVar("T")
-D = t.TypeVar("D")
+
+OptionDefaultT = t.TypeVar("OptionDefaultT")
+ConverterReturnT = t.TypeVar("ConverterReturnT")
+
 CommandT = t.TypeVar("CommandT", bound="CommandBase")
 
 LOGGER = logging.getLogger(__name__)
@@ -87,7 +90,7 @@ class CommandData:
 
     hooks: Sequence[execution.ExecutionHook] = dataclasses.field(hash=False, repr=False)
     """Hooks to run prior to the invoke method being executed."""
-    options: Mapping[str, options_.OptionData[t.Any]] = dataclasses.field(hash=False, repr=False)
+    options: Mapping[str, options_.OptionData[t.Any, t.Any]] = dataclasses.field(hash=False, repr=False)
     """Map of option name to option data for the command options."""
     invoke_method: str = dataclasses.field(hash=False, repr=False)
     """The attribute name of the invoke method for the command."""
@@ -295,7 +298,7 @@ class CommandMeta(type):
         if hooks and not any((isinstance(h, execution.ExecutionHook) for h in hooks)):
             raise TypeError("all hooks must be an instance of ExecutionHook")
 
-        options: dict[str, options_.OptionData[t.Any]] = {}
+        options: dict[str, options_.OptionData[t.Any, t.Any]] = {}
         invoke_method: str | None = None
         # Iterate through new class attributes to find options and invoke method
         for name, item in attrs.items():
@@ -359,17 +362,19 @@ class CommandBase:
         self._current_context = context
         self._resolved_option_cache = {}
 
-    async def convert_option(self, option: options_.Option[T, D], value: D) -> T:
+    async def _convert_option(
+        self, option: options_.OptionData[OptionDefaultT, ConverterReturnT], value: t.Any
+    ) -> ConverterReturnT:
         if not self._current_context:
-            raise RuntimeError("tried to convert an option before setting context.")
+            raise RuntimeError("tried to convert an option before setting context")
 
-        if not option._converter:
-            raise RuntimeError("tried to convert an option without a converter.")
+        if not option.converter:
+            raise RuntimeError("tried to convert an option without a converter")
 
         try:
-            return await main_utils.maybe_await(option._converter(self._current_context, value))
+            return await main_utils.maybe_await(option.converter(self._current_context, value))
         except Exception as e:
-            raise exceptions.ConversionFailedException(self._current_context, option, value) from e
+            raise exceptions.ConversionFailedException(option, value) from e
 
     async def _resolve_options(self) -> None:
         """
@@ -386,26 +391,21 @@ class CommandBase:
         named_interaction_options = {opt.name: opt for opt in context.options}
         resolved = context.interaction.resolved
 
-        for attr in vars(type(self)).values():
-            if not isinstance(attr, options_.Option):
-                continue
-
-            option = t.cast("options_.Option[t.Any, t.Any]", attr)
-            name = option._data._localized_name
-            interaction_option = named_interaction_options.get(name)
-
-            if not interaction_option or (option._data.type not in _PRIMITIVE_OPTION_TYPES and resolved is None):
-                if option._data.default is hikari.UNDEFINED:
-                    # error lol
+        for option in self._command_data.options.values():
+            interaction_option = named_interaction_options.get(name := option._localized_name)
+            if interaction_option is None or (option.type not in _PRIMITIVE_OPTION_TYPES and resolved is None):
+                if option.default is hikari.UNDEFINED:
                     raise ValueError(f"no option resolved and no default provided for option: {name}")
-                self._resolved_option_cache[name] = option._data.default
+
+                self._resolved_option_cache[name] = option.default
                 continue
+
             value = interaction_option.value
-            option_type = option._data.type
+            option_type = option.type
 
             if option_type in _PRIMITIVE_OPTION_TYPES:
                 self._resolved_option_cache[name] = (
-                    value if not option._converter else await self.convert_option(option, value)
+                    value if option.converter is None else await self._convert_option(option, value)
                 )
                 continue
 
@@ -425,7 +425,7 @@ class CommandBase:
                 raise TypeError("unsupported option type passed")
 
             self._resolved_option_cache[name] = (
-                resolved_option if not option._converter else await self.convert_option(resolved_option, value)
+                resolved_option if option.converter is None else await self._convert_option(option, resolved_option)
             )
 
     @classmethod

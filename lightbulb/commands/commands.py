@@ -365,11 +365,11 @@ class CommandBase:
     async def _convert_option(
         self, option: options_.OptionData[OptionDefaultT, ConverterReturnT], value: t.Any
     ) -> ConverterReturnT:
-        if not self._current_context:
-            raise RuntimeError("tried to convert an option before setting context")
+        if self._current_context is None:
+            raise RuntimeError("cannot convert an option before context is available")
 
-        if not option.converter:
-            raise RuntimeError("tried to convert an option without a converter")
+        if option.converter is None:
+            raise RuntimeError("cannot convert an option without a converter")
 
         try:
             return await main_utils.maybe_await(option.converter(self._current_context, value))

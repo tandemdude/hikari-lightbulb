@@ -8,6 +8,13 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.1.1 (2025-07-30)
+### Bugfixes
+
+- Fix commands no longer being invokable when their extensions are reloaded.
+
+----
+
 ## v3.1.0 (2025-07-23)
 ### Features
 

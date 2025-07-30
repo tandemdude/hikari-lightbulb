@@ -718,7 +718,7 @@ class Client(abc.ABC):
 
         # ensure that any commands are made available for the interaction handler
         if self._started:
-            await self.sync_application_commands(__force_no_api_call=True)
+            await self.sync_application_commands(_force_no_api_call=True)
 
     async def load_extensions_from_package(self, package: types.ModuleType, *, recursive: bool = False) -> None:
         """
@@ -870,7 +870,7 @@ class Client(abc.ABC):
         self._application = await self.rest.fetch_application()
         return self._application
 
-    async def sync_application_commands(self, *, __force_no_api_call: bool = False) -> None:
+    async def sync_application_commands(self, *, _force_no_api_call: bool = False) -> None:
         """
         Sync all application commands registered to the bot with discord. Also, properly registers any commands
         with localization enabled for the command name as well as any commands using deferred registration.
@@ -920,7 +920,7 @@ class Client(abc.ABC):
                 for command_path, actual_command in all_commands.items():
                     self._command_invocation_mapping[snowflake][command_path].put(actual_command)
 
-        if __force_no_api_call:
+        if _force_no_api_call:
             return
 
         if self.sync_commands:

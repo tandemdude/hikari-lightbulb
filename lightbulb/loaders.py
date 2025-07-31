@@ -116,6 +116,22 @@ class _CommandLoadable(Loadable):
 
     async def unload(self, client: client_.Client) -> None:
         client.unregister(self._command)
+        
+        # If this is a group, we need to manually remove all subcommands from the command invocation mapping
+        # since unregister() only handles the top-level group
+        if isinstance(self._command, groups.Group):
+            # Remove all subcommands and subgroups from the command invocation mapping
+            for guild_mapping in client._command_invocation_mapping.values():
+                # Create a copy of the keys to avoid modification during iteration
+                paths_to_remove = [
+                    command_path for command_path in list(guild_mapping.keys())
+                    if len(command_path) > 0 and command_path[0] == self._command.name
+                ]
+                
+                # Remove all paths associated with this group
+                for command_path in paths_to_remove:
+                    if command_path in guild_mapping:
+                        del guild_mapping[command_path]
 
 
 class _ListenerLoadable(Loadable):

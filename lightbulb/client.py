@@ -646,7 +646,9 @@ class Client(abc.ABC):
         if isinstance(command, groups.Group):
             for guild_id, mapping in self._command_invocation_mapping.items():
                 self._command_invocation_mapping[guild_id] = {
-                    path: collection for path, collection in mapping.items() if not (len(path) > 1 and path[0] == command.name)
+                    path: collection
+                    for path, collection in mapping.items()
+                    if not (len(path) > 1 and path[0] == command.name)
                 }
         else:
             # For regular commands, just remove them from collections

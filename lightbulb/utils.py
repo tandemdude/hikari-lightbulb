@@ -170,8 +170,8 @@ def to_choices(
 
             >>> class StrChoices(lightbulb.utils.StrEnum):
             ...     FOO = "foo"
-            ...     BAR = "bar
-            ...     BAZ = "baz
+            ...     BAR = "bar"
+            ...     BAZ = "baz"
             >>> lightbulb.utils.to_choices(StrChoices)
             [Choice("FOO", "foo"), Choice("BAR", "bar"), Choice("BAZ", "baz")]
             >>> class IntChoices(enum.IntEnum):

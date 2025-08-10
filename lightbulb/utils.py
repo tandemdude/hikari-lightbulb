@@ -198,4 +198,5 @@ def to_choices(
             return [Choice(tup[0], tup[1], localize) for tup in t.cast("Sequence[tuple[str, t.Any]]", raw)]
         return [Choice(str(elem), elem, localize) for elem in t.cast("Sequence[t.Any]", raw)]
 
+    # noinspection PyUnreachableCode
     return [Choice(value.name, value.value, localize) for value in raw]

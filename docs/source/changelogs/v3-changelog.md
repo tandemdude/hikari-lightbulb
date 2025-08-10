@@ -8,6 +8,17 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.1.2 (2025-08-10)
+### Features
+
+- Add `lightbulb.utils.to_choices()` helper for converting various values to `Choice` sequences.
+
+### Bugfixes
+
+- Fix unloading extensions still allowing subcommands to be invoked. ([#587](https://github.com/tandemdude/hikari-lightbulb/issues/587))
+
+----
+
 ## v3.1.1 (2025-07-30)
 ### Bugfixes
 

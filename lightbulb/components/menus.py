@@ -757,7 +757,7 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         return self.add(
             InteractiveButton(
                 style=style,
-                custom_id=custom_id or str(uuid.uuid4()),
+                custom_id=custom_id or f"lb_{uuid.uuid4()!s}",
                 label=label,
                 emoji=emoji,
                 disabled=disabled,
@@ -822,7 +822,7 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         """
         return self.add(
             TextSelect(
-                custom_id=custom_id or str(uuid.uuid4()),
+                custom_id=custom_id or f"lb_{uuid.uuid4()!s}",
                 placeholder=placeholder,
                 min_values=min_values,
                 max_values=max_values,
@@ -859,7 +859,7 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         """
         return self.add(
             UserSelect(
-                custom_id=custom_id or str(uuid.uuid4()),
+                custom_id=custom_id or f"lb_{uuid.uuid4()!s}",
                 placeholder=placeholder,
                 min_values=min_values,
                 max_values=max_values,
@@ -895,7 +895,7 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         """
         return self.add(
             RoleSelect(
-                custom_id=custom_id or str(uuid.uuid4()),
+                custom_id=custom_id or f"lb_{uuid.uuid4()!s}",
                 placeholder=placeholder,
                 min_values=min_values,
                 max_values=max_values,
@@ -931,7 +931,7 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         """
         return self.add(
             MentionableSelect(
-                custom_id=custom_id or str(uuid.uuid4()),
+                custom_id=custom_id or f"lb_{uuid.uuid4()!s}",
                 placeholder=placeholder,
                 min_values=min_values,
                 max_values=max_values,
@@ -969,7 +969,7 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         """
         return self.add(
             ChannelSelect(
-                custom_id=custom_id or str(uuid.uuid4()),
+                custom_id=custom_id or f"lb_{uuid.uuid4()!s}",
                 placeholder=placeholder,
                 min_values=min_values,
                 max_values=max_values,

@@ -213,7 +213,7 @@ class Modal(
         """
         return self.add(
             TextInput(
-                custom_id=custom_id or f"lb_{uuid.uuid4()!s}",
+                custom_id=custom_id or f"lb_{uuid.uuid4()}",
                 style=hikari.TextInputStyle.SHORT,
                 label=label,
                 min_length=min_length,
@@ -254,7 +254,7 @@ class Modal(
         """
         return self.add(
             TextInput(
-                custom_id=custom_id or f"lb_{uuid.uuid4()!s}",
+                custom_id=custom_id or f"lb_{uuid.uuid4()}",
                 style=hikari.TextInputStyle.PARAGRAPH,
                 label=label,
                 min_length=min_length,

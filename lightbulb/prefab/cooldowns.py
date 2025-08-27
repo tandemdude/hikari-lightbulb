@@ -171,7 +171,7 @@ class _SlidingWindow:
 
         invocations = self._invocations[hash := await utils.maybe_await(self._bucket(ctx))]
         interval = (now := time.perf_counter()) - self._window_length
-        usages_in_window = [usage for usage in invocations[::-1] if usage > interval]
+        usages_in_window = [usage for usage in invocations if usage > interval]
         if len(usages_in_window) + 1 > self._allowed_invocations:
             raise OnCooldown(self._window_length - (now - usages_in_window[0]))
 

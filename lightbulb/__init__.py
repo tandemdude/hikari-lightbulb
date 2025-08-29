@@ -24,6 +24,7 @@ from lightbulb import components
 from lightbulb import config
 from lightbulb import di
 from lightbulb import exceptions
+from lightbulb import features
 from lightbulb import internal
 from lightbulb import prefab
 from lightbulb import utils
@@ -68,6 +69,7 @@ __all__ = [
     "crontrigger",
     "di",
     "exceptions",
+    "features",
     "hook",
     "integer",
     "internal",

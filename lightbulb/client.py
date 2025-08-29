@@ -59,6 +59,7 @@ if t.TYPE_CHECKING:
     from collections.abc import Mapping
     from collections.abc import Sequence
 
+    from lightbulb import features as features_
     from lightbulb.commands import options as options_
     from lightbulb.components import menus
 
@@ -122,6 +123,7 @@ class Client(abc.ABC):
         "_di",
         "_error_handlers",
         "_extensions",
+        "_features",
         "_localization",
         "_menu_queues",
         "_owner_ids",
@@ -150,6 +152,8 @@ class Client(abc.ABC):
         deferred_registration_callback: lb_types.DeferredRegistrationCallback | None,
         hooks: Sequence[execution.ExecutionHook],
         sync_commands: bool,
+        *,
+        features: Sequence[features_.Feature],
     ) -> None:
         super().__init__()
 
@@ -165,6 +169,7 @@ class Client(abc.ABC):
         self.hooks: Sequence[execution.ExecutionHook] = hooks
         self.sync_commands: bool = sync_commands
 
+        self._features = set(features)
         self._di = linkd.DependencyInjectionManager()
 
         self._registered_commands: dict[
@@ -1291,6 +1296,8 @@ def client_from_app(
     deferred_registration_callback: lb_types.DeferredRegistrationCallback | None = None,
     hooks: Sequence[execution.ExecutionHook] = (),
     sync_commands: bool = True,
+    *,
+    features: Sequence[features_.Feature] = (),
 ) -> GatewayEnabledClient: ...
 @t.overload
 def client_from_app(
@@ -1303,6 +1310,8 @@ def client_from_app(
     deferred_registration_callback: lb_types.DeferredRegistrationCallback | None = None,
     hooks: Sequence[execution.ExecutionHook] = (),
     sync_commands: bool = True,
+    *,
+    features: Sequence[features_.Feature] = (),
 ) -> RestEnabledClient: ...
 def client_from_app(
     app: GatewayClientAppT | RestClientAppT,
@@ -1314,6 +1323,8 @@ def client_from_app(
     deferred_registration_callback: lb_types.DeferredRegistrationCallback | None = None,
     hooks: Sequence[execution.ExecutionHook] = (),
     sync_commands: bool = True,
+    *,
+    features: Sequence[features_.Feature] = (),
 ) -> Client:
     """
     Create and return the appropriate client implementation from the given application.
@@ -1339,6 +1350,7 @@ def client_from_app(
             all other hooks registered for the same step are executed.
         sync_commands: Whether to sync commands that are registered to the client before starting. Defaults
             to :obj:`True`.
+        features: Experimental features to enable for this client.
 
     Returns:
         :obj:`~Client`: The created client instance.
@@ -1353,6 +1365,10 @@ def client_from_app(
         LOGGER.debug("building REST client from app")
         cls = RestEnabledClient
 
+    for experiment in features:
+        if not di_.DI_ENABLED and experiment.requires_di_enabled:
+            raise ValueError(f"cannot enable experiment {experiment.name!r} - DI is required but is disabled")
+
     return cls(
         app,  # type: ignore[reportArgumentType]
         default_enabled_guilds,
@@ -1363,4 +1379,5 @@ def client_from_app(
         deferred_registration_callback,
         hooks,
         sync_commands,
+        features=features,
     )

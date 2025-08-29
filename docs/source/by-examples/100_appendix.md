@@ -23,3 +23,11 @@ For more on this as well as a usage guide, see the documentation for the {obj}`t
 Lightbulb provides configuration parsing from ``yaml``/``toml``/``json`` files into Python objects using
 ``msgspec``, with environment variable substitution evaluation. For more on this, see the documentation for the
 {obj}`config module<lightbulb.config>`.
+
+---
+
+## Feature Flags
+
+Lightbulb includes some feature flags in the {obj}`features module<lightbulb.features>` which allow you to modify
+various portions of the library's behaviour which may better suit your usage. Consider taking a look and enabling
+some when creating the ``Client`` if you find them useful.

@@ -24,28 +24,31 @@ import pytest
 
 from lightbulb.prefab import concurrency
 
+mock_context = mock.Mock()
+mock_context.client = mock.Mock(_features={})
+
 
 class TestMaxConcurrency:
     @pytest.mark.asyncio
     async def test_allows_invocations_under_limit(self) -> None:
         incr, _ = concurrency.max_concurrency(2, "global")
-        await incr(mock.Mock(), mock.Mock())
+        await incr(mock.Mock(), mock_context)
 
     @pytest.mark.asyncio
     async def test_blocks_invocations_over_limit(self) -> None:
         incr, _ = concurrency.max_concurrency(1, "global")
-        await incr(mock.Mock(), mock.Mock())
+        await incr(mock.Mock(), mock_context)
 
         with pytest.raises(concurrency.MaxConcurrencyReached):
-            await incr(mock.Mock(), mock.Mock())
+            await incr(mock.Mock(), mock_context)
 
     @pytest.mark.asyncio
     async def test_allows_invocation_after_complete(self) -> None:
         incr, decr = concurrency.max_concurrency(1, "global")
-        await incr(mock.Mock(), mock.Mock())
+        await incr(mock.Mock(), mock_context)
 
         with pytest.raises(concurrency.MaxConcurrencyReached):
-            await incr(mock.Mock(), mock.Mock())
-        await decr(mock.Mock(), mock.Mock())
+            await incr(mock.Mock(), mock_context)
+        await decr(mock.Mock(), mock_context)
 
-        await incr(mock.Mock(), mock.Mock())
+        await incr(mock.Mock(), mock_context)

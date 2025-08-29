@@ -26,6 +26,7 @@ import typing as t
 
 from lightbulb import di
 from lightbulb import exceptions
+from lightbulb import features
 from lightbulb import utils
 from lightbulb.internal import constants
 from lightbulb.internal import types
@@ -39,10 +40,7 @@ if t.TYPE_CHECKING:
 
 __all__ = ["ExecutionHook", "ExecutionPipeline", "ExecutionStep", "ExecutionSteps", "hook", "invoke"]
 
-# Annoyingly can't replace this with 'Callable' because the concatenate I use isn't supported
-ExecutionHookFunc: t.TypeAlias = t.Callable[
-    't.Concatenate["ExecutionPipeline", "context_.Context", ...]', types.MaybeAwaitable[None]
-]
+ExecutionHookFunc: t.TypeAlias = t.Callable[..., types.MaybeAwaitable[None]]
 
 
 @dataclasses.dataclass(frozen=True, slots=True, eq=True)
@@ -109,7 +107,10 @@ class ExecutionHook:
     """The function that this hook executes."""
 
     async def __call__(self, pipeline: ExecutionPipeline, context: context_.Context) -> None:
-        await utils.maybe_await(self.func(pipeline, context))
+        if features.HOOK_INJECT_ALL_PARAMS in context.client._features:
+            await utils.maybe_await(self.func())
+        else:
+            await utils.maybe_await(self.func(pipeline, context))
 
 
 class ExecutionPipeline:
@@ -231,13 +232,18 @@ class ExecutionPipeline:
             :obj:`~lightbulb.exceptions.ExecutionPipelineFailedException`: If any hook or the command invocation
                 raised an error
         """
+        command_invoke_args: tuple[t.Any, ...] = (
+            () if features.COMMAND_INJECT_CONTEXT in self._context.client._features else (self._context,)
+        )
+
         self._current_step = self._next_step()
         while self._current_step is not None:
             if self._current_step == ExecutionSteps.INVOKE and not self.failed:
                 try:
                     # TODO - allow users to choose when this is done?
                     await self._context.command._resolve_options()
-                    await getattr(self._context.command, self._context.command_data.invoke_method)(self._context)
+
+                    await getattr(self._context.command, self._context.command_data.invoke_method)(*command_invoke_args)
                     self._current_step = self._next_step()
                 except Exception as e:
                     self._invocation_failure = e
@@ -306,6 +312,10 @@ def hook(
                 if datetime.date.today().weekday() != 0:
                     # Fail the pipeline execution
                     raise RuntimeError("This command can only be used on mondays!")
+
+    Note:
+        Consider enabling the :obj:`~lightbulb.features.HOOK_INJECT_ALL_PARAMS` feature if you find yourself
+        never (or rarely) making use of the ``ExecutionPipeline`` parameter.
     """
     if step == ExecutionSteps.INVOKE:
         raise ValueError("hooks cannot be registered for the 'INVOKE' execution step")

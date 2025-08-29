@@ -24,6 +24,9 @@ import pytest
 
 from lightbulb.prefab import cooldowns
 
+mock_context = mock.Mock()
+mock_context.client = mock.Mock(_features={})
+
 
 class TestBuckets:
     def test_global_bucket_returns_same_hash_every_time(self) -> None:
@@ -51,50 +54,50 @@ class TestFixedWindow:
     @pytest.mark.asyncio
     async def test_accepts_first_invocation(self) -> None:
         hook = cooldowns.fixed_window(10, 5, "global")
-        await hook(mock.Mock(), mock.Mock())
+        await hook(mock.Mock(), mock_context)
 
     @pytest.mark.asyncio
     async def test_blocks_too_many_invocations_within_window(self) -> None:
         hook = cooldowns.fixed_window(10, 1, "global")
-        await hook(mock.Mock(), mock.Mock())
+        await hook(mock.Mock(), mock_context)
 
         with pytest.raises(cooldowns.OnCooldown):
-            await hook(mock.Mock(), mock.Mock())
+            await hook(mock.Mock(), mock_context)
 
     @pytest.mark.asyncio
     async def test_allows_invocation_once_window_expires(self) -> None:
         hook = cooldowns.fixed_window(1, 1, "global")
 
         with mock.patch("time.perf_counter", side_effect=[0, 0.5, 1.1]):
-            await hook(mock.Mock(), mock.Mock())
+            await hook(mock.Mock(), mock_context)
             with pytest.raises(cooldowns.OnCooldown):
-                await hook(mock.Mock(), mock.Mock())
+                await hook(mock.Mock(), mock_context)
 
-            await hook(mock.Mock(), mock.Mock())
+            await hook(mock.Mock(), mock_context)
 
 
 class TestSlidingWindow:
     @pytest.mark.asyncio
     async def test_accepts_first_invocation(self) -> None:
         hook = cooldowns.sliding_window(10, 5, "global")
-        await hook(mock.Mock(), mock.Mock())
+        await hook(mock.Mock(), mock_context)
 
     @pytest.mark.asyncio
     async def test_blocks_too_many_invocations_within_window(self) -> None:
         hook = cooldowns.sliding_window(10, 1, "global")
-        await hook(mock.Mock(), mock.Mock())
+        await hook(mock.Mock(), mock_context)
 
         with pytest.raises(cooldowns.OnCooldown):
-            await hook(mock.Mock(), mock.Mock())
+            await hook(mock.Mock(), mock_context)
 
     @pytest.mark.asyncio
     async def test_allows_invocation_once_previous_drops_out_of_window(self) -> None:
         hook = cooldowns.sliding_window(5, 2, "global")
 
         with mock.patch("time.perf_counter", side_effect=[0, 2.5, 6, 6.5]):
-            await hook(mock.Mock(), mock.Mock())
-            await hook(mock.Mock(), mock.Mock())
-            await hook(mock.Mock(), mock.Mock())
+            await hook(mock.Mock(), mock_context)
+            await hook(mock.Mock(), mock_context)
+            await hook(mock.Mock(), mock_context)
 
             with pytest.raises(cooldowns.OnCooldown):
-                await hook(mock.Mock(), mock.Mock())
+                await hook(mock.Mock(), mock_context)

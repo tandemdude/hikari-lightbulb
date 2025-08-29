@@ -40,7 +40,7 @@ class TestOwnerOnly:
 
     @pytest.mark.asyncio
     async def test_raises_not_owner_when_user_is_not_owner(self) -> None:
-        client: lightbulb.Client = mock.Mock(_owner_ids={123, 456, 789})
+        client: lightbulb.Client = mock.Mock(_owner_ids={123, 456, 789}, _features={})
 
         ctx = mock.Mock(spec=lightbulb.Context, client=client)
         ctx.user.id = 000
@@ -50,7 +50,7 @@ class TestOwnerOnly:
 
     @pytest.mark.asyncio
     async def test_does_not_raise_not_owner_when_user_is_owner(self) -> None:
-        client: lightbulb.Client = mock.Mock(_owner_ids={123, 456, 789})
+        client: lightbulb.Client = mock.Mock(_owner_ids={123, 456, 789}, _features={})
 
         ctx = mock.Mock(spec=lightbulb.Context, client=client)
         ctx.user.id = 123
@@ -59,7 +59,7 @@ class TestOwnerOnly:
 
     @pytest.mark.asyncio
     async def test_gets_correct_owner_ids_from_application(self, application: hikari.Application) -> None:
-        client: lightbulb.Client = mock.Mock(_owner_ids=None)
+        client: lightbulb.Client = mock.Mock(_owner_ids=None, _features={})
         client._ensure_application = mock.AsyncMock(return_value=application)
 
         ctx = mock.Mock(spec=lightbulb.Context, client=client)
@@ -73,6 +73,7 @@ class TestHasPermissions:
     @pytest.fixture(scope="function")
     def context(self) -> lightbulb.Context:
         ctx = mock.Mock(spec=lightbulb.Context)
+        ctx.client = mock.Mock(_features={})
         ctx.member = mock.Mock(permissions=hikari.Permissions.all_permissions())
         return ctx
 
@@ -107,6 +108,7 @@ class TestBotHasPermissions:
     @pytest.fixture(scope="function")
     def context(self) -> lightbulb.Context:
         ctx = mock.Mock(spec=lightbulb.Context)
+        ctx.client = mock.Mock(_features={})
         ctx.interaction = mock.Mock(app_permissions=hikari.Permissions.all_permissions())
         return ctx
 
@@ -143,6 +145,7 @@ class TestHasRoles:
     @pytest.fixture(scope="function")
     def context(self) -> lightbulb.Context:
         ctx = mock.Mock(spec=lightbulb.Context)
+        ctx.client = mock.Mock(_features={})
         ctx.member = mock.Mock(role_ids=[123, 456, 789])
         return ctx
 

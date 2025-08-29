@@ -26,6 +26,9 @@ Specify when creating your ``Client`` instance:
 .. code-block:: python
 
     client = lightbulb.client_from_app(..., features=[...])
+
+
+.. versionadded:: 3.2.0
 """
 
 from __future__ import annotations

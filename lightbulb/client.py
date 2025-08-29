@@ -1354,6 +1354,9 @@ def client_from_app(
 
     Returns:
         :obj:`~Client`: The created client instance.
+
+    .. versionadded:: 3.2.0
+        The ``features`` kwarg.
     """
     if execution.ExecutionSteps.INVOKE not in execution_step_order:
         raise ValueError("'execution_step_order' must include ExecutionSteps.INVOKE")

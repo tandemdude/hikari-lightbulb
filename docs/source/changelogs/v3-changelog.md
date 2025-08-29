@@ -8,6 +8,18 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.2.0 (2025-08-29)
+### Features
+
+- Add a feature flags implementation to allow enabling new or modified Lightbulb behaviours.
+  See the documentation for the `lightbulb.features` module for more details.
+
+### Bugfixes
+
+- Fix the `remaining` attribute of `OnCooldown` having the incorrect value when using the sliding window algorithm.
+
+----
+
 ## v3.1.3 (2025-08-24)
 ### Features
 

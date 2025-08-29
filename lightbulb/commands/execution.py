@@ -41,6 +41,7 @@ if t.TYPE_CHECKING:
 __all__ = ["ExecutionHook", "ExecutionPipeline", "ExecutionStep", "ExecutionSteps", "hook", "invoke"]
 
 ExecutionHookFunc: t.TypeAlias = t.Callable[..., types.MaybeAwaitable[None]]
+InvokeFuncT = t.TypeVar("InvokeFuncT", bound=t.Callable[..., Awaitable[t.Any]])
 
 
 @dataclasses.dataclass(frozen=True, slots=True, eq=True)
@@ -327,8 +328,8 @@ def hook(
 
 
 def invoke(
-    func: Callable[..., Awaitable[t.Any]],
-) -> Callable[[context_.Context], Awaitable[t.Any]]:
+    func: InvokeFuncT,
+) -> InvokeFuncT:
     """
     First order decorator to mark a method as the invocation method to be used for the command. Also enables
     dependency injection on the decorated method. The decorated method **must** have the first parameter (non-self)
@@ -358,6 +359,6 @@ def invoke(
         The command invocation function will never be called if any of the hooks for that command caused the pipeline
         to fail.
     """
-    func = di.with_di(func)
+    func = di.with_di(func)  # type: ignore[reportAssignmentType]
     setattr(func, constants.COMMAND_INVOKE_METHOD_MARKER, "_")
     return func

@@ -23,6 +23,8 @@ from __future__ import annotations
 import collections
 import dataclasses
 import typing as t
+from collections.abc import Awaitable
+from collections.abc import Callable
 
 from lightbulb import di
 from lightbulb import exceptions
@@ -32,8 +34,6 @@ from lightbulb.internal import constants
 from lightbulb.internal import types
 
 if t.TYPE_CHECKING:
-    from collections.abc import Awaitable
-    from collections.abc import Callable
     from collections.abc import Sequence
 
     from lightbulb import context as context_
@@ -41,7 +41,7 @@ if t.TYPE_CHECKING:
 __all__ = ["ExecutionHook", "ExecutionPipeline", "ExecutionStep", "ExecutionSteps", "hook", "invoke"]
 
 ExecutionHookFunc: t.TypeAlias = t.Callable[..., types.MaybeAwaitable[None]]
-InvokeFuncT = t.TypeVar("InvokeFuncT", bound=t.Callable[..., Awaitable[t.Any]])
+InvokeFuncT = t.TypeVar("InvokeFuncT", bound=Callable[..., Awaitable[t.Any]])
 
 
 @dataclasses.dataclass(frozen=True, slots=True, eq=True)

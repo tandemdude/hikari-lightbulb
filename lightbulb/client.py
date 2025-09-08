@@ -973,7 +973,7 @@ class Client(abc.ABC):
         command_path = [interaction.command_name]
 
         subcommand: hikari.CommandInteractionOption | hikari.AutocompleteInteractionOption | None
-        options = interaction.options or []
+        options: Sequence[hikari.CommandInteractionOption] = interaction.options or []
         while (subcommand := self._get_subcommand(options)) is not None:
             command_path.append(subcommand.name)
             options = subcommand.options or []

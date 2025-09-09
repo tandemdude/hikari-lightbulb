@@ -8,6 +8,13 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.2.1 (2025-09-09)
+# Miscellaneous
+
+- Bump Hikari version support to 2.4.0. ([#603](https://github.com/tandemdude/hikari-lightbulb/issues/603))
+
+----
+
 ## v3.2.0 (2025-08-29)
 ### Features
 

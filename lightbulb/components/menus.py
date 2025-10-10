@@ -669,7 +669,9 @@ class _MenuInteractionHandlerContainer:
 
             if self._stop_event.is_set():
                 self._client._attached_menus.discard(self)
-                return
+
+        if self._stop_event.is_set():
+            return
 
         if context._should_re_resolve_custom_ids:
             self.custom_ids = {c.custom_id: c for row in self._menu._rows for c in row if not isinstance(c, LinkButton)}

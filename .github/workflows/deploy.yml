@@ -45,7 +45,7 @@ jobs:
           python scripts/deploy/populate_changelog.py CHANGES.md docs/source/changelogs/v3-changelog.md
 
       - name: Commit Changes
-        uses: stefanzweifel/git-auto-commit-action@v6
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "Bump version, update changelog"
           file_pattern: "lightbulb/*.py docs/source/changelogs/*.md"

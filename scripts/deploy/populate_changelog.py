@@ -34,7 +34,7 @@ def main(new_changes_path: str, changelog_path: str) -> None:
         new_changes_lines = new_changes.splitlines()
         # Remove the hash and whitespace from the first line
         new_changes_lines[0] = new_changes_lines[0].strip().strip("#").strip()
-        # Remove the underline (I can't be bothered to make my own template
+        # Remove the underline (I can't be bothered to make my own template)
         new_changes_lines.pop(1)
         # Add the h2 prefix for the version number
         new_changes = "## " + "\n".join(new_changes_lines)

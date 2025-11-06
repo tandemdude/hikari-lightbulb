@@ -9,18 +9,18 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 <!-- next-changelog -->
 
 ## v3.2.2 (2025-11-04)
-# Bugfixes
+### Bugfixes
 
 - Avoid SyntaxWarning on CPython 3.14+ ([#614](https://github.com/tandemdude/hikari-lightbulb/issues/614))
 
-# Miscellaneous
+### Miscellaneous
 
 - Bump minimum Hikari version to 2.5.0 ([#621](https://github.com/tandemdude/hikari-lightbulb/issues/621))
 
 ----
 
 ## v3.2.1 (2025-09-09)
-# Miscellaneous
+### Miscellaneous
 
 - Bump Hikari version support to 2.4.0. ([#603](https://github.com/tandemdude/hikari-lightbulb/issues/603))
 

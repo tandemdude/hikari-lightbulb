@@ -8,6 +8,13 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.2.3 (2025-12-27)
+### Miscellaneous
+
+- Add support for Python 3.14.
+
+----
+
 ## v3.2.2 (2025-11-04)
 ### Bugfixes
 

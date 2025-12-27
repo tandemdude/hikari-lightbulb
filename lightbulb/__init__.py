@@ -90,4 +90,4 @@ from linkd import utils as linkd_utils
 linkd_utils.ANNOTATION_PARSE_LOCAL_INCLUDE_MODULES.add("lightbulb")
 
 # Do not change the below field manually. It is updated by CI upon release.
-__version__ = "3.2.2"
+__version__ = "3.2.3"

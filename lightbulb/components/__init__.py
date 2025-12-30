@@ -111,6 +111,7 @@ injection.
     .. code-block:: python
 
         import asyncio
+        import hikari
         import lightbulb
 
         class MyMenu(lightbulb.components.Menu):

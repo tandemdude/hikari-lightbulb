@@ -128,7 +128,7 @@ injection.
                 # Stop listening for additional interactions for this menu
                 ctx.stop_interacting()
 
-        class MyCommand(lightbulb.SlashCommand, name="test, description="test"):
+        class MyCommand(lightbulb.SlashCommand, name="test", description="test"):
             @lightbulb.invoke
             async def invoke(self, ctx: lightbulb.Context, client: lightbulb.Client) -> None:
                 menu = MyMenu()

@@ -136,7 +136,7 @@ injection.
 
                 # Run the menu, and catch a timeout if one occurs
                 try:
-                    await menu.attach(client, wait=True, timeout=30)
+                    await menu.attach(client, timeout=30)
                 except asyncio.TimeoutError:
                     await ctx.edit_response(resp, "Timed out!", components=[])
 

@@ -111,6 +111,7 @@ injection.
     .. code-block:: python
 
         import asyncio
+        import hikari
         import lightbulb
 
         class MyMenu(lightbulb.components.Menu):
@@ -128,7 +129,7 @@ injection.
                 # Stop listening for additional interactions for this menu
                 ctx.stop_interacting()
 
-        class MyCommand(lightbulb.SlashCommand, name="test, description="test"):
+        class MyCommand(lightbulb.SlashCommand, name="test", description="test"):
             @lightbulb.invoke
             async def invoke(self, ctx: lightbulb.Context, client: lightbulb.Client) -> None:
                 menu = MyMenu()
@@ -136,7 +137,7 @@ injection.
 
                 # Run the menu, and catch a timeout if one occurs
                 try:
-                    await menu.attach(client, wait=True, timeout=30)
+                    await menu.attach(client, timeout=30)
                 except asyncio.TimeoutError:
                     await ctx.edit_response(resp, "Timed out!", components=[])
 

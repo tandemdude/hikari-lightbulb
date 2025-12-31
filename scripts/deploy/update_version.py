@@ -53,7 +53,7 @@ def run(version_file: str, version_type: str, increment: str) -> None:
     alpha = current_version.groupdict().get("alphanum") or "0"
 
     if increment.lower() != "true":
-        sys.stdout.write(f"{version}{('a' + str(alpha)) if version_type.lower() == 'alpha' else ''}")
+        sys.stdout.write(f"{version}{('a' + alpha) if version_type.lower() == 'alpha' else ''}")
         return
 
     major, minor, patch = version.split(".")

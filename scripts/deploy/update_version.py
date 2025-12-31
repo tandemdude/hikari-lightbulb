@@ -25,6 +25,7 @@ import sys
 VERSION_REGEX = re.compile(r"__version__\s*=\s*\"(?P<version>\d+\.\d+\.\d+)(?:a(?P<alphanum>\d+))?\"")
 
 parser = argparse.ArgumentParser()
+parser.add_argument("version_file")
 parser.add_argument("type", choices=["major", "minor", "patch", "alpha"])
 parser.add_argument("increment")
 
@@ -40,8 +41,8 @@ ACTIONS = {
 }
 
 
-def run(version_type: str, increment: str) -> None:
-    with open("lightbulb/__init__.py") as fp:
+def run(version_file: str, version_type: str, increment: str) -> None:
+    with open(version_file) as fp:
         content = fp.read()
 
     current_version = VERSION_REGEX.search(content)
@@ -49,10 +50,10 @@ def run(version_type: str, increment: str) -> None:
         raise RuntimeError("Could not find version in __init__ file")
 
     version = current_version.groupdict()["version"]
-    alpha = current_version.groupdict().get("alphanum", "0")
+    alpha = current_version.groupdict().get("alphanum") or "0"
 
     if increment.lower() != "true":
-        sys.stdout.write(f"{version}{('a' + alpha) if version_type.lower() == 'alpha' else ''}")
+        sys.stdout.write(f"{version}{('a' + str(alpha)) if version_type.lower() == 'alpha' else ''}")
         return
 
     major, minor, patch = version.split(".")
@@ -66,7 +67,7 @@ def run(version_type: str, increment: str) -> None:
         new_version += f"a{alpha}"
 
     updated_file_content = VERSION_REGEX.sub(f'__version__ = "{new_version}"', content)
-    with open("lightbulb/__init__.py", "w") as fp:
+    with open(version_file, "w") as fp:
         fp.write(updated_file_content)
 
     sys.stdout.write(new_version)
@@ -74,4 +75,4 @@ def run(version_type: str, increment: str) -> None:
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    run(args.type, args.increment)
+    run(args.version_file, args.type, args.increment)

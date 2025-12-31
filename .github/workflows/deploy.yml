@@ -35,7 +35,7 @@ jobs:
       - name: Update Version
         id: update-version
         run: |
-          output=$(python scripts/deploy/update_version.py ${{ inputs.version_type }} ${{ inputs.increment }})
+          output=$(python scripts/deploy/update_version.py lightbulb/__init__.py ${{ inputs.version_type }} ${{ inputs.increment }})
           echo "VERSION=$output" >> $GITHUB_OUTPUT
 
       - name: Generate Changelogs

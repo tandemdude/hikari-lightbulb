@@ -4,11 +4,15 @@ ogp_description_length: 148
 
 # Welcome!
 
+```{only} not latex and not epub
+
 ![](https://img.shields.io/badge/code%20style-black-black.svg?style=flat-square) ![](https://img.shields.io/badge/pyright-checked-black?style=flat-square)
 
 ![](https://img.shields.io/pypi/v/hikari-lightbulb.svg?style=flat-square) ![](https://img.shields.io/pypi/pyversions/hikari-lightbulb?style=flat-square) ![](https://img.shields.io/github/stars/tandemdude/hikari-lightbulb?style=flat-square) ![](https://img.shields.io/github/forks/tandemdude/hikari-lightbulb?style=flat-square)
 
 ![](https://img.shields.io/github/actions/workflow/status/tandemdude/hikari-lightbulb/ci.yml?branch=master&event=push&style=flat-square&logo=github) ![](https://img.shields.io/readthedocs/hikari-lightbulb?style=flat-square) ![](https://img.shields.io/badge/License-MIT-limegreen?style=flat-square) ![](https://img.shields.io/pypi/status/hikari-lightbulb?style=flat-square)
+
+```
 
 ---
 

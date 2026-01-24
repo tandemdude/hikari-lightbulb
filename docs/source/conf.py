@@ -49,6 +49,7 @@ extensions = [
     "notfound.extension",
     "sphinxext.opengraph",
     "sphinxcontrib.mermaid",
+    "sphinx.ext.imgconverter",
 ]
 myst_enable_extensions = ["colon_fence"]
 
@@ -101,3 +102,9 @@ python_display_short_literal_types = True
 
 epub_tocscope = "includehidden"
 suppress_warnings = ["epub.unknown_project_files"]
+
+# -- Options for PDF output -------------------------------------------------
+
+latex_elements = {
+    "extraclassoptions": "openany,oneside",
+}

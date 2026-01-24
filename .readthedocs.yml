@@ -17,6 +17,9 @@ build:
     pre_build:
       - python ./scripts/docs/api_reference_generator.py
 
+formats:
+  - epub
+
 # Optionally set the version of Python and requirements required to build your docs
 python:
   install:

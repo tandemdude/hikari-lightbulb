@@ -96,3 +96,8 @@ modindex_common_prefix = ["lightbulb."]
 python_use_unqualified_type_names = True
 python_display_short_literal_types = True
 # python_maximum_signature_line_length = 1
+
+# -- Options for EPUB output -------------------------------------------------
+
+epub_tocscope = "includehidden"
+suppress_warnings = ["epub.unknown_project_files"]

@@ -91,3 +91,4 @@ def sphinx(session: nox.Session) -> None:
     session.install("-U", ".[localization,crontrigger,dev.docs]")
     session.run("python", "./scripts/docs/api_reference_generator.py")
     session.run("python", "-m", "sphinx.cmd.build", "docs/source", "docs/build", "-b", "html")
+    session.run("python", "-m", "sphinx.cmd.build", "docs/source", "docs/build", "-b", "epub")

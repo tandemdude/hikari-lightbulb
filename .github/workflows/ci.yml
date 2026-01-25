@@ -12,77 +12,65 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup Python
-        uses: actions/setup-python@v6
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-python@v6
         with:
-          python-version: "3.10"
+          python-version-file: ".python-version"
 
       - name: Run format checks
         run: |
-          pip install nox
-          nox -s format_check
+          uv run nox -s format_check
 
   type-check:
     name: Type-check
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup Python
-        uses: actions/setup-python@v6
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-python@v6
         with:
-          python-version: "3.10"
+          python-version-file: ".python-version"
 
       - name: Run pyright
         run: |
-          pip install nox
-          nox -s typecheck
+          uv run nox -s typecheck
 
       - name: Verify type-completeness
         run: |
-          pip install ".[dev.typecheck]"
-          pyright --verifytypes lightbulb --ignoreexternal
+          uv sync --group typecheck --locked
+          uv run pyright --verifytypes lightbulb --ignoreexternal
 
   slotscheck:
     name: Slotscheck
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup Python
-        uses: actions/setup-python@v6
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-python@v6
         with:
-          python-version: "3.10"
+          python-version-file: ".python-version"
 
       - name: Run slotscheck
         run: |
-          pip install nox
-          nox -s slotscheck
+          uv run nox -s slotscheck
 
   test:
     name: Test
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup Python
-        uses: actions/setup-python@v6
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-python@v6
         with:
-          python-version: "3.10"
+          python-version-file: ".python-version"
 
       - name: Run pytest
         run: |
-          pip install ".[localization,crontrigger,dev.test]"
-          pytest --cov lightbulb --cov-report=xml --junitxml=junit.xml tests
+          uv run --all-extras --group test pytest --cov lightbulb --cov-report=xml --junitxml=junit.xml tests
 
       - name: Upload coverage to CodeCov
         if: ${{ !cancelled() }}

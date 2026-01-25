@@ -24,25 +24,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup Python
-        uses: actions/setup-python@v6
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-python@v6
         with:
-          python-version: "3.10"
+          python-version-file: ".python-version"
 
       - name: Update Version
         id: update-version
         run: |
-          output=$(python scripts/deploy/update_version.py lightbulb/__init__.py ${{ inputs.version_type }} ${{ inputs.increment }})
+          output=$(uv run -qq scripts/deploy/update_version.py lightbulb/__init__.py ${{ inputs.version_type }} ${{ inputs.increment }})
           echo "VERSION=$output" >> $GITHUB_OUTPUT
 
       - name: Generate Changelogs
         run: |
-          pip install ".[dev.changelog]"
-          towncrier build --yes --version ${{ steps.update-version.outputs.VERSION }}
-          python scripts/deploy/populate_changelog.py CHANGES.md docs/source/changelogs/v3-changelog.md
+          uv run --group changelog towncrier build --yes --version ${{ steps.update-version.outputs.VERSION }}
+          uv run -qq scripts/deploy/populate_changelog.py CHANGES.md docs/source/changelogs/v3-changelog.md
 
       - name: Commit Changes
         uses: stefanzweifel/git-auto-commit-action@v7
@@ -55,8 +52,7 @@ jobs:
           FLIT_USERNAME: ${{ secrets.FLIT_USERNAME }}
           FLIT_PASSWORD: ${{ secrets.FLIT_PASSWORD }}
         run: |
-          pip install ".[dev.release]"
-          flit publish
+          uv run --all-extras --group release flit publish
 
       - name: Create Tag
         run: |

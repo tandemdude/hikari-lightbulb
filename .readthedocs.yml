@@ -13,9 +13,18 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
+  apt_packages:
+    - make
+    - imagemagick
+    - librsvg2-bin
+    - texlive-full
   jobs:
     pre_build:
       - python ./scripts/docs/api_reference_generator.py
+
+formats:
+  - epub
+  - pdf
 
 # Optionally set the version of Python and requirements required to build your docs
 python:

@@ -49,6 +49,7 @@ extensions = [
     "notfound.extension",
     "sphinxext.opengraph",
     "sphinxcontrib.mermaid",
+    "sphinx.ext.imgconverter",
 ]
 myst_enable_extensions = ["colon_fence"]
 
@@ -96,3 +97,14 @@ modindex_common_prefix = ["lightbulb."]
 python_use_unqualified_type_names = True
 python_display_short_literal_types = True
 # python_maximum_signature_line_length = 1
+
+# -- Options for EPUB output -------------------------------------------------
+
+epub_tocscope = "includehidden"
+suppress_warnings = ["epub.unknown_project_files"]
+
+# -- Options for PDF output -------------------------------------------------
+
+latex_elements = {
+    "extraclassoptions": "openany,oneside",
+}

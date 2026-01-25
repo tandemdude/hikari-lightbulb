@@ -90,6 +90,14 @@ def test(session: nox.Session) -> None:
 def sphinx(session: nox.Session) -> None:
     session.install("-U", ".[localization,crontrigger,dev.docs]")
     session.run("python", "./scripts/docs/api_reference_generator.py")
-    session.run("python", "-m", "sphinx.cmd.build", "docs/source", "docs/build", "-b", "html")
-    session.run("python", "-m", "sphinx.cmd.build", "docs/source", "docs/build", "-b", "epub")
-    session.run("python", "-m", "sphinx.cmd.build", "-M", "latexpdf", "docs/source", "docs/build")
+
+    html, epub, pdf = "html" in session.posargs, "epub" in session.posargs, "pdf" in session.posargs
+    if not html and not epub and not pdf:
+        html = epub = pdf = True
+
+    if html:
+        session.run("python", "-m", "sphinx.cmd.build", "docs/source", "docs/build/html", "-b", "html")
+    if epub:
+        session.run("python", "-m", "sphinx.cmd.build", "docs/source", "docs/build/epub", "-b", "epub")
+    if pdf:
+        session.run("python", "-m", "sphinx.cmd.build", "-M", "latexpdf", "docs/source", "docs/build/pdf")

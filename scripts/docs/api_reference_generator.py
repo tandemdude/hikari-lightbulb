@@ -208,7 +208,7 @@ def run() -> None:
         child_prefix=API_REFERENCES_DIRECTORY[-1],
         is_root=True,
     ).write()
-    os.rename(
+    os.replace(
         os.path.join(*API_REFERENCES_DIRECTORY, "lightbulb.rst"),
         os.path.join(*API_REFERENCES_DIRECTORY[:-1], "api-reference.rst"),
     )

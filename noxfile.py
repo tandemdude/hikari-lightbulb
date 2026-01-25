@@ -20,10 +20,9 @@
 # SOFTWARE.
 
 import os
-import typing as t
-from collections.abc import Callable
 
 import nox
+import nox_uv
 from nox import options
 
 SCRIPT_PATHS = [
@@ -36,49 +35,34 @@ SCRIPT_PATHS = [
 ]
 
 options.sessions = ["format_fix", "typecheck", "slotscheck", "test"]
+options.default_venv_backend, options.reuse_venv = "uv", "yes"
 
 
-def nox_session(**kwargs: t.Any) -> Callable[[Callable[[nox.Session], None]], Callable[[nox.Session], None]]:
-    kwargs.setdefault("venv_backend", "uv|virtualenv")
-    kwargs.setdefault("reuse_venv", True)
-
-    def inner(func: Callable[[nox.Session], None]) -> Callable[[nox.Session], None]:
-        return nox.session(**kwargs)(func)
-
-    return inner
-
-
-@nox_session()
+@nox_uv.session(uv_all_extras=True, uv_groups=["format"])
 def format_fix(session: nox.Session) -> None:
-    session.install("-U", ".[localization,crontrigger,dev.format]")
-    session.run("python", "-m", "ruff", "format", *SCRIPT_PATHS)
-    session.run("python", "-m", "ruff", "check", "--fix", *SCRIPT_PATHS)
+    session.run("ruff", "format", *SCRIPT_PATHS)
+    session.run("ruff", "check", "--fix", *SCRIPT_PATHS)
 
 
-@nox_session()
+@nox_uv.session(uv_all_extras=True, uv_groups=["format"])
 def format_check(session: nox.Session) -> None:
-    session.install("-U", ".[localization,crontrigger,dev.format]")
-    session.run("python", "-m", "ruff", "format", *SCRIPT_PATHS, "--check")
-    session.run("python", "-m", "ruff", "check", "--output-format", "github", *SCRIPT_PATHS)
+    session.run("ruff", "format", *SCRIPT_PATHS, "--check")
+    session.run("ruff", "check", "--output-format", "github", *SCRIPT_PATHS)
 
 
-@nox_session()
+@nox_uv.session(uv_all_extras=True, uv_groups=["test", "typecheck"])
 def typecheck(session: nox.Session) -> None:
-    session.install("-U", ".[localization,crontrigger,dev.typecheck,dev.test]")
-    session.run("python", "-m", "pyright")
+    session.run("pyright")
 
 
-@nox_session()
+@nox_uv.session(uv_all_extras=True, uv_groups=["slotscheck"])
 def slotscheck(session: nox.Session) -> None:
-    session.install("-U", ".[localization,crontrigger,dev.slotscheck]")
-    session.run("python", "-m", "slotscheck", "-m", "lightbulb")
+    session.run("slotscheck", "-m", "lightbulb")
 
 
-@nox_session()
+@nox_uv.session(uv_all_extras=True, uv_groups=["test"])
 def test(session: nox.Session) -> None:
-    session.install("-U", ".[localization,crontrigger,dev.test]")
-
-    args = ["python", "-m", "pytest"]
+    args = ["pytest"]
     if session.posargs:
         args.extend(["--cov", "lightbulb"])
     args.append("tests")
@@ -86,9 +70,8 @@ def test(session: nox.Session) -> None:
     session.run(*args)
 
 
-@nox_session()
+@nox_uv.session(uv_all_extras=True, uv_groups=["docs"])
 def sphinx(session: nox.Session) -> None:
-    session.install("-U", ".[localization,crontrigger,dev.docs]")
     session.run("python", "./scripts/docs/api_reference_generator.py")
 
     html, epub, pdf = "html" in session.posargs, "epub" in session.posargs, "pdf" in session.posargs

@@ -19,18 +19,17 @@ build:
     - librsvg2-bin
     - texlive-full
   jobs:
+    pre_create_environment:
+      - asdf plugin add uv
+      - asdf install uv latest
+      - asdf global uv latest
+    create_environment:
+      - uv venv "${READTHEDOCS_VIRTUALENV_PATH}"
+    install:
+      - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv sync --locked --all-extras --group docs
     pre_build:
       - python ./scripts/docs/api_reference_generator.py
 
 formats:
   - epub
   - pdf
-
-# Optionally set the version of Python and requirements required to build your docs
-python:
-  install:
-    - method: pip
-      path: .
-      extra_requirements:
-        - localization
-        - dev.docs

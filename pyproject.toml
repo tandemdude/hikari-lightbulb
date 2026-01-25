@@ -98,11 +98,6 @@ type = [
     { directory = "misc", name = "Miscellaneous", showcontent = true },
 ]
 
-[tool.black]
-line-length     = 120
-target-version  = ["py310"]
-include         = ".*py$"
-
 [tool.ruff]
 line-length = 120
 target-version = "py310"
@@ -144,6 +139,7 @@ ignore = [
     "RUF001", # ambiguous character
     "N818",   # exception name should end in Error
     "D205",   # 1 blank line required between summary line and description
+    "RUF067", # init module should only contain docstrings and re-exports
 ]
 
 [tool.ruff.lint.isort]

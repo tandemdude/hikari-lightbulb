@@ -814,7 +814,7 @@ provides-extras = ["crontrigger", "localization"]
 changelog = [{ name = "towncrier", specifier = "==25.8.0" }]
 dev = [
     { name = "nox", specifier = "==2025.11.12" },
-    { name = "nox-uv", specifier = "==0.7.0" },
+    { name = "nox-uv", specifier = "==0.7.1" },
 ]
 docs = [
     { name = "furo", specifier = "==2025.12.19" },
@@ -1209,14 +1209,14 @@ wheels = [
 
 [[package]]
 name = "nox-uv"
-version = "0.7.0"
+version = "0.7.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "nox" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9f/a2/be2f4d0fd1632213eb5962c8e5ee27def06305403786e21fc3179c7e26e6/nox_uv-0.7.0.tar.gz", hash = "sha256:60ac21c16650f05ebb520d737cc2e838c7a49be2ad1dbcd7165ffd3675560991", size = 5077, upload-time = "2026-01-03T19:54:59.283Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/04/e8/670919c513c22f4bf1656d84dd99a9ad1a5eaaeadf2457bab3efeeac14e0/nox_uv-0.7.1.tar.gz", hash = "sha256:f075d610b4648732fd17cbc9fa48be7d2c23df7b188fed3e4e6dde7bd1f14f20", size = 5124, upload-time = "2026-02-05T03:55:34.807Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/86/94/afa119b031c08e74a2e078260c5cdbb56b53949e5d2a0158215e8c265e12/nox_uv-0.7.0-py3-none-any.whl", hash = "sha256:51f9bb68ca6d721706f6372f0dec8ebfcc00408c2172b2bfeb6a6c06d9e3ab38", size = 5408, upload-time = "2026-01-03T19:54:57.798Z" },
+    { url = "https://files.pythonhosted.org/packages/4f/0a/a6798a215366c9b034e92a9992d9013da5f544a488216fc54204ccf3c134/nox_uv-0.7.1-py3-none-any.whl", hash = "sha256:91361cc282a0a764de1b94ad002b67d5b43de4adc3f56e16d1b79928c8ec0433", size = 5457, upload-time = "2026-02-05T03:55:35.994Z" },
 ]
 
 [[package]]

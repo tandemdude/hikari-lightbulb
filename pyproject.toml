@@ -43,7 +43,7 @@ crontrigger = ["croniter>=3.0.3, <7"]
 [dependency-groups]
 dev = [
     "nox==2025.11.12",
-    "nox-uv==0.7.0",
+    "nox-uv==0.7.1",
 ]
 
 release = ["flit==3.12.0"]

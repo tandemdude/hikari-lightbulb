@@ -897,11 +897,11 @@ wheels = [
 
 [[package]]
 name = "linkd"
-version = "0.2.1"
+version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/2f/5e/65e569aeb37f7d06368468472bf8329cf31d6fdc53a0bf7f7a73982fb65b/linkd-0.2.1.tar.gz", hash = "sha256:48879ec0bc5490107bd3d9e62bba2c5490531c368794b7fb28f01afea37eed17", size = 44853, upload-time = "2025-12-27T21:34:45.194Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8f/80/1c64078ea16d4a617125b2815dc704d2bc9667b59df26da7ed4028d7e5ea/linkd-0.3.0.tar.gz", hash = "sha256:4f84ceda87408349ec324f4b1653a3e85c8552d52a4467e2bd8273b7889b2025", size = 45515, upload-time = "2026-03-24T16:20:40.606Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ae/c3/94c0dc294de2384fd949b62ac978f7b2a49a8e3301080e3b65652a4815de/linkd-0.2.1-py3-none-any.whl", hash = "sha256:517e136b57e1146a366a82ff2944876053ba41761976b3b47d7070c9ea5f1d71", size = 40182, upload-time = "2025-12-27T21:34:43.551Z" },
+    { url = "https://files.pythonhosted.org/packages/11/6d/29f8328dda94bf062c0eacd4bd3f6106dd10d6313da0fd7e21e0be23bbdf/linkd-0.3.0-py3-none-any.whl", hash = "sha256:3e183852fc3d298d6a54f1c48d162f19439b23ad1db5f47ec7f98395044c4fb5", size = 40240, upload-time = "2026-03-24T16:20:39.333Z" },
 ]
 
 [[package]]

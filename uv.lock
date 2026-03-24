@@ -1858,7 +1858,7 @@ wheels = [
 
 [[package]]
 name = "sphinxcontrib-mermaid"
-version = "2.0.0"
+version = "2.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jinja2" },
@@ -1866,9 +1866,9 @@ dependencies = [
     { name = "sphinx", version = "8.1.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "sphinx", version = "8.2.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/96/a5/65a5c439cc14ba80483b9891e9350f11efb80cd3bdccb222f0c738068c78/sphinxcontrib_mermaid-2.0.0.tar.gz", hash = "sha256:cf4f7d453d001132eaba5d1fdf53d42049f02e913213cf8337427483bfca26f4", size = 18194, upload-time = "2026-01-13T17:13:42.563Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2b/ae/999891de292919b66ea34f2c22fc22c9be90ab3536fbc0fca95716277351/sphinxcontrib_mermaid-2.0.1.tar.gz", hash = "sha256:a21a385a059a6cafd192aa3a586b14bf5c42721e229db67b459dc825d7f0a497", size = 19839, upload-time = "2026-03-05T14:10:41.901Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f9/de/bd96c69b62e967bffd02c6d89dfca9471b04e761c466725fc39746abf41d/sphinxcontrib_mermaid-2.0.0-py3-none-any.whl", hash = "sha256:59a73249bbee2c74b1a4db036f8e8899ade65982bdda6712cf22b4f4e9874bb5", size = 14055, upload-time = "2026-01-13T17:13:41.481Z" },
+    { url = "https://files.pythonhosted.org/packages/03/46/25d64bcd7821c8d6f1080e1c43d5fcdfc442a18f759a230b5ccdc891093e/sphinxcontrib_mermaid-2.0.1-py3-none-any.whl", hash = "sha256:9dca7fbe827bad5e7e2b97c4047682cfd26e3e07398cfdc96c7a8842ae7f06e7", size = 14064, upload-time = "2026-03-05T14:10:40.533Z" },
 ]
 
 [[package]]

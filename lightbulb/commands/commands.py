@@ -171,7 +171,7 @@ class CommandData:
             return bld
 
         return (
-            hikari.impl.ContextMenuCommandBuilder(type=self.type, name=self.name)
+            hikari.impl.ContextMenuCommandBuilder(type=self.type, name=name)
             .set_name_localizations(name_localizations)  # type: ignore[reportArgumentType]
             .set_default_member_permissions(self.default_member_permissions)
             .set_integration_types(self.integration_types)

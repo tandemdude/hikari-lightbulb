@@ -8,6 +8,28 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.2.4 (2026-04-29)
+### Bugfixes
+
+- Fix name localizations for non-slash commands. ([#673](https://github.com/tandemdude/hikari-lightbulb/issues/673))
+
+### Documentation
+
+- Fixed documentation example errors:
+  - Fixed missing double-quote in class parameter
+  - Added missing hikari import to example
+  - Removed invalid 'wait' parameter from menu.attach() method call
+
+  ([#638](https://github.com/tandemdude/hikari-lightbulb/issues/638))
+- Added EPub and PDF documentation support to nox and readthedocs
+   - Added nox commands to generate epub and pdf build output
+   - Enabled epub and pdf support in .readthedocs.yml
+   - Added epub and pdf specific options in docs/source/conf.py
+   - Excluded badges from epubs and pdf specifically
+     (This is to avoid issues with latex & formatting) ([#645](https://github.com/tandemdude/hikari-lightbulb/issues/645))
+
+----
+
 ## v3.2.3 (2025-12-27)
 ### Miscellaneous
 

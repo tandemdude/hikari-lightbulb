@@ -63,7 +63,7 @@ test = [
     "pytest>=8.3.2, <10",
     "pytest-asyncio>=0.23.8, <1.4",
     "pytest-cov>=5.0.0, <8",
-    "pytest-randomly>=3.15.0, <5"
+    "pytest-randomly>=4.1.0,<5"
 ]
 
 docs = [

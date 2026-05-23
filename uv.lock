@@ -843,7 +843,7 @@ typecheck = [
     { name = "pytest-cov", specifier = ">=5.0.0,<8" },
     { name = "pytest-randomly", specifier = ">=4.1.0,<5" },
     { name = "types-croniter", specifier = ">=6.2.2.20260518,<7" },
-    { name = "types-polib", specifier = ">=1.2.0.20240327,<2" },
+    { name = "types-polib", specifier = ">=1.2.0.20260518,<2" },
     { name = "typing-extensions", specifier = ">=4.12.2,<5" },
 ]
 
@@ -1990,11 +1990,11 @@ wheels = [
 
 [[package]]
 name = "types-polib"
-version = "1.2.0.20260408"
+version = "1.2.0.20260518"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/3c/9e/a7b3a92d757c09f367909a6b0a2620849d3098f5d47a81a15616576ad051/types_polib-1.2.0.20260408.tar.gz", hash = "sha256:905fa7cb9f3f52321ded8d0cd579f62b2d5678189e6b305e33fd38eabb6d08a6", size = 9255, upload-time = "2026-04-08T04:30:23.985Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f3/a0/bc3cfd4d6cb2e9798a28579dd4dd39675cde66a52dd9f5f158b0afc80420/types_polib-1.2.0.20260518.tar.gz", hash = "sha256:2b593a1c6eceb1c4d2ef41054d24ec17c5ee3ec4f2a29a26ece75d8f5715420f", size = 9285, upload-time = "2026-05-18T06:02:24.073Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/41/90/c07fd074cfd232c7642c281d6ec6623b8e528251458b3207964f1d888986/types_polib-1.2.0.20260408-py3-none-any.whl", hash = "sha256:d1a4f1b96d64442d90867ffd9c9eca0033348598bd47e515648f8f6e0fa6a1ff", size = 8523, upload-time = "2026-04-08T04:30:23.172Z" },
+    { url = "https://files.pythonhosted.org/packages/67/05/11cf19d219d4cdf53bbf8b3e0c9254d7a04d4b1a6df966124421e407138e/types_polib-1.2.0.20260518-py3-none-any.whl", hash = "sha256:1a6b9bd7eab3672a1c2e54c939b3fb720241e2b671e34a60cb82d2f791eba025", size = 8528, upload-time = "2026-05-18T06:02:22.737Z" },
 ]
 
 [[package]]

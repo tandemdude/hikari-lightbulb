@@ -651,12 +651,9 @@ class Client(abc.ABC):
         # If this is a group, we need to manually remove all subcommands from the command invocation mapping
         # since the collection.remove() only handles the top-level group
         if isinstance(command, groups.Group):
-            for guild_id, mapping in self._command_invocation_mapping.items():
-                self._command_invocation_mapping[guild_id] = {
-                    path: collection
-                    for path, collection in mapping.items()
-                    if not (len(path) > 1 and path[0] == command.name)
-                }
+            for mapping in self._command_invocation_mapping.values():
+                for path in [p for p in mapping if len(p) > 1 and p[0] == command.name]:
+                    del mapping[path]
         else:
             # For regular commands, just remove them from collections
             for mapping in self._command_invocation_mapping.values():

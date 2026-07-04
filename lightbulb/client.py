@@ -1277,7 +1277,7 @@ class RestEnabledClient(Client):
         try:
             async with async_timeout.timeout(5):
                 await ir.wait()
-                yield None
+                yield None  # noqa: ASYNC119
         except asyncio.TimeoutError:
             task.cancel("timed out before creating initial response")
 

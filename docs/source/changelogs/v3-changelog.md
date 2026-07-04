@@ -8,6 +8,13 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.2.5 (2026-07-04)
+### Bugfixes
+
+- Fix `KeyError` when syncing slash commands after unregistering a command group. ([#699](https://github.com/tandemdude/hikari-lightbulb/issues/699))
+
+----
+
 ## v3.2.4 (2026-04-29)
 ### Bugfixes
 

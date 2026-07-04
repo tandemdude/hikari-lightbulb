@@ -803,7 +803,7 @@ requires-dist = [
     { name = "confspec", specifier = ">=0.0.1" },
     { name = "croniter", marker = "extra == 'crontrigger'", specifier = ">=3.0.3,<7" },
     { name = "hikari", specifier = "~=2.5.0" },
-    { name = "linkd", specifier = ">=0.5.0" },
+    { name = "linkd", specifier = ">=0.6.0" },
     { name = "polib", marker = "extra == 'localization'", specifier = ">=1.2.0,<2" },
     { name = "typing-extensions", specifier = ">=4" },
 ]
@@ -897,11 +897,11 @@ wheels = [
 
 [[package]]
 name = "linkd"
-version = "0.5.0"
+version = "0.6.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/e9/c2/a6e8ab762f2910624010cdea5f589849bf8c1fd2fa8a1d5729e6a064f509/linkd-0.5.0.tar.gz", hash = "sha256:5dd13b3b868d3da8afe317eb0f3937a43feb4242178344302d3f29785a726606", size = 48073, upload-time = "2026-06-03T23:35:35.683Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d6/3e/5fdd1dcfa0e322d285edf64218687dd3e1234d2a858203eeda0943f1793c/linkd-0.6.0.tar.gz", hash = "sha256:48bab2049cf87e6764c490fe142937acb0069a481bd359c2e8fc56704aff3306", size = 50334, upload-time = "2026-07-03T12:22:19.086Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/dd/7a/3a65d4eeeb9903faad8ceb1de641c1ec845bffce498440744bcc4f506d43/linkd-0.5.0-py3-none-any.whl", hash = "sha256:78dcb4029b69a0c37ddf68e2b763dc9e283a0a27d6edd0e61282df128ba50776", size = 46092, upload-time = "2026-06-03T23:35:34.461Z" },
+    { url = "https://files.pythonhosted.org/packages/06/5b/e7233da8381bb94cc44e30baf1f2f3725eda6fe761fb625e1c2a0764387f/linkd-0.6.0-py3-none-any.whl", hash = "sha256:6de8871c1bc03f82ca716b339551a45f1eac86a17d1d92d43ffdec8e0448bdc9", size = 47915, upload-time = "2026-07-03T12:22:17.826Z" },
 ]
 
 [[package]]

@@ -38,7 +38,7 @@ Changelog = "https://hikari-lightbulb.readthedocs.io/en/latest/changelog.html"
 
 [project.optional-dependencies]
 localization = ["polib>=1.2.0, <2"]
-crontrigger = ["croniter>=6.2.3,<7"]
+crontrigger = ["croniter>=6.2.4,<7"]
 
 [dependency-groups]
 dev = [

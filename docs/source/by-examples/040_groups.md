@@ -84,4 +84,19 @@ client.register(group)
 client.register(group, guilds=[...])
 ```
 
+If the group is defined within an extension, register it with the `Loader` instead, using the `Loader.command`
+method. The group will then be registered with the client once the extension is loaded.
+
+```python
+loader = lightbulb.Loader()
+
+group = lightbulb.Group(...)
+
+...
+
+loader.command(group)
+# Like with the client, you can limit the command to specific guilds
+loader.command(group, guilds=[...])
+```
+
 After doing this - and starting the client - the command group's subcommands should appear within Discord and be usable.

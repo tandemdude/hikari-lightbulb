@@ -55,7 +55,7 @@ typecheck = [
     "pyright==1.1.411",
     "typing-extensions>=4.16.0,<5",
     "types-polib>=1.2.0.20260518,<2",
-    "types-croniter>=6.2.3.20260704,<7",
+    "types-croniter>=6.2.4.20260711,<7",
     {include-group = "test"},
 ]
 

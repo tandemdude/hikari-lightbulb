@@ -304,9 +304,9 @@ class Loader:
                 loader = lightbulb.Loader()
 
                 # valid
-                @loader.register
+                @loader.command
                 # also valid
-                @loader.register(guilds=[...])
+                @loader.command(guilds=[...])
                 class Example(
                     lightbulb.SlashCommand,
                     ...
@@ -314,7 +314,7 @@ class Loader:
                     ...
 
                 # also valid
-                loader.register(Example, guilds=[...])
+                loader.command(Example, guilds=[...])
 
         See Also:
             :meth:`~lightbulb.client.Client.register`
@@ -326,7 +326,9 @@ class Loader:
 
         # Used as a second-order decorator
         def _inner(command_: CommandOrGroupT) -> CommandOrGroupT:
-            return self.command(command_, guilds=guilds)
+            if defer_guilds:
+                return self.command(command_, defer_guilds=True)
+            return self.command(command_, guilds=guilds, global_=global_)
 
         return _inner
 

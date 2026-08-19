@@ -8,6 +8,17 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.2.6 (2026-08-19)
+### Bugfixes
+
+- Fix `Loader.command` ignoring the `global_` and `defer_guilds` arguments when used as a second-order decorator. ([#720](https://github.com/tandemdude/hikari-lightbulb/issues/720))
+
+### Miscellaneous
+
+- Bump hikari version to `2.6.0`.
+
+----
+
 ## v3.2.5 (2026-07-04)
 ### Bugfixes
 

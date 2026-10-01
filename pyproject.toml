@@ -47,7 +47,7 @@ dev = [
 ]
 
 release = ["flit==4.0.2"]
-changelog = ["towncrier==25.8.0"]
+changelog = ["towncrier==26.9.0"]
 format = ["ruff==0.15.21"]
 slotscheck = ["slotscheck>=0.20.1,<1"]
 

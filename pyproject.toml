@@ -52,7 +52,7 @@ format = ["ruff==0.15.21"]
 slotscheck = ["slotscheck>=0.20.1,<1"]
 
 typecheck = [
-    "pyright==1.1.411",
+    "pyright==1.1.414",
     "typing-extensions>=4.16.0,<5",
     "types-polib>=1.2.0.20260518,<2",
     "types-croniter>=6.2.4.20260711,<7",

@@ -31,7 +31,6 @@ import pathlib
 import sys
 import typing as t
 
-import async_timeout
 import hikari
 import linkd
 
@@ -1275,7 +1274,7 @@ class RestEnabledClient(Client):
     async def handle_rest_interaction(self, interaction: hikari.PartialInteraction) -> AsyncGenerator[None, None]:
         task = self.safe_create_task(self.handle_interaction_create(interaction, (ir := asyncio.Event())))
         try:
-            async with async_timeout.timeout(5):
+            async with asyncio.timeout(5):
                 await ir.wait()
                 yield None  # noqa: ASYNC119
         except asyncio.TimeoutError:

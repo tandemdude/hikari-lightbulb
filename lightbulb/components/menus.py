@@ -45,7 +45,6 @@ import contextvars
 import typing as t
 import uuid
 
-import async_timeout
 import hikari
 import linkd
 from hikari.api import special_endpoints
@@ -343,7 +342,7 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
         menu: Menu,
         interaction: hikari.ComponentInteraction,
         component: base.BaseComponent[special_endpoints.MessageActionRowBuilder],
-        _timeout: async_timeout.Timeout | None,
+        _timeout: asyncio.Timeout | None,
         _stop_event: asyncio.Event,
         _initial_response_sent: asyncio.Event,
     ) -> None:
@@ -357,7 +356,7 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
         self.component: base.BaseComponent[special_endpoints.MessageActionRowBuilder] = component
         """The component that triggered the interaction for this context."""
 
-        self._timeout: async_timeout.Timeout | None = _timeout
+        self._timeout: asyncio.Timeout | None = _timeout
         self._stop_event: asyncio.Event = _stop_event
         self._should_re_resolve_custom_ids: bool = False
 
@@ -400,10 +399,10 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
         Returns:
             :obj:`None`
         """
-        if self._timeout is None:
+        if self._timeout is None or (deadline := self._timeout.when()) is None:
             return
 
-        self._timeout.shift(length)
+        self._timeout.reschedule(deadline + length)
 
     def set_timeout(self, timeout: float) -> None:
         """
@@ -418,7 +417,7 @@ class MenuContext(base.MessageResponseMixinWithEdit[hikari.ComponentInteraction]
         if self._timeout is None:
             return
 
-        self._timeout.update(asyncio.get_running_loop().time() + timeout)
+        self._timeout.reschedule(asyncio.get_running_loop().time() + timeout)
 
     def selected_values_for(self, select: Select[T]) -> Sequence[T]:
         """
@@ -624,7 +623,7 @@ class _MenuInteractionHandlerContainer:
         self,
         client: client_.Client,
         menu: Menu,
-        tm: async_timeout.Timeout | None,
+        tm: asyncio.Timeout | None,
         stop_event: asyncio.Event,
         ctx: contextvars.Context | None,
     ) -> None:
@@ -1007,7 +1006,7 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         async with stack:
             tm = None
             if timeout is not None:
-                tm = await stack.enter_async_context(async_timeout.timeout(timeout))
+                tm = await stack.enter_async_context(asyncio.timeout(timeout))
 
             am = _MenuInteractionHandlerContainer(client, self, tm, stop_event, ctx)
             client._attached_menus.add(am)
@@ -1046,7 +1045,7 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
         handle = MenuHandle(None, stop_event)
 
         async def _run_with_timeout() -> None:
-            async with async_timeout.timeout(timeout) as tm:
+            async with asyncio.timeout(timeout) as tm:
                 am = _MenuInteractionHandlerContainer(client, self, tm, stop_event, None)
                 handle._am = am
                 client._attached_menus.add(am)

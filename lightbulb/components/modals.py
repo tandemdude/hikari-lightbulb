@@ -31,7 +31,6 @@ import contextvars
 import typing as t
 import uuid
 
-import async_timeout
 import hikari
 import linkd
 import typing_extensions as t_ex
@@ -306,7 +305,7 @@ class Modal(
 
         client._attached_modals[custom_id] = _handle_interaction
         try:
-            async with async_timeout.timeout(timeout):
+            async with asyncio.timeout(timeout):
                 await stopped.wait()
                 return r_val
         finally:

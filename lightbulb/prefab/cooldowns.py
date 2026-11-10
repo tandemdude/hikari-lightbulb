@@ -141,7 +141,7 @@ class _FixedWindow:
         data = self._invocations[await utils.maybe_await(self._bucket(ctx))]
         if data.expires < (now := time.perf_counter()):
             data.expires = now + self._window_length
-            data.n += 1
+            data.n = 1
             return
 
         data.n += 1

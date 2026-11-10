@@ -8,6 +8,13 @@ Below are all the changelogs for the new versions of hikari-lightbulb (version 3
 
 <!-- next-changelog -->
 
+## v3.2.7 (2026-11-10)
+### Bugfixes
+
+- Fix `fixed_window` cooldowns only allowing one invocation per window after the first window has expired. ([#741](https://github.com/tandemdude/hikari-lightbulb/issues/741))
+
+----
+
 ## v3.2.6 (2026-08-19)
 ### Bugfixes
 

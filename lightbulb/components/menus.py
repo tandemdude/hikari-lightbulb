@@ -58,8 +58,6 @@ if t.TYPE_CHECKING:
     from collections.abc import Callable
     from collections.abc import Sequence
 
-    import typing_extensions as t_ex
-
     from lightbulb import client as client_
 
     ValidSelectOptions: t.TypeAlias = t.Union[Sequence["TextSelectOption"], Sequence[str], Sequence[tuple[str, str]]]
@@ -697,7 +695,7 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
             or ((r := self._rows[self._current_row]) and isinstance(r[0], Select))
         )
 
-    def enable_all_components(self) -> t_ex.Self:
+    def enable_all_components(self) -> t.Self:
         """
         Utility function to set all components within this menu as enabled.
 
@@ -711,7 +709,7 @@ class Menu(base.BuildableComponentContainer[special_endpoints.MessageActionRowBu
 
         return self
 
-    def disable_all_components(self) -> t_ex.Self:
+    def disable_all_components(self) -> t.Self:
         """
         Utility function to set all components within this menu as disabled.
 

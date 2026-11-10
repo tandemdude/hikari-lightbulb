@@ -24,7 +24,6 @@ __all__ = ["EMPTY", "FloatEnum", "StrEnum", "get_command_data", "maybe_await", "
 
 import enum
 import inspect
-import sys
 import typing as t
 from collections.abc import Sequence
 
@@ -87,33 +86,22 @@ async def maybe_await(item: types.MaybeAwaitable[T]) -> T:
 ChoiceT = t.TypeVar("ChoiceT", str, int, float)
 
 
-# fmt: off
-if sys.version_info >= (3, 11):
-    StrEnum = enum.StrEnum
-    """
-    Alias to ``enum.StrEnum`` in Python versions 3.11 or later, otherwise a
-    custom enum base class for compatibility.
+StrEnum = enum.StrEnum
+"""
+Alias to ``enum.StrEnum``.
 
-    See Also:
-        :func:`~to_choices`
-    """
-else:
-    class StrEnum(str, enum.Enum):
-        """
-        Alias to ``enum.StrEnum`` in Python versions 3.11 or later, otherwise a
-        custom enum base class for compatibility.
+See Also:
+    :func:`~to_choices`
+"""
 
-        See Also:
-            :func:`~to_choices`
-        """
-class FloatEnum(float, enum.Enum):  # noqa: E302
+
+class FloatEnum(float, enum.Enum):
     """
     Custom enum base class for enums with float values.
 
     See Also:
         :func:`~to_choices`
     """
-# fmt: on
 
 
 @t.overload

@@ -5,7 +5,7 @@ build-backend = "flit_core.buildapi"
 [project]
 name = "hikari-lightbulb"
 readme = "README.md"
-requires-python = ">=3.10.0,<3.16"
+requires-python = ">=3.11.0,<3.16"
 authors = [{name = "tandemdude", email = "tandemdude1@gmail.com"}]
 keywords = ["hikari"]
 classifiers = [
@@ -15,7 +15,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "Natural Language :: English",
     "Topic :: Software Development :: Libraries :: Python Modules",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -27,7 +26,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
-dependencies = ["hikari~=2.6.0", "async-timeout>=4, <6", "linkd>=0.6.2", "confspec>=0.0.1", "typing-extensions>=4.16.0"]
+dependencies = ["hikari~=2.7.0", "async-timeout>=4, <6", "linkd>=0.6.2", "confspec>=0.0.1", "typing-extensions>=4.16.0"]
 dynamic = ["version", "description"]
 
 [project.urls]
@@ -101,7 +100,7 @@ type = [
 
 [tool.ruff]
 line-length = 120
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.lint]
 preview = true
@@ -141,6 +140,7 @@ ignore = [
     "N818",   # exception name should end in Error
     "D205",   # 1 blank line required between summary line and description
     "RUF067", # init module should only contain docstrings and re-exports
+    "ASYNC109", # async function with timeout parameter
 ]
 
 [tool.ruff.lint.isort]
@@ -172,7 +172,7 @@ exclude-classes = """
 [tool.pyright]
 include = ["lightbulb", "examples", "tests"]
 exclude = ["docs", ".github"]
-pythonVersion = "3.10"
+pythonVersion = "3.11"
 typeCheckingMode = "strict"
 
 reportUnnecessaryTypeIgnoreComment = "error"

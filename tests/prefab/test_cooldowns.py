@@ -75,6 +75,21 @@ class TestFixedWindow:
 
             await hook(mock.Mock(), mock_context)
 
+    @pytest.mark.asyncio
+    async def test_allows_full_invocations_in_window_after_expiry(self) -> None:
+        hook = cooldowns.fixed_window(10, 3, "global")
+
+        with mock.patch("time.perf_counter", side_effect=[0, 1, 2, 3, 11, 12, 13, 14]):
+            for _ in range(3):
+                await hook(mock.Mock(), mock_context)
+            with pytest.raises(cooldowns.OnCooldown):
+                await hook(mock.Mock(), mock_context)
+
+            for _ in range(3):
+                await hook(mock.Mock(), mock_context)
+            with pytest.raises(cooldowns.OnCooldown):
+                await hook(mock.Mock(), mock_context)
+
 
 class TestSlidingWindow:
     @pytest.mark.asyncio

@@ -32,9 +32,6 @@ from hikari.api import special_endpoints
 from lightbulb import context
 from lightbulb.internal import constants
 
-if t.TYPE_CHECKING:
-    import typing_extensions as t_ex
-
 RowT = t.TypeVar("RowT", special_endpoints.MessageActionRowBuilder, special_endpoints.ModalActionRowBuilder)
 BaseComponentT = t.TypeVar("BaseComponentT", bound="BaseComponent[t.Any]")
 
@@ -272,25 +269,25 @@ class BuildableComponentContainer(abc.ABC, Sequence[special_endpoints.ComponentB
             built_rows.append(bld)
         return built_rows
 
-    def clear_rows(self) -> t_ex.Self:
+    def clear_rows(self) -> t.Self:
         """Remove all components from this container."""
         for row in self._rows:
             row.clear()
         return self
 
-    def clear_current_row(self) -> t_ex.Self:
+    def clear_current_row(self) -> t.Self:
         """Remove all components from the current row."""
         self._rows[self._current_row].clear()
         return self
 
-    def next_row(self) -> t_ex.Self:
+    def next_row(self) -> t.Self:
         """Move the current row pointer to the next row."""
         if self._current_row + 1 >= self._max_rows:
             raise RuntimeError("the maximum number of rows has been reached")
         self.__current_row += 1
         return self
 
-    def previous_row(self) -> t_ex.Self:
+    def previous_row(self) -> t.Self:
         """Move the current row pointer back to the previous row."""
         self.__current_row = max(0, self._current_row - 1)
         return self
